@@ -1,2 +1,2 @@
 # ssvc_connect
-External controller for communication with the SVC v2 controller
+Open-source hardware-software solution to extend SSVC0059_V2 capabilities through data exchange over UART.
