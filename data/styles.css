@@ -1,0 +1,119 @@
+/* Основные стили для тела документа */
+body {
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    flex-direction: column; /* Вертикальная компоновка */
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background: linear-gradient(to right, #afafaf, #555453); /* Градиентный фон */
+}
+
+/* Стили для навигационной панели */
+.navbar {
+    display: flex;
+    background-color: #333;
+    padding: 10px;
+    width: 100%;
+    justify-content: center;
+}
+
+.tab {
+    padding: 14px 20px;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.tab:hover {
+    background-color: #575757;
+}
+
+.tab.active {
+    background-color: #9ca19c; /* Цвет для активной вкладки */
+    font-weight: bold;
+}
+
+/* Контейнер для данных */
+.data-container {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    max-width: 1200px;
+    margin: 20px auto;
+    color: #333;
+}
+
+/* Основные стили для полей настроек */
+.settings-field {
+    display: flex;
+    flex-direction: column; /* Вертикальная компоновка */
+    margin: 15px 0; /* Отступы между полями */
+    padding: 15px; /* Отступы внутри поля */
+    border: 1px solid #ddd; /* Легкая рамка */
+    border-radius: 8px; /* Округлые углы */
+    background-color: #ffffff; /* Белый фон */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Тень для эффекта глубины */
+    transition: box-shadow 0.3s; /* Плавный переход для тени */
+}
+
+.settings-field:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Более глубокая тень при наведении */
+}
+
+.settings-field label {
+    font-weight: bold;
+    color: #4CAF50; /* Зеленый цвет для меток */
+    margin-bottom: 8px; /* Отступ снизу метки */
+}
+
+/* Стили для значений */
+strong {
+    color: #555; /* Цвет названий полей */
+    margin-right: 5px; /* Отступ справа */
+}
+
+/* Стили для jsonData */
+#jsonData {
+    white-space: pre-wrap; /* Автоперенос строк */
+    background-color: #f1f1f1; /* Светло-серый фон для JSON */
+    padding: 15px;
+    border-radius: 10px; /* Округлые углы */
+    margin-top: 20px;
+    overflow: auto; /* Полоса прокрутки при необходимости */
+    max-height: 300px; /* Ограничение высоты */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Тень для JSON */
+}
+
+/* Стили для колонок */
+.columns {
+    display: flex;
+}
+
+.left-column, .right-column {
+    flex: 1;
+    padding: 20px;
+}
+
+/* Стили для контейнера лампочки */
+.bulb-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+/* Строка настроек для размещения в одну строку */
+.settings-row {
+    display: flex; /* Используем flexbox для горизонтального расположения */
+    justify-content: space-between; /* Распределяем элементы по строке */
+}
+
+.settings_ssvc_value {
+    font-weight: normal; /* Обычный вес шрифта для значений */
+    color: #555; /* Цвет для значений */
+    padding-left: 10px; /* Отступ слева для значений */
+    border-left: 2px solid #4CAF50; /* Линия слева для выделения */
+}
