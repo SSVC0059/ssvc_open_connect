@@ -15,7 +15,6 @@ Connector::Connector(uart_port_t uart_num, gpio_num_t tx_pin, gpio_num_t rx_pin)
     uart_set_pin(uart_num, tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
     // Инициализация кольцевого буфера
-    ringBuffer = (char*)malloc(ring_buffer_size);
     if (ringBuffer == nullptr) {
         Logger::error("Failed to allocate memory for ring buffer");
         // Обработка ошибки

@@ -44,7 +44,7 @@ private:
     // Размеры буферов
 
     static const size_t ring_buffer_size = BUF_SIZE *5; // Размер кольцевого буфера
-    char* ringBuffer;
+    char ringBuffer[ring_buffer_size];
     size_t head;
     size_t tail;
     void addToBuffer(const char* data);
