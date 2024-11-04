@@ -6,8 +6,11 @@
 #include "ArduinoJson.h"
 #include "esp_timer.h"
 #include "Logger.h"
+#include "../TelemetryHandler/TelemetryHandler.h"
 
 #define BUF_SIZE 2048
+
+extern TelemetryHandler telemetryHandler;
 
 class Connector {
 public:
@@ -30,6 +33,7 @@ public:
     void sendCommandGetSettings();
     void sendCommandStop();
     void sendCommandPause();
+    void sendCommandGetVersion();
 
 private:
     uart_port_t uart_num;

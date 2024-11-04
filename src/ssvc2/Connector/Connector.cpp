@@ -1,6 +1,5 @@
 #include "Connector.h"
 
-
 Connector::Connector(uart_port_t uart_num, gpio_num_t tx_pin, gpio_num_t rx_pin)
     : uart_num(uart_num), tx_pin(tx_pin), rx_pin(rx_pin), running(false) {
     // Настройка UART
@@ -87,6 +86,8 @@ void Connector::processData(const char* data) {
             awaitingResponse = false; // Сбрасываем флаг при тайм-ауте
         }
         // TODO: Сюда подключаются обработчики сообщений от ssvc
+        // Отправка телеметрии через TelemetryHandler
+        telemetryHandler.sendData(doc);
         const char* value = doc["type"];
         Logger::debug(value);
     } else {
@@ -128,6 +129,13 @@ void Connector::sendCommandStop()
 void Connector::sendCommandPause()
 {
     const char *command = "PAUSE\n\r";
+    Logger::debug("send command: GET_SETTINGS");
+    Connector::sendCommand(command);
+}
+
+void Connector::sendCommandGetVersion()
+{
+    const char *command = "VERSION\n\r";
     Logger::debug("send command: GET_SETTINGS");
     Connector::sendCommand(command);
 }
