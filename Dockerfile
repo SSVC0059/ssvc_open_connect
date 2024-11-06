@@ -4,6 +4,13 @@ FROM debian:bookworm-20240926-slim
 
 LABEL version="1.8.95"
 
+ARG UID=1000
+ARG GID=1000
+ENV UID=${UID}
+ENV GID=${GID}
+RUN groupadd -g 1000 worker \
+    && useradd -m -s /bin/bash -u 1000 -g 1000 -d /home/worker worker
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ESP_IDF_VERSION="v5.3"
 
@@ -74,6 +81,8 @@ RUN mkdir -p ~/esp \
  && git clone -b ${ESP_IDF_VERSION} --recursive https://github.com/espressif/esp-idf.git
 RUN cd ~/esp/esp-idf \
  && ./install.sh all
+
+USER worker
 
 CMD /opt/entrypoint.sh
 

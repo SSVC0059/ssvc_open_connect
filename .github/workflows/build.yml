@@ -1,0 +1,28 @@
+name: Run Platformio build
+on:
+  push:
+#     branches:
+#       - main
+#   pull_request:
+#     branches:
+#       - main
+
+jobs:
+  build:
+    runs-on: [self-hosted]  # Указываем использование локального раннера
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Run PIO RUN Command
+      uses: docker://zhdanovr/platformio-builder:latest
+      with:
+        entrypoint: /bin/sh
+        args: -c "pio run"  # Замените на реальный путь
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: firmware-${{ github.ref_name }}.bin  # Имя артефакта будет соответствовать имени ветки
+        path: .pio/build/ssvc2/firmware.elf
