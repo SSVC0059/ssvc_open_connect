@@ -33,3 +33,5 @@ coverage
 tmp
 
 benchmarking/compare/.results
+web/dist
+web/svelteesp32.h
