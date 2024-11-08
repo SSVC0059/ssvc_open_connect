@@ -19,24 +19,3 @@
     });
 </script>
 
-<!--&lt;!&ndash; Отображение данных в виде JSON &ndash;&gt;-->
-<!--<div>-->
-<!--    <h3>Полученные данные:</h3>-->
-<!--    <pre>{JSON.stringify($data, null, 2)}</pre>-->
-<!--</div>-->
-
-<!--<style>-->
-<!--    /* Дополнительное стилирование */-->
-<!--    div {-->
-<!--        font-family: Arial, sans-serif;-->
-<!--        padding: 1em;-->
-<!--        border: 1px solid #ddd;-->
-<!--        background-color: #f9f9f9;-->
-<!--        border-radius: 4px;-->
-<!--    }-->
-<!--    pre {-->
-<!--        overflow-x: auto;-->
-<!--        white-space: pre-wrap;-->
-<!--        word-wrap: break-word;-->
-<!--    }-->
-<!--</style>-->

@@ -1,6 +1,15 @@
 <script>
-    import DataHandler from "./components/DataHandler.svelte"
-    import Telemetry  from "./components/Telemetry.svelte"
+    import './app.css';
+
+    import { writable } from 'svelte/store';
+
+    export const activeSection = writable('telemetry'); // Начальная секция — 'telemetry'
+
+    import DataHandler from "$components/DataHandler.svelte"
+    import NavBar from "$components/NavBar.svelte";
+    import Telemetry  from "$components/Telemetry.svelte"
+    import Debug from "$components/Debug.svelte";
+    import Settings from "$components/Settings.svelte";
 
     let telemetryData;
 
@@ -9,23 +18,27 @@
         telemetryData = event.detail;
     }
 
+
 </script>
 
 <main>
-    <h1>Отображение данных с сервера</h1>
     <DataHandler on:dataReceived={handleDataReceived}/>
-    {#if telemetryData && telemetryData.type !== "response"}
-        <Telemetry data={telemetryData} />
+
+    <NavBar/>
+    {#if telemetryData }
+        {#if telemetryData.type === "response"}
+            <div>
+                <Settings data={telemetryData}/>
+            </div>
+        {:else}
+            <div>
+                <Telemetry data={telemetryData}/>
+            </div>
+        {/if}
     {:else}
         <p>Нет данных для отображения.</p>
     {/if}
 
-</main>
+    <Debug data={telemetryData}/>
 
-<style>
-    main {
-        font-family: Arial, sans-serif;
-        text-align: center;
-        padding: 2em;
-    }
-</style>
+</main>
