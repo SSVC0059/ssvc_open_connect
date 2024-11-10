@@ -1,6 +1,6 @@
 <script>
     import { Navbar, NavBrand, NavLi, NavUl, NavHamburger } from 'flowbite-svelte';
-    import { activeSection } from '../scripts/store.js';
+    import { activeSection, sendPostRequest } from '../scripts/store.js';
 
 </script>
 
@@ -13,10 +13,10 @@
         <NavUl>
             <NavUl >
                 <NavLi on:click={() => activeSection.set('telemetry')}>Телеметрия</NavLi>
-                <NavLi on:click={() => activeSection.set('debug')}>Debug</NavLi>
-<!--                <NavLi on:click={() => activeSection.set('ssvs_settings')}>Настройки SSVC</NavLi>-->
+                <NavLi on:click={() => sendPostRequest("GET_SETTINGS")}>Настройки SSVC</NavLi>
 <!--                <NavLi>Настройки OpenConnect</NavLi>-->
 <!--                <NavLi>О программе</NavLi>-->
+                <NavLi on:click={() => activeSection.set('debug')}>Debug</NavLi>
             </NavUl>
         </NavUl>
     </Navbar>

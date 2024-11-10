@@ -5,6 +5,7 @@
 
     import { getStageName } from "../scripts/getStageName"
     import {activeSection} from "../scripts/store.js"
+    import {fly} from "svelte/transition";
 
     export let data;
 
@@ -25,8 +26,16 @@
 
 </script>
 <main>
+    {#if data.type === "response" }
+        <Alert color="yellow" dismissable transition={fly} params={{ x: 200 }}>
+            <InfoCircleSolid slot="icon" class="w-5 h-5" />
+            Команда {data.request} выполнена успешно: {data.result}
+        </Alert>
+    {/if}
+
     {#if $activeSection === 'telemetry'}
         <div id="telemetry_container" class="p-4 bg-white rounded-lg shadow-md">
+
             <h2 class="text-2xl font-semibold mb-6 text-center text-gray-800">Телеметрия</h2 >
             <h2 class="text-2xl font-semibold mb-6 text-center text-gray-800">Текущий режим: {getStageName(data.type)}</h2 >
 
@@ -175,14 +184,3 @@
         </div>
     {/if}
 </main>
-
-<style>
-    .name {
-       text-align: left;
-    }
-    .value {
-        text-align: right;
-        color: black;
-        border: black;
-    }
-</style>

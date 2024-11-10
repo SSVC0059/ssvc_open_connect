@@ -33,6 +33,7 @@ public:
     void sendCommandGetSettings();
     void sendCommandStop();
     void sendCommandPause();
+    void sendCommandNext();
     void sendCommandGetVersion();
 
 private:
