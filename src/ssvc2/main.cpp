@@ -6,6 +6,7 @@
 #include <ESPAsyncWebServer.h>
 #include "./TelemetryHandler/TelemetryHandler.h"
 #include "svelteesp32.h"
+#include <ESPmDNS.h>
 
 
 Connector* connector;
@@ -102,13 +103,13 @@ void setup() {
     // Определение маршрута для POST запроса
     server.on("/command", HTTP_POST, [](AsyncWebServerRequest *request){}, NULL, handleExecuteCommand);
 
+    MDNS.begin("ssvc-open-connect");
 
     server.begin();
-
 
 }
 
 void loop() {
-    // Основной цикл остается пустым, поскольку задачи работают асинхронно
+
 }
 
