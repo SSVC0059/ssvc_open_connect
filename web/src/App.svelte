@@ -1,62 +1,76 @@
 <script>
-    import { onMount } from 'svelte';
-    let data = { mmhg: '', tp1: '', tp2: '', relay: '', signal: '' };
-    let error = null;
+    import './app.css';
 
-    onMount(() => {
-        // const eventSource = new EventSource('http://127.0.0.1:3000/events');
-        const eventSource = new EventSource('/events');
-        eventSource.onmessage = (event) => {
-            try {
-                const parsedData = JSON.parse(event.data);
-                console.log("Получены данные:", parsedData); // Для отладки
-                if (parsedData.type === 'waiting' && parsedData.common) {
-                    data = {
-                        mmhg: parsedData.common.mmhg,
-                        tp1: parsedData.common.tp1,
-                        tp2: parsedData.common.tp2,
-                        relay: parsedData.common.relay,
-                        signal: parsedData.common.signal
-                    };
-                }
-            } catch (err) {
-                console.error("Ошибка при разборе данных:", err);
-                error = "Ошибка при разборе данных.";
+    import { writable } from 'svelte/store';
+
+    export const activeSection = writable('telemetry'); // Начальная секция — 'telemetry'
+
+    import DataHandler from "$components/DataHandler.svelte"
+    import NavBar from "$components/NavBar.svelte";
+    import Telemetry  from "$components/Telemetry.svelte"
+    import Debug from "$components/Debug.svelte";
+    import Settings from "$components/Settings.svelte";
+    import {InfoCircleSolid} from "flowbite-svelte-icons";
+    import {Alert} from "flowbite-svelte";
+    import Commands from "$components/Commands.svelte";
+
+
+    // Переменная для сохранения последнего сообщения с `type: "response"` и `request: "GET_SETTINGS"`
+    export let ssvc_settings = null;
+    export let command_responce = "{}";
+
+    let telemetryData;
+
+    // Обработчик события dataReceived
+    function handleDataReceived(event) {
+        telemetryData = event.detail;
+        handleEvent(telemetryData);
+
+    }
+
+    // Функция для обработки сообщений EventSource
+    function handleEvent(message) {
+        // Проверка типа и запроса
+        if (message.type === "response") {
+            if (message.request === "GET_SETTINGS") {
+                // Обновляем переменную, только если пришел такой же запрос
+                ssvc_settings = message;
+                console.log("Сохраненный ответ:", ssvc_settings);
+            }else {
+                command_responce = message;
             }
-        };
+        }
+    }
 
-        eventSource.onerror = (err) => {
-            console.error("Ошибка подключения к SSE:", err);
-            error = "Ошибка подключения к SSE.";
-        };
-
-        return () => {
-            eventSource.close();
-        };
-    });
 </script>
 
-<style>
-    .data-container {
-        padding: 1rem;
-        font-family: Arial, sans-serif;
-    }
+<main>
+    <DataHandler on:dataReceived={handleDataReceived}/>
 
-    .error {
-        color: red;
-        font-weight: bold;
-    }
-</style>
+    <NavBar/>
 
-<div class="data-container">
-    <h1>Текущие данные</h1>
-    {#if error}
-        <p class="error">{error}</p>
-    {:else}
-        <p>Давление (mmHg): {data.mmhg}</p>
-        <p>Температура 1 (tp1): {data.tp1}</p>
-        <p>Температура 2 (tp2): {data.tp2}</p>
-        <p>Реле: {data.relay}</p>
-        <p>Сигнал: {data.signal}</p>
+    <Commands data={command_responce}/>
+
+    {#if telemetryData }
+        <div>
+            <Telemetry data={telemetryData}/>
+        </div>
+    {:else }
+        <Alert border color="red">
+            <InfoCircleSolid slot="icon" class="w-5 h-5" />
+            <span class="font-medium alig">Внимание!</span>
+            Ожидание получения данных...
+        </Alert>
     {/if}
-</div>
+
+    {#if ssvc_settings }
+        <div>
+            <Settings data={ssvc_settings}/>
+        </div>
+    {/if}
+
+
+
+    <Debug data={telemetryData} ssvc_settings="{ssvc_settings}"/>
+
+</main>

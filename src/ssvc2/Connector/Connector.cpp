@@ -132,6 +132,14 @@ void Connector::sendCommandPause()
     Connector::sendCommand(command);
 }
 
+void Connector::sendCommandNext()
+{
+    const char *command = "NEXT\n\r";
+    Logger::debug("send command: GET_SETTINGS");
+    Connector::sendCommand(command);
+}
+
+
 void Connector::sendCommandGetVersion()
 {
     const char *command = "VERSION\n\r";

@@ -1,1 +1,1 @@
-{"type": "heads","countdown": "0:14:58","common": {"mmhg": 750,"tp1": 31.19,"tp2": 32.06,"relay": 1,"signal": 1},"time": "0:00:02","open": 30.10,"period": 359,"tank_mmhg": 756,"tp1_sap": 31.53,"tp2_sap": 33.10,"v1": 0,"v2": 0,"v3": 0,"alc": 0.0}
+{"type": "heads","countdown": "0:14:58","common": {"mmhg": 750,"tp1": 31.19,"tp2": 32.06,"relay": 1,"signal": 1},"time": "0:00:02","open": 30.10,"period": 359,"tank_mmhg": 756,"tp1_sap": 31.53,"tp2_sap": 33.10,"v1": 1,"v2": 2,"v3": 3,"alc": 0.0}
