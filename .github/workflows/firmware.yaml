@@ -18,18 +18,15 @@ jobs:
         env_name: [esp32dev, esp32-s3-devkitc-1-16m]  # Указываем цели для сборки
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Set up Python environment
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: 3.x
 
-      - name: Install PlatformIO
+      - name: Install Python requirements
         run: |
-          python -m pip install --upgrade pip
-          pip install platformio
+          pip install -r requirements.txt
 
       - name: Build firmware for ${{ matrix.env_name }}
         run: platformio run --environment ${{ matrix.env_name }}
@@ -40,7 +37,8 @@ jobs:
           cp -r build/${{ matrix.env_name }}/* artifacts/${{ matrix.env_name }}/ || echo "No files to copy"
 
       - name: Upload artifacts for ${{ matrix.env_name }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: firmware-artifacts-${{ matrix.env_name }}
           path: artifacts/${{ matrix.env_name }}/
+          if-no-files-found: error
