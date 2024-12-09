@@ -145,6 +145,7 @@ export type MQTTSettings = {
 	clean_session: boolean;
 };
 
+
 export type SsvcOpenConnectMessage = {
 	type: string;
 	tp1_target?: number,
@@ -168,8 +169,21 @@ export type SsvcOpenConnectMessage = {
 	stop?: number;
 	stops?: number;
 	event?: string;
-	common?: commonType;
+	common: commonType;
 	settings?: SsvcSettings,
+
+// 	Дополнительные параметры переданные openConnsct
+
+	ssvcVersionValid: boolean;
+	uartCommunicationError: boolean;
+	info: string;
+	rectificationStart?: string;
+	rectificationEnd?: string;
+
+	valveBandwidthHeads?: number;
+	valveBandwidthHearts?: number;
+	valveBandwidthTails?: number;
+
 };
 
 export type commonType = {
@@ -179,6 +193,7 @@ export type commonType = {
 	relay:boolean,
 	signal: boolean
 };
+
 
 export type SsvcSettings =   {
 	heads: [number, number];                // Параметры для Heads: давление и период

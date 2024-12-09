@@ -10,12 +10,16 @@ export const ssvcSettingsStore = writable<SsvcSettings | null>(null);
 
 export const ssvcEventStore = writable<string | null>(null);
 
-export const ssvcCurrentVersionStore = writable<string>("");
-
 export const commandState: Writable<CommandState> = writable({
     isWaiting: false,
     message: "",
     command: ""
+});
+
+export const temperatureStore = writable({
+    tp1: [] as number[], // массив данных для tp1
+    tp2: [] as number[], // массив данных для tp2
+    time: [] as string[], // временные метки
 });
 
 // Функция для обработки данных в хранилище

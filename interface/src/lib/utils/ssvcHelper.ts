@@ -1,25 +1,22 @@
 // src/lib/ssvcHelper.ts
-import type { SsvcOpenConnectMessage } from '$lib/types/models';
+import type { commonType, SsvcOpenConnectMessage } from '$lib/types/models';
 import { get } from 'svelte/store';
 import { page } from '$app/stores';
 import { user } from '$lib/stores/user';
 import {
 	ssvcEventStore,
-	ssvcSettingsStore,
 	ssvcTelemetryStore,
 	commandState,
-	ssvcCurrentVersionStore
+	temperatureStore
 } from '$lib/stores/ssvcOpenConnect';
+
 import { notifications } from '$lib/components/toasts/notifications'; // Импортируйте тип, если он в отдельном файле
 import type { CommandState } from '$lib/types/models'
 
-export let ssvcStopStatus: SsvcOpenConnectMessage;
-export let ssvcPauseStatus: SsvcOpenConnectMessage;
-export let ssvcResumeStatus: SsvcOpenConnectMessage;
-export let ssvcVersionStatus: SsvcOpenConnectMessage;
-export let ssvcSystemSettingStatus: SsvcOpenConnectMessage;
-
 let isEventSet: boolean = false;
+
+const MAX_ENTRIES = 100; // Максимальное количество записей
+
 
 export function processIncomingDataHandler(data: SsvcOpenConnectMessage) {
 	if (data.type === 'response') {
@@ -44,13 +41,6 @@ export function processIncomingDataHandler(data: SsvcOpenConnectMessage) {
 					command: data.request
 				}
 			);
-			if (data.request == "GET_SETTINGS") {
-				if (data.settings) {
-					ssvcSettingsStore.set(data.settings);
-				}
-			}else if (data.request == "VERSION" && data.version) {
-				ssvcCurrentVersionStore.set(data.version)
-			}
 		}
 
 	} else {
@@ -66,18 +56,14 @@ export function processIncomingDataHandler(data: SsvcOpenConnectMessage) {
 	}
 }
 
-export function processTelemetryData(data: SsvcOpenConnectMessage): SsvcOpenConnectMessage {
-	return  data;
-}
-
-export function getStageDescription(stage:any): any {
+export function getStageDescription(stage:never): string {
 	switch (stage) {
 		case "waiting":
 			return "Дежурный режим"
 		case "tp1_waiting":
 			return "Ожидание нагрева колонны"
 		case "delayed_start":
-			return "Ожидание нагрева колонны"
+			return "Стабилизация колонны"
 		case "heads":
 			return "Отбор голов"
 		case "hearts":
@@ -85,7 +71,7 @@ export function getStageDescription(stage:any): any {
 		case "tails":
 			return "Отбор хвостов"
 		default:
-			return `Не известный режим: ${stage}`
+			return `Не известный тип данных`
 
 	}
 }
@@ -133,11 +119,28 @@ export function getDescriptionEvent<T extends string | null>(event: T): { descri
 	return { description, errorCode };
 }
 
-let timeout_command_response = 5000;
+const timeout_command_response = 5000;
 
 function getSsvsMessageCommandNoResponse(commandName: string) {
 	return `SSVC не ответил на команду ${commandName} в течении ${timeout_command_response/1000} секунд`
 }
+
+function updateTemperatureData(common: commonType) {
+	const currentTime = new Date().toLocaleTimeString();
+	temperatureStore.update((store) => {
+		return {
+			tp1: [...store.tp1, common.tp1].slice(-MAX_ENTRIES), // Оставляем последние 100 записей
+			tp2: [...store.tp2, common.tp2].slice(-MAX_ENTRIES),
+			time: [...store.time, currentTime ].slice(-MAX_ENTRIES),
+		};
+	});
+}
+
+export function processTelemetryData(data: SsvcOpenConnectMessage): SsvcOpenConnectMessage {
+	updateTemperatureData(data.common)
+	return  data;
+}
+
 
 function startCommandTimeout(commandName: string, errorMessage: string) {
 	return setTimeout(() => {
@@ -163,7 +166,7 @@ function manageSubscription(stateStore: typeof commandState, timeoutId: ReturnTy
 
 const responseCommandHandeler = (response: Response, commandName: string) => {
 	if (response.status === 200) {
-		let timeout = startCommandTimeout(commandName, getSsvsMessageCommandNoResponse(commandName));
+		const timeout = startCommandTimeout(commandName, getSsvsMessageCommandNoResponse(commandName));
 		manageSubscription(commandState, timeout);
 	} else {
 		commandState.set({
@@ -174,7 +177,7 @@ const responseCommandHandeler = (response: Response, commandName: string) => {
 	}
 };
 
-export const sendPostRequest = async (commandName: string, responseData: SsvcOpenConnectMessage) => {
+export const sendPostRequest = async (commandName: string) => {
 	const currentPage = get(page); // Извлекаем текущее состояние `page`.
 	const currentUser = get(user); // Извлекаем текущее состояние `user`.
 	try {
@@ -189,56 +192,38 @@ export const sendPostRequest = async (commandName: string, responseData: SsvcOpe
 			body: JSON.stringify({ commands: commandName })
 		});
 		responseCommandHandeler(response, commandName);
-		responseData = await response.json();
+		await response.json();
 	} catch (error) {
 		console.log('Error:', error);
 	}
 };
 
 export async function postStop() {
-	let commandName = "STOP"
-	await sendPostRequest(commandName, ssvcStopStatus);
+	const commandName = "STOP"
+	await sendPostRequest(commandName);
 }
 
 export async function postPause() {
-	let commandName = "PAUSE"
-	await sendPostRequest(commandName, ssvcVersionStatus);
+	const commandName = "PAUSE"
+	await sendPostRequest(commandName);
 }
 
 export async function postResume() {
-	let commandName = "RESUME"
-	await sendPostRequest(commandName, ssvcPauseStatus);
+	const commandName = "RESUME"
+	await sendPostRequest(commandName);
+}
+
+export async function postNext() {
+	const commandName = "NEXT"
+	await sendPostRequest(commandName);
 }
 
 export async function postVersion() {
-	let commandName = "VERSION"
-	await sendPostRequest(commandName, ssvcResumeStatus);
+	const commandName = "VERSION"
+	await sendPostRequest(commandName);
 }
 
-export async function getSystemSetting() {
-	let commandName = "GET_SETTINGS"
-	await sendPostRequest(commandName, ssvcSystemSettingStatus);
-}
-
-export function isVersionSupported(currentVersion: string, minSupportedVersion: string): boolean {
-	// Функция для разбора версии на числа
-	const parseVersion = (version: string) => version.split('.').map(Number);
-
-	// Разбиваем версии на массивы чисел
-	const current = parseVersion(currentVersion);
-	const minSupported = parseVersion(minSupportedVersion);
-
-	// Сравниваем каждую часть версии по порядку (основная версия, минорная версия, патч)
-	for (let i = 0; i < Math.max(current.length, minSupported.length); i++) {
-		const currentPart = current[i] || 0;  // Если части не хватает, считаем ее 0
-		const minPart = minSupported[i] || 0;
-
-		if (currentPart < minPart) {
-			return false;  // Текущая версия меньше, чем минимальная поддерживаемая
-		} else if (currentPart > minPart) {
-			return true;  // Текущая версия больше или равна минимальной поддерживаемой
-		}
-	}
-
-	return true; // Версии равны
+export async function sendCommandGetSettings() {
+	const commandName = "GET_SETTINGS"
+	await sendPostRequest(commandName);
 }

@@ -37,8 +37,6 @@
 			$page.data.features.event_use_json
 		);
 
-		addEventListeners();
-
 	// 	SSVC
 
 		socket.on<SsvcOpenConnectMessage>("openConnect", (data) => {
@@ -46,6 +44,8 @@
 			const processedData = processTelemetryData(data);
 			processIncomingData(processedData);
 		});
+
+		addEventListeners();
 	});
 
 	onDestroy(() => {
@@ -54,8 +54,8 @@
 
 
 	const addEventListeners = () => {
-		socket.on('open', handleOpen);
-		socket.on('close', handleClose);
+		// socket.on('open', handleOpen);
+		// socket.on('close', handleClose);
 		socket.on('error', handleError);
 		socket.on('rssi', handleNetworkStatus);
 		socket.on('notification', handleNotification);
