@@ -18,6 +18,7 @@
 
 #define GET_SETTINGS_ROUTE "/rest/getSettings"
 #define SEND_COMMAND_ROUTE "/rest/ssvcCommands"
+#define TEMP_METRICS_DATA_ROUTE "/rest/tMetrics"
 
 
 class HttpRequestHandler {
@@ -34,8 +35,10 @@ private:
     SecurityManager* _securityManager;
     RectificationProcess* _rProcess;
     SsvcConnector* _ssvcConnector;
+
     esp_err_t reqStatus(PsychicRequest *request);
     esp_err_t postCommandStatusStatus(PsychicRequest *request);
+    esp_err_t tMetrixResponce(PsychicRequest *request);
 };
 
 #endif //SSVC_OPEN_CONNECT_HTTPREQUESTHANDLER_H

@@ -17,7 +17,7 @@ RectificationProcess* RectificationProcess::createRectification(SsvcConnector* s
     return _rectificationProcess;
 }
 
-// Приватный конструктор
+// Сбор телеметрии
 RectificationProcess::RectificationProcess(SsvcConnector* ssvcConnector,
                                            EventGroupHandle_t eventGroup)
         : _ssvcConnector(ssvcConnector),
@@ -33,9 +33,19 @@ RectificationProcess::RectificationProcess(SsvcConnector* ssvcConnector,
     xTaskCreatePinnedToCore(
             RectificationProcess::update,            // Function that should be called
             "SSVC Open Telemetry",     // Name of the task (for debugging)
-            4096,                       // Stack size (bytes)
+            2048,                       // Stack size (bytes)
             this,                       // Pass reference to this class instance
-            (configMAX_PRIORITIES - 10),     // task priority
+            (tskIDLE_PRIORITY),     // task priority
+            nullptr,                       // Task handle
+            1 // Pin to application core
+    );
+
+    xTaskCreatePinnedToCore(
+            RectificationProcess::addPointToTempGraphTask,            // Function that should be called
+            "Temp Graph handler",     // Name of the task (for debugging)
+            2048,                       // Stack size (bytes)
+            this,                       // Pass reference to this class instance
+            (tskIDLE_PRIORITY),     // task priority
             nullptr,                       // Task handle
             1 // Pin to application core
     );
@@ -68,6 +78,20 @@ void RectificationProcess::update(void* pvParameters) {
 
         if (bits & BIT0) {
             JsonDocument message = self->_ssvcConnector->getMessage();
+
+            if (message["common"]) {
+                if (message["tp1_sap"]) {
+                    self->tp1Value = message["tp1_sap"];
+                }else {
+                    self->tp1Value = message["common"]["tp1"];
+                }
+                if (message["tp2_sap"]) {
+                    self->tp2Value = message["tp2_sap"];
+                }else {
+                    self->tp2Value = message["common"]["tp2"];
+                }
+            }
+
             if (message["type"] == "response") {
                 vTaskDelay(400);
             }
@@ -111,7 +135,10 @@ void RectificationProcess::update(void* pvParameters) {
                 self->tailsTypeHandler(message);
             }
 
-            self -> ssvsTelemetry = message;
+            if (xSemaphoreTake(mutex, portMAX_DELAY)) {
+                self -> ssvsTelemetry = message;
+                xSemaphoreGive(mutex);
+            }
         }
     }
 }
@@ -188,17 +215,16 @@ void RectificationProcess::setRectificationStart() {
         this->valveBandwidthTails = 0;
 
         // Очищаем время завершения
-        memset(this->endTime, 0, sizeof(this->endTime));
+        memset(RectificationProcess::endTime, 0, sizeof(RectificationProcess::endTime));
 
         // Устанавливаем время начала
         this->setStartTime();
 
         // Логируем начало ректификации
         Serial.print("Начало ректификации: ");
-        Serial.println(this->getRectificationTimeStart());
+        Serial.println(RectificationProcess::getRectificationTimeStart());
     }
 }
-
 
 void RectificationProcess::setRectificationStop() {
     if (this->isRectificationStarted) {
@@ -209,7 +235,6 @@ void RectificationProcess::setRectificationStop() {
     }
 }
 
-
 String RectificationProcess::getRectificationTimeStart() {
     return startTime;
 }
@@ -217,7 +242,6 @@ String RectificationProcess::getRectificationTimeStart() {
 String RectificationProcess::getRectificationTimeEnd() {
     return endTime;
 }
-
 
 // Event Handler
 void RectificationProcess::manuallyOpenedHandler(JsonDocument& message) {
@@ -313,7 +337,7 @@ JsonDocument RectificationProcess::getRectificationStatus() {
     ESP_LOGV("isSupportSSVCVersion::isSupportSSVCVersion: ", isSupportSSVCVersion);
     if (!isSupportSSVCVersion) {
         char buffer[256];
-        snprintf(buffer, sizeof(buffer), "Версия %s не поддерживается. Минимально поддерживаемая - %s",
+        snprintf(buffer, sizeof(buffer), "Версия SSVC %s не поддерживается. Используйте версию - %s и выше",
                  SSVC_MIN_SUPPORT_VERSION,
                  _ssvcConnector->getSsvcVersion().c_str());
         _rectificationStatus["info"] = buffer;
@@ -325,4 +349,59 @@ JsonDocument RectificationProcess::getRectificationStatus() {
 
 JsonDocument* RectificationProcess::getSsvcSettings() {
     return _ssvcConnector->getSsvcSettings();
+}
+
+void RectificationProcess::addPointToTempGraphTask(void *pvParameters) {
+    auto* self = static_cast<RectificationProcess*>(pvParameters);
+    while (true) {
+        time_t now = time(nullptr);
+
+        // Если массив заполнен, сдвигаем элементы влево
+        if (self->tempGraphCurrentIndex >= TEMP_GRAPH_ARRAY_SIZE) {
+            // Сдвигаем все элементы массива влево, начиная с второго элемента
+            portENTER_CRITICAL(&ssvcMux);
+            for (size_t i = 1; i < TEMP_GRAPH_ARRAY_SIZE; ++i) {
+                self->timePoints[i - 1] = self->timePoints[i];
+                self->temp1Values[i - 1] = self->temp1Values[i];
+                self->temp2Values[i - 1] = self->temp2Values[i];
+            }
+            self->tempGraphCurrentIndex = TEMP_GRAPH_ARRAY_SIZE - 1; // Устанавливаем индекс на последний элемент
+            portEXIT_CRITICAL(&ssvcMux);
+        }
+
+        // Добавляем новые данные в конец массива
+        portENTER_CRITICAL(&ssvcMux);
+        self->timePoints[self->tempGraphCurrentIndex] = now;
+        self->temp1Values[self->tempGraphCurrentIndex] = self->tp1Value;
+        self->temp2Values[self->tempGraphCurrentIndex] = self->tp2Value;
+        portEXIT_CRITICAL(&ssvcMux);
+
+        // Инкрементируем индекс для следующей записи, используя остаток от деления
+        self->tempGraphCurrentIndex = (self->tempGraphCurrentIndex + 1) % TEMP_GRAPH_ARRAY_SIZE;
+
+        // Задержка 1 секунда
+        vTaskDelay(pdMS_TO_TICKS(1000 * PERIOD_GRAPH_SEC));  // Задержка PERIOD_GRAPH_SEC секунд
+    }
+}
+
+
+// Метод для создания JSON документа с данными
+JsonDocument RectificationProcess::getGraphTempData(size_t point, size_t periodicity) {
+    JsonDocument doc;  // Создаем JSON документ (выбираем подходящий размер)
+    JsonArray data = doc["data"].to<JsonArray>();
+
+    // Начинаем с startIndex и отбираем данные с шагом periodicity
+    for (size_t i = point; i < TEMP_GRAPH_ARRAY_SIZE; i += periodicity) {
+        if (timePoints[i] == 0 && temp1Values[i] == 0 && temp2Values[i] == 0) {
+            return doc;
+        }
+
+        JsonDocument entry;
+        entry["time"] = RectificationProcess::timePoints[i];
+        entry["tp1"] = RectificationProcess::temp1Values[i];
+        entry["tp2"] = RectificationProcess::temp2Values[i];
+        data.add(entry);
+    }
+
+    return doc;
 }

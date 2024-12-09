@@ -19,24 +19,52 @@
 	<tbody>
 	{#if telemetryData}
 		<tr>
-			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Время открытия клапана, с</td>
-			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">{telemetryData.open ?? '-'}</td>
+			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Время открытия клапана</td>
+			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">
+				{
+					telemetryData.open
+							? `${telemetryData.open } сек`
+						: '-'
+				}
+			</td>
 		</tr>
 		<tr>
 			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Переодичность открытия</td>
-			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">{telemetryData.period ?? '-'}</td>
+			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">
+				{
+					telemetryData.period
+							? `${telemetryData.period } сек`
+							: '-'
+				}
+			</td>
 		</tr>
 		<tr>
-			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Отобрано (головы), мл</td>
-			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">{telemetryData.valveBandwidthHeads ?? '-'}</td>
+			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Отобрано (головы)</td>
+			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">
+				{
+					telemetryData.valveBandwidthHeads !== undefined && telemetryData.valveBandwidthHeads !== null
+							? `${telemetryData.valveBandwidthHeads} мл`
+							: '-'
+				}
+			</td>
 		</tr>
 		<tr>
 			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Отобрано (тело), мл</td>
-			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">{telemetryData.valveBandwidthHearts ?? '-'}</td>
+			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">
+				{
+					telemetryData.valveBandwidthHearts !== undefined && telemetryData.valveBandwidthHearts !== null
+							? `${telemetryData.valveBandwidthHearts} мл`
+							: '-'
+				}
 		</tr>
 		<tr>
 			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Отобрано (хвосты), мл</td>
-			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">{telemetryData.valveBandwidthTails ?? '-'}</td>
+			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">
+				{
+					telemetryData.valveBandwidthTails !== undefined && telemetryData.valveBandwidthTails !== null
+							? `${telemetryData.valveBandwidthTails} мл`
+							: '-'
+				}
 		</tr>
 	{/if}
 	</tbody>

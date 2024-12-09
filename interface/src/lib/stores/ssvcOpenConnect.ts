@@ -1,4 +1,3 @@
-// @ts-ignore
 
 import type { CommandState, SsvcOpenConnectMessage, SsvcSettings } from '$lib/types/models';
 import { type Writable, writable } from 'svelte/store';
