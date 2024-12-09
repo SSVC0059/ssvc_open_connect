@@ -19,6 +19,7 @@ import re
 import os
 Import("env")
 import hashlib
+from cryptography import x509
 
 
 OUTPUT_DIR = "build{}".format(os.path.sep)
