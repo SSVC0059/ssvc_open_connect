@@ -68,9 +68,9 @@
 		if (url === '') {
 			// if no asset was found, use the first one
 			openModal(InfoDialog, {
-				title: 'No matching firmware found',
+				title: 'Подходящая прошивка не найдена',
 				message:
-					'No matching firmware was found for the current device. Upload the firmware manually or build from sources.',
+					'Для текущего устройства не найдено подходящей прошивки. Загрузите прошивку вручную или соберите из исходников.',
 				dismiss: { label: 'OK', icon: Check },
 				onDismiss: () => closeModal()
 			});
@@ -105,10 +105,10 @@
 				<table class="table w-full table-auto">
 					<thead>
 						<tr class="font-bold">
-							<th align="left">Release</th>
-							<th align="center" class="hidden sm:block">Release Date</th>
-							<th align="center">Experimental</th>
-							<th align="center">Install</th>
+							<th align="left">Релиз</th>
+							<th align="center" class="hidden sm:block">Дата релиза</th>
+							<th align="center">Эксперементальная</th>
+							<th align="center">Установка</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -159,7 +159,7 @@
 	{:catch error}
 		<div class="alert alert-error shadow-lg">
 			<Error class="h-6 w-6 flex-shrink-0" />
-			<span>Please connect to a network with internet access to perform a firmware update.</span>
+			<span>Пожалуйста, подключитесь к сети с доступом в Интернет, чтобы выполнить обновление прошивки.</span>
 		</div>
 	{/await}
 </SettingsCard>

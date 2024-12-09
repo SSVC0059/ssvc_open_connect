@@ -36,7 +36,9 @@ void EventSocket::registerEvent(String event)
 
 void EventSocket::onWSOpen(PsychicWebSocketClient *client)
 {
-    ESP_LOGI("EventSocket", "ws[%s][%u] connect", client->remoteIP().toString().c_str(), client->socket());
+    #ifdef SSVC_DEBUG
+        ESP_LOGI("EventSocket", "ws[%s][%u] connect", client->remoteIP().toString().c_str(), client->socket());
+    #endif
 }
 
 void EventSocket::onWSClose(PsychicWebSocketClient *client)
@@ -47,7 +49,9 @@ void EventSocket::onWSClose(PsychicWebSocketClient *client)
         event_subscriptions.second.remove(client->socket());
     }
     xSemaphoreGive(clientSubscriptionsMutex);
-    ESP_LOGI("EventSocket", "ws[%s][%u] disconnect", client->remoteIP().toString().c_str(), client->socket());
+    #ifdef SSVC_DEBUG
+        ESP_LOGI("EventSocket", "ws[%s][%u] disconnect", client->remoteIP().toString().c_str(), client->socket());
+    #endif
 }
 
 esp_err_t EventSocket::onFrame(PsychicWebSocketRequest *request, httpd_ws_frame *frame)

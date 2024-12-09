@@ -25,7 +25,7 @@ const config: UserConfig = {
 				target: 'ws://ssvcopenconnect.local',
 				changeOrigin: true,
 				ws: true
-			}
+			},
 		}
 	}
 };

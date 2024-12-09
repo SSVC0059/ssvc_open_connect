@@ -1,30 +1,41 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
+	import { user } from '$lib/stores/user';
+	import { page } from '$app/stores';
 	import SettingsCard from '$lib/components/SettingsCard.svelte';
-	import type { SsvcOpenConnectMessage, SsvcSettings } from '$lib/types/models';
 	import Spinner from '$lib/components/Spinner.svelte';
-	import { ssvcSettingsStore } from '$lib/stores/ssvcOpenConnect';
-	import { getSystemSetting } from '$lib/utils/ssvcHelper'
-	import {onDestroy, onMount} from 'svelte';
-	let ssvcSettings: SsvcSettings | null = null;
-	let versionCheckResult: any
 	import Reload from '~icons/tabler/reload';
-	//
-	// $: ssvcSystemSettingStatus
-	let unsubscribeSsvcSettingsStore
-	unsubscribeSsvcSettingsStore = ssvcSettingsStore.subscribe((value) => {
-		ssvcSettings = value
-	});
 
+	import type { SsvcOpenConnectMessage, SsvcSettings } from '$lib/types/models';
 
-	// Дождитесь результата при загрузке компонента
-	onMount(async () => {
-		versionCheckResult = await getSystemSetting();
-	});
+	let message: SsvcOpenConnectMessage;
 
-	onDestroy(async () => {
-		unsubscribeSsvcSettingsStore()
-	})
+	async function getSvvcSetting(): Promise<SsvcSettings | null> {
+		try {
+			const r = await fetch('/rest/getSettings', {
+				method: 'GET',
+				headers: {
+					Authorization: $page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
+					'Content-Type': 'application/json',
+					'Accept': '*/*'
+				}
+			});
+			const text = await r.text();
+			try {
+				message = JSON.parse(text);
+				if (message.settings) {
+					return message.settings;
+				}else
+					return null;
+			} catch (parseError) {
+				console.error('JSON Parsing Error:', parseError);
+				return null;
+			}
+		} catch (error) {
+			console.error('Error:', error);
+			return null;
+		}
+	}
 
 	let isHeadsSettingsVisible = true;
 	let isAdditionalSettingsVisible = true;
@@ -32,35 +43,13 @@
 	let isParallelSettingsVisible3 = true;
 	let isValveBandwidthVisible = true;
 
-	// Функция для асинхронного вызова getSystemSetting
-	const getSsvcSystemSetting = async () => {
-		try {
-			await getSystemSetting();
-		} catch (error) {
-			console.error("Ошибка при выполнении команды getSystemSetting:", error);
-		}
-	};
 </script>
 
-{#await versionCheckResult}
-	<Spinner />
-{:then nothing}
-
-	<SettingsCard>
-		<span slot="title" class="text-2xl font-semibold  text-center" data-svelte-h="svelte-onyccr">Настройки</span>
-<!--		<h2 class="text-2xl font-semibold text-center"></h2>-->
-		<button
-				on:click={getSystemSetting}
-				class="bg-gradient-to-r from-blue-400 to-blue-600 text-white px-6 py-3 rounded-lg mt-4 shadow-md transform transition-transform duration-200 ease-in-out active:scale-95 hover:bg-blue-500 flex items-center justify-center"
-		>
-			<Reload class="h-8 w-8 mr-2" />
-			<span>Обновить</span>
-		</button>
-		<div class="p-6 rounded-lg space-y-6">
-			<!-- Heads Settings -->
-			{#if ssvcSettings}
-				<!-- Other Settings -->
-
+{#await getSvvcSetting() then ssvcSetting}
+	{#if ssvcSetting}
+		<SettingsCard>
+			<span slot="title" class="text-2xl font-semibold  text-center" data-svelte-h="svelte-onyccr">Настройки</span>
+			<div class="p-6 rounded-lg space-y-6">
 				<button
 					type="button"
 					class="flex items-center justify-between w-full text-1xl font-semibold text-center cursor-pointer"
@@ -72,134 +61,138 @@
 
 				{#if isAdditionalSettingsVisible}
 					<div transition:slide>
-						<table class="table-auto w-full border-collapse border border-gray-700 dark:border-gray-600">
-							<thead>
-							<tr class="bg-blue-500 text-white dark:bg-gray-800">
-								<th class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Параметр</th>
-								<th class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">Значение</th>
-							</tr>
-							</thead>
-							<tbody>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Гистерезис при отборе тела, °С</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.hyst}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Декремент при отборе тела, %</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.decrement}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Время отбора голов, с</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.head_timer}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Таймер фиксации температуры отбора тела, с</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.body_timer}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Температура завершения отбора хвостов, °С</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.tail_temp}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Звук</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.sound ? 'Включен' : 'Отключен'}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Барометр</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.pressure ? 'Включен' : 'Отключен'}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Реле инвертировано</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.relay_inverted ? 'Да' : 'Нет'}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Автовключение реле</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.relay_autostart ? 'Да' : 'Нет'}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Автоматический переход между этапами</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.auto_mode ? 'Да' : 'Нет'}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Продолжать прерванный процесс</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.autoresume ? 'Да' : 'Нет'}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Температура ТД2 завершения отбора тела, °С</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.hearts_finish_temp}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Отложенный пуск, с</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.start_delay}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Фильтр ТД</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.tp_filter}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Подсветка</td>
-								<p>
-									{#if ssvcSettings.backlight === 'active'}
-										Включено
-									{:else if ssvcSettings.backlight === 'always'}
-										Всегда включено
-									{:else if ssvcSettings.backlight === 'off'}
-										Выключено
-									{:else}
-										Статус не определен
-									{/if}
-								</p>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Сдвиг температуры отбора тела на 0.07°С</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.hearts_temp_shift ? 'Включен' : 'Отключен'}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Пауза "на себя"</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.hearts_pause ? 'Включен' : 'Отключен'}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Формула</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.formula ? 'Включен' : 'Отключен'}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Температура начала формулы, °С</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.formula_start_temp}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Давление в кубе, мм рт.ст</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.tank_mmhg}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Поправка ТД2, °С</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.tp2_shift}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Контроль ТД1 для выхода SIGNAL</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.signal_tp1_control ? 'Включен' : 'Отключен'}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Инвертировать SIGNAL</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.signal_inverted ? 'Включен' : 'Отключен'}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Целевая температура на ТД1 при контроле ТД1 для выхода SIGNAL, °С</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.tp1_control_temp}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Старт по ТД1 при контроле ТД1 для выхода SIGNAL.</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.tp1_control_start ? 'Включен' : 'Отключен'}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Лимит стабилизации, с</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.tp1_control_start === 0 ? 'Выключен' : ssvcSettings.tp1_control_start}</td>
-							</tr>
-							<tr>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Завершить этап при превышении лимита стабилизации</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.tp1_control_start ? 'Да' : 'Нет'}</td>
-							</tr>
-							</tbody>
-						</table>
+						<div transition:slide>
+							<table class="table-auto w-full border-collapse border border-gray-700 dark:border-gray-600">
+								<thead>
+								<tr class="bg-blue-500 text-white dark:bg-gray-800">
+									<th class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Параметр</th>
+									<th class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">Значение</th>
+								</tr>
+								</thead>
+								<tbody>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Гистерезис при отборе тела, °С</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.hyst}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Декремент при отборе тела, %</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.decrement}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Время отбора голов, с</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.head_timer}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Таймер фиксации температуры отбора тела, с</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.body_timer}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Температура завершения отбора хвостов, °С</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.tail_temp}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Звук</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.sound ? 'Включен' : 'Отключен'}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Барометр</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.pressure ? 'Включен' : 'Отключен'}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Реле инвертировано</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.relay_inverted ? 'Да' : 'Нет'}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Автовключение реле</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.relay_autostart ? 'Да' : 'Нет'}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Автоматический переход между этапами</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.auto_mode ? 'Да' : 'Нет'}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Продолжать прерванный процесс</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.autoresume ? 'Да' : 'Нет'}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Температура ТД2 завершения отбора тела, °С</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.hearts_finish_temp}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Отложенный пуск, с</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.start_delay}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Фильтр ТД</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.tp_filter}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Подсветка</td>
+									<div class="text-center">
+										<p>
+											{#if ssvcSetting.backlight === 'active'}
+												Включено
+											{:else if ssvcSetting.backlight === 'always'}
+												Всегда включено
+											{:else if ssvcSetting.backlight === 'off'}
+												Выключено
+											{:else}
+												Статус не определен
+											{/if}
+										</p>
+									</div>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Сдвиг температуры отбора тела на 0.07°С</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.hearts_temp_shift ? 'Включен' : 'Отключен'}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Пауза "на себя"</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.hearts_pause ? 'Включен' : 'Отключен'}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Формула</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.formula ? 'Включен' : 'Отключен'}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Температура начала формулы, °С</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.formula_start_temp}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Давление в кубе, мм рт.ст</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.tank_mmhg}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Поправка ТД2, °С</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.tp2_shift}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Контроль ТД1 для выхода SIGNAL</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.signal_tp1_control ? 'Включен' : 'Отключен'}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Инвертировать SIGNAL</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.signal_inverted ? 'Включен' : 'Отключен'}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Целевая температура на ТД1 при контроле ТД1 для выхода SIGNAL, °С</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.tp1_control_temp}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Старт по ТД1 при контроле ТД1 для выхода SIGNAL.</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.tp1_control_start ? 'Включен' : 'Отключен'}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Лимит стабилизации, с</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.tp1_control_start === 0 ? 'Выключен' : ssvcSetting.tp1_control_start}</td>
+								</tr>
+								<tr>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Завершить этап при превышении лимита стабилизации</td>
+									<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.tp1_control_start ? 'Да' : 'Нет'}</td>
+								</tr>
+								</tbody>
+							</table>
+						</div>
 					</div>
 				{/if}
 
@@ -224,15 +217,15 @@
 							<tbody>
 							<tr>
 								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Головы</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.valve_bandwidth[0]}</td>
+								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.valve_bandwidth[0]}</td>
 							</tr>
 							<tr>
 								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Тело</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.valve_bandwidth[1]}</td>
+								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.valve_bandwidth[1]}</td>
 							</tr>
 							<tr>
 								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Хвосты</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.valve_bandwidth[2]}</td>
+								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.valve_bandwidth[2]}</td>
 							</tr>
 							</tbody>
 						</table>
@@ -262,18 +255,18 @@
 							<tbody>
 							<tr>
 								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Головы</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.heads[0]}</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.heads[1]}</td>
+								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.heads[0]}</td>
+								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.heads[1]}</td>
 							</tr>
 							<tr>
 								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Тело</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.hearts[0]}</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.hearts[1]}</td>
+								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.hearts[0]}</td>
+								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.hearts[1]}</td>
 							</tr>
 							<tr>
 								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Хвосты</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.tails[0]}</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.tails[1]}</td>
+								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.tails[0]}</td>
+								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.tails[1]}</td>
 							</tr>
 							</tbody>
 						</table>
@@ -301,11 +294,11 @@
 							<tbody>
 							<tr>
 								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Время открытого клапана, с</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.parallel_v1[0]}</td>
+								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.parallel_v1[0]}</td>
 							</tr>
 							<tr>
 								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">Период, с</td>
-								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSettings.parallel_v1[1]}</td>
+								<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{ssvcSetting.parallel_v1[1]}</td>
 							</tr>
 							</tbody>
 						</table>
@@ -324,7 +317,7 @@
 					<div transition:slide>
 						<div class="space-y-6">
 							<h3 class="text-2xl font-semibold text-center">Параллельный отбор клапаном №3</h3>
-							{#if ssvcSettings.parallel_v3 && ssvcSettings.parallel_v3.length > 0}
+							{#if ssvcSetting.parallel_v3 && ssvcSetting.parallel_v3.length > 0}
 								<table class="table-auto w-full border-collapse border border-gray-700 dark:border-gray-600">
 									<thead>
 									<tr class="bg-blue-500 text-white dark:bg-gray-800">
@@ -334,7 +327,7 @@
 									</tr>
 									</thead>
 									<tbody>
-									{#each ssvcSettings.parallel_v3 as row}
+									{#each ssvcSetting.parallel_v3 as row}
 										<tr>
 											<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-left">{row[0]}</td>
 											<td class="border border-gray-700 dark:border-gray-600 px-4 py-2 text-center">{row[1]}</td>
@@ -349,7 +342,11 @@
 						</div>
 					</div>
 				{/if}
-			{/if}
-		</div>
-	</SettingsCard>
+			</div>
+		</SettingsCard>
+	{:else}
+		<p>Data not available</p>
+	{/if}
+{:catch error}
+	<p>Error: {error.message}</p>
 {/await}
