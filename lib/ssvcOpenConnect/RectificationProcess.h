@@ -8,6 +8,11 @@
 #include <SsvcConnector.h>
 
 
+#define TEMP_GRAPH_ARRAY_SIZE 8640
+#define PERIOD_GRAPH_SEC 10
+
+extern portMUX_TYPE ssvcMux;
+
 class RectificationProcess {
 public:
     // Получение единственного экземпляра класса
@@ -16,6 +21,8 @@ public:
 
     static String getRectificationTimeStart();
     static String getRectificationTimeEnd();
+    JsonDocument getGraphTempData(size_t startIndex, size_t periodicity);
+
     JsonDocument* getSsvcSettings();
 
     JsonDocument getRectificationStatus();
@@ -32,6 +39,15 @@ private:
     int valveBandwidthHeads;
     int valveBandwidthHearts;
     int valveBandwidthTails;
+
+//    Массивы хранения данных температуры
+    static void addPointToTempGraphTask(void* pvParameters);
+    float tp1Value;
+    float tp2Value;
+    int tempGraphCurrentIndex = 0;  // Индекс текущей позиции для вставки
+    time_t timePoints[TEMP_GRAPH_ARRAY_SIZE]{};
+    float temp1Values[TEMP_GRAPH_ARRAY_SIZE]{};
+    float temp2Values[TEMP_GRAPH_ARRAY_SIZE]{};
 
     // Метод установки времени старта
     // Метод для обновления состояния

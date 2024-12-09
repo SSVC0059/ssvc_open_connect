@@ -20,6 +20,13 @@
 #include <RectificationProcess.h>
 #include <HttpRequestHandler.h>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/portmacro.h"
+
+// Глобальный мультиплексор для критических секций
+portMUX_TYPE ssvcMux = portMUX_INITIALIZER_UNLOCKED;
+SemaphoreHandle_t mutex = xSemaphoreCreateMutex();
+
 #define SERIAL_BAUD_RATE 115200
 
 PsychicHttpServer server;
@@ -31,7 +38,6 @@ EventGroupHandle_t eventGroup = xEventGroupCreate();
 SsvcTelemetryService ssvcTelemetryService = SsvcTelemetryService(&server,
                                                                    esp32sveltekit.getSocket(),
                                                                    esp32sveltekit.getSecurityManager(),
-                                                                   esp32sveltekit.getMqttClient(),
                                                                    eventGroup);
 
 

@@ -37,6 +37,7 @@
 			$page.data.features.event_use_json
 		);
 
+		console.log(ws_token);
 	// 	SSVC
 
 		socket.on<SsvcOpenConnectMessage>("openConnect", (data) => {

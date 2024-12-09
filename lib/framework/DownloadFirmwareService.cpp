@@ -153,7 +153,7 @@ esp_err_t DownloadFirmwareService::downloadUpdate(PsychicRequest *request, JsonV
             &downloadURL,               // Pass reference to this class instance
             (configMAX_PRIORITIES - 1), // Pretty high task priority
             NULL,                       // Task handle
-            1                           // Have it on application core
+            tskIDLE_PRIORITY                           // Have it on application core
             ) != pdPASS)
     {
         ESP_LOGE("Download OTA", "Couldn't create download OTA task");

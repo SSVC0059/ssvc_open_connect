@@ -215,26 +215,34 @@
 							</thead>
 							<tbody>
 							<tr>
-								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Давление</td>
-								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">{ssvcTelemetry.common.mmhg}</td>
+								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Атмосферное давление</td>
+								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">{ssvcTelemetry.common.mmhg} мм рт. ст.</td>
 							</tr>
 							<tr>
 								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Температура колонны</td>
-								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">{ssvcTelemetry.common.tp1}</td>
+								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">
+									{
+											(ssvcTelemetry.tp1_sap ? ssvcTelemetry.tp1_sap : ssvcTelemetry.common.tp1).toFixed(2)
+									} °С
+								</td>
 							</tr>
 							<tr>
 								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Температура куба</td>
-								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">{ssvcTelemetry.common.tp2}</td>
+								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">
+									{
+											(ssvcTelemetry.tp2_sap ? ssvcTelemetry.tp2_sap : ssvcTelemetry.common.tp2).toFixed(2)
+									} °С
+								</td>
 							</tr>
 							<tr>
 								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Реле</td>
-								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">{ssvcTelemetry.common.relay ? 'Включено' : 'Отключено'}</td>
+								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">{ssvcTelemetry.common.relay ? 'Замкнуто' : 'Разомкнуто'}</td>
 							</tr>
 							<tr>
 								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Сигнал</td>
 								<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">
 									{
-											ssvcTelemetry.common.signal ? 'Включен' : 'Отключен'
+											ssvcTelemetry.common.signal ? 'Замкнут' : 'Разомкнут'
 									}
 								</td>
 							</tr>
