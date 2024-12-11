@@ -30,16 +30,4 @@ interface/.idea/codeStyles/codeStyleConfig.xml
 interface/.idea/codeStyles/Project.xml
 interface/.idea/inspectionProfiles/Project_Default.xml
 .idea
-./build
-build/esp32-s3-devkitc-1-16m/bootloader.bin
-build/esp32-s3-devkitc-1-16m/bootloader.md5
-build/esp32-s3-devkitc-1-16m/partitions.bin
-build/esp32-s3-devkitc-1-16m/partitions.md5
-build/esp32-s3-devkitc-1-16m/SSVC-Open-Connect_esp32-s3-devkitc-1-16m_0-1-8.bin
-build/esp32-s3-devkitc-1-16m/SSVC-Open-Connect_esp32-s3-devkitc-1-16m_0-1-8.md5
-build/esp32dev/bootloader.bin
-build/esp32dev/bootloader.md5
-build/esp32dev/partitions.bin
-build/esp32dev/partitions.md5
-build/esp32dev/SSVC-Open-Connect_esp32dev_0-1-8.bin
-build/esp32dev/SSVC-Open-Connect_esp32dev_0-1-8.md5
+build/*
