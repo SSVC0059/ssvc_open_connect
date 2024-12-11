@@ -94,6 +94,9 @@ void APSettingsService::startAP()
 #if CONFIG_IDF_TARGET_ESP32C3
     WiFi.setTxPower(WIFI_POWER_8_5dBm); // https://www.wemos.cc/en/latest/c3/c3_mini_1_0_0.html#about-wifi
 #endif
+#if CONFIG_IDF_TARGET_ESP32S3
+    WiFi.setTxPower(WIFI_POWER_18_5dBm); 
+#endif
     if (!_dnsServer)
     {
         IPAddress apIp = WiFi.softAPIP();

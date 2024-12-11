@@ -33,7 +33,7 @@ RectificationProcess::RectificationProcess(SsvcConnector* ssvcConnector,
     xTaskCreatePinnedToCore(
             RectificationProcess::update,            // Function that should be called
             "SSVC Open Telemetry",     // Name of the task (for debugging)
-            2048,                       // Stack size (bytes)
+            4096,                       // Stack size (bytes)
             this,                       // Pass reference to this class instance
             (tskIDLE_PRIORITY),     // task priority
             nullptr,                       // Task handle
@@ -43,7 +43,7 @@ RectificationProcess::RectificationProcess(SsvcConnector* ssvcConnector,
     xTaskCreatePinnedToCore(
             RectificationProcess::addPointToTempGraphTask,            // Function that should be called
             "Temp Graph handler",     // Name of the task (for debugging)
-            2048,                       // Stack size (bytes)
+            4096,                       // Stack size (bytes)
             this,                       // Pass reference to this class instance
             (tskIDLE_PRIORITY),     // task priority
             nullptr,                       // Task handle

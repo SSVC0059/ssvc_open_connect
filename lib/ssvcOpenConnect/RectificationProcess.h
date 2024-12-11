@@ -8,8 +8,8 @@
 #include <SsvcConnector.h>
 
 
-#define TEMP_GRAPH_ARRAY_SIZE 8640
-#define PERIOD_GRAPH_SEC 10
+#define TEMP_GRAPH_ARRAY_SIZE 720
+#define PERIOD_GRAPH_SEC 20
 
 extern portMUX_TYPE ssvcMux;
 
