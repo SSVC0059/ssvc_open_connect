@@ -198,6 +198,21 @@ export const sendPostRequest = async (commandName: string) => {
 	}
 };
 
+export function formatSecondsToHHMMSS(seconds: number): string {
+	const hours = Math.floor(seconds / 3600);
+	seconds %= 3600;
+	const minutes = Math.floor(seconds / 60);
+	const remainingSeconds = seconds % 60;
+
+	if (hours > 0) {
+		// Если есть часы, возвращаем полный формат ЧЧ:ММ:СС
+		return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+	} else {
+		// Если часов нет, возвращаем формат ММ:СС
+		return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+	}
+}
+
 export async function postStop() {
 	const commandName = "STOP"
 	await sendPostRequest(commandName);

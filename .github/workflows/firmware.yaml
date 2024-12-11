@@ -1,8 +1,5 @@
-# Basic continuous integration for firmware
-#    Copyright 2024 Lea Calot
-#
-# @author Lea Calot
-name: BuildFirmware
+name: Build Firmware
+
 on:
   push:
     branches: [ ]
@@ -12,23 +9,36 @@ on:
 
 permissions:
   contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env_name: [esp32dev, esp32-s3-devkitc-1-16m]  # Указываем цели для сборки
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
+
       - name: Install Python requirements
         run: |
           pip install -r requirements.txt
-      - name: Perform firmware build
+
+      - name: Build firmware for ${{ matrix.env_name }}
+        run: platformio run --environment ${{ matrix.env_name }}
+
+      - name: Collect artifacts for ${{ matrix.env_name }}
         run: |
-          pio run
-      - name: Upload firmware artifact
+          mkdir -p artifacts/${{ matrix.env_name }}
+          cp -r build/${{ matrix.env_name }}/* artifacts/${{ matrix.env_name }}/ || echo "No files to copy"
+
+      - name: Upload artifacts for ${{ matrix.env_name }}
         uses: actions/upload-artifact@v4
         with:
-          name: FirmwareBinary
-          path: ./.pio/build/*
+          name: firmware-artifacts-${{ matrix.env_name }}
+          path: artifacts/${{ matrix.env_name }}/
           if-no-files-found: error

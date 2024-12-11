@@ -60,7 +60,6 @@ public:
     SsvcTelemetryService(PsychicHttpServer *server,
                          EventSocket *socket,
                          SecurityManager *securityManager,
-                         PsychicMqttClient *mqttClient,
                          EventGroupHandle_t _eventGroup);
 
     void begin();
@@ -75,7 +74,6 @@ private:
 
     HttpEndpoint<SsvcTelemetry> _httpEndpoint;
     EventEndpoint<SsvcTelemetry> _eventEndpoint;
-    MqttEndpoint<SsvcTelemetry> _mqttEndpoint;
     WebSocketServer<SsvcTelemetry> _webSocketServer;
     PsychicMqttClient *_mqttClient;
     RectificationProcess* rectificationProcess;

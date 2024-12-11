@@ -7,7 +7,6 @@
 SsvcTelemetryService::SsvcTelemetryService(PsychicHttpServer *server,
                                            EventSocket *socket,
                                            SecurityManager *securityManager,
-                                           PsychicMqttClient *mqttClient,
                                            EventGroupHandle_t eventGroup) : _httpEndpoint(SsvcTelemetry::read,
                                                                                           SsvcTelemetry::update,
                                                                                           this,
@@ -20,10 +19,6 @@ SsvcTelemetryService::SsvcTelemetryService(PsychicHttpServer *server,
                                                                                                this,
                                                                                                socket,
                                                                                                SSVC_OPEN_CONNECT_ENDPOINT_PATH),
-                                                                                _mqttEndpoint(SsvcTelemetry::homeAssistRead,
-                                                                                              SsvcTelemetry::homeAssistUpdate,
-                                                                                              this,
-                                                                                              mqttClient),
                                                                                 _webSocketServer(SsvcTelemetry::read,
                                                                                                  SsvcTelemetry::update,
                                                                                                  this,
@@ -31,7 +26,6 @@ SsvcTelemetryService::SsvcTelemetryService(PsychicHttpServer *server,
                                                                                                  SSVC_OPEN_CONNECT_SOCKET_PATH,
                                                                                                  securityManager,
                                                                                                  AuthenticationPredicates::IS_AUTHENTICATED),
-                                                                                _mqttClient(mqttClient),
                                                                                 _socket(socket),
                                                                                 _eventGroup(eventGroup){
 
@@ -58,7 +52,7 @@ void SsvcTelemetryService::begin()
             "SSVC Open Telemetry",     // Name of the task (for debugging)
             4096,                       // Stack size (bytes)
             this,                       // Pass reference to this class instance
-            (configMAX_PRIORITIES - 10),     // task priority
+            (tskIDLE_PRIORITY),     // task priority
             nullptr,                       // Task handle
             1 // Pin to application core
     );
