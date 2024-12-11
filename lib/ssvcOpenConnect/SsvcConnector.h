@@ -27,6 +27,7 @@
 
 #define SSVC_OPEN_CONNECT_BUF_SIZE 2048
 
+extern SemaphoreHandle_t mutex;
 
 class SsvcConnector {
 public:
@@ -92,8 +93,9 @@ private:
     //    Метод запуска задачи с отпавкой команды и ожидания ее получения
     void initSsvcController();
 
-    static void _startTask(void *pvParameters);
-    static void _telemetry(void* pvParameters);
+    [[noreturn]] static void _startTask(void *pvParameters);
+
+    [[noreturn]] static void _telemetry(void* pvParameters);
     static bool sendCommand(const char *command);
 
     // Поля класса
@@ -124,7 +126,8 @@ private:
     static bool sendPauseCommand();
     static bool sendResumeCommand();
     static bool sendNextCommand();
-    static bool sendAtCommand();
+
+    __attribute__((unused)) static bool sendAtCommand();
 
     bool createTask(
             const char* taskName,

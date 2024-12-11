@@ -4,8 +4,6 @@
 
 #include "SsvcConnector.h"
 
-#include <utility>
-
 // Инициализация статической переменной
 SsvcConnector* SsvcConnector::_ssvcConnector = nullptr;
 
@@ -70,7 +68,7 @@ void SsvcConnector::initSsvcController() {
             "TelemetryTask",     // Name of the task (for debugging)
             4096,                       // Stack size (bytes)
             this,                       // Pass reference to this class instance
-            (configMAX_PRIORITIES - 10),     // task priority
+            (tskIDLE_PRIORITY),     // task priority
             nullptr,                       // Task handle
             1 // Pin to application core
     );
@@ -86,7 +84,7 @@ void SsvcConnector::initSsvcController() {
 
 }
 
-void SsvcConnector::_startTask(void *pvParameters) {
+[[noreturn]] void SsvcConnector::_startTask(void *pvParameters) {
     Serial.println("SsvcConnector::_startTask");
     auto* taskParams = static_cast<TaskParameters*>(pvParameters);
     auto* self = taskParams->connector;
@@ -163,7 +161,7 @@ void SsvcConnector::_startTask(void *pvParameters) {
     }
 }
 
-void SsvcConnector::_telemetry(void* pvParameters) {
+[[noreturn]] void SsvcConnector::_telemetry(void* pvParameters) {
     auto* self = static_cast<SsvcConnector*>(pvParameters);
     char data[1024]; // Буфер для данных
     const int errorThreshold = 10;  // Количество итераций по 500 мс, чтобы достичь 5 секунд
@@ -234,7 +232,7 @@ bool SsvcConnector::taskGetSettingsCommand(){
             "CommandTask",
             4096,
             get_settingsParams,
-            1,
+            tskIDLE_PRIORITY,
             nullptr,
             tskNO_AFFINITY
     );
@@ -266,7 +264,7 @@ bool SsvcConnector::taskVersionCommand() {
             "CommandVersion",
             2048,
             getVersionParams,
-            1,
+            tskIDLE_PRIORITY,
             nullptr,
             tskNO_AFFINITY
     );
@@ -280,7 +278,7 @@ bool SsvcConnector::taskStopCommand() {
             "STOP",
             "STOP",
             [](SsvcConnector* self) {
-                self->sendStopCommand();
+                SsvcConnector::sendStopCommand();
             },
             [](SsvcConnector* self, JsonDocument& message) {
                 if (message["type"] == "response" && message["request"] == "STOP") {
@@ -296,7 +294,7 @@ bool SsvcConnector::taskResumeCommand() {
             "RESUME",
             "RESUME",
             [](SsvcConnector* self) {
-                self->sendResumeCommand();
+                SsvcConnector::sendResumeCommand();
             },
             [](SsvcConnector* self, JsonDocument& message) {
                 if (message["type"] == "response" && message["request"] == "RESUME") {
@@ -312,7 +310,7 @@ bool SsvcConnector::taskPauseCommand() {
             "PAUSE",
             "PAUSE",
             [](SsvcConnector* self) {
-                self->sendPauseCommand();
+                SsvcConnector::sendPauseCommand();
             },
             [](SsvcConnector* self, JsonDocument& message) {
                 if (message["type"] == "response" && message["request"] == "PAUSE") {
@@ -328,7 +326,7 @@ bool SsvcConnector::taskNestCommand() {
             "NEXT",
             "NEXT",
             [](SsvcConnector* self) {
-                self->sendNextCommand();
+                SsvcConnector::sendNextCommand();
             },
             [](SsvcConnector* self, JsonDocument& message) {
                 if (message["type"] == "response" && message["request"] == "NEXT") {
@@ -372,7 +370,7 @@ bool SsvcConnector::sendVersionCommand() {
     return result;
 }
 
-bool SsvcConnector::sendAtCommand() {
+__attribute__((unused)) bool SsvcConnector::sendAtCommand() {
     return SsvcConnector::sendCommand("AT\n\r");
 }
 
@@ -380,13 +378,19 @@ bool SsvcConnector::sendAtCommand() {
 
 void SsvcConnector::updateMessage(const JsonDocument& ssvcMetrics) {
     _message.clear();
-    _message.set(ssvcMetrics);
+    if (xSemaphoreTake(mutex, portMAX_DELAY)) {
+        _message.set(ssvcMetrics);
+        xSemaphoreGive(mutex);
+    }
 }
 
 void SsvcConnector::updateSettings(const JsonDocument& ssvcSettings) {
     _ssvcSettings.clear();
     Serial.println(ssvcSettings["settings"].as<String>());
-    _ssvcSettings.set(ssvcSettings["settings"]);
+    if (xSemaphoreTake(mutex, portMAX_DELAY)) {
+        _ssvcSettings.set(ssvcSettings["settings"]);
+        xSemaphoreGive(mutex);
+    }
 }
 
 void SsvcConnector::updateVersion(const JsonDocument& ssvcVersion){
