@@ -136,7 +136,7 @@ private:
             std::function<void(SsvcConnector*)> commandFunction,
             std::function<void(SsvcConnector*, JsonDocument&)> responseHandler,
             size_t stackSize = 2048,
-            UBaseType_t priority = 1,
+            UBaseType_t priority = tskIDLE_PRIORITY,
             BaseType_t core = tskNO_AFFINITY)
     {
         auto params = new TaskParameters{
