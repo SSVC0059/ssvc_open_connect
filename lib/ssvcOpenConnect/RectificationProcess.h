@@ -16,20 +16,20 @@ extern portMUX_TYPE ssvcMux;
 class RectificationProcess {
 public:
     // Получение единственного экземпляра класса
-    static RectificationProcess* createRectification(SsvcConnector* ssvcConnector,
+    static RectificationProcess& createRectification(SsvcConnector& ssvcConnector,
                                                      EventGroupHandle_t eventGroup);
 
     static String getRectificationTimeStart();
     static String getRectificationTimeEnd();
     JsonDocument getGraphTempData(size_t startIndex, size_t periodicity);
 
-    JsonDocument* getSsvcSettings();
+    JsonDocument& getSsvcSettings();
 
     JsonDocument getRectificationStatus();
 
 private:
     // Приватный конструктор
-    explicit RectificationProcess(SsvcConnector* ssvcConnector,
+    explicit RectificationProcess(SsvcConnector& ssvcConnector,
                                   EventGroupHandle_t eventGroup);
 
     // Статический экземпляр класса
@@ -81,7 +81,7 @@ private:
 
     // Поля класса
     JsonDocument ssvsTelemetry;
-    JsonDocument* ssvcSettings;
+    JsonDocument& ssvcSettings;
     // Время запуска
 
     static char startTime[25];
@@ -93,7 +93,7 @@ private:
     void setTime(char* timeBuffer);
 
     // Группа событий FreeRTOS
-    SsvcConnector* _ssvcConnector;
+    SsvcConnector& _ssvcConnector;
     EventGroupHandle_t _eventGroup;
 
 };

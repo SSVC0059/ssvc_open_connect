@@ -25,16 +25,16 @@ class HttpRequestHandler {
 public:
     HttpRequestHandler(PsychicHttpServer *server,
                        SecurityManager *securityManager,
-                       RectificationProcess* rProcess,
-                       SsvcConnector* ssvcConnector);
+                       RectificationProcess& rProcess,
+                       SsvcConnector& ssvcConnector);
 
     void begin();
 
 private:
     PsychicHttpServer* _server;
     SecurityManager* _securityManager;
-    RectificationProcess* _rProcess;
-    SsvcConnector* _ssvcConnector;
+    RectificationProcess& _rProcess;
+    SsvcConnector& _ssvcConnector;
 
     esp_err_t reqStatus(PsychicRequest *request);
     esp_err_t postCommandStatusStatus(PsychicRequest *request);

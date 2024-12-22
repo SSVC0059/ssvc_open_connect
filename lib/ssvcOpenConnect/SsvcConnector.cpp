@@ -23,11 +23,11 @@ SsvcConnector::~SsvcConnector() {
     }
 }
 
-SsvcConnector* SsvcConnector::getConnector(EventGroupHandle_t eventGroup) {
+SsvcConnector& SsvcConnector::getConnector(EventGroupHandle_t eventGroup) {
     if (!_ssvcConnector) {
         _ssvcConnector = new SsvcConnector(eventGroup);
     }
-    return _ssvcConnector;  // Возвращаем указатель на экземпляр
+    return *_ssvcConnector;  // Возвращаем указатель на экземпляр
 }
 
 void SsvcConnector::begin() {
@@ -68,7 +68,7 @@ void SsvcConnector::initSsvcController() {
             "TelemetryTask",     // Name of the task (for debugging)
             4096,                       // Stack size (bytes)
             this,                       // Pass reference to this class instance
-            (tskIDLE_PRIORITY),     // task priority
+            (tskIDLE_PRIORITY + 1),     // task priority
             nullptr,                       // Task handle
             1 // Pin to application core
     );

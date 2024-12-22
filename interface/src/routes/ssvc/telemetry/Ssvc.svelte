@@ -160,7 +160,7 @@
 				<SsvcMetrics />
 			{/if}
 			{#if $activeTab === 'rectification'}
-				{#if ssvcTelemetry.rectificationStart}
+				<!--{#if ssvcTelemetry.rectificationStart}-->
 					<div class="space-y-2 ">
 						<h3 class="text-xl font-medium text-center">
 							Данные ректификации
@@ -190,7 +190,7 @@
 						/>
 					</div>
 				{/if}
-			{/if}
+			<!--{/if}-->
 
 			{#if $activeTab === 'commonData'}
 

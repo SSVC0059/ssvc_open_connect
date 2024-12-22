@@ -52,7 +52,7 @@ void SsvcTelemetryService::begin()
             "SSVC Open Telemetry",     // Name of the task (for debugging)
             4096,                       // Stack size (bytes)
             this,                       // Pass reference to this class instance
-            (tskIDLE_PRIORITY),     // task priority
+            (tskIDLE_PRIORITY + 1),     // task priority
             nullptr,                       // Task handle
             1 // Pin to application core
     );
@@ -64,7 +64,7 @@ void SsvcTelemetryService::begin()
 void SsvcTelemetryService::_telemetry(void* pvParameters) {
     auto* self = static_cast<SsvcTelemetryService*>(pvParameters);
     while (true) {
-        JsonDocument message = rProcess->getRectificationStatus();
+        JsonDocument message = rProcess.getRectificationStatus();
         // Сериализация JSON документа и вывод в Serial
 //        ESP_LOGV("SsvcTelemetryService::_telemetry: ", output);
         serializeJson(message, Serial);

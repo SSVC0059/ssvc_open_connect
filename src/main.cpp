@@ -13,15 +13,10 @@
  **/
 
 #include <ESP32SvelteKit.h>
-// #include <LightMqttSettingsService.h>
-// #include <LightStateService.h>
 #include <PsychicHttpServer.h>
 #include <SsvcTelemetryService.h>
 #include <RectificationProcess.h>
 #include <HttpRequestHandler.h>
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/portmacro.h"
 
 // Глобальный мультиплексор для критических секций
 portMUX_TYPE ssvcMux = portMUX_INITIALIZER_UNLOCKED;
@@ -42,11 +37,11 @@ SsvcTelemetryService ssvcTelemetryService = SsvcTelemetryService(&server,
 
 
 // Создаем экземпляр SsvcConnector, передаем созданный eventGroup в конструктор
-SsvcConnector* ssvcConnector = SsvcConnector::getConnector(eventGroup);
+SsvcConnector& ssvcConnector = SsvcConnector::getConnector(eventGroup);
 
 // Статический экземпляр класса
 
-RectificationProcess* rProcess = RectificationProcess::createRectification(ssvcConnector, eventGroup);
+RectificationProcess& rProcess = RectificationProcess::createRectification(ssvcConnector, eventGroup);
 HttpRequestHandler httpRequestHandler = HttpRequestHandler(&server,
                                                            esp32sveltekit.getSecurityManager(),
                                                            rProcess,
@@ -62,8 +57,9 @@ void setup()
     #endif
         // start ESP32-SvelteKit
     esp32sveltekit.begin();
-    ssvcConnector->begin();
+    ssvcConnector.begin();
     ssvcTelemetryService.begin();
+    
     Serial.println("httpRequestHandler.begin");
     httpRequestHandler.begin();
 }
