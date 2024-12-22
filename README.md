@@ -49,3 +49,7 @@
 ## Примечания
 
 - TODO
+
+## команда выгрузка дампа 
+
+espcoredump.py --port /dev/ttyACM0  info_corefile .pio/build/esp32-s3-devkitc-1-16m/firmware.elf > dump.txt

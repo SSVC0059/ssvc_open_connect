@@ -33,7 +33,7 @@ class SsvcConnector {
 public:
 
     // Получение единственного экземпляра класса (паттерн Singleton)
-    static SsvcConnector* getConnector(EventGroupHandle_t eventGroup);
+    static SsvcConnector& getConnector(EventGroupHandle_t eventGroup);
 
     // Метод для получения данных из message
     template <typename T>
@@ -45,8 +45,8 @@ public:
     }
 
     JsonDocument& getMessage() {return _message;}
-    String& getSsvcVersion() {return _ssvcVersion; }
-    JsonDocument* getSsvcSettings() {return &_ssvcSettings; }
+    String getSsvcVersion() {return _ssvcVersion; }
+    JsonDocument& getSsvcSettings() {return _ssvcSettings; }
     bool uartCommunicationError;
     void checkVersionSupported();
     bool isSupportSSVCVersion;

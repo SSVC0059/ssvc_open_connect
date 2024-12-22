@@ -8,26 +8,28 @@ char RectificationProcess::endTime[25]            = "";
 RectificationProcess* RectificationProcess::_rectificationProcess = nullptr;
 
 // Метод получения единственного экземпляра класса
-RectificationProcess* RectificationProcess::createRectification(SsvcConnector* ssvcConnector,
+RectificationProcess& RectificationProcess::createRectification(SsvcConnector& ssvcConnector,
                                                                 EventGroupHandle_t eventGroup) {
     if (_rectificationProcess == nullptr) {
         _rectificationProcess = new RectificationProcess(ssvcConnector, eventGroup);
     }
 
-    return _rectificationProcess;
+    return *_rectificationProcess;
 }
 
 // Сбор телеметрии
-RectificationProcess::RectificationProcess(SsvcConnector* ssvcConnector,
+RectificationProcess::RectificationProcess(SsvcConnector& ssvcConnector,
                                            EventGroupHandle_t eventGroup)
         : _ssvcConnector(ssvcConnector),
         _eventGroup(eventGroup),
-        ssvcSettings(ssvcConnector->getSsvcSettings()){
+        ssvcSettings(ssvcConnector.getSsvcSettings()){
 
 //  Обнуляем значения
     valveBandwidthHeads = 0;
     valveBandwidthHearts = 0;
     valveBandwidthTails = 0;
+    tp1Value = 0;
+    tp2Value = 0;
     isRectificationStarted = false;
 
     xTaskCreatePinnedToCore(
@@ -70,24 +72,24 @@ void RectificationProcess::update(void* pvParameters) {
         // Ожидание события
         EventBits_t bits = xEventGroupWaitBits(
                 self->_eventGroup,
-                BIT0,        // Ждём BIT0
+                BIT0,        // Ждём BIT0 (например, новое сообщение)
                 pdTRUE,      // Сбрасываем флаг после обработки
                 pdFALSE,     // Любое событие
                 portMAX_DELAY
         );
 
         if (bits & BIT0) {
-            JsonDocument message = self->_ssvcConnector->getMessage();
+            JsonDocument message = self->_ssvcConnector.getMessage();
 
-            if (message["common"]) {
+                        if (message["common"]) {
                 if (message["tp1_sap"]) {
                     self->tp1Value = message["tp1_sap"];
-                }else {
+                } else {
                     self->tp1Value = message["common"]["tp1"];
                 }
                 if (message["tp2_sap"]) {
                     self->tp2Value = message["tp2_sap"];
-                }else {
+                } else {
                     self->tp2Value = message["common"]["tp2"];
                 }
             }
@@ -120,7 +122,7 @@ void RectificationProcess::update(void* pvParameters) {
                 }
             }
 
-//            Первый тип сообщений при начале ректификации - delayed_start.
+            // Обработка типа сообщений
             if (message["type"] == "waiting") {
                 self->waitingTypeHandler(message);
             } else if (message["type"] == "tp1_waiting" ) {
@@ -160,7 +162,7 @@ void RectificationProcess::delayedStartHandler(JsonDocument& message) {
 }
 
 void RectificationProcess::headsTypeHandler(JsonDocument& message) {
-    JsonObject settings = (*ssvcSettings).as<JsonObject>();
+    JsonObject settings = ssvcSettings.as<JsonObject>();
     int valveBandwidth = settings["valve_bandwidth"][0];
     double openValveTime = message["v1"];
 
@@ -175,7 +177,7 @@ void RectificationProcess::headsTypeHandler(JsonDocument& message) {
 }
 
 void RectificationProcess::heartsTypeHandler(JsonDocument& message) {
-    JsonObject settings = (*ssvcSettings).as<JsonObject>();
+    JsonObject settings = ssvcSettings.as<JsonObject>();
     int valveBandwidth = settings["valve_bandwidth"][1];
     double openValveTime = message["v2"];
 
@@ -190,7 +192,7 @@ void RectificationProcess::heartsTypeHandler(JsonDocument& message) {
 }
 
 void RectificationProcess::tailsTypeHandler(JsonDocument& message) {
-    JsonObject settings = (*ssvcSettings).as<JsonObject>();
+    JsonObject settings = ssvcSettings.as<JsonObject>();
     int valveBandwidth = settings["valve_bandwidth"][2];
     double openValveTime = message["v3"];
 
@@ -292,19 +294,19 @@ void RectificationProcess::setTime(char* timeBuffer) {
     if (timeInfo) {
         strftime(timeBuffer, 25, "%Y-%m-%d %H:%M:%S", timeInfo);  // Размер буфера всегда 25
     } else {
-//        timeBuffer[24] = '\0'; // Гарантируем завершение строки
+       timeBuffer[24] = '\0'; // Гарантируем завершение строки
     }
 }
 
 int RectificationProcess::getSelectedVolume(int valveBandwidth, double openValveTime) {
     int volumeMl = (valveBandwidth / 3600) * openValveTime;
-//#ifdef SSVC_DEBUG
+#ifdef SSVC_DEBUG
     Serial.print("Пропускная способность клапан: ");
     Serial.println(valveBandwidth);
     Serial.print("Отобранный объем: ");
     Serial.print(volumeMl);
     Serial.print(" мл");
-//#endif
+#endif
     return volumeMl;
 }
 
@@ -333,22 +335,22 @@ JsonDocument RectificationProcess::getRectificationStatus() {
     }
 
     _rectificationStatus["info"] = "";
-    bool isSupportSSVCVersion = _ssvcConnector->isSupportSSVCVersion;
+    bool isSupportSSVCVersion = _ssvcConnector.isSupportSSVCVersion;
     ESP_LOGV("isSupportSSVCVersion::isSupportSSVCVersion: ", isSupportSSVCVersion);
     if (!isSupportSSVCVersion) {
         char buffer[256];
         snprintf(buffer, sizeof(buffer), "Версия SSVC %s не поддерживается. Используйте версию - %s и выше",
                  SSVC_MIN_SUPPORT_VERSION,
-                 _ssvcConnector->getSsvcVersion().c_str());
+                 _ssvcConnector.getSsvcVersion().c_str());
         _rectificationStatus["info"] = buffer;
     }
-    _rectificationStatus["ssvcVersionValid"] = _ssvcConnector->isSupportSSVCVersion;
+    _rectificationStatus["ssvcVersionValid"] = _ssvcConnector.isSupportSSVCVersion;
 
     return _rectificationStatus;
 }
 
-JsonDocument* RectificationProcess::getSsvcSettings() {
-    return _ssvcConnector->getSsvcSettings();
+JsonDocument& RectificationProcess::getSsvcSettings() {
+    return _ssvcConnector.getSsvcSettings();
 }
 
 void RectificationProcess::addPointToTempGraphTask(void *pvParameters) {

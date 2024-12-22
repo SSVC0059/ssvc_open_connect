@@ -27,7 +27,7 @@
 #define SSVC_OPEN_CONNECT_BUF_SIZE 2048
 
 
-extern RectificationProcess* rProcess;
+extern RectificationProcess& rProcess;
 
 class SsvcTelemetry {
 

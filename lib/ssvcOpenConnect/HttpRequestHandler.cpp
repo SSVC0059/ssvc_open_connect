@@ -7,8 +7,8 @@
 
 HttpRequestHandler::HttpRequestHandler(PsychicHttpServer *server,
                                        SecurityManager* securityManager,
-                                       RectificationProcess* rProcess,
-                                       SsvcConnector* ssvcConnector) : _server(server),
+                                       RectificationProcess& rProcess,
+                                       SsvcConnector& ssvcConnector) : _server(server),
                                                                          _securityManager(securityManager),
                                                                          _rProcess(rProcess),
                                                                          _ssvcConnector(ssvcConnector)
@@ -43,7 +43,7 @@ esp_err_t HttpRequestHandler::reqStatus(PsychicRequest *request)
 {
     PsychicJsonResponse response = PsychicJsonResponse(request, false);
     JsonObject root = response.getRoot();
-    root["settings"] = _rProcess->getSsvcSettings()->as<JsonObject>();
+    root["settings"] = _rProcess.getSsvcSettings().as<JsonObject>();
     root["status"] =  "ok";
 
     return response.send();
@@ -63,17 +63,17 @@ esp_err_t HttpRequestHandler::postCommandStatusStatus(PsychicRequest *request)
     Serial.println(commandName);
 //        TODO переделать работу с командами
     if ( commandName == "next" )  {
-        _ssvcConnector->taskNestCommand();
+        _ssvcConnector.taskNestCommand();
     } else if ( commandName == "pause" ) {
-        _ssvcConnector->taskPauseCommand();
+        _ssvcConnector.taskPauseCommand();
     } else if ( commandName == "stop" ) {
-        _ssvcConnector->taskStopCommand();
+        _ssvcConnector.taskStopCommand();
     }else if ( commandName == "resume" ) {
-        _ssvcConnector->taskResumeCommand();
+        _ssvcConnector.taskResumeCommand();
     }else if (commandName == "version") {
-        _ssvcConnector->taskVersionCommand();
+        _ssvcConnector.taskVersionCommand();
     } else if (commandName == "settings") {
-        _ssvcConnector->taskGetSettingsCommand();
+        _ssvcConnector.taskGetSettingsCommand();
     }else {
         request->reply(501);
     }
@@ -107,7 +107,7 @@ esp_err_t HttpRequestHandler::tMetrixResponce(PsychicRequest *request)
     Serial.print(periodicity);
 
     // Получаем данные в виде JsonDocument
-    JsonDocument doc = _rProcess->getGraphTempData(point, periodicity);
+    JsonDocument doc = _rProcess.getGraphTempData(point, periodicity);
 
     // Преобразуем JsonDocument в JsonObject и добавляем его в корневой объект
     root["graphData"] = doc;  // Добавляем данные в корневой объект
