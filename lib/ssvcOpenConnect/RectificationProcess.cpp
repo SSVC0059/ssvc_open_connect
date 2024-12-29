@@ -20,9 +20,9 @@ RectificationProcess& RectificationProcess::createRectification(SsvcConnector& s
 // Сбор телеметрии
 RectificationProcess::RectificationProcess(SsvcConnector& ssvcConnector,
                                            EventGroupHandle_t eventGroup)
-        : _ssvcConnector(ssvcConnector),
-        _eventGroup(eventGroup),
-        ssvcSettings(ssvcConnector.getSsvcSettings()){
+        : ssvcSettings(ssvcConnector.getSsvcSettings()),
+        _ssvcConnector(ssvcConnector),
+        _eventGroup(eventGroup){
 
 //  Обнуляем значения
     valveBandwidthHeads = 0;
@@ -81,7 +81,7 @@ void RectificationProcess::update(void* pvParameters) {
         if (bits & BIT0) {
             JsonDocument message = self->_ssvcConnector.getMessage();
 
-                        if (message["common"]) {
+            if (message["common"]) {
                 if (message["tp1_sap"]) {
                     self->tp1Value = message["tp1_sap"];
                 } else {
@@ -140,6 +140,8 @@ void RectificationProcess::update(void* pvParameters) {
             if (xSemaphoreTake(mutex, portMAX_DELAY)) {
                 self -> ssvsTelemetry = message;
                 xSemaphoreGive(mutex);
+            }else {
+                ESP_LOGE("RectificationProcess", "Failed to acquire mutex");
             }
         }
     }
@@ -312,41 +314,47 @@ int RectificationProcess::getSelectedVolume(int valveBandwidth, double openValve
 
 // Основной метод, который должен возвращать данные по работе подписчикам
 JsonDocument RectificationProcess::getRectificationStatus() {
-    JsonDocument _rectificationStatus = ssvsTelemetry;
-    if (_rectificationStatus == nullptr) {
-        _rectificationStatus["uartCommunicationError"] = true;
-        _rectificationStatus["info"] = "Ошибка связи. Перезагрузите SSVC";
-    }
+    if (xSemaphoreTake(mutex, portMAX_DELAY)) {
+        JsonDocument _rectificationStatus = ssvsTelemetry;
 
-    if (strlen(startTime) != 0) {
-        _rectificationStatus["rectificationStart"] = startTime;
-    }
-    if (strlen(endTime) != 0) {
-        _rectificationStatus["rectificationEnd"] = endTime;
-    }
-    if (valveBandwidthHeads != 0) {
-        _rectificationStatus["valveBandwidthHeads"] = valveBandwidthHeads;
-    }
-    if (valveBandwidthHearts != 0) {
-        _rectificationStatus["valveBandwidthHearts"] = valveBandwidthHearts;
-    }
-    if (valveBandwidthTails != 0) {
-        _rectificationStatus["valveBandwidthTails"] = valveBandwidthTails;
-    }
+        if (_rectificationStatus == nullptr) {
+            _rectificationStatus["uartCommunicationError"] = true;
+            _rectificationStatus["info"] = "Ошибка связи. Перезагрузите SSVC";
+        }
 
-    _rectificationStatus["info"] = "";
-    bool isSupportSSVCVersion = _ssvcConnector.isSupportSSVCVersion;
-    ESP_LOGV("isSupportSSVCVersion::isSupportSSVCVersion: ", isSupportSSVCVersion);
-    if (!isSupportSSVCVersion) {
-        char buffer[256];
-        snprintf(buffer, sizeof(buffer), "Версия SSVC %s не поддерживается. Используйте версию - %s и выше",
-                 SSVC_MIN_SUPPORT_VERSION,
-                 _ssvcConnector.getSsvcVersion().c_str());
-        _rectificationStatus["info"] = buffer;
-    }
-    _rectificationStatus["ssvcVersionValid"] = _ssvcConnector.isSupportSSVCVersion;
+        if (strlen(startTime) != 0) {
+            _rectificationStatus["rectificationStart"] = startTime;
+        }
+        if (strlen(endTime) != 0) {
+            _rectificationStatus["rectificationEnd"] = endTime;
+        }
+        if (valveBandwidthHeads != 0) {
+            _rectificationStatus["valveBandwidthHeads"] = valveBandwidthHeads;
+        }
+        if (valveBandwidthHearts != 0) {
+            _rectificationStatus["valveBandwidthHearts"] = valveBandwidthHearts;
+        }
+        if (valveBandwidthTails != 0) {
+            _rectificationStatus["valveBandwidthTails"] = valveBandwidthTails;
+        }
 
-    return _rectificationStatus;
+        _rectificationStatus["info"] = "";
+        bool isSupportSSVCVersion = _ssvcConnector.isSupportSSVCVersion;
+        if (!isSupportSSVCVersion) {
+            char buffer[256];
+            snprintf(buffer, sizeof(buffer), "Версия SSVC %s не поддерживается. Используйте версию - %s и выше",
+                     SSVC_MIN_SUPPORT_VERSION,
+                     _ssvcConnector.getSsvcVersion().c_str());
+            _rectificationStatus["info"] = buffer;
+        }
+        _rectificationStatus["ssvcVersionValid"] = _ssvcConnector.isSupportSSVCVersion;
+        xSemaphoreGive(mutex);
+        return _rectificationStatus;
+
+    }
+    JsonDocument errorDoc;
+    errorDoc["error"] = "Unable to access telemetry";
+    return errorDoc;
 }
 
 JsonDocument& RectificationProcess::getSsvcSettings() {

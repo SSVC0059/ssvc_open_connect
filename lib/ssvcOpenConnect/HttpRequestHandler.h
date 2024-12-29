@@ -23,7 +23,7 @@
 
 class HttpRequestHandler {
 public:
-    HttpRequestHandler(PsychicHttpServer *server,
+    HttpRequestHandler(PsychicHttpServer& server,
                        SecurityManager *securityManager,
                        RectificationProcess& rProcess,
                        SsvcConnector& ssvcConnector);
@@ -31,7 +31,7 @@ public:
     void begin();
 
 private:
-    PsychicHttpServer* _server;
+    PsychicHttpServer& _server;
     SecurityManager* _securityManager;
     RectificationProcess& _rProcess;
     SsvcConnector& _ssvcConnector;

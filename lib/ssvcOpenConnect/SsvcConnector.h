@@ -25,7 +25,7 @@
 #define SSVC_OPEN_CONNECT_UART_RX GPIO_NUM_16
 #endif
 
-#define SSVC_OPEN_CONNECT_BUF_SIZE 2048
+constexpr size_t SSVC_OPEN_CONNECT_BUF_SIZE = 2048;
 
 extern SemaphoreHandle_t mutex;
 
@@ -58,6 +58,7 @@ public:
     bool taskPauseCommand();
     bool taskResumeCommand();
     bool taskNestCommand();
+    bool taskATCommand();
 
 //    static bool sendPauseCommand();
 //    static bool sendResumeCommand();
@@ -137,7 +138,7 @@ private:
             std::function<void(SsvcConnector*, JsonDocument&)> responseHandler,
             size_t stackSize = 2048,
             UBaseType_t priority = tskIDLE_PRIORITY,
-            BaseType_t core = tskNO_AFFINITY)
+            BaseType_t core = 1)
     {
         auto params = new TaskParameters{
                 this,

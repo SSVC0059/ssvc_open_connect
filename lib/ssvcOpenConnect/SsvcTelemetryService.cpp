@@ -4,34 +4,20 @@
 
 
 
-SsvcTelemetryService::SsvcTelemetryService(PsychicHttpServer *server,
-                                           EventSocket *socket,
+SsvcTelemetryService::SsvcTelemetryService(EventSocket *socket,
                                            SecurityManager *securityManager,
-                                           EventGroupHandle_t eventGroup) : _httpEndpoint(SsvcTelemetry::read,
-                                                                                          SsvcTelemetry::update,
-                                                                                          this,
-                                                                                          server,
-                                                                                          SSVC_OPEN_CONNECT_ENDPOINT_PATH,
-                                                                                          securityManager,
-                                                                                          AuthenticationPredicates::IS_AUTHENTICATED),
-                                                                                _eventEndpoint(SsvcTelemetry::read,
+                                           EventGroupHandle_t eventGroup,
+                                           RectificationProcess* rProcess) : _eventEndpoint(SsvcTelemetry::read,
                                                                                                SsvcTelemetry::update,
                                                                                                this,
                                                                                                socket,
                                                                                                SSVC_OPEN_CONNECT_ENDPOINT_PATH),
-                                                                                _webSocketServer(SsvcTelemetry::read,
-                                                                                                 SsvcTelemetry::update,
-                                                                                                 this,
-                                                                                                 server,
-                                                                                                 SSVC_OPEN_CONNECT_SOCKET_PATH,
-                                                                                                 securityManager,
-                                                                                                 AuthenticationPredicates::IS_AUTHENTICATED),
                                                                                 _socket(socket),
-                                                                                _eventGroup(eventGroup){
+                                                                                _eventGroup(eventGroup),
+                                                                                rectificationProcess(rProcess){
 
     {
 
-        // configure settings service update handler to update LED state
         addUpdateHandler([&](const String &originId)
                          { onTelemetryUpdated(); },
                          false);
@@ -41,9 +27,7 @@ SsvcTelemetryService::SsvcTelemetryService(PsychicHttpServer *server,
 
 void SsvcTelemetryService::begin()
 {
-    _httpEndpoint.begin();
     _eventEndpoint.begin();
-    _webSocketServer.begin();
     // Регистрируем события
     _socket->registerEvent(SSVC_OPEN_CONNECT_EVENT);
     // Запускаем получение телеметрии
@@ -64,14 +48,23 @@ void SsvcTelemetryService::begin()
 void SsvcTelemetryService::_telemetry(void* pvParameters) {
     auto* self = static_cast<SsvcTelemetryService*>(pvParameters);
     while (true) {
-        JsonDocument message = rProcess.getRectificationStatus();
-        // Сериализация JSON документа и вывод в Serial
-//        ESP_LOGV("SsvcTelemetryService::_telemetry: ", output);
-        serializeJson(message, Serial);
-        Serial.println("");
-        JsonObject obj = message.as<JsonObject>();
-        self->_socket->emitEvent(SSVC_OPEN_CONNECT_EVENT, obj);
-        vTaskDelay(1000);
+        if (self->rectificationProcess == nullptr){
+            log_printf("SsvcTelemetryService", "rectificationProcess is null");
+            vTaskDelay(1000);
+        }else {
+            JsonDocument message = self->rectificationProcess->getRectificationStatus();
+#if CONFIG_LOG_DEFAULT_LEVEL >= ESP_LOG_DEBUG // Выполняем только при уровне Debug или выше
+            // Создаем строку для хранения сериализованного JSON
+            String jsonString;
+            serializeJson(message, jsonString);
+
+            // Логируем JSON
+            ESP_LOGD("RECTIFICATION", "%s", jsonString.c_str());
+#endif
+            JsonObject obj = message.as<JsonObject>();
+            self->_socket->emitEvent(SSVC_OPEN_CONNECT_EVENT, obj);
+            vTaskDelay(1000);
+        }
     }
 }
 
@@ -80,7 +73,6 @@ void SsvcTelemetryService::onTelemetryUpdated() {
 
 void SsvcTelemetry::read(SsvcTelemetry &SsvcOpenConnect, JsonObject &root){
 }
-
 
 StateUpdateResult SsvcTelemetry::update(JsonObject &root, SsvcTelemetry &SsvcOpenConnect)
 {

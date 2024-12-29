@@ -5,7 +5,7 @@
 #include "HttpRequestHandler.h"
 
 
-HttpRequestHandler::HttpRequestHandler(PsychicHttpServer *server,
+HttpRequestHandler::HttpRequestHandler(PsychicHttpServer& server,
                                        SecurityManager* securityManager,
                                        RectificationProcess& rProcess,
                                        SsvcConnector& ssvcConnector) : _server(server),
@@ -19,20 +19,20 @@ HttpRequestHandler::HttpRequestHandler(PsychicHttpServer *server,
 void HttpRequestHandler::begin()
 {
     Serial.println("Init HttpRequestHandler");
-    _server->on(GET_SETTINGS_ROUTE,
+    _server.on(GET_SETTINGS_ROUTE,
                 HTTP_GET,
                 _securityManager->wrapRequest(std::bind(&HttpRequestHandler::reqStatus, this, std::placeholders::_1),
                                               AuthenticationPredicates::IS_AUTHENTICATED));
 
     ESP_LOGV("HttpRequestHandler", "Registered GET endpoint: %s", GET_SETTINGS_ROUTE);
 
-    _server->on(SEND_COMMAND_ROUTE,
+    _server.on(SEND_COMMAND_ROUTE,
                 HTTP_POST,
                 _securityManager->wrapRequest(
                         std::bind(&HttpRequestHandler::postCommandStatusStatus, this, std::placeholders::_1),
                         AuthenticationPredicates::IS_AUTHENTICATED));
 
-    _server->on(TEMP_METRICS_DATA_ROUTE,
+    _server.on(TEMP_METRICS_DATA_ROUTE,
                 HTTP_GET,
                 _securityManager->wrapRequest(std::bind(&HttpRequestHandler::tMetrixResponce, this, std::placeholders::_1),
                                               AuthenticationPredicates::IS_AUTHENTICATED));

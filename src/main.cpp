@@ -14,9 +14,7 @@
 
 #include <ESP32SvelteKit.h>
 #include <PsychicHttpServer.h>
-#include <SsvcTelemetryService.h>
-#include <RectificationProcess.h>
-#include <HttpRequestHandler.h>
+#include <SsvcOpenConnect.h>
 
 // Глобальный мультиплексор для критических секций
 portMUX_TYPE ssvcMux = portMUX_INITIALIZER_UNLOCKED;
@@ -28,27 +26,14 @@ PsychicHttpServer server;
 
 ESP32SvelteKit esp32sveltekit(&server, 120);
 
-EventGroupHandle_t eventGroup = xEventGroupCreate();
-
-SsvcTelemetryService ssvcTelemetryService = SsvcTelemetryService(&server,
-                                                                   esp32sveltekit.getSocket(),
-                                                                   esp32sveltekit.getSecurityManager(),
-                                                                   eventGroup);
-
-
-// Создаем экземпляр SsvcConnector, передаем созданный eventGroup в конструктор
-SsvcConnector& ssvcConnector = SsvcConnector::getConnector(eventGroup);
-
-// Статический экземпляр класса
-
-RectificationProcess& rProcess = RectificationProcess::createRectification(ssvcConnector, eventGroup);
-HttpRequestHandler httpRequestHandler = HttpRequestHandler(&server,
-                                                           esp32sveltekit.getSecurityManager(),
-                                                           rProcess,
-                                                           ssvcConnector);
+SsvcOpenConnect* SsvcOpenConnect::instance = nullptr;
 
 void setup()
 {
+    SsvcOpenConnect* instance = SsvcOpenConnect::getInstance(server,
+                             esp32sveltekit.getSocket(),
+                             esp32sveltekit.getSecurityManager());
+
     // start serial and filesystem
     Serial.begin(SERIAL_BAUD_RATE);
 
@@ -57,11 +42,7 @@ void setup()
     #endif
         // start ESP32-SvelteKit
     esp32sveltekit.begin();
-    ssvcConnector.begin();
-    ssvcTelemetryService.begin();
-    
-    Serial.println("httpRequestHandler.begin");
-    httpRequestHandler.begin();
+    instance->begin();
 }
 
 void loop()
