@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
+
 module.exports = {
-	content: ['./src/**/*.{html,js,svelte,ts}'],
+	content: ['./src/**/*.{html,js,svelte,ts}', './node_modules/flowbite-svelte/**/*.{html,js,svelte,ts}'],
 	theme: {
 		animation: {
 			info: 'blink-info 2s infinite',
@@ -19,6 +20,16 @@ module.exports = {
 			'blink-critical': {
 				'0%, 100%': { backgroundColor: 'rgba(255, 50, 50, 1)', transform: 'scale(1)' },
 				'50%': { backgroundColor: 'rgba(255, 0, 0, 0.9)', transform: 'scale(1.1)' },
+			},
+		},
+		extend: {
+			fontFamily: {
+				sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+				display: ['Poppins', 'sans-serif'],
+			},
+		colors: {
+				primary: '#1D4ED8',
+				secondary: '#64748B',
 			},
 		},
 	},

@@ -23,18 +23,18 @@
 			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">
 				{
 					telemetryData.open
-							? `${telemetryData.open } сек`
+						? `${telemetryData.open } сек`
 						: '-'
 				}
 			</td>
 		</tr>
 		<tr>
-			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Переодичность открытия</td>
+			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">Периодичность открытия</td>
 			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">
 				{
 					telemetryData.period
-							? `${telemetryData.period } сек`
-							: '-'
+						? `${telemetryData.period } сек`
+						: '-'
 				}
 			</td>
 		</tr>
@@ -43,8 +43,8 @@
 			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">
 				{
 					telemetryData.valveBandwidthHeads !== undefined && telemetryData.valveBandwidthHeads !== null
-							? `${telemetryData.valveBandwidthHeads} мл`
-							: '-'
+						? `${telemetryData.valveBandwidthHeads} мл`
+						: '-'
 				}
 			</td>
 		</tr>
@@ -53,8 +53,8 @@
 			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">
 				{
 					telemetryData.valveBandwidthHearts !== undefined && telemetryData.valveBandwidthHearts !== null
-							? `${telemetryData.valveBandwidthHearts} мл`
-							: '-'
+						? `${telemetryData.valveBandwidthHearts} мл`
+						: '-'
 				}
 		</tr>
 		<tr>
@@ -62,8 +62,8 @@
 			<td class="py-2 px-4 border-b border-blue-500 dark:border-white/50">
 				{
 					telemetryData.valveBandwidthTails !== undefined && telemetryData.valveBandwidthTails !== null
-							? `${telemetryData.valveBandwidthTails} мл`
-							: '-'
+						? `${telemetryData.valveBandwidthTails} мл`
+						: '-'
 				}
 		</tr>
 	{/if}

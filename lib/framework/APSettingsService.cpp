@@ -97,6 +97,7 @@ void APSettingsService::startAP()
 #if CONFIG_IDF_TARGET_ESP32S3
     WiFi.setTxPower(WIFI_POWER_18_5dBm); 
 #endif
+    WiFi.setSleep(false);
     if (!_dnsServer)
     {
         IPAddress apIp = WiFi.softAPIP();

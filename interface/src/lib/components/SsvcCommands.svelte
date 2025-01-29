@@ -113,7 +113,7 @@
 		<Play class="mr-2 h-5 w-5" />
 		<span>Продолжить</span>
 	</button>
-	<button class="btn btn-primary inline-flex items-center justify-center sm:justify-start" on:click={() => confirmModalNext()}>
+	<button class="btn btn-primary <Check /> Головы items-center justify-center sm:justify-start" on:click={() => confirmModalNext()}>
 		<Play class="mr-2 h-5 w-5" />
 		<span>Следующий этап</span>
 	</button>

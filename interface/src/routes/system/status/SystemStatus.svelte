@@ -50,7 +50,7 @@
 	onDestroy(() => socket.off('analytics', handleSystemData));
 
 	const handleSystemData = (data: Analytics) =>
-		(systemInformation = { ...systemInformation, ...data });
+			(systemInformation = { ...systemInformation, ...data });
 
 	async function postRestart() {
 		const response = await fetch('/rest/restart', {
@@ -154,22 +154,22 @@
 
 <SettingsCard collapsible={false}>
 	<Health slot="icon" class="lex-shrink-0 mr-2 h-6 w-6 self-end" />
-	<span slot="title">Системный монитор</span>
+	<span slot="title">System Status</span>
 
 	<div class="w-full overflow-x-auto">
 		{#await getSystemStatus()}
 			<Spinner />
 		{:then nothing}
 			<div
-				class="flex w-full flex-col space-y-1"
-				transition:slide|local={{ duration: 300, easing: cubicOut }}
+					class="flex w-full flex-col space-y-1"
+					transition:slide|local={{ duration: 300, easing: cubicOut }}
 			>
 				<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
 					<div class="mask mask-hexagon bg-primary h-auto w-10 flex-none">
 						<CPU class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">Версия чипа</div>
+						<div class="font-bold">Chip</div>
 						<div class="text-sm opacity-75">
 							{systemInformation.cpu_type} Rev {systemInformation.cpu_rev}
 						</div>
@@ -181,7 +181,7 @@
 						<SDK class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">Версия SDK</div>
+						<div class="font-bold">SDK Version</div>
 						<div class="text-sm opacity-75">
 							ESP-IDF {systemInformation.sdk_version} / Arduino {systemInformation.arduino_version}
 						</div>
@@ -193,7 +193,7 @@
 						<CPP class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">Версия SSVC Open Connect</div>
+						<div class="font-bold">Firmware Version</div>
 						<div class="text-sm opacity-75">
 							{systemInformation.firmware_version}
 						</div>
@@ -205,7 +205,7 @@
 						<Speed class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">Частота процессора</div>
+						<div class="font-bold">CPU Frequency</div>
 						<div class="text-sm opacity-75">
 							{systemInformation.cpu_freq_mhz} MHz {systemInformation.cpu_cores == 2
 								? 'Dual Core'
@@ -223,36 +223,38 @@
 						<div class="text-sm opacity-75">
 							{systemInformation.free_heap.toLocaleString('en-US')} / {systemInformation.max_alloc_heap.toLocaleString(
 								'en-US'
-							)} bytes
+						)} bytes
 						</div>
 					</div>
 				</div>
 
-				<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
-					<div class="mask mask-hexagon bg-primary h-auto w-10 flex-none">
-						<Pyramid class="text-primary-content h-auto w-full scale-75" />
-					</div>
-					<div>
-						<div class="font-bold">PSRAM (Size / Free)</div>
-						<div class="text-sm opacity-75">
-							{systemInformation.psram_size.toLocaleString('en-US')} / {systemInformation.psram_size.toLocaleString(
-								'en-US'
-							)} bytes
+				<!-- if psramFound -->
+				{#if (systemInformation.psram_size)}
+					<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+						<div class="mask mask-hexagon bg-primary h-auto w-10 flex-none">
+							<Pyramid class="text-primary-content h-auto w-full scale-75" />
+						</div>
+						<div>
+							<div class="font-bold">PSRAM</div>
+							<div class="text-sm opacity-75">
+								{(((systemInformation.used_psram) / systemInformation.psram_size) * 100).toFixed(1)} % of {(systemInformation.psram_size / 1000).toFixed(0)} KB used
+								<span>({((systemInformation.free_psram) / 1000).toFixed(0)} KB free)</span>
+							</div>
 						</div>
 					</div>
-				</div>
+				{/if}
 
 				<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
 					<div class="mask mask-hexagon bg-primary h-auto w-10 flex-none">
 						<Sketch class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">Скетч (Used / Free)</div>
+						<div class="font-bold">Sketch (Used / Free)</div>
 						<div class="flex flex-wrap justify-start gap-1 text-sm opacity-75">
 							<span>
 								{(
-									(systemInformation.sketch_size / systemInformation.free_sketch_space) *
-									100
+										(systemInformation.sketch_size / systemInformation.free_sketch_space) *
+										100
 								).toFixed(1)} % of
 								{(systemInformation.free_sketch_space / 1000000).toLocaleString('en-US')} MB used
 							</span>
@@ -261,7 +263,7 @@
 								({(
 									(systemInformation.free_sketch_space - systemInformation.sketch_size) /
 									1000000
-								).toLocaleString('en-US')} MB free)
+							).toLocaleString('en-US')} MB free)
 							</span>
 						</div>
 					</div>
@@ -276,7 +278,7 @@
 						<div class="text-sm opacity-75">
 							{(systemInformation.flash_chip_size / 1000000).toLocaleString('en-US')} MB / {(
 								systemInformation.flash_chip_speed / 1000000
-							).toLocaleString('en-US')} MHz
+						).toLocaleString('en-US')} MHz
 						</div>
 					</div>
 				</div>
@@ -289,16 +291,16 @@
 						<div class="font-bold">File System (Used / Total)</div>
 						<div class="flex flex-wrap justify-start gap-1 text-sm opacity-75">
 							<span
-								>{((systemInformation.fs_used / systemInformation.fs_total) * 100).toFixed(1)} % of {(
+							>{((systemInformation.fs_used / systemInformation.fs_total) * 100).toFixed(1)} % of {(
 									systemInformation.fs_total / 1000000
-								).toLocaleString('en-US')} MB used</span
+							).toLocaleString('en-US')} MB used</span
 							>
 
 							<span
-								>({(
+							>({(
 									(systemInformation.fs_total - systemInformation.fs_used) /
 									1000000
-								).toLocaleString('en-US')}
+							).toLocaleString('en-US')}
 								MB free)</span
 							>
 						</div>
@@ -310,11 +312,11 @@
 						<Temperature class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">Температура процессора</div>
+						<div class="font-bold">Core Temperature</div>
 						<div class="text-sm opacity-75">
 							{systemInformation.core_temp == 53.33
-								? 'NaN'
-								: systemInformation.core_temp.toFixed(2) + ' °C'}
+									? 'NaN'
+									: systemInformation.core_temp.toFixed(2) + ' °C'}
 						</div>
 					</div>
 				</div>
@@ -324,7 +326,7 @@
 						<Stopwatch class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">Время работы</div>
+						<div class="font-bold">Uptime</div>
 						<div class="text-sm opacity-75">
 							{convertSeconds(systemInformation.uptime)}
 						</div>
@@ -336,7 +338,7 @@
 						<Power class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">Причина сброса</div>
+						<div class="font-bold">Reset Reason</div>
 						<div class="text-sm opacity-75">
 							{systemInformation.cpu_reset_reason}
 						</div>
@@ -349,15 +351,15 @@
 	<div class="mt-4 flex flex-wrap justify-end gap-2">
 		{#if $page.data.features.sleep}
 			<button class="btn btn-primary inline-flex items-center" on:click={confirmSleep}
-				><Sleep class="mr-2 h-5 w-5" /><span>Sleep</span></button
+			><Sleep class="mr-2 h-5 w-5" /><span>Sleep</span></button
 			>
 		{/if}
 		{#if !$page.data.features.security || $user.admin}
 			<button class="btn btn-primary inline-flex items-center" on:click={confirmRestart}
-				><Power class="mr-2 h-5 w-5" /><span>Рестарт</span></button
+			><Power class="mr-2 h-5 w-5" /><span>Restart</span></button
 			>
 			<button class="btn btn-secondary inline-flex items-center" on:click={confirmReset}
-				><FactoryReset class="mr-2 h-5 w-5" /><span>Полный сброс</span></button
+			><FactoryReset class="mr-2 h-5 w-5" /><span>Factory Reset</span></button
 			>
 		{/if}
 	</div>

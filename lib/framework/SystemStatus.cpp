@@ -17,9 +17,7 @@
 
 #if CONFIG_IDF_TARGET_ESP32 // ESP32/PICO-D4
 #include "esp32/rom/rtc.h"
-    #ifndef ESP_PLATFORM
-        #define ESP_PLATFORM "ESP32";
-    #endif
+#define ESP_PLATFORM "ESP32";
 #elif CONFIG_IDF_TARGET_ESP32S2
 #include "esp32/rom/rtc.h"
 #define ESP_PLATFORM "ESP32-S2";
@@ -29,6 +27,9 @@
 #elif CONFIG_IDF_TARGET_ESP32S3
 #include "esp32s3/rom/rtc.h"
 #define ESP_PLATFORM "ESP32-S3";
+#elif CONFIG_IDF_TARGET_ESP32C6
+#include "esp32c6/rom/rtc.h"
+#define ESP_PLATFORM "ESP32-C6";
 #else
 #error Target CONFIG_IDF_TARGET is not supported
 #endif
@@ -119,8 +120,11 @@ esp_err_t SystemStatus::systemStatus(PsychicRequest *request)
     root["esp_platform"] = ESP_PLATFORM;
     root["firmware_version"] = APP_VERSION;
     root["max_alloc_heap"] = ESP.getMaxAllocHeap();
-    root["psram_size"] = ESP.getPsramSize();
-    root["free_psram"] = ESP.getFreePsram();
+    if (psramFound()) {
+        root["free_psram"] = ESP.getFreePsram();
+        root["used_psram"] = ESP.getPsramSize() - ESP.getFreePsram();
+        root["psram_size"] = ESP.getPsramSize();
+    }
     root["cpu_freq_mhz"] = ESP.getCpuFreqMHz();
     root["cpu_type"] = ESP.getChipModel();
     root["cpu_rev"] = ESP.getChipRevision();

@@ -33,7 +33,7 @@ class PsychicRequest {
 
     std::list<PsychicWebParameter*> _params;
 
-    void _addParams(const String& params, bool post);
+    void _addParams(const String& params);
     void _parseGETParams();
     void _parsePOSTParams();
 
@@ -80,7 +80,7 @@ class PsychicRequest {
 
     void loadParams();
     PsychicWebParameter * addParam(PsychicWebParameter *param);
-    PsychicWebParameter * addParam(const String &name, const String &value, bool decode = true, bool post = false);
+    PsychicWebParameter * addParam(const String &name, const String &value, bool decode = true);
     bool hasParam(const char *key);
     PsychicWebParameter * getParam(const char *name);
 

@@ -1,5 +1,5 @@
 // src/lib/ssvcHelper.ts
-import type { commonType, SsvcOpenConnectMessage } from '$lib/types/models';
+import type { commonType, RectificationStatus, SsvcOpenConnectMessage } from '$lib/types/models';
 import { get } from 'svelte/store';
 import { page } from '$app/stores';
 import { user } from '$lib/stores/user';
@@ -56,7 +56,7 @@ export function processIncomingDataHandler(data: SsvcOpenConnectMessage) {
 	}
 }
 
-export function getStageDescription(stage:never): string {
+export function getStageDescription(stage:string): string {
 	switch (stage) {
 		case "waiting":
 			return "Дежурный режим"
@@ -66,57 +66,16 @@ export function getStageDescription(stage:never): string {
 			return "Стабилизация колонны"
 		case "heads":
 			return "Отбор голов"
+		case "late_heads":
+			return "Отбор подголовников"
 		case "hearts":
 			return "Отбор тела"
 		case "tails":
 			return "Отбор хвостов"
 		default:
-			return `Не известный тип данных`
+			return `Ошибка получения данных`
 
 	}
-}
-
-export function countdownToSeconds(countdown: string): number {
-	const [hours, minutes, seconds] = countdown.split(":").map(Number);
-	return hours * 3600 + minutes * 60 + seconds;
-}
-
-export function getDescriptionEvent<T extends string | null>(event: T): { description: string; errorCode: number } {
-	let errorCode = 0; // Код ошибки по умолчанию
-
-	const description = (() => {
-		switch (event) {
-			case "heads_finished":
-				return "Завершен этап Головы";
-			case "hearts_finished":
-				return "Завершен этап Тело";
-			case "tails_finished":
-				return "Завершен этап Хвосты";
-			case "ds_error":
-				errorCode = 1;
-				return "Ошибка датчика температуры";
-			case "ds_error_stop":
-				errorCode = 1;
-				return "Выключение оборудования (реле) из-за ошибки датчика";
-			case "stabilization_limit":
-				errorCode = 1;
-				return "Превышен лимит времени стабилизации";
-			case "remote_stop":
-				errorCode = 2;
-				return "Получена удаленная команда остановки, процесс остановлен";
-			case "manually_closed":
-				errorCode = 2;
-				return "Включено ручное управление клапаном текущего этапа, клапан закрыт";
-			case "manually_opened":
-				errorCode = 2;
-				return "Включено ручное управление клапаном текущего этапа, клапан открыт";
-			default:
-				errorCode = 1;
-				return `Неизвестная команда ${event}`;
-		}
-	})();
-
-	return { description, errorCode };
 }
 
 const timeout_command_response = 5000;
@@ -177,26 +136,27 @@ const responseCommandHandeler = (response: Response, commandName: string) => {
 	}
 };
 
-export const sendPostRequest = async (commandName: string) => {
-	const currentPage = get(page); // Извлекаем текущее состояние `page`.
-	const currentUser = get(user); // Извлекаем текущее состояние `user`.
-	try {
-		commandState.set({ isWaiting: true, message: '', command: commandName });
-		const url = new URL(`/rest/openConnect`, window.location.origin);  // Указываем полный путь, если нужно
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				Authorization: currentPage.data.features.security ? 'Bearer ' + currentUser.bearer_token : 'Basic',
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ commands: commandName })
-		});
-		responseCommandHandeler(response, commandName);
-		await response.json();
-	} catch (error) {
-		console.log('Error:', error);
-	}
-};
+
+// export const sendCommandsRequest = async (commandName: string) => {
+// 	const currentPage = get(page); // Извлекаем текущее состояние `page`.
+// 	const currentUser = get(user); // Извлекаем текущее состояние `user`.
+// 	try {
+// 		commandState.set({ isWaiting: true, message: '', command: commandName });
+// 		const url = new URL(`/rest/commands`, window.location.origin);  // Указываем полный путь, если нужно
+// 		const response = await fetch(url, {
+// 			method: 'POST',
+// 			headers: {
+// 				Authorization: currentPage.data.features.security ? 'Bearer ' + currentUser.bearer_token : 'Basic',
+// 				'Content-Type': 'application/json'
+// 			},
+// 			body: JSON.stringify({ commands: commandName })
+// 		});
+// 		responseCommandHandeler(response, commandName);
+// 		await response.json();
+// 	} catch (error) {
+// 		console.log('Error:', error);
+// 	}
+// };
 
 export function formatSecondsToHHMMSS(seconds: number): string {
 	const hours = Math.floor(seconds / 3600);
@@ -213,32 +173,32 @@ export function formatSecondsToHHMMSS(seconds: number): string {
 	}
 }
 
-export async function postStop() {
-	const commandName = "STOP"
-	await sendPostRequest(commandName);
-}
-
-export async function postPause() {
-	const commandName = "PAUSE"
-	await sendPostRequest(commandName);
-}
-
-export async function postResume() {
-	const commandName = "RESUME"
-	await sendPostRequest(commandName);
-}
-
-export async function postNext() {
-	const commandName = "NEXT"
-	await sendPostRequest(commandName);
-}
-
-export async function postVersion() {
-	const commandName = "VERSION"
-	await sendPostRequest(commandName);
-}
-
-export async function sendCommandGetSettings() {
-	const commandName = "GET_SETTINGS"
-	await sendPostRequest(commandName);
-}
+// export async function postStop() {
+// 	const commandName = "STOP"
+// 	await sendCommandsRequest(commandName);
+// }
+//
+// export async function postPause() {
+// 	const commandName = "PAUSE"
+// 	await sendCommandsRequest(commandName);
+// }
+//
+// export async function postResume() {
+// 	const commandName = "RESUME"
+// 	await sendCommandsRequest(commandName);
+// }
+//
+// export async function postNext() {
+// 	const commandName = "NEXT"
+// 	await sendCommandsRequest(commandName);
+// }
+//
+// export async function postVersion() {
+// 	const commandName = "VERSION"
+// 	await sendCommandsRequest(commandName);
+// }
+//
+// export async function sendCommandGetSettings() {
+// 	const commandName = "GET_SETTINGS"
+// 	await sendCommandsRequest(commandName);
+// }

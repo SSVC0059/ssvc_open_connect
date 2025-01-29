@@ -52,21 +52,18 @@ class SsvcTelemetryService : public StatefulService<SsvcTelemetry>
 public:
     SsvcTelemetryService(EventSocket *socket,
                          SecurityManager *securityManager,
-                         EventGroupHandle_t _eventGroup,
-                         RectificationProcess* rectificationProcess);
+                         RectificationProcess& rectificationProcess);
 
     void begin();
 
 
 private:
+    static void update(void* pvParameters);
+
+
     EventSocket *_socket;
-    // Переменная для хранения eventGroup
-    EventGroupHandle_t _eventGroup;
-
-    static void _telemetry(void* pvParameters);
-
     EventEndpoint<SsvcTelemetry> _eventEndpoint;
-    RectificationProcess * rectificationProcess;
+    RectificationProcess& rectificationProcess;
 
     void onTelemetryUpdated();
 

@@ -14,6 +14,8 @@ node_modules
 /build/firmware
 /lib/framework/WWWData.h
 lib/framework/WWWData.h
+*WWWData.h
+lib/framework/WWWData.h
 ssl_certs/cacert.pem
 /logs
 interface/.idea/workspace.xml

@@ -122,7 +122,7 @@
 		});
 
 		loadData();
-		const interval = setInterval(loadData, 10000);
+		const interval = setInterval(loadData, 20000);
 		return () => clearInterval(interval);
 	});
 </script>
@@ -136,11 +136,11 @@
 </div>
 
 <style>
-	/* Оставляем те же стили */
-	.chart-container {
-		width: 100%;
-		height: 300px;
-		margin-bottom: 20px;
-		display: flex; /* Чтобы canvas точно занимал все пространство */
-	}
+    /* Оставляем те же стили */
+    .chart-container {
+        width: 100%;
+        height: 300px;
+        margin-bottom: 20px;
+        display: flex; /* Чтобы canvas точно занимал все пространство */
+    }
 </style>

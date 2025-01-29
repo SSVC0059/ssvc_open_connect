@@ -4,6 +4,7 @@
 	import { user } from '$lib/stores/user';
 	import { telemetry } from '$lib/stores/telemetry';
 	import { analytics } from '$lib/stores/analytics';
+	import { batteryHistory } from '$lib/stores/battery';
 	import { socket } from '$lib/stores/socket';
 	import type { userProfile } from '$lib/stores/user';
 	import { page } from '$app/stores';
@@ -31,6 +32,13 @@
 		if ($user.bearer_token !== '') {
 			await validateUser($user);
 		}
+	});
+
+	$: if (!($page.data.features.security && $user.bearer_token === '')) {
+		initSocket();
+	}
+
+	const initSocket = () => {
 		const ws_token = $page.data.features.security ? '?access_token=' + $user.bearer_token : '';
 		socket.init(
 			`ws://${window.location.host}/ws/events${ws_token}`,
@@ -47,12 +55,11 @@
 		});
 
 		addEventListeners();
-	});
+	};
 
 	onDestroy(() => {
 		removeEventListeners();
 	});
-
 
 	const addEventListeners = () => {
 		// socket.on('open', handleOpen);
@@ -131,7 +138,10 @@
 
 	const handleNetworkStatus = (data: RSSI) => telemetry.setRSSI(data);
 
-	const handleBattery = (data: Battery) => telemetry.setBattery(data);
+	const handleBattery = (data: Battery) => {
+		telemetry.setBattery(data);
+		batteryHistory.addData(data);
+	};
 
 	const handleOAT = (data: DownloadOTA) => telemetry.setDownloadOTA(data);
 

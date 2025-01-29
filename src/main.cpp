@@ -16,17 +16,19 @@
 #include <PsychicHttpServer.h>
 #include <SsvcOpenConnect.h>
 
-// Глобальный мультиплексор для критических секций
+#define SERIAL_BAUD_RATE 115200
+#define configCHECK_FOR_STACK_OVERFLOW 2
+
 portMUX_TYPE ssvcMux = portMUX_INITIALIZER_UNLOCKED;
 SemaphoreHandle_t mutex = xSemaphoreCreateMutex();
-
-#define SERIAL_BAUD_RATE 115200
+EventGroupHandle_t eventGroup = xEventGroupCreate();
 
 PsychicHttpServer server;
 
 ESP32SvelteKit esp32sveltekit(&server, 120);
 
 SsvcOpenConnect* SsvcOpenConnect::instance = nullptr;
+
 
 void setup()
 {
@@ -48,4 +50,9 @@ void setup()
 void loop()
 {
     vTaskDelete(nullptr);
+}
+
+extern "C" void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+    ESP_LOGE("FreeRTOS", "Stack overflow in task %s", pcTaskName);
+    abort(); // Остановка работы для диагностики
 }
