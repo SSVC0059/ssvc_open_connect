@@ -30,6 +30,7 @@
 
 #ifdef ARDUINO
   #include <Arduino.h>
+  #include <ArduinoTrace.h>
 #endif
 
 #include <esp_http_server.h>

@@ -1,409 +1,609 @@
 #include "RectificationProcess.h"
 
-char RectificationProcess::startTime[25]          = "";
-char RectificationProcess::endTime[25]            = "";
-
 
 // Инициализация статического члена класса
 RectificationProcess* RectificationProcess::_rectificationProcess = nullptr;
 
 // Метод получения единственного экземпляра класса
-RectificationProcess& RectificationProcess::createRectification(SsvcConnector& ssvcConnector,
-                                                                EventGroupHandle_t eventGroup) {
+RectificationProcess & RectificationProcess::createRectification(SsvcConnector& ssvcConnector,
+                                                                 SsvcSettings& ssvcSettings) {
     if (_rectificationProcess == nullptr) {
-        _rectificationProcess = new RectificationProcess(ssvcConnector, eventGroup);
+        _rectificationProcess = new RectificationProcess(ssvcConnector, ssvcSettings);
     }
 
     return *_rectificationProcess;
 }
 
 // Сбор телеметрии
-RectificationProcess::RectificationProcess(SsvcConnector& ssvcConnector,
-                                           EventGroupHandle_t eventGroup)
-        : _ssvcConnector(ssvcConnector),
-        _eventGroup(eventGroup),
-        ssvcSettings(ssvcConnector.getSsvcSettings()){
+RectificationProcess::RectificationProcess(SsvcConnector& ssvcConnector, SsvcSettings& ssvcSettings)
+                                                        : _ssvcConnector(ssvcConnector),
+                                                        _ssvcSettings(ssvcSettings),
+                                                        currentStage(RectificationStage::EMPTY),
+                                                        previousStage(RectificationStage::EMPTY),
+                                                        currentProcessStatus(ProcessState::IDLE)
+{
+    rectificationStageStates = {};
 
-//  Обнуляем значения
-    valveBandwidthHeads = 0;
-    valveBandwidthHearts = 0;
-    valveBandwidthTails = 0;
-    tp1Value = 0;
-    tp2Value = 0;
-    isRectificationStarted = false;
+    memset(startTime, 0, sizeof(startTime));
+    memset(endTime, 0, sizeof(endTime));
+
+    currentProcessStatus = ProcessState::IDLE;
 
     xTaskCreatePinnedToCore(
             RectificationProcess::update,            // Function that should be called
-            "SSVC Open Telemetry",     // Name of the task (for debugging)
+            "RectTelemetry",     // Name of the task (for debugging)
             4096,                       // Stack size (bytes)
             this,                       // Pass reference to this class instance
             (tskIDLE_PRIORITY),     // task priority
             nullptr,                       // Task handle
             1 // Pin to application core
     );
-
-    xTaskCreatePinnedToCore(
-            RectificationProcess::addPointToTempGraphTask,            // Function that should be called
-            "Temp Graph handler",     // Name of the task (for debugging)
-            4096,                       // Stack size (bytes)
-            this,                       // Pass reference to this class instance
-            (tskIDLE_PRIORITY),     // task priority
-            nullptr,                       // Task handle
-            1 // Pin to application core
-    );
-
 }
 
-// Метод установки времени старта
-void RectificationProcess::setStartTime() {
-    setTime(startTime);
+
+// Сопоставление строки "type" с этапами RectificationStage
+RectificationProcess::RectificationStage RectificationProcess::stringToRectificationStage(const std::string& stageStr) {
+    if (stageStr == "waiting") return RectificationStage::WAITING;
+    if (stageStr == "tp1_waiting") return RectificationStage::TP1_WAITING;
+    if (stageStr == "delayed_start") return RectificationStage::DELAYED_START;
+    if (stageStr == "heads") return RectificationStage::HEADS;
+    if (stageStr == "late_heads") return RectificationStage::LATE_HEADS;
+    if (stageStr == "hearts") return RectificationStage::HEARTS;
+    if (stageStr == "tails") return RectificationStage::TAILS;
+    return RectificationStage::ERROR;
 }
 
-// Метод установки времени остановки
-void RectificationProcess::setStopTime() {
-    setTime(endTime);
+// Добавьте функцию для преобразования RectificationStage в строку
+std::string RectificationProcess::stageToString(RectificationStage stage) {
+        ESP_LOGI("SsvcOpenConnect", "stageToString: %d", static_cast<int>(stage));
+    switch (stage) {
+        case RectificationStage::EMPTY: return "empty";
+        case RectificationStage::WAITING: return "waiting";
+        case RectificationStage::TP1_WAITING: return "tp1_waiting";
+        case RectificationStage::DELAYED_START: return "delayed_start";
+        case RectificationStage::HEADS: return "heads";
+        case RectificationStage::LATE_HEADS: return "late_heads";
+        case RectificationStage::HEARTS: return "hearts";
+        case RectificationStage::TAILS: return "tails";
+        case RectificationStage::ERROR: return "error";
+        default: return "unknown";
+    }
 }
 
+std::string RectificationProcess::stateToString(RectificationProcess::ProcessState state) {
+    switch (state) {
+        case ProcessState::RUNNING: return "running";
+        case ProcessState::PAUSED: return "paused";
+        case ProcessState::FINISHED: return "finished";
+        case ProcessState::SKIPPED: return "skipped";
+        case ProcessState::IDLE: return "idle";
+        default: return "unknown";
+    }
+}
+
+std::string RectificationProcess::rectificationEventToString(RectificationEvent event) {
+    switch (event) {
+        case RectificationEvent::HEADS_FINISHED:
+            return "heads_finished";
+        case RectificationEvent::HEARTS_FINISHED:
+            return "hearts_finished";
+        case RectificationEvent::TAILS_FINISHED:
+            return "tails_finished";
+        case RectificationEvent::DS_ERROR:
+            return "ds_error";
+        case RectificationEvent::DS_ERROR_STOP:
+            return "ds_error_stop";
+        case RectificationEvent::STABILIZATION_LIMIT:
+            return "stabilization_limit";
+        case RectificationEvent::REMOTE_STOP:
+            return "remote_stop";
+        case RectificationEvent::MANUALLY_CLOSED:
+            return "manually_closed";
+        case RectificationEvent::MANUALLY_OPENED:
+            return "manually_opened";
+        default:
+            return "unknown_event";  // Можно вернуть "unknown_event" или пустую строку для неизвестных значений
+    }
+}
+
+RectificationProcess::RectificationEvent RectificationProcess::stringToRectificationEvent(std::string& eventString) {
+    if (eventString == "heads_finished") {
+        return RectificationEvent::HEADS_FINISHED;
+    } else if (eventString == "hearts_finished") {
+        return RectificationEvent::HEARTS_FINISHED;
+    } else if (eventString == "tails_finished") {
+        return RectificationEvent::TAILS_FINISHED;
+    } else if (eventString == "ds_error_stop") {
+        return RectificationEvent::DS_ERROR_STOP;
+    } else if (eventString == "stabilization_limit") {
+        return RectificationEvent::STABILIZATION_LIMIT;
+    } else if (eventString == "remote_stop") {
+        return RectificationEvent::REMOTE_STOP;
+    } else if (eventString == "manually_closed") {
+        return RectificationEvent::MANUALLY_CLOSED;
+    } else if (eventString == "manually_opened") {
+        return RectificationEvent::MANUALLY_OPENED;
+    } else if (eventString == "ds_error") {
+        return RectificationEvent::DS_ERROR;
+    }
+    return RectificationEvent::ERROR;
+}
+
+
+std::string RectificationProcess::rectificationEventToDescription(RectificationEvent event) {
+    switch (event) {
+        case RectificationEvent::HEADS_FINISHED:
+            return "Завершен этап отбора голов";
+        case RectificationEvent::HEARTS_FINISHED:
+            return "Завершен этап отбора тела (ректификация завершена для firmware 2.3.*)";
+        case RectificationEvent::TAILS_FINISHED:
+            return "Завершен этап отбора хвостов (ректификация завершена для firmware 2.2.*)";
+        case RectificationEvent::DS_ERROR:
+            return "Ошибка датчика температуры";
+        case RectificationEvent::DS_ERROR_STOP:
+            return "Выключение оборудования (реле) из-за ошибки датчика. Срабатывает через 180 секунд, если ошибка текущего датчика не исчезнет.";
+        case RectificationEvent::STABILIZATION_LIMIT:
+            return "Превышен лимит времени стабилизации";
+        case RectificationEvent::REMOTE_STOP:
+            return "Получена удаленная команда остановки, процесс остановлен";
+        case RectificationEvent::MANUALLY_CLOSED:
+            return "Включено ручное управление клапаном текущего этапа, клапан закрыт";
+        case RectificationEvent::MANUALLY_OPENED:
+            return "Включено ручное управление клапаном текущего этапа, клапан открыт";
+        default:
+            return "Неизвестное событие";  // Для неизвестных значений
+    }
+}
+
+RectificationProcess::ProcessState RectificationProcess::getCurrentState() const {
+    return currentProcessStatus;
+}
 
 // Метод обновления состояния
 void RectificationProcess::update(void* pvParameters) {
     auto* self = static_cast<RectificationProcess*>(pvParameters);
+    const char* taskName = pcTaskGetName(nullptr);
+    ESP_LOGE("RectificationProcess", "Запуск задачи подготовки данных ректификации");
+    std::string currentEvent;
+
     while (true) {
+        UBaseType_t stackWaterMark = uxTaskGetStackHighWaterMark(nullptr);
+        ESP_LOGI("SsvcOpenConnect", "Task %s: Stack high water mark: %u", taskName, stackWaterMark);
+
         // Ожидание события
         EventBits_t bits = xEventGroupWaitBits(
-                self->_eventGroup,
-                BIT0,        // Ждём BIT0 (например, новое сообщение)
-                pdTRUE,      // Сбрасываем флаг после обработки
-                pdFALSE,     // Любое событие
-                portMAX_DELAY
+            eventGroup,
+            BIT0,        // Ждём BIT0 (например, новое сообщение)
+            pdTRUE,      // Сбрасываем флаг после обработки
+            pdFALSE,     // Любое событие
+            portMAX_DELAY
         );
 
         if (bits & BIT0) {
-            JsonDocument message = self->_ssvcConnector.getMessage();
-
-                        if (message["common"]) {
-                if (message["tp1_sap"]) {
-                    self->tp1Value = message["tp1_sap"];
-                } else {
-                    self->tp1Value = message["common"]["tp1"];
-                }
-                if (message["tp2_sap"]) {
-                    self->tp2Value = message["tp2_sap"];
-                } else {
-                    self->tp2Value = message["common"]["tp2"];
-                }
-            }
-
-            if (message["type"] == "response") {
-                vTaskDelay(400);
-            }
-
-            if (message["event"]) {
-                if  (message["event"] == "heads_finished" ) {
-                    self->headsFinishedHandler(message);
-                }else if  (message["event"] == "hearts_finished") {
-                    self->heartsFinishedHandler(message);
-                }else if  (message["event"] == "tails_finished") {
-                    self->tailsFinishedHandler(message);
-                }else if  (message["event"] == "ds_error") {
-                    self->dcErrorHandler(message);
-                }else if  (message["event"] == "ds_error_stop") {
-                    self->dsErrorStopHandler(message);
-                }else if  (message["event"] == "stabilization_limit") {
-                    self->stabilizationLimitHandler(message);
-                }else if  (message["event"] == "remote_stop") {
-                    self->remoteStopHandler(message);
-                }else if  (message["event"] == "manually_closed") {
-                    self->manuallyClosedHandler(message);
-                }else if  (message["event"] == "manually_opened") {
-                    self->manuallyOpenedHandler(message);
-                }else  {
-                    self->notFoundEvent(message);
-                }
-            }
-
-            // Обработка типа сообщений
-            if (message["type"] == "waiting") {
-                self->waitingTypeHandler(message);
-            } else if (message["type"] == "tp1_waiting" ) {
-                self->tp1TypeHandler(message);
-            }else if  (message["type"] == "delayed_start") {
-                self->delayedStartHandler(message);
-            }else if  (message["type"] == "heads") {
-                self->headsTypeHandler(message);
-            }else if  (message["type"] == "hearts") {
-                self->heartsTypeHandler(message);
-            }else if  (message["type"] == "tails") {
-                self->tailsTypeHandler(message);
-            }
-
+//            ESP_LOGV("RectificationProcess", "BIT0 получен в задании  %s", taskName);
+            std::string message;
             if (xSemaphoreTake(mutex, portMAX_DELAY)) {
-                self -> ssvsTelemetry = message;
-                xSemaphoreGive(mutex);
+                message = self->_ssvcConnector.getLastMessage();
+
+                // Десериализация JSON
+                JsonDocument telemetry;
+                DeserializationError error = deserializeJson(telemetry, message);
+                if (error) {
+                    ESP_LOGE("RectificationProcess", "Ошибка десериализации JSON");
+                    xSemaphoreGive(mutex);
+                    continue;
+                }
+    //          Для начала очистим от старых данных
+                ESP_LOGV("RectificationProcess", "START metric cleared");
+                self->metric = {};
+                ESP_LOGV("RectificationProcess", "END metric cleared");
+
+                // Получение типа этапа из JSON
+                std::string type = telemetry["type"];
+                ESP_LOGV("RectificationProcess", "Тип этапа: %s", type.c_str());
+    //          Определение текущего этапа
+                RectificationStage _currentStage = stringToRectificationStage(type);
+
+//              Отработка изменения этапа
+                if (self->currentStage != _currentStage) {
+                    ESP_LOGV("RectificationProcess", "Этап изменен: %s", stageToString(_currentStage).c_str());
+                    // Заполнение таблицы прохождения этапов
+                    self->rectificationStageStates[self->previousStage] = ProcessState::FINISHED;
+                    self->previousStage = self->currentStage;
+                    self->currentStage = _currentStage;
+                    self->rectificationStageStates[self->currentStage] = ProcessState::RUNNING;
+                } else {
+                    ESP_LOGV("RectificationProcess", "Этап не изменен: %s", stageToString(_currentStage).c_str());
+                }
+
+                if (_currentStage == RectificationStage::ERROR){
+                    ESP_LOGE("RectificationProcess", "Ошибка получения типа этапа");
+                    xSemaphoreGive(mutex);
+                    continue;
+                }
+                ESP_LOGV("RectificationProcess", "currentStage: %s", stageToString(_currentStage).c_str());
+                // Обновление состояний этапов
+
+    //            Обновление состояния
+                bool hasStartTime = strlen(self->startTime) > 0;
+                bool hasEndTime = strlen(self->endTime) > 0;
+
+//               Отработка событий
+                if (telemetry["event"].is<std::string>()) {
+                    std::string event = telemetry["event"].as<std::string>();
+                    self->metric.event = stringToRectificationEvent(event);
+                    self->startEventHandler(event);
+                    currentEvent = event;
+                    self->eventReceived = true;
+                    ESP_LOGV("SsvcSettings", "Обновлен event: %s", event.c_str());
+                }
+
+                if (self->eventReceived && !telemetry["event"].is<std::string>()) {
+                    self->eventReceived = false;
+                    self->endEventHandler(currentEvent);
+                    currentEvent = "";
+                }
+                if (telemetry["pid"].is<char16_t>()) {
+                    if (!self->isRectificationStarted()) {
+                        ESP_LOGV("RectificationProcess" , "Rectification not started");
+                        self->currentProcessStatus = ProcessState::RUNNING;
+                        time_t now = time(nullptr);
+                        struct tm timeInfo{};
+                        localtime_r(&now, &timeInfo);
+                        strftime(self->startTime, 25, "%Y-%m-%d %H:%M:%S", &timeInfo);
+                        memset(self->endTime, 0, sizeof(endTime));
+                        self->flowVolumeValves = {};
+                        self->rectificationStageStates = {};
+                    }else {
+                        ESP_LOGV("RectificationProcess" , "Rectification started");
+                    }
+                } else {
+                    if (hasStartTime && self->rectificationStageStates[self->previousStage] == ProcessState::FINISHED){
+                        self->currentProcessStatus = ProcessState::FINISHED;
+                        time_t now = time(nullptr);
+                        struct tm timeInfo{};
+                        localtime_r(&now, &timeInfo);
+                        strftime(self->startTime, 25, "%Y-%m-%d %H:%M:%S", &timeInfo);
+                    }
+                }
+
+                ESP_LOGV("RectificationProcess" , "startTime: %s", self->startTime);
+                ESP_LOGV("RectificationProcess" , "EndTime: %s", self->endTime);
+
+    //            Заполняем таблицу состояния этапов
+
+                self->rectificationStageStates[self->currentStage] = RectificationProcess::ProcessState::RUNNING;
+                if (self->rectificationStageStates[self->previousStage] ==
+                    RectificationProcess::ProcessState::RUNNING) {
+                    self->rectificationStageStates[self->previousStage] = RectificationProcess::ProcessState::FINISHED;
+                }
+                if (self->rectificationStageStates[self->previousStage] ==
+                    RectificationProcess::ProcessState::IDLE) {
+                    self->rectificationStageStates[self->previousStage] = RectificationProcess::ProcessState::SKIPPED;
+                }
+
+//                for (auto & rectificationStageState : self->rectificationStageStates) {
+//                    auto& stage = rectificationStageState.first;   // Ключ (тип RectificationStage)
+//                    auto& state = rectificationStageState.second;   // Значение (тип RectificationState)
+//                    ESP_LOGV("RectificationProcess", "Processing stage: %s, current state: %s",
+//                                 stageToString(stage).c_str(),
+//                                stateToString(state).c_str()
+//                             );
+//                }
+
+                self->metric.type = telemetry["type"].as<std::string>();
+                self->metric.common.mmhg = telemetry["common"]["mmhg"].as<unsigned int>();
+                self->metric.common.tp1 = telemetry["common"]["tp1"].as<float>();
+                self->metric.common.tp2 = telemetry["common"]["tp2"].as<float>();
+                self->metric.common.relay = telemetry["common"]["relay"].as<int>() != 0;
+                self->metric.common.signal = telemetry["common"]["signal"].as<int>() != 0;
+                // Выводим значения полей common в лог
+                ESP_LOGI("Telemetry", "Metric Common - mmhg: %u, tp1: %.2f, tp2: %.2f, relay: %d, signal: %d",
+                        self->metric.common.mmhg,
+                        self->metric.common.tp1,
+                        self->metric.common.tp2,
+                        self->metric.common.relay,
+                        self->metric.common.signal);
+
+                if (telemetry["tp1_target"].is<float>()) {
+                    auto tp1_target =  telemetry["tp1_target"].as<float>();
+                    ESP_LOGV("SsvcSettings", "tp1_target: %f", tp1_target);
+                    self->metric.tp1_target = tp1_target;
+                    ESP_LOGV("SsvcSettings", "Обновлен tp1_target: %f", self->metric.tp1_target);
+                }
+
+                if (telemetry["tp2_target"].is<float>()) {
+                    self->metric.tp2_target = telemetry["tp2_target"].as<float>();
+                    ESP_LOGV("SsvcSettings", "Обновлен tp2_target: %f", self->metric.tp2_target);
+                }
+
+                if (telemetry["countdown"].is<std::string>()) {
+                    self->metric.countdown = telemetry["countdown"].as<std::string>();
+                    ESP_LOGV("SsvcSettings", "Обновлен countdown: %s", self->metric.countdown.c_str());
+                }
+
+                if (telemetry["release"].is<std::string>()) {
+                    self->metric.release = telemetry["release"].as<std::string>();
+                    ESP_LOGV("SsvcSettings", "Обновлен release: %s", self->metric.release.c_str());
+                }
+
+                if (telemetry["time"].is<std::string>()) {
+                    self->metric.time = telemetry["time"].as<std::string>();
+                    ESP_LOGV("SsvcSettings", "Обновлен time: %s", self->metric.time.c_str());
+                }
+
+                if (telemetry["open"].is<float>()) {
+                    self->metric.open = telemetry["open"].as<float>();
+                    ESP_LOGV("SsvcSettings", "Обновлен open: %f", self->metric.open);
+                }
+
+                if (telemetry["period"].is<int>()) {
+                    self->metric.period = telemetry["period"].as<int>();
+                    ESP_LOGV("SsvcSettings", "Обновлен period: %d", self->metric.period);
+                }
+
+                if (telemetry["tank_mmhg"].is<int>()) {
+                    self->metric.tank_mmhg = telemetry["tank_mmhg"].as<int>();
+                    ESP_LOGV("SsvcSettings", "Обновлен tank_mmhg: %d", self->metric.tank_mmhg);
+                }
+
+                if (telemetry["tp1_sap"].is<float>()) {
+                    self->metric.tp1_sap = telemetry["tp1_sap"].as<float>();
+                    ESP_LOGV("SsvcSettings", "Обновлен tp1_sap: %f", self->metric.tp1_sap);
+                }
+
+                if (telemetry["tp2_sap"].is<float>()) {
+                    self->metric.tp2_sap = telemetry["tp2_sap"].as<float>();
+                    ESP_LOGV("SsvcSettings", "Обновлен tp2_sap: %f", self->metric.tp2_sap);
+                }
+
+                if (telemetry["hysteresis"].is<float>()) {
+                    self->metric.hysteresis = telemetry["hysteresis"].as<float>();
+                    ESP_LOGV("SsvcSettings", "Обновлен hysteresis: %f", self->metric.hysteresis);
+                }
+
+                if (telemetry["v1"].is<int>()) {
+                    self->metric.v1 = telemetry["v1"].as<int>();
+                    ESP_LOGV("SsvcSettings", "Обновлен v1: %d", self->metric.v1);
+                }
+
+                if (telemetry["v2"].is<int>()) {
+                    self->metric.v2 = telemetry["v2"].as<int>();
+                    ESP_LOGV("SsvcSettings", "Обновлен v2: %d", self->metric.v2);
+                }
+
+                if (telemetry["v3"].is<int>()) {
+                    self->metric.v3 = telemetry["v3"].as<int>();
+                    ESP_LOGV("SsvcSettings", "Обновлен v3: %d", self->metric.v3);
+                }
+
+                if (telemetry["alc"].is<float>()) {
+                    self->metric.alc = telemetry["alc"].as<float>();
+                    ESP_LOGV("SsvcSettings", "Обновлен alc: %f", self->metric.alc);
+                }
+
+                if (telemetry["stop"].is<int>()) {
+                    self->metric.stop = telemetry["stop"].as<int>() == 1;
+                    ESP_LOGV("SsvcSettings", "Обновлен stop: %u", self->metric.stop);
+                }
+
+                if (telemetry["stops"].is<unsigned char>()) {
+                    self->metric.stops = telemetry["stops"].as<unsigned char>();
+                    ESP_LOGV("SsvcSettings", "Обновлен stops: %u", self->metric.stops);
+                }
+
+    //            Пересчет количества отобранного продукта
+                self->recalculateFlowVolume(telemetry["v1"], telemetry["v2"], telemetry["v3"]);
+                ESP_LOGV("RectificationProcess", "LastMessage %s", message.c_str());
+                xSemaphoreGive(mutex); // Копирование данных
+            } else {
+                ESP_LOGE("RectificationProcess", "Не удалось захватить мьютекс для _message");
+                return;
             }
         }
     }
 }
 
-// Обработчики этапов
-void RectificationProcess::waitingTypeHandler(JsonDocument& message) {
-//    message.to<JsonObject>()["type"];
-    if (strlen(startTime) != 0) {
-        setRectificationStop();
+void RectificationProcess::startEventHandler(const std::string& event) {
+
+    if (event == "manually_closed" || event == "manually_opened") {
+        currentProcessStatus = ProcessState::PAUSED;
+    }else if (event == "remote_stop") {
+        currentProcessStatus = ProcessState::STOPPED;
+    }else if (event == "heads_finished") {
+        rectificationStageStates[RectificationStage::HEADS] = ProcessState::FINISHED;
+    }else if (event == "late_heads_finished") {
+        rectificationStageStates[RectificationStage::LATE_HEADS] = ProcessState::FINISHED;
+    }else if (event == "hearts_finished") {
+        rectificationStageStates[RectificationStage::HEARTS] = ProcessState::FINISHED;
+    }else if (event == "tails_finished") {
+        rectificationStageStates[RectificationStage::TAILS] = ProcessState::FINISHED;
+    }else if (event == "ds_error" || event == "ds_error_stop") {
+        currentProcessStatus = ProcessState::ERROR;
     }
 }
 
-void RectificationProcess::tp1TypeHandler(JsonDocument& message) {
-    setRectificationStart();
-}
 
-void RectificationProcess::delayedStartHandler(JsonDocument& message) {
-    setRectificationStart();
-}
-
-void RectificationProcess::headsTypeHandler(JsonDocument& message) {
-    JsonObject settings = ssvcSettings.as<JsonObject>();
-    int valveBandwidth = settings["valve_bandwidth"][0];
-    double openValveTime = message["v1"];
-
-    if (!settings.isNull()) {
-    #ifdef SSVC_DEBUG
-        Serial.print("Отбор голов: ");
-    #endif
-        valveBandwidthHeads = getSelectedVolume(valveBandwidth, openValveTime);
-    } else {
-        Serial.println("Поле 'settings' отсутствует или не является объектом.");
+void RectificationProcess::endEventHandler(std::string currentEvent) {
+//    TODO:Доработать блок, после сбора данных событий
+    if (currentEvent == "manually_closed" || currentEvent == "manually_opened") {
+        currentProcessStatus = ProcessState::RUNNING;
+    }else if (currentEvent == "ds_error" || currentEvent == "ds_error_stop") {
+        currentProcessStatus = ProcessState::RUNNING;
     }
 }
 
-void RectificationProcess::heartsTypeHandler(JsonDocument& message) {
-    JsonObject settings = ssvcSettings.as<JsonObject>();
-    int valveBandwidth = settings["valve_bandwidth"][1];
-    double openValveTime = message["v2"];
 
-    if (!settings.isNull()) {
-#ifdef SSVC_DEBUG
-        Serial.print("Отбор тела: ");
-#endif
-        valveBandwidthHearts = getSelectedVolume(valveBandwidth, openValveTime);
-    } else {
-        Serial.println("Поле 'settings' отсутствует или не является объектом.");
-    }
+bool RectificationProcess::isRectificationStarted() {
+    return currentProcessStatus == ProcessState::RUNNING;
 }
 
-void RectificationProcess::tailsTypeHandler(JsonDocument& message) {
-    JsonObject settings = ssvcSettings.as<JsonObject>();
-    int valveBandwidth = settings["valve_bandwidth"][2];
-    double openValveTime = message["v3"];
+bool RectificationProcess::getStatus(JsonVariant status) {
+    if (xSemaphoreTake(mutex, portMAX_DELAY)) {
 
-    if (!settings.isNull()) {
-        #ifdef SSVC_DEBUG
-                Serial.print("Отбор хвостов: ");
-        #endif
-        valveBandwidthTails = getSelectedVolume(valveBandwidth, openValveTime);
-    } else {
-        Serial.println("Поле 'settings' отсутствует или не является объектом.");
-    }
-}
+        status["stage"] = stageToString(currentStage);
+        status["status"] = stateToString(currentProcessStatus);
+        status["startTime"] = startTime;
+        status["endTime"] = endTime;
 
-void RectificationProcess::setRectificationStart() {
-    if (!this->isRectificationStarted) {
-        Serial.println("Начало ректификации");
-        this->isRectificationStarted = true;
-
-        // Обнуляем статические переменные
-        this->valveBandwidthHeads = 0;
-        this->valveBandwidthHearts = 0;
-        this->valveBandwidthTails = 0;
-
-        // Очищаем время завершения
-        memset(RectificationProcess::endTime, 0, sizeof(RectificationProcess::endTime));
-
-        // Устанавливаем время начала
-        this->setStartTime();
-
-        // Логируем начало ректификации
-        Serial.print("Начало ректификации: ");
-        Serial.println(RectificationProcess::getRectificationTimeStart());
-    }
-}
-
-void RectificationProcess::setRectificationStop() {
-    if (this->isRectificationStarted) {
-        this->isRectificationStarted = false;
-        this->setStopTime();
-        Serial.print("Окончание ректификации: ");
-        Serial.println(getRectificationTimeStart());
-    }
-}
-
-String RectificationProcess::getRectificationTimeStart() {
-    return startTime;
-}
-
-String RectificationProcess::getRectificationTimeEnd() {
-    return endTime;
-}
-
-// Event Handler
-void RectificationProcess::manuallyOpenedHandler(JsonDocument& message) {
-
-}
-
-void RectificationProcess::headsFinishedHandler(JsonDocument& message) {
-
-}
-
-void RectificationProcess::heartsFinishedHandler(JsonDocument& message) {
-
-}
-
-void RectificationProcess::tailsFinishedHandler(JsonDocument& message) {
-
-}
-
-void RectificationProcess::dcErrorHandler(JsonDocument& message) {
-
-}
-
-void RectificationProcess::dsErrorStopHandler(JsonDocument& message) {
-
-}
-
-void RectificationProcess::stabilizationLimitHandler(JsonDocument& message) {
-
-}
-
-void RectificationProcess::remoteStopHandler(JsonDocument& message) {
-
-}
-
-void RectificationProcess::manuallyClosedHandler(JsonDocument& message) {
-
-}
-
-void RectificationProcess::notFoundEvent(JsonDocument& message) {
-
-}
-
-// Auxiliary methods
-// Вспомогательный метод для установки времени
-void RectificationProcess::setTime(char* timeBuffer) {
-    time_t now = time(nullptr);
-    struct tm* timeInfo = localtime(&now);
-    if (timeInfo) {
-        strftime(timeBuffer, 25, "%Y-%m-%d %H:%M:%S", timeInfo);  // Размер буфера всегда 25
-    } else {
-       timeBuffer[24] = '\0'; // Гарантируем завершение строки
-    }
-}
-
-int RectificationProcess::getSelectedVolume(int valveBandwidth, double openValveTime) {
-    int volumeMl = (valveBandwidth / 3600) * openValveTime;
-#ifdef SSVC_DEBUG
-    Serial.print("Пропускная способность клапан: ");
-    Serial.println(valveBandwidth);
-    Serial.print("Отобранный объем: ");
-    Serial.print(volumeMl);
-    Serial.print(" мл");
-#endif
-    return volumeMl;
-}
-
-// Основной метод, который должен возвращать данные по работе подписчикам
-JsonDocument RectificationProcess::getRectificationStatus() {
-    JsonDocument _rectificationStatus = ssvsTelemetry;
-    if (_rectificationStatus == nullptr) {
-        _rectificationStatus["uartCommunicationError"] = true;
-        _rectificationStatus["info"] = "Ошибка связи. Перезагрузите SSVC";
-    }
-
-    if (strlen(startTime) != 0) {
-        _rectificationStatus["rectificationStart"] = startTime;
-    }
-    if (strlen(endTime) != 0) {
-        _rectificationStatus["rectificationEnd"] = endTime;
-    }
-    if (valveBandwidthHeads != 0) {
-        _rectificationStatus["valveBandwidthHeads"] = valveBandwidthHeads;
-    }
-    if (valveBandwidthHearts != 0) {
-        _rectificationStatus["valveBandwidthHearts"] = valveBandwidthHearts;
-    }
-    if (valveBandwidthTails != 0) {
-        _rectificationStatus["valveBandwidthTails"] = valveBandwidthTails;
-    }
-
-    _rectificationStatus["info"] = "";
-    bool isSupportSSVCVersion = _ssvcConnector.isSupportSSVCVersion;
-    ESP_LOGV("isSupportSSVCVersion::isSupportSSVCVersion: ", isSupportSSVCVersion);
-    if (!isSupportSSVCVersion) {
-        char buffer[256];
-        snprintf(buffer, sizeof(buffer), "Версия SSVC %s не поддерживается. Используйте версию - %s и выше",
-                 SSVC_MIN_SUPPORT_VERSION,
-                 _ssvcConnector.getSsvcVersion().c_str());
-        _rectificationStatus["info"] = buffer;
-    }
-    _rectificationStatus["ssvcVersionValid"] = _ssvcConnector.isSupportSSVCVersion;
-
-    return _rectificationStatus;
-}
-
-JsonDocument& RectificationProcess::getSsvcSettings() {
-    return _ssvcConnector.getSsvcSettings();
-}
-
-void RectificationProcess::addPointToTempGraphTask(void *pvParameters) {
-    auto* self = static_cast<RectificationProcess*>(pvParameters);
-    while (true) {
-        time_t now = time(nullptr);
-
-        // Если массив заполнен, сдвигаем элементы влево
-        if (self->tempGraphCurrentIndex >= TEMP_GRAPH_ARRAY_SIZE) {
-            // Сдвигаем все элементы массива влево, начиная с второго элемента
-            portENTER_CRITICAL(&ssvcMux);
-            for (size_t i = 1; i < TEMP_GRAPH_ARRAY_SIZE; ++i) {
-                self->timePoints[i - 1] = self->timePoints[i];
-                self->temp1Values[i - 1] = self->temp1Values[i];
-                self->temp2Values[i - 1] = self->temp2Values[i];
+        JsonObject stages = status["stages"].to<JsonObject>();
+        for (auto & rectificationStageState : rectificationStageStates) {
+            auto& stage = rectificationStageState.first;   // Ключ (тип RectificationStage)
+            auto& state = rectificationStageState.second;   // Значение (тип RectificationState)
+            if (stage != RectificationStage::EMPTY) {
+                stages[stageToString(stage)] = stateToString(state);
             }
-            self->tempGraphCurrentIndex = TEMP_GRAPH_ARRAY_SIZE - 1; // Устанавливаем индекс на последний элемент
-            portEXIT_CRITICAL(&ssvcMux);
         }
 
-        // Добавляем новые данные в конец массива
-        portENTER_CRITICAL(&ssvcMux);
-        self->timePoints[self->tempGraphCurrentIndex] = now;
-        self->temp1Values[self->tempGraphCurrentIndex] = self->tp1Value;
-        self->temp2Values[self->tempGraphCurrentIndex] = self->tp2Value;
-        portEXIT_CRITICAL(&ssvcMux);
+        xSemaphoreGive(mutex);
+        return true;
+    }
+    return false;
+}
 
-        // Инкрементируем индекс для следующей записи, используя остаток от деления
-        self->tempGraphCurrentIndex = (self->tempGraphCurrentIndex + 1) % TEMP_GRAPH_ARRAY_SIZE;
 
-        // Задержка 1 секунда
-        vTaskDelay(pdMS_TO_TICKS(1000 * PERIOD_GRAPH_SEC));  // Задержка PERIOD_GRAPH_SEC секунд
+std::string RectificationProcess::getTelemetry() {
+
+    if (xSemaphoreTake(mutex, portMAX_DELAY)) {
+        JsonDocument _message;
+
+        _message["type"] = metric.type;
+        if (strlen(startTime) > 0) {
+            _message["start_time"] = startTime;
+        }
+        if (strlen(endTime) > 0) {
+            _message["end_time"] = endTime;
+        }
+        _message["tank_mmhg"] = metric.tank_mmhg;
+        if (metric.tp1_target != 0) {
+            _message["tp1_target"] = metric.tp1_target;
+        }
+        if (metric.tp2_target != 0) {
+            _message["tp2_target"] = metric.tp2_target;
+        }
+        _message["countdown"] = metric.countdown;
+        _message["release"] = metric.release;
+        _message["time"] = metric.time;
+        _message["open"] = metric.open;
+        _message["period"] = metric.period;
+        if (metric.period > 0) {
+            int valveOpen = (int)((100.0 * metric.open) / metric.period * 100) / 100;
+            _message["valveOpen"] = valveOpen;
+            int volumeSpeed = 0;
+            if (calculateVolumeSpeed(valveOpen, volumeSpeed)) {
+                _message["volumeSpeed"] = volumeSpeed;
+            }
+        }
+        _message["v1"] = metric.v1;
+        _message["v2"] = metric.v2;
+        _message["v3"] = metric.v3;
+        _message["stop"] = metric.stop;
+        _message["stops"] = metric.stops;
+
+        JsonObject common = _message["common"].to<JsonObject>();
+        if (metric.common.mmhg) {
+            common["mmhg"] = metric.common.mmhg;
+        }
+        if (metric.tp1_sap != 0) {
+            common["tp1"] = metric.tp1_sap;
+        }else {
+            common["tp1"] = metric.common.tp1;
+        }
+        if (metric.tp1_sap != 0) {
+            common["tp2"] = metric.tp2_sap;
+        }else {
+            common["tp2"] = metric.common.tp2;
+        }
+        common["relay"] = metric.common.relay;
+        common["signal"] = metric.common.signal;
+        common["heatingOn"] = isHeatingOn();
+        common["overclockingOn"] = isOverclockingOn();
+        common["hysteresis"] = metric.hysteresis;
+
+    //    TODO Вопрос по отправке каждый раз данных по уже прошедшим отборам сомнительный
+    // Пока оставлю так как есть. Затем возможно переделаю. На получение через POST.
+        JsonObject volume = _message["volume"].to<JsonObject>();
+        if (flowVolumeValves[RectificationStage::HEADS] != 0) {
+            volume["heads"] = flowVolumeValves[RectificationStage::HEADS];
+        }
+        if (flowVolumeValves[RectificationStage::HEARTS] != 0) {
+            volume["hearts"] = flowVolumeValves[RectificationStage::HEARTS];
+        }
+        if (flowVolumeValves[RectificationStage::LATE_HEADS] != 0) {
+            volume["late_heads"] = flowVolumeValves[RectificationStage::LATE_HEADS];
+        }
+        if (flowVolumeValves[RectificationStage::TAILS] != 0) {
+            volume["tails"] = flowVolumeValves[RectificationStage::TAILS];
+        }
+
+// Сообщение о событии и прочее уведомление
+        if (metric.event != RectificationEvent::EMPTY) {
+            _message["event"] = rectificationEventToString(metric.event);
+//          TODO В информацию пока заводим только обработку event. В последствии это нужно будет расширить
+            _message["info"] = rectificationEventToDescription(metric.event);
+        }
+
+        if (metric.alc != 0) {
+            _message["alc"] = metric.alc;
+        }
+        std::string json;
+        serializeJson(_message, json);
+        ESP_LOGD("RECTIFICATION", "Отладка json: %s", json.c_str());
+        xSemaphoreGive(mutex);
+        return json;
+    }  else {
+        ESP_LOGE("RectificationProcess", "Failed to take mutex");
+        return "{}";
+    }
+}
+
+bool RectificationProcess::isHeatingOn() {
+    bool relay_inverted = _ssvcSettings.getRelayInverted();
+    return relay_inverted ? !metric.common.relay : metric.common.relay;
+}
+
+bool RectificationProcess::isOverclockingOn() {
+    bool signal_inverted = _ssvcSettings.getSignalInverted();
+    return signal_inverted ? metric.common.signal : !metric.common.signal;
+}
+
+void RectificationProcess::recalculateFlowVolume(int v1, int v2, int v3) {
+    std::array<int, 3> bw = _ssvcSettings.getValveBw();
+    ESP_LOGV("RectificationProcess", "Valve Bw: [%d, %d, %d]", bw[0], bw[1], bw[2]);
+    int value = 0;
+    if (currentStage == RectificationStage::HEADS) {
+        value = (bw[0] * v1) / 3600; // Целочисленное деление
+    } else if (currentStage == RectificationStage::HEARTS) {
+        value = (bw[1] * v2) / 3600; // Целочисленное деление
+    } else if (currentStage == RectificationStage::TAILS || currentStage == RectificationStage::LATE_HEADS) {
+        value = (bw[2] * v3) / 3600; // Целочисленное деление
+    } else {
+        return;
+    }
+    ESP_LOGV("RectificationProcess", "Отобранный объем: %d мл", value);
+    flowVolumeValves[currentStage] = value;
+}
+
+bool RectificationProcess::calculateVolumeSpeed(int valveOpen, int& volumeSpeed) {
+    std::array<int, 3> bw = _ssvcSettings.getValveBw();
+    if (currentStage == RectificationStage::HEADS && bw[0] != 0){
+        volumeSpeed = (bw[0] * valveOpen) / 100;
+        return true;
+    } else if (currentStage == RectificationStage::HEARTS && bw[1] != 0){
+        volumeSpeed = (bw[1] * valveOpen) / 100;
+        return true;
+    } else if ((currentStage == RectificationStage::LATE_HEADS ||
+                currentStage == RectificationStage::TAILS)
+                && bw[2] != 0) {
+        volumeSpeed = (bw[2] * valveOpen) / 100;
+        return true;
+    }
+    else {
+        return false;
     }
 }
 
 
-// Метод для создания JSON документа с данными
-JsonDocument RectificationProcess::getGraphTempData(size_t point, size_t periodicity) {
-    JsonDocument doc;  // Создаем JSON документ (выбираем подходящий размер)
-    JsonArray data = doc["data"].to<JsonArray>();
 
-    // Начинаем с startIndex и отбираем данные с шагом periodicity
-    for (size_t i = point; i < TEMP_GRAPH_ARRAY_SIZE; i += periodicity) {
-        if (timePoints[i] == 0 && temp1Values[i] == 0 && temp2Values[i] == 0) {
-            return doc;
-        }
 
-        JsonDocument entry;
-        entry["time"] = RectificationProcess::timePoints[i];
-        entry["tp1"] = RectificationProcess::temp1Values[i];
-        entry["tp2"] = RectificationProcess::temp2Values[i];
-        data.add(entry);
-    }
 
-    return doc;
-}

@@ -85,6 +85,7 @@ export type Analytics = {
 	max_alloc_heap: number;
 	psram_size: number;
 	free_psram: number;
+	used_psram: number;
 	free_heap: number;
 	total_heap: number;
 	min_free_heap: number;
@@ -148,42 +149,39 @@ export type MQTTSettings = {
 
 export type SsvcOpenConnectMessage = {
 	type: string;
+	start_time: string
+	end_time: string
+	common: commonType;
+	tank_mmhg?: number;
+	waterInputTemp: number;
+	waterOutputTemp: number;
+	valveOpen: number;
+	open: number;
+	period: number;
+	volume: valveFlowVolumeType;
 	tp1_target?: number,
+	countdown: string;
+	volumeSpeed?: number
 	manufacturer?: string,
 	model?: string,
 	version?: string,
 	request?: string,
 	result?: string,
-	countdown?: string;
 	time?: string;
-	open?: number;
-	period?: number;
 	hysteresis?: number;
-	tank_mmhg?: number;
 	tp1_sap?: number;
 	tp2_sap?: number;
 	v1?: number;
 	v2?: number;
 	v3?: number;
 	alc?: number;
-	stop?: number;
-	stops?: number;
+	stop: boolean;
+	stops: number;
 	event?: string;
-	common: commonType;
-	settings?: SsvcSettings,
-
-// 	Дополнительные параметры переданные openConnsct
-
-	ssvcVersionValid: boolean;
-	uartCommunicationError: boolean;
 	info: string;
 	rectificationStart?: string;
 	rectificationEnd?: string;
-
-	valveBandwidthHeads?: number;
-	valveBandwidthHearts?: number;
-	valveBandwidthTails?: number;
-
+	settings: SsvcSettings;
 };
 
 export type commonType = {
@@ -191,29 +189,37 @@ export type commonType = {
 	tp1: number,
 	tp2: number,
 	relay:boolean,
-	signal: boolean
+	signal: boolean,
+	overclockingOn: boolean;
+	heatingOn: boolean;
 };
 
+export type valveFlowVolumeType = {
+	[key: string]: string; // или другой тип данных
+}
 
 export type SsvcSettings =   {
-	heads: [number, number];                // Параметры для Heads: давление и период
-	hearts: [number, number];               // Параметры для Hearts: давление и период
+	heads: [number, number];                // Параметры для Голов: давление и период
+	late_heads: [number, number];           // Параметры для подголовников: давление и период
+	hearts: [number, number];               // Параметры для Тела: давление и период
+	tails: [number, number];                // Параметры для Хвостов: давление и период
 	hyst: number;                           // Гистерезис
 	decrement: number;                      // Декремент
-	tails: [number, number];                // Параметры для Tails: давление и период
 	sound: number;                          // Звук (0 или 1)
 	pressure: number;                       // Давление
 	relay_inverted: number;                 // Инвертировано ли реле (0 или 1)
 	relay_autostart: number;                // Автозапуск реле (0 или 1)
 	autoresume: number;                     // Автоматическое возобновление (0 или 1)
 	auto_mode: number;                      // Автоматический режим (0 или 1)
-	head_timer: number;                     // Таймер для Heads (в секундах)
-	body_timer: number;                     // Таймер для Hearts (в секундах)
+	heads_timer: number;                    // Таймер для Heads (в секундах)
+	late_heads_timer: number;								// Время отбора подголовников, с. Актуально в firmware 2.3.*
+	hearts_timer: number;                   // Таймер для Hearts (в секундах)
 	tail_temp: number;                      // Температура хвостов (Tail)
 	start_delay: number;                    // Задержка старта (в секундах)
 	hearts_finish_temp: number;             // Температура окончания Hearts
 	parallel_v3: [number, number, number][]; // Параметры Parallel V3, массив массивов из трех значений
 	parallel_v1: [number, number];          // Параметры Parallel V1
+	parallel: [number, number];          // Параметры Parallel V3 - подголовники
 	hearts_temp_shift: number;              // Смещение температуры для Hearts
 	hearts_pause: number;                   // Пауза для Hearts
 	formula: number;                        // Формула
@@ -228,7 +234,7 @@ export type SsvcSettings =   {
 	stab_limit_time: number;                // Ограничение времени стабилизации (в секундах)
 	stab_limit_finish: number;              // Завершение стабилизации (0 или 1)
 	backlight: string;                      // Подсветка ("off", "on" или другие возможные значения)
-	valve_bandwidth: [number, number, number];                      // Подсветка ("off", "on" или другие возможные значения)
+	valve_bw: [number, number, number];                      // Подсветка ("off", "on" или другие возможные значения)
 }
 
 // export const commandState=  writable<CommandState>
@@ -238,3 +244,21 @@ export type CommandState = {
 	command: string
 }
 
+export type RectificationStatus = {
+	request: string;
+	response: Response;
+}
+
+export type Response = {
+	stage: string
+	status: string;
+	start_time: string;
+	end_time: string;
+	stages: Stages;
+}
+
+type Stages = {
+	[key: string]: string; // или другой тип данных
+};
+
+export type FetchDataFunction = () => void | Promise<void>;

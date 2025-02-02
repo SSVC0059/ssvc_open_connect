@@ -7,32 +7,23 @@
 // Инициализация статической переменной
 SsvcConnector* SsvcConnector::_ssvcConnector = nullptr;
 
-SsvcConnector::SsvcConnector(EventGroupHandle_t eventGroup) : _eventGroup(eventGroup),
-                                                              _isCommandInProgress(false){
-    _mutex = xSemaphoreCreateMutex();
-    if (_mutex == nullptr) {
-        Serial.println("Ошибка: не удалось создать мьютекс!");
-    }
+SsvcConnector::SsvcConnector() {
     uartCommunicationError = false;
-    isSupportSSVCVersion = true;
+    lastSettings = "";
+    lastMessage = "";
+    InitUartDriver();
 }
 
-SsvcConnector::~SsvcConnector() {
-    if (_mutex) {
-        vSemaphoreDelete(_mutex);
-    }
-}
-
-SsvcConnector& SsvcConnector::getConnector(EventGroupHandle_t eventGroup) {
+SsvcConnector& SsvcConnector::getConnector()  {
     if (!_ssvcConnector) {
-        _ssvcConnector = new SsvcConnector(eventGroup);
+        _ssvcConnector = new SsvcConnector();
     }
     return *_ssvcConnector;  // Возвращаем указатель на экземпляр
 }
 
-void SsvcConnector::begin() {
-    Serial.println("Start SsvcConnector begin()");
-//    gpio_set_pull_mode(SSVC_OPEN_CONNECT_UART_RX, GPIO_PULLUP_ONLY);
+void SsvcConnector::InitUartDriver() {
+    ESP_LOGI("SsvcConnector", "Start SsvcConnector begin()");
+    gpio_set_pull_mode(SSVC_OPEN_CONNECT_UART_RX, GPIO_PULLUP_ONLY);
 
     constexpr uart_config_t uart_config = {
             .baud_rate = 115200,
@@ -42,9 +33,9 @@ void SsvcConnector::begin() {
             .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     };
     uart_driver_install(SSVC_OPEN_CONNECT_UART_NUM,
-                        1024,
                         SSVC_OPEN_CONNECT_BUF_SIZE * 2,
                         SSVC_OPEN_CONNECT_BUF_SIZE * 2,
+                        0,
                         nullptr,
                         0);
     uart_param_config(SSVC_OPEN_CONNECT_UART_NUM, &uart_config);
@@ -54,14 +45,15 @@ void SsvcConnector::begin() {
                  UART_PIN_NO_CHANGE,
                  UART_PIN_NO_CHANGE);
 
-    ESP_LOGV("SSVC Open Connect", "Starting loop task");
+    ESP_LOGV("SsvcConnector", "Starting loop task");
 
     SsvcConnector::initSsvcController();
 };
 
 // CRON
 void SsvcConnector::initSsvcController() {
-    Serial.println("start _telemetry task");
+    ESP_LOGV("SsvcConnector", "start _telemetry task");
+
     // Запуск сбора телеметрии
     xTaskCreatePinnedToCore(
             SsvcConnector::_telemetry,            // Function that should be called
@@ -73,268 +65,104 @@ void SsvcConnector::initSsvcController() {
             1 // Pin to application core
     );
 
-    // Запрос настроек SSVC
-    #ifdef SSVC_DEBUG
-    Serial.println("start init task: GET_SETTINGS")
-    #endif
-
-    // Получение настроек SSVC
-    taskGetSettingsCommand();
-    taskVersionCommand();
-
 }
 
-[[noreturn]] void SsvcConnector::_startTask(void *pvParameters) {
-    Serial.println("SsvcConnector::_startTask");
-    auto* taskParams = static_cast<TaskParameters*>(pvParameters);
-    auto* self = taskParams->connector;
-    auto commandFunction = taskParams->commandFunction;
-    bool _need_deleteTask = taskParams->need_deleteTask;
-
-    while (true) {
-
-        vTaskDelay(pdMS_TO_TICKS(4000));
-
-        if (self -> isCommandInProgress()) {
-            Serial.println("Команда уже выполняется. Ожидание завершения...");
-            vTaskDelay(pdMS_TO_TICKS(5000));
-        } else {
-            self->setCommandInProgress(true);
-        }
-
-        if (commandFunction) {
-            commandFunction(self); // Выполнение переданной команды
-        } else {
-            Serial.println("SsvcConnector::_startTask: commandFunction is nullptr!");
-        }
-
-        vTaskDelay(pdMS_TO_TICKS(100));
-
-        // Ожидание события
-        EventBits_t bits = xEventGroupWaitBits(
-                self->_eventGroup,
-                BIT0,        // Ждём BIT0
-                pdTRUE,      // Сбрасываем флаг после обработки
-                pdFALSE,     // Любое событие
-                portMAX_DELAY
-        );
-
-        if (bits & BIT0) {
-            // Проверка наличия и валидности сообщения
-            if (!self->_message.isNull()) {
-                String type = self->getValue<String>("type");
-                String request = self->getValue<String>("request");
-
-                #ifdef SSVC_DEBUG
-                    Serial.print("SsvcConnector::_startTask: Message type: ");
-                    Serial.println(type);
-                    Serial.print("SsvcConnector::_startTask: Request: ");
-                    Serial.println(request);
-                #endif
-
-                // Обработка правильного ответа
-                if (type == "response" && request == taskParams->expectedRequest) {
-                    Serial.println("SsvcConnector::_startTask: Correct response received, calling response handler...");
-                    // Передаем объект JsonDocument в обработчик
-                    taskParams->responseHandler(self, self->_message);
-
-                    // Сбрасываем флаг завершения и только потом удаляем задачу
-                    self->setCommandInProgress(false);
-                    if (_need_deleteTask) {
-                        vTaskDelete(nullptr); // Удаляем задачу// Сбрасываем флаг после обработки
-                    }else {
-                        vTaskDelay(pdMS_TO_TICKS(1000*5));
-                    }
-                } else {
-                    #ifdef SSVC_DEBUG
-                        Serial.println("SsvcConnector::_startTask: Waiting for correct response...");
-                    #endif
-                }
-            } else {
-                Serial.println("SsvcConnector::_startTask: _message is nullptr!");
-            }
-        } else {
-            Serial.println("_startTask: No bits & BIT0");
-        }
-
-        vTaskDelay(pdMS_TO_TICKS(300));
-    }
-}
 
 [[noreturn]] void SsvcConnector::_telemetry(void* pvParameters) {
     auto* self = static_cast<SsvcConnector*>(pvParameters);
-    char data[1024]; // Буфер для данных
-    const int errorThreshold = 10;  // Количество итераций по 500 мс, чтобы достичь 5 секунд
-    int errorCounter = 0;  // Счётчик ошибок десериализации
+    static char data[1024]; // Буфер для данных
+    const int errorThreshold = 10;  // Количество ошибок для признаков сбоя
+    int errorCounter = 0;
 
     while (true) {
-        // Предполагаем, что данные получаются через UART (замените на ваш код получения данных)
-        int len = uart_read_bytes(UART_NUM_1, (uint8_t*)data, sizeof(data) - 1, pdMS_TO_TICKS(100));
-        if (len > 0) {
-            data[len] = '\0';  // Нуль-терминатор для строки
-            String jsonStr = String(data);  // Преобразуем данные в строку
-            #ifdef SSVC_DEBUG
-            Serial.println(jsonStr);
-            #endif
-            JsonDocument temp;
-            DeserializationError error = deserializeJson(temp, jsonStr);
-            if (error) {
-                errorCounter++;  // Увеличиваем счётчик ошибок
-                Serial.print("Ошибка десериализации: ");
-                Serial.println(error.c_str());
+        UBaseType_t stackWaterMark = uxTaskGetStackHighWaterMark(nullptr);
+//        ESP_LOGI("SsvcConnector", "Telemetry water mark: %u", stackWaterMark);
 
-                if (errorCounter >= errorThreshold) {
-                    self->uartCommunicationError = true;  // Устанавливаем ошибку
+        size_t data_len = 0;
+        uart_get_buffered_data_len(SSVC_OPEN_CONNECT_UART_NUM, &data_len);
+        if (data_len > SSVC_OPEN_CONNECT_BUF_SIZE) {
+            ESP_LOGE("SsvcConnector", "Buffer overflow detected, clearing buffer!");
+            uart_flush(SSVC_OPEN_CONNECT_UART_NUM);  // Очистка буфера
+        }
+
+        memset(data, 0, sizeof(data));
+        int idx = 0;
+
+        while (true) {
+            // Чтение одного байта за раз
+            int len = uart_read_bytes(SSVC_OPEN_CONNECT_UART_NUM, (uint8_t*)&data[idx], 1, pdMS_TO_TICKS(100));
+            if (len > 0) {
+                // Если встретили символ переноса строки, завершаем чтение
+                if (data[idx] == '\n') {
+                    data[idx] = '\0';  // Завершаем строку
+                    break;
                 }
-            }else {
-                self->uartCommunicationError = false;
-                self->updateMessage(temp);  // Обновляем _message через updateMessage
-                xEventGroupSetBits(self->_eventGroup, BIT0 | BIT1);
+                idx++;
+                // Проверка на переполнение буфера
+                if (idx >= sizeof(data) - 1) {
+                    data[sizeof(data) - 1] = '\0'; // Ограничиваем строку
+                    break;
+                }
+            } else {
+                vTaskDelay(pdMS_TO_TICKS(100));
 #ifdef SSVC_DEBUG
-                ESP_LOGI("_telemetry", "Установлен бит оповещения подписчиков");
+                ESP_LOGI("_telemetry", "Нет данных по UART");
 #endif
             }
-        } else {
-            vTaskDelay(pdMS_TO_TICKS(100));
-#ifdef SSVC_DEBUG
-            ESP_LOGI("_telemetry", "Нет данных по UART");
-#endif
         }
-        vTaskDelay(pdMS_TO_TICKS(500));  // Пауза для предотвращения перегрузки
+
+        // После чтения всей строки пробуем десериализовать JSON
+#ifdef CONFIG_IDF_TARGET_ESP32S3
+        SpiRamAllocator allocator;
+        JsonDocument doc(&allocator);
+#else
+        JsonDocument doc;
+#endif
+        DeserializationError error = deserializeJson(doc, data);
+        if (error) {
+            errorCounter++;
+            ESP_LOGE("SsvcConnector", "Ошибка десериализации: %s", error.c_str());
+
+            if (errorCounter >= errorThreshold) {
+                self->uartCommunicationError = true;
+            }
+        } else {
+
+            ESP_LOGV("SsvcConnector", "Начало вывода данных", data);
+            ESP_LOGV("SsvcConnector", "%s", data);
+            ESP_LOGV("SsvcConnector", "Конец вывода данных");
+
+            self->uartCommunicationError = false;
+            if (doc["type"] == "response" && doc["request"] == "GET_SETTINGS") {
+                xEventGroupSetBits(eventGroup, BIT10);
+            } else if (doc["type"] == "response" && doc["request"] == "STOP") {
+                xEventGroupSetBits(eventGroup, BIT11);
+            } else if (doc["type"] == "response" && doc["request"] == "PAUSE") {
+                xEventGroupSetBits(eventGroup, BIT12);
+            } else if (doc["type"] == "response" && doc["request"] == "RESUME") {
+                xEventGroupSetBits(eventGroup, BIT13);
+            } else if (doc["type"] == "response" && doc["request"] == "START") {
+                xEventGroupSetBits(eventGroup, BIT14);
+            } else if (doc["type"] == "response" && doc["request"] == "AT") {
+                xEventGroupSetBits(eventGroup, BIT15);
+            }else {
+//              телеметрия и все остальное
+                xEventGroupSetBits(eventGroup, BIT0);
+            }
+
+            if (xSemaphoreTake(mutex, portMAX_DELAY)) {
+                self->lastMessage = std::string(data);
+                ESP_LOGV("SsvcConnector", "lastMessage: %s", self->lastMessage.c_str());
+                xSemaphoreGive(mutex);  // Копирование данных
+            } else {
+                ESP_LOGE("SsvcConnector", "Не удалось захватить мьютекс для lastMessage");
+            }
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(500)); // Пауза для предотвращения перегрузки
     }
 }
 
-
-// Task send command
-
-bool SsvcConnector::taskGetSettingsCommand(){
-    auto get_settingsParams = new TaskParameters{
-            this,                   // Указатель на текущий экземпляр
-            [](SsvcConnector* self) {
-#ifdef SSVC_DEBUG
-                Serial.println("Running GET_SETTINGS command");
-#endif
-
-                SsvcConnector::sendGetSettingsCommand();
-            },       // Команда, которую нужно выполнить
-            "GET_SETTINGS",        // Ожидаемый тип команды в ответе
-            [](SsvcConnector* self, JsonDocument& message) {
-                self->updateSettings(message);
-//                #ifdef SSVC_DEBUG
-                Serial.println("Получен результат команды GET_SETTINGS");
-//                #endif
-            },
-            true
-    };
-
-    xTaskCreatePinnedToCore(
-            SsvcConnector::_startTask,
-            "CommandTask",
-            4096,
-            get_settingsParams,
-            tskIDLE_PRIORITY,
-            nullptr,
-            tskNO_AFFINITY
-    );
-    return true;
-}
-
-bool SsvcConnector::taskVersionCommand() {
-    auto getVersionParams = new TaskParameters{
-            this,                   // Указатель на текущий экземпляр
-            [](SsvcConnector* self) {
-#ifdef SSVC_DEBUG
-                Serial.println("Running VERSION command");
-#endif
-                SsvcConnector::sendVersionCommand();
-            },       // Команда, которую нужно выполнить
-            "VERSION",        // Ожидаемый тип команды в ответе
-            [](SsvcConnector* self, JsonDocument& message) {
-                self->updateVersion(message);
-//            #ifdef SSVC_DEBUG
-                Serial.println("Получен результат команды VERSION");
-//            #endif
-
-            },
-            true
-    };
-
-    xTaskCreatePinnedToCore(
-            SsvcConnector::_startTask,
-            "CommandVersion",
-            2048,
-            getVersionParams,
-            tskIDLE_PRIORITY,
-            nullptr,
-            tskNO_AFFINITY
-    );
-    return true;
-}
-
-
-bool SsvcConnector::taskStopCommand() {
-    return createTask(
-            "CommandStop",
-            "STOP",
-            "STOP",
-            [](SsvcConnector* self) {
-                SsvcConnector::sendStopCommand();
-            },
-            [](SsvcConnector* self, JsonDocument& message) {
-                if (message["type"] == "response" && message["request"] == "STOP") {
-                    Serial.println("Команда STOP успешно выполнена");
-                }
-            }
-    );
-}
-
-bool SsvcConnector::taskResumeCommand() {
-    return createTask(
-            "CommandResume",
-            "RESUME",
-            "RESUME",
-            [](SsvcConnector* self) {
-                SsvcConnector::sendResumeCommand();
-            },
-            [](SsvcConnector* self, JsonDocument& message) {
-                if (message["type"] == "response" && message["request"] == "RESUME") {
-                    Serial.println("Команда RESUME успешно выполнена");
-                }
-            }
-    );
-}
-
-bool SsvcConnector::taskPauseCommand() {
-    return createTask(
-            "CommandPause",
-            "PAUSE",
-            "PAUSE",
-            [](SsvcConnector* self) {
-                SsvcConnector::sendPauseCommand();
-            },
-            [](SsvcConnector* self, JsonDocument& message) {
-                if (message["type"] == "response" && message["request"] == "PAUSE") {
-                    Serial.println("Команда PAUSE успешно выполнена");
-                }
-            }
-    );
-}
-
-bool SsvcConnector::taskNestCommand() {
-    return createTask(
-            "CommandNext",
-            "NEXT",
-            "NEXT",
-            [](SsvcConnector* self) {
-                SsvcConnector::sendNextCommand();
-            },
-            [](SsvcConnector* self, JsonDocument& message) {
-                if (message["type"] == "response" && message["request"] == "NEXT") {
-                    Serial.println("Команда NEXT успешно выполнена");
-                }
-            }
-    );
-}
 
 // internal command
 bool SsvcConnector::sendGetSettingsCommand() {
@@ -358,111 +186,26 @@ bool SsvcConnector::sendNextCommand() {
 }
 
 bool SsvcConnector::sendVersionCommand() {
-    Serial.println("Отправка команды VERSION");
-    bool result = SsvcConnector::sendCommand("VERSION\n\r");
-    #ifdef SSVC_DEBUG
-        if (result) {
-            Serial.println("Команда VERSION успешно отправлена");
-        } else {
-            Serial.println("Ошибка отправки команды VERSION");
-        }
-    #endif
-    return result;
+    return SsvcConnector::sendCommand("VERSION\n\r");
 }
 
-__attribute__((unused)) bool SsvcConnector::sendAtCommand() {
+bool SsvcConnector::sendAtCommand() {
     return SsvcConnector::sendCommand("AT\n\r");
 }
 
 // ENDER COMMAND
-
-void SsvcConnector::updateMessage(const JsonDocument& ssvcMetrics) {
-    _message.clear();
-    if (xSemaphoreTake(mutex, portMAX_DELAY)) {
-        _message.set(ssvcMetrics);
-        xSemaphoreGive(mutex);
-    }
-}
-
-void SsvcConnector::updateSettings(const JsonDocument& ssvcSettings) {
-    _ssvcSettings.clear();
-    Serial.println(ssvcSettings["settings"].as<String>());
-    if (xSemaphoreTake(mutex, portMAX_DELAY)) {
-        _ssvcSettings.set(ssvcSettings["settings"]);
-        xSemaphoreGive(mutex);
-    }
-}
-
-void SsvcConnector::updateVersion(const JsonDocument& ssvcVersion){
-    Serial.println("ssvcVersion is set");
-    // Проверяем, существует ли ключ "version" и его тип
-    if (!ssvcVersion["version"].isNull() && ssvcVersion["version"].is<String>()) {
-        String ver =  ssvcVersion["version"].as<String>();
-        _ssvcVersion = ver;  // Присваиваем значение поля "version"
-        checkVersionSupported();
-        Serial.print("Текущая версия SSVC: ");
-        Serial.println(ver);
-#ifdef SSVC_SUPPORT_VERSION
-        // Перенос проверки функционала поддерживаемой версии
-#endif
-    } else {
-        Serial.println("Поле 'version' не найдено или его тип неверен");
-    }
-}
-
 bool SsvcConnector::sendCommand(const char *command) {
-//    #ifdef SSVC_DEBUG
-    Serial.print("Sending command: ");
-    Serial.println(command);
-//    #endif
+    ESP_LOGV("SsvcConnector", "Отправка команды SSVC: %s", command); // Логирование команды
     return uart_write_bytes(UART_NUM_1, command, strlen(command)) != -1;
 }
 
-void SsvcConnector::checkVersionSupported() {
-    const std::string minSupportedVersion = SSVC_MIN_SUPPORT_VERSION;
-
-    // Преобразуем версии в массивы чисел
-    auto currentParts = parseVersion(_ssvcVersion.c_str());
-    auto minSupportedParts = parseVersion(minSupportedVersion);
-
-    // Определяем максимальную длину для сравнения
-    size_t maxLength = std::max(currentParts.size(), minSupportedParts.size());
-
-    // Дополняем недостающие части нулями
-    currentParts.resize(maxLength, 0);
-    minSupportedParts.resize(maxLength, 0);
-
-    // Сравниваем версии
-    for (size_t i = 0; i < maxLength; ++i) {
-        if (currentParts[i] < minSupportedParts[i]) {
-            isSupportSSVCVersion = false;
-            return;  // Если версия не поддерживается, выходим
-        }
-        if (currentParts[i] > minSupportedParts[i]) {
-            isSupportSSVCVersion = true;
-            return;  // Если версия поддерживается, выходим
-        }
-    }
-
-    // Если все части равны, версия поддерживается
-    isSupportSSVCVersion = true;
+std::string SsvcConnector::getLastMessage() {
+    // Возвращаем строку вместо указателя
+    return lastMessage;
 }
 
-std::vector<int> SsvcConnector::parseVersion(const std::string& version) {
-    std::vector<int> parts;
-    std::stringstream ss(version);
-    std::string part;
-
-    while (std::getline(ss, part, '.')) {
-        parts.push_back(std::stoi(part));
-    }
-
-    return parts;
+bool SsvcConnector::sendSetCommand(const std::string& newSettings) {
+    ESP_LOGV("SsvcConnector", "Отправка настроек SSVC: %s", newSettings.c_str()); // Логирование команды
+    return false;
 }
-
-
-
-
-
-
 

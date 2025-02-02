@@ -16,7 +16,7 @@
 
 ESP32SvelteKit::ESP32SvelteKit(PsychicHttpServer *server, unsigned int numberEndpoints) : _server(server),
                                                                                           _numberEndpoints(numberEndpoints),
-                                                                                          _featureService(server),
+                                                                                          _featureService(server, &_socket),
                                                                                           _securitySettingsService(server, &ESPFS),
                                                                                           _wifiSettingsService(server, &ESPFS, &_securitySettingsService, &_socket),
                                                                                           _wifiScanner(server, &_securitySettingsService),
@@ -81,7 +81,7 @@ void ESP32SvelteKit::begin()
                 response.setCode(200);
                 response.setContentType(contentType.c_str());
                 response.addHeader("Content-Encoding", "gzip");
-                response.addHeader("Cache-Control", "public, immutable, max-age=31536000");
+                response.addHeader("Cache-Control", "no-cache, no-store");
                 response.setContent(content, len);
                 return response.send();
             };
@@ -183,7 +183,7 @@ void ESP32SvelteKit::begin()
         "ESP32 SvelteKit Loop",     // Name of the task (for debugging)
         4096,                       // Stack size (bytes)
         this,                       // Pass reference to this class instance
-        (tskIDLE_PRIORITY + 5),     // task priority
+        (tskIDLE_PRIORITY + 1),     // task priority
         NULL,                       // Task handle
         ESP32SVELTEKIT_RUNNING_CORE // Pin to application core
     );
@@ -191,6 +191,11 @@ void ESP32SvelteKit::begin()
 
 void ESP32SvelteKit::_loop()
 {
+    bool wifi = false;
+    bool ap = false;
+    bool event = false;
+    bool mqtt = false;
+
     while (1)
     {
         _wifiSettingsService.loop(); // 30 seconds
@@ -198,6 +203,38 @@ void ESP32SvelteKit::_loop()
 #if FT_ENABLED(FT_MQTT)
         _mqttSettingsService.loop(); // 5 seconds
 #endif
+        // Query the connectivity status
+        wifi = _wifiStatus.isConnected();
+        ap = _apStatus.isActive();
+        event = _socket.getConnectedClients() > 0;
+#if FT_ENABLED(FT_MQTT)
+        mqtt = _mqttStatus.isConnected();
+#endif
+
+        // Update the system status
+        if (wifi && mqtt)
+        {
+            _connectionStatus = ConnectionStatus::STA_MQTT;
+        }
+        else if (wifi)
+        {
+            _connectionStatus = event ? ConnectionStatus::STA_CONNECTED : ConnectionStatus::STA;
+        }
+        else if (ap)
+        {
+            _connectionStatus = event ? ConnectionStatus::AP_CONNECTED : ConnectionStatus::AP;
+        }
+        else
+        {
+            _connectionStatus = ConnectionStatus::OFFLINE;
+        }
+
+        // iterate over all loop functions
+        for (auto &function : _loopFunctions)
+        {
+            function();
+        }
+
         vTaskDelay(20 / portTICK_PERIOD_MS);
     }
 }

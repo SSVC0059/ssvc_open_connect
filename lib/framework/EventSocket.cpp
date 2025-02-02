@@ -25,7 +25,7 @@ void EventSocket::registerEvent(String event)
 {
     if (!isEventValid(event))
     {
-        ESP_LOGV("EventSocket", "Registering event: %s", event.c_str());
+        ESP_LOGD("EventSocket", "Registering event: %s", event.c_str());
         events.push_back(event);
     }
     else
@@ -36,9 +36,7 @@ void EventSocket::registerEvent(String event)
 
 void EventSocket::onWSOpen(PsychicWebSocketClient *client)
 {
-    #ifdef SSVC_DEBUG
-        ESP_LOGI("EventSocket", "ws[%s][%u] connect", client->remoteIP().toString().c_str(), client->socket());
-    #endif
+    ESP_LOGI("EventSocket", "ws[%s][%u] connect", client->remoteIP().toString().c_str(), client->socket());
 }
 
 void EventSocket::onWSClose(PsychicWebSocketClient *client)
@@ -49,9 +47,7 @@ void EventSocket::onWSClose(PsychicWebSocketClient *client)
         event_subscriptions.second.remove(client->socket());
     }
     xSemaphoreGive(clientSubscriptionsMutex);
-    #ifdef SSVC_DEBUG
-        ESP_LOGI("EventSocket", "ws[%s][%u] disconnect", client->remoteIP().toString().c_str(), client->socket());
-    #endif
+    ESP_LOGI("EventSocket", "ws[%s][%u] disconnect", client->remoteIP().toString().c_str(), client->socket());
 }
 
 esp_err_t EventSocket::onFrame(PsychicWebSocketRequest *request, httpd_ws_frame *frame)
@@ -94,10 +90,7 @@ esp_err_t EventSocket::onFrame(PsychicWebSocketRequest *request, httpd_ws_frame 
             }
             else if (event == "unsubscribe")
             {
-                xSemaphoreTake(clientSubscriptionsMutex, portMAX_DELAY);
                 client_subscriptions[doc["data"]].remove(request->client()->socket());
-                xSemaphoreGive(clientSubscriptionsMutex);
-                ESP_LOGV("EventSocket", "Unsubscribed from event: %s", event);
             }
             else
             {
@@ -230,4 +223,9 @@ void EventSocket::onSubscribe(String event, SubscribeCallback callback)
 bool EventSocket::isEventValid(String event)
 {
     return std::find(events.begin(), events.end(), event) != events.end();
+}
+
+unsigned int EventSocket::getConnectedClients()
+{
+    return (unsigned int)_socket.getClientList().size();
 }

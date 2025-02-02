@@ -1,13 +1,13 @@
 
-import type { CommandState, SsvcOpenConnectMessage, SsvcSettings } from '$lib/types/models';
+import type {RectificationStatus, CommandState, SsvcOpenConnectMessage} from '$lib/types/models';
 import { type Writable, writable } from 'svelte/store';
 import { processIncomingDataHandler } from '$lib/utils/ssvcHelper';
 
 export const ssvcTelemetryStore = writable<SsvcOpenConnectMessage | null>(null);
-
-export const ssvcSettingsStore = writable<SsvcSettings | null>(null);
-
+export const rectificationStatusStore = writable<RectificationStatus | null>(null);
 export const ssvcEventStore = writable<string | null>(null);
+export const needUpdateRectificationStatusStore = writable<boolean>(false) ;
+
 
 export const commandState: Writable<CommandState> = writable({
     isWaiting: false,

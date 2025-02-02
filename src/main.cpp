@@ -14,41 +14,28 @@
 
 #include <ESP32SvelteKit.h>
 #include <PsychicHttpServer.h>
-#include <SsvcTelemetryService.h>
-#include <RectificationProcess.h>
-#include <HttpRequestHandler.h>
-
-// Глобальный мультиплексор для критических секций
-portMUX_TYPE ssvcMux = portMUX_INITIALIZER_UNLOCKED;
-SemaphoreHandle_t mutex = xSemaphoreCreateMutex();
+#include <SsvcOpenConnect.h>
 
 #define SERIAL_BAUD_RATE 115200
+#define configCHECK_FOR_STACK_OVERFLOW 2
+
+portMUX_TYPE ssvcMux = portMUX_INITIALIZER_UNLOCKED;
+SemaphoreHandle_t mutex = xSemaphoreCreateMutex();
+EventGroupHandle_t eventGroup = xEventGroupCreate();
 
 PsychicHttpServer server;
 
 ESP32SvelteKit esp32sveltekit(&server, 120);
 
-EventGroupHandle_t eventGroup = xEventGroupCreate();
+SsvcOpenConnect* SsvcOpenConnect::instance = nullptr;
 
-SsvcTelemetryService ssvcTelemetryService = SsvcTelemetryService(&server,
-                                                                   esp32sveltekit.getSocket(),
-                                                                   esp32sveltekit.getSecurityManager(),
-                                                                   eventGroup);
-
-
-// Создаем экземпляр SsvcConnector, передаем созданный eventGroup в конструктор
-SsvcConnector& ssvcConnector = SsvcConnector::getConnector(eventGroup);
-
-// Статический экземпляр класса
-
-RectificationProcess& rProcess = RectificationProcess::createRectification(ssvcConnector, eventGroup);
-HttpRequestHandler httpRequestHandler = HttpRequestHandler(&server,
-                                                           esp32sveltekit.getSecurityManager(),
-                                                           rProcess,
-                                                           ssvcConnector);
 
 void setup()
 {
+    SsvcOpenConnect* instance = SsvcOpenConnect::getInstance(server,
+                             esp32sveltekit.getSocket(),
+                             esp32sveltekit.getSecurityManager());
+
     // start serial and filesystem
     Serial.begin(SERIAL_BAUD_RATE);
 
@@ -57,14 +44,15 @@ void setup()
     #endif
         // start ESP32-SvelteKit
     esp32sveltekit.begin();
-    ssvcConnector.begin();
-    ssvcTelemetryService.begin();
-    
-    Serial.println("httpRequestHandler.begin");
-    httpRequestHandler.begin();
+    instance->begin();
 }
 
 void loop()
 {
     vTaskDelete(nullptr);
+}
+
+extern "C" void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+    ESP_LOGE("FreeRTOS", "Stack overflow in task %s", pcTaskName);
+    abort(); // Остановка работы для диагностики
 }

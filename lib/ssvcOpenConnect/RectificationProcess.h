@@ -1,11 +1,13 @@
 #ifndef RECTIFICATION_PROCESS_H
 #define RECTIFICATION_PROCESS_H
 
+#include <map>
 #include <ArduinoJson.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <Arduino.h>
 #include <SsvcConnector.h>
+#include "SsvcSettings.h"
 
 
 #define TEMP_GRAPH_ARRAY_SIZE 720
@@ -16,85 +18,128 @@ extern portMUX_TYPE ssvcMux;
 class RectificationProcess {
 public:
     // Получение единственного экземпляра класса
-    static RectificationProcess& createRectification(SsvcConnector& ssvcConnector,
-                                                     EventGroupHandle_t eventGroup);
+    static RectificationProcess &createRectification(SsvcConnector& connector, SsvcSettings& settings);
 
-    static String getRectificationTimeStart();
-    static String getRectificationTimeEnd();
-    JsonDocument getGraphTempData(size_t startIndex, size_t periodicity);
+    enum class ProcessState {
+        IDLE, // Процесс еще не запускался
+        RUNNING,     // Процесс запущен
+        PAUSED,
+        FINISHED,     // Процесс завершен
+        SKIPPED,
+        STOPPED,
+        ERROR
+    };
 
-    JsonDocument& getSsvcSettings();
-
-    JsonDocument getRectificationStatus();
+    ProcessState getCurrentState() const;
+    std::string getTelemetry();
+    bool getStatus(JsonVariant temperBuffer);
 
 private:
     // Приватный конструктор
-    explicit RectificationProcess(SsvcConnector& ssvcConnector,
-                                  EventGroupHandle_t eventGroup);
-
-    // Статический экземпляр класса
-    static RectificationProcess* _rectificationProcess;
-
-//    Основные переменные класса
-    int valveBandwidthHeads;
-    int valveBandwidthHearts;
-    int valveBandwidthTails;
-
-//    Массивы хранения данных температуры
-    static void addPointToTempGraphTask(void* pvParameters);
-    float tp1Value;
-    float tp2Value;
-    int tempGraphCurrentIndex = 0;  // Индекс текущей позиции для вставки
-    time_t timePoints[TEMP_GRAPH_ARRAY_SIZE]{};
-    float temp1Values[TEMP_GRAPH_ARRAY_SIZE]{};
-    float temp2Values[TEMP_GRAPH_ARRAY_SIZE]{};
-
-    // Метод установки времени старта
-    // Метод для обновления состояния
+    explicit RectificationProcess(SsvcConnector& connector, SsvcSettings& settings);
     static void update(void* pvParameters);
 
-    void setRectificationStart();
-    void setRectificationStop();
-    void setStartTime();
-    void setStopTime();
+    enum class RectificationStage {
+        EMPTY,
+        WAITING, // Дежурный режим
+        TP1_WAITING, // Ожидание нагрева колонны
+        DELAYED_START, // Отложенный старт
+        HEADS, // Отбор голов
+        LATE_HEADS, // Отбор подголовников
+        HEARTS, // Отбор тела
+        TAILS, // Отбор хвостов
+        ERROR // Ошибка разбора этапов
+    };
 
+    enum class RectificationEvent {
+        EMPTY,
+        HEADS_FINISHED,        // завершен этап Головы
+        HEARTS_FINISHED,       // завершен этап Тело (ректификация завершена для firmware 2.3.*)
+        TAILS_FINISHED,        // завершен этап Хвосты (ректификация завершена для firmware 2.2.*)
+        DS_ERROR,              // ошибка датчика температуры
+        DS_ERROR_STOP,         // выключение оборудования (реле) из-за ошибки датчика
+        STABILIZATION_LIMIT,   // превышен лимит времени стабилизации
+        REMOTE_STOP,           // получена удаленная команда остановки, процесс остановлен
+        MANUALLY_CLOSED,       // включено ручное управление клапаном текущего этапа, клапан закрыт
+        MANUALLY_OPENED,        // включено ручное управление клапаном текущего этапа, клапан открыт
+        ERROR
+    };
 
-//    Обработчики Этапов
-    void waitingTypeHandler(JsonDocument& message);
-    void tp1TypeHandler(JsonDocument &message);
-    void delayedStartHandler(JsonDocument &message);
-    void headsTypeHandler(JsonDocument &message);
-    void heartsTypeHandler(JsonDocument &message);
-    void tailsTypeHandler(JsonDocument &message);
+    struct Common {
+        unsigned int mmhg;
+        float tp1;
+        float tp2;
+        bool relay;
+        bool signal;
+    };
 
-//    Обработчики событий
-    void headsFinishedHandler(JsonDocument& message);
-    void heartsFinishedHandler(JsonDocument& message);
-    void tailsFinishedHandler(JsonDocument& message);
-    void dcErrorHandler(JsonDocument& message);
-    void dsErrorStopHandler(JsonDocument& message);
-    void stabilizationLimitHandler(JsonDocument& message);
-    void remoteStopHandler(JsonDocument& message);
-    void manuallyClosedHandler(JsonDocument& message);
-    void manuallyOpenedHandler(JsonDocument& message);
-    void notFoundEvent(JsonDocument& message);
+    struct Metrics {
+        std::string type;
+        float tp1_target;
+        float tp2_target;
+        std::string countdown;
+        Common common;
+        std::string release;
+        std::string time;
+        float open;
+        unsigned int period;
+        unsigned int tank_mmhg;
+        float tp1_sap;
+        float tp2_sap;
+        float hysteresis;
+        unsigned int v1;
+        unsigned int v2;
+        unsigned int v3;
+        float alc;
+        bool stop;
+        unsigned char stops;
+        RectificationEvent event;
+    };
 
-    // Поля класса
-    JsonDocument ssvsTelemetry;
-    JsonDocument& ssvcSettings;
-    // Время запуска
+    char16_t pid;
+    RectificationStage currentStage;
+    RectificationStage previousStage;
+    std::map<RectificationStage, int> flowVolumeValves;
+    std::map<RectificationStage, ProcessState> rectificationStageStates;
 
-    static char startTime[25];
-    static char endTime[25];
-    bool isRectificationStarted;
+    char startTime[25]{};
+    char endTime[25]{};
 
-//    служебные методы
-    static int getSelectedVolume(const int valveBandwidth, const double openValveTime);
-    void setTime(char* timeBuffer);
+    Metrics metric;
 
-    // Группа событий FreeRTOS
+    ProcessState currentProcessStatus;
+
     SsvcConnector& _ssvcConnector;
-    EventGroupHandle_t _eventGroup;
+    SsvcSettings&  _ssvcSettings;
+    static RectificationProcess* _rectificationProcess;
+
+    bool isRectificationStarted();
+
+//    void setRectificationStage(RectificationStage stage);
+//    void setRectificationEvent(RectificationEvent event);
+//    void setRectificationStageState(RectificationStage stage, ProcessState state);
+
+
+    static RectificationStage stringToRectificationStage(const std::string& stageStr);
+    static std::string rectificationEventToString(RectificationEvent event);
+    static RectificationEvent stringToRectificationEvent(std::string& eventString);
+    static std::string rectificationEventToDescription(RectificationEvent event);
+    static std::string stageToString(RectificationStage stage);
+    static std::string stateToString(ProcessState state);
+
+    bool eventReceived = false;
+    void startEventHandler(const std::string&);
+    void endEventHandler(std::string currentEvent);
+
+
+    bool isHeatingOn();
+    bool isOverclockingOn();
+
+    void recalculateFlowVolume(int v1, int v2, int v3);
+
+    bool calculateVolumeSpeed(int valveOpen, int& volumeSpeed);
+
+    void initStageState();
 
 };
 
