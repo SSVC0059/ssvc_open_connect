@@ -204,7 +204,41 @@ void RectificationProcess::update(void* pvParameters) {
     //          Определение текущего этапа
                 RectificationStage _currentStage = stringToRectificationStage(type);
 
-//              Отработка изменения этапа
+                if (telemetry["pid"].is<int>()) {
+                    int pid =  telemetry["pid"].as<int>();
+                    if (self->pid != pid && pid != 0) {
+                        self->pid = pid;
+                        self->currentProcessStatus = ProcessState::RUNNING;
+
+                        time_t now = time(nullptr);
+                        struct tm timeInfo{};
+                        localtime_r(&now, &timeInfo);
+                        strftime(self->startTime, 25, "%Y-%m-%d %H:%M:%S", &timeInfo);
+                        memset(self->endTime, 0, sizeof(endTime));
+
+                        self->flowVolumeValves = {};
+                        self->rectificationStageStates = {};
+                    } else {
+                        ESP_LOGV("RectificationProcess" , "Процесс уже идет.");
+                    }
+                } else {
+                   if (self->pid != 0 && _currentStage == RectificationStage::WAITING) {
+                       // Пид был установлен ранее, а теперь отсутствует и режим waiting - Завершен процесс
+                       // Pid процесса больше не приходит. Значит процесс ректификации окончен
+                       self->pid = 0;
+                       self->currentProcessStatus = ProcessState::FINISHED;
+                       time_t now = time(nullptr);
+                       struct tm timeInfo{};
+                       localtime_r(&now, &timeInfo);
+                       strftime(self->endTime, 25, "%Y-%m-%d %H:%M:%S", &timeInfo);
+                   } else {
+//                       Процесс ранее не был стартован
+                        self->currentProcessStatus = ProcessState::IDLE;
+                   }
+                }
+
+
+//              Отработка изменения этапа и заполнение таблицы прохождения этапов
                 if (self->currentStage != _currentStage) {
                     ESP_LOGV("RectificationProcess", "Этап изменен: %s", stageToString(_currentStage).c_str());
                     // Заполнение таблицы прохождения этапов
@@ -228,7 +262,7 @@ void RectificationProcess::update(void* pvParameters) {
                 bool hasStartTime = strlen(self->startTime) > 0;
                 bool hasEndTime = strlen(self->endTime) > 0;
 
-//               Отработка событий
+//               Отработка поступивших собыйтий
                 if (telemetry["event"].is<std::string>()) {
                     std::string event = telemetry["event"].as<std::string>();
                     self->metric.event = stringToRectificationEvent(event);
@@ -242,29 +276,6 @@ void RectificationProcess::update(void* pvParameters) {
                     self->eventReceived = false;
                     self->endEventHandler(currentEvent);
                     currentEvent = "";
-                }
-                if (telemetry["pid"].is<char16_t>()) {
-                    if (!self->isRectificationStarted()) {
-                        ESP_LOGV("RectificationProcess" , "Rectification not started");
-                        self->currentProcessStatus = ProcessState::RUNNING;
-                        time_t now = time(nullptr);
-                        struct tm timeInfo{};
-                        localtime_r(&now, &timeInfo);
-                        strftime(self->startTime, 25, "%Y-%m-%d %H:%M:%S", &timeInfo);
-                        memset(self->endTime, 0, sizeof(endTime));
-                        self->flowVolumeValves = {};
-                        self->rectificationStageStates = {};
-                    }else {
-                        ESP_LOGV("RectificationProcess" , "Rectification started");
-                    }
-                } else {
-                    if (hasStartTime && self->rectificationStageStates[self->previousStage] == ProcessState::FINISHED){
-                        self->currentProcessStatus = ProcessState::FINISHED;
-                        time_t now = time(nullptr);
-                        struct tm timeInfo{};
-                        localtime_r(&now, &timeInfo);
-                        strftime(self->startTime, 25, "%Y-%m-%d %H:%M:%S", &timeInfo);
-                    }
                 }
 
                 ESP_LOGV("RectificationProcess" , "startTime: %s", self->startTime);
@@ -394,6 +405,7 @@ void RectificationProcess::update(void* pvParameters) {
 
     //            Пересчет количества отобранного продукта
                 self->recalculateFlowVolume(telemetry["v1"], telemetry["v2"], telemetry["v3"]);
+
                 ESP_LOGV("RectificationProcess", "LastMessage %s", message.c_str());
                 xSemaphoreGive(mutex); // Копирование данных
             } else {
@@ -435,7 +447,7 @@ void RectificationProcess::endEventHandler(std::string currentEvent) {
 
 
 bool RectificationProcess::isRectificationStarted() {
-    return currentProcessStatus == ProcessState::RUNNING;
+    return pid != 0;
 }
 
 bool RectificationProcess::getStatus(JsonVariant status) {
@@ -468,6 +480,11 @@ std::string RectificationProcess::getTelemetry() {
         JsonDocument _message;
 
         _message["type"] = metric.type;
+
+        if (pid != 0) {
+            _message["pid"] = pid;
+        }
+
         if (strlen(startTime) > 0) {
             _message["start_time"] = startTime;
         }
@@ -526,11 +543,11 @@ std::string RectificationProcess::getTelemetry() {
         if (flowVolumeValves[RectificationStage::HEADS] != 0) {
             volume["heads"] = flowVolumeValves[RectificationStage::HEADS];
         }
-        if (flowVolumeValves[RectificationStage::HEARTS] != 0) {
-            volume["hearts"] = flowVolumeValves[RectificationStage::HEARTS];
-        }
         if (flowVolumeValves[RectificationStage::LATE_HEADS] != 0) {
             volume["late_heads"] = flowVolumeValves[RectificationStage::LATE_HEADS];
+        }
+        if (flowVolumeValves[RectificationStage::HEARTS] != 0) {
+            volume["hearts"] = flowVolumeValves[RectificationStage::HEARTS];
         }
         if (flowVolumeValves[RectificationStage::TAILS] != 0) {
             volume["tails"] = flowVolumeValves[RectificationStage::TAILS];
@@ -582,6 +599,15 @@ void RectificationProcess::recalculateFlowVolume(int v1, int v2, int v3) {
     }
     ESP_LOGV("RectificationProcess", "Отобранный объем: %d мл", value);
     flowVolumeValves[currentStage] = value;
+
+    for (auto & _flowVolumeValves : flowVolumeValves) {
+        auto& stage = _flowVolumeValves.first;   // Ключ (тип RectificationStage)
+        auto& _value = _flowVolumeValves.second;   // Значение (тип RectificationState)
+        ESP_LOGV("Volume", "Processing stage: %s, current value: %d",
+            stageToString(stage).c_str(),
+            _value
+        );
+    }
 }
 
 bool RectificationProcess::calculateVolumeSpeed(int valveOpen, int& volumeSpeed) {
