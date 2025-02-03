@@ -96,7 +96,7 @@ private:
         RectificationEvent event;
     };
 
-    char16_t pid;
+    int pid;
     RectificationStage currentStage;
     RectificationStage previousStage;
     std::map<RectificationStage, int> flowVolumeValves;

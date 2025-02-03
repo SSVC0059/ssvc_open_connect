@@ -20,7 +20,7 @@
 			<p class="text-lg font-semibold text-green-500">Этап завершен</p>
 		</div>
 		<div  class="mt-2 flex text-center">
-			<p class="text-sm font-medium text-gray-700">Отобрано: {f ? f : "-"} мл</p>
+			<p class="text-sm font-medium text-gray-700 ">Отобрано: {f ? f : "-"} мл</p>
 			<p class="text-lg font-bold text-gray-500"></p>
 		</div>
 	{:else}
@@ -28,7 +28,7 @@
 		<span
 			class="bg-blue-500 text-white py-1 px-3 rounded-full shadow">
 			{#if o}
-				{o} / {p}
+				{o.toFixed(2)} / {p}
 				{:else}
 				Закрыт
 			{/if}
@@ -73,7 +73,7 @@
 			</Popover>
 		</div>
 		<div class=" flex justify-center mt-2">
-			<p class="text-sm font-medium text-gray-700">Отобрано:</p>
+			<p class="text-lg font-medium text-gray-700 dark:text-white">Отобрано:</p>
 			<p class="text-lg font-bold text-green-500">{f ? f : "-"} мл</p>
 		</div>
 	{/if}
