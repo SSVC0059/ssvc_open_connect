@@ -21,6 +21,7 @@ const config: UserConfig = {
 				changeOrigin: true
 			},
 			// Proxying websockets ws://localhost:5173/ws -> ws://192.168.1.83/ws
+
 			'/ws': {
 				target: 'ws://ssvcopenconnect.local',
 				changeOrigin: true,

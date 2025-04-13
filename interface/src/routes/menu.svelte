@@ -14,7 +14,7 @@
 	import Avatar from '~icons/tabler/user-circle';
 	import Logout from '~icons/tabler/logout';
 	import Copyright from '~icons/tabler/copyright';
-	import MQTT from '~icons/tabler/topology-star-3';
+	// import MQTT from '~icons/tabler/topology-star-3';
 	import NTP from '~icons/tabler/clock-check';
 	import Metrics from '~icons/tabler/report-analytics';
 	import Connected from '~icons/tabler/plug-connected';
