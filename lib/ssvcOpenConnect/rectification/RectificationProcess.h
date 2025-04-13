@@ -1,7 +1,7 @@
 #ifndef RECTIFICATION_PROCESS_H
 #define RECTIFICATION_PROCESS_H
 
-#include "../../../../../../../../../.platformio/packages/toolchain-riscv32-esp/riscv32-esp-elf/include/c++/8.4.0/map"
+#include "map"
 #include "ArduinoJson.h"
 #include "core/OpenConnectSettings.h"
 #include "core/SsvcCommandsQueue.h"
@@ -10,6 +10,8 @@
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
+#include <sstream>
+#include <iomanip>
 
 #define TEMP_GRAPH_ARRAY_SIZE 720
 #define PERIOD_GRAPH_SEC 20
@@ -122,8 +124,8 @@ private:
 
   ProcessState currentProcessStatus;
 
-  char startTime[25]{};
-  char endTime[25]{};
+  std::string startTime{};
+  std::string endTime{};
 
   Metrics metric;
 

@@ -5,7 +5,7 @@
 #ifndef SSVC_OPEN_CONNECT_SSVCOPENCONNECT_H
 #define SSVC_OPEN_CONNECT_SSVCOPENCONNECT_H
 
-#include "../../../../../../../../../.platformio/packages/toolchain-riscv32-esp/riscv32-esp-elf/include/c++/8.4.0/utility"
+#include "utility"
 #include "API/HttpRequestHandler.h"
 #include "ESP32SvelteKit.h"
 #include "EventSocket.h"

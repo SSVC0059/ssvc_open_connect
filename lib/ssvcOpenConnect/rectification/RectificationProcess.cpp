@@ -27,8 +27,8 @@ RectificationProcess::RectificationProcess(
   pid = 0;
   rectificationStageStates = {};
 
-  memset(startTime, 0, sizeof(startTime));
-  memset(endTime, 0, sizeof(endTime));
+  startTime.clear();
+  endTime.clear();
 
   currentProcessStatus = ProcessState::IDLE;
 
@@ -249,7 +249,7 @@ void RectificationProcess::update(void *pvParameters) {
           //                  процесс
           if (self->pid != newPid && newPid != 0) {
             ESP_LOGI("RectificationProcess", "Новый PID: %d", newPid);
-            //                      Проверка наличия сохраненного pid
+            // Проверка наличия сохраненного pid
             if (!self->pidChecked || self->pidChecked && self->pid != newPid) {
               ESP_LOGI("RectificationProcess", "Проверка сохраненного PID");
               int savedPid = 0;
@@ -281,8 +281,12 @@ void RectificationProcess::update(void *pvParameters) {
             time_t now = time(nullptr);
             struct tm timeInfo{};
             localtime_r(&now, &timeInfo);
-            strftime(self->startTime, 25, "%Y-%m-%d %H:%M:%S", &timeInfo);
-            memset(self->endTime, 0, sizeof(endTime));
+
+            std::ostringstream oss;
+            oss << std::put_time(&timeInfo, "%Y-%m-%d %H:%M:%S");
+            self->startTime = oss.str();
+            ESP_LOGI("", "startTime: %s", self->startTime.c_str());
+            self->endTime.clear();
 
             self->flowVolumeValves = {};
             self->rectificationStageStates = {};
@@ -290,8 +294,8 @@ void RectificationProcess::update(void *pvParameters) {
             ESP_LOGV("RectificationProcess", "Процесс уже идет.");
           }
         } else {
-          //                    В телеметрии PID не пришел, значит процесс не
-          //                    идет
+          // В телеметрии PID не пришел, значит процесс не
+          // идет
           if (_currentStage == RectificationStage::WAITING) {
             // Пид был установлен ранее, а теперь отсутствует и режим waiting -
             // Завершен процесс
@@ -300,14 +304,20 @@ void RectificationProcess::update(void *pvParameters) {
               // окончен
               self->pid = 0;
               self->currentProcessStatus = ProcessState::FINISHED;
+
               time_t now = time(nullptr);
               struct tm timeInfo{};
               localtime_r(&now, &timeInfo);
-              strftime(self->endTime, 25, "%Y-%m-%d %H:%M:%S", &timeInfo);
+
+              std::ostringstream oss;
+              oss << std::put_time(&timeInfo, "%Y-%m-%d %H:%M:%S");
+              self->endTime = oss.str();
+
             } else {
               self->currentProcessStatus = ProcessState::IDLE;
-              memset(self->startTime, 0, sizeof(startTime));
-              memset(self->endTime, 0, sizeof(endTime));
+//              self->startTime.clear();
+//              self->endTime.clear();
+
             }
 
           } else {
@@ -343,9 +353,6 @@ void RectificationProcess::update(void *pvParameters) {
                  stageToString(_currentStage).c_str());
         // Обновление состояний этапов
 
-        //            Обновление состояния
-        bool hasStartTime = strlen(self->startTime) > 0;
-        bool hasEndTime = strlen(self->endTime) > 0;
 
         //               Отработка поступивших собыйтий
         if (telemetry["event"].is<std::string>()) {
@@ -585,10 +592,10 @@ std::string RectificationProcess::getTelemetry() {
       _message["pid"] = pid;
     }
 
-    if (strlen(startTime) > 0) {
+    if (!startTime.empty()) {
       _message["start_time"] = startTime;
     }
-    if (strlen(endTime) > 0) {
+    if (!endTime.empty()) {
       _message["end_time"] = endTime;
     }
     if (metric.tank_mmhg != 0) {

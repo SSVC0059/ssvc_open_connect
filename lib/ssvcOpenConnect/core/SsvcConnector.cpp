@@ -176,20 +176,28 @@ void SsvcConnector::initSsvcController() {
 }
 
 bool SsvcConnector::sendCommand(const char *command) {
-  char *commandCopy = strdup(command);
-  if (!commandCopy) {
-    ESP_LOGE("SsvcConnector", "Ошибка копирования команды");
-    return false;
-  }
-  ESP_LOGI("SsvcConnector", "Отправка команды SSVC: %s", commandCopy);
-  ESP_LOGI("SsvcConnector", "strlen: %d", strlen(commandCopy));
-  ssize_t bytes_written = uart_write_bytes(
-      UART_NUM_1, (const char *)commandCopy, strlen(commandCopy));
-  bool result = (bytes_written == strlen(commandCopy));
-  ESP_LOGI("sendCommand", "result: %s", result ? "true" : "false");
-  uart_wait_tx_done(UART_NUM_1, pdMS_TO_TICKS(1000));
-  free(commandCopy); // Освобождаем память
-  return result;
+    if (command == nullptr) {  // Проверка на NULL
+        ESP_LOGE("SsvcConnector", "Передан NULL-указатель в команде");
+        return false;
+    }
+
+    char *commandCopy = strdup(command);
+    if (!commandCopy) {
+        ESP_LOGE("SsvcConnector", "Ошибка копирования команды");
+        return false;
+    }
+
+    // Сохраняем длину один раз, чтобы избежать двойного вызова strlen()
+    const size_t commandLen = strlen(commandCopy);
+    ESP_LOGI("SsvcConnector", "Отправка команды SSVC: %s", commandCopy);
+
+    ssize_t bytes_written = uart_write_bytes(UART_NUM_1, commandCopy, commandLen);
+    bool result = (bytes_written == static_cast<ssize_t>(commandLen));  // Сравнение с учетом типов
+
+    ESP_LOGI("sendCommand", "result: %s", result ? "true" : "false");
+    uart_wait_tx_done(UART_NUM_1, pdMS_TO_TICKS(1000));
+    free(commandCopy);  // Освобождаем память
+    return result;
 }
 
 std::string SsvcConnector::getLastMessage() { return lastMessage; }
