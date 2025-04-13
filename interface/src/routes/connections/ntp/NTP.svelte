@@ -6,7 +6,7 @@
 	import Collapsible from '$lib/components/Collapsible.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { user } from '$lib/stores/user';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { notifications } from '$lib/components/toasts/notifications';
 	import { TIME_ZONES } from './timezones';
 	import NTP from '~icons/tabler/clock-check';
@@ -16,15 +16,15 @@
 	import Stopwatch from '~icons/tabler/24-hours';
 	import type { NTPSettings, NTPStatus } from '$lib/types/models';
 
-	let ntpSettings: NTPSettings;
-	let ntpStatus: NTPStatus;
+	let ntpSettings: NTPSettings = $state();
+	let ntpStatus: NTPStatus = $state();
 
 	async function getNTPStatus() {
 		try {
 			const response = await fetch('/rest/ntpStatus', {
 				method: 'GET',
 				headers: {
-					Authorization: $page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
+					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
 					'Content-Type': 'application/json'
 				}
 			});
@@ -40,7 +40,7 @@
 			const response = await fetch('/rest/ntpSettings', {
 				method: 'GET',
 				headers: {
-					Authorization: $page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
+					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
 					'Content-Type': 'application/json'
 				}
 			});
@@ -58,23 +58,23 @@
 	onDestroy(() => clearInterval(interval));
 
 	onMount(() => {
-		if (!$page.data.features.security || $user.admin) {
+		if (!page.data.features.security || $user.admin) {
 			getNTPSettings();
 		}
 	});
 
-	let formField: any;
+	let formField: any = $state();
 
-	let formErrors = {
+	let formErrors = $state({
 		server: false
-	};
+	});
 
 	async function postNTPSettings(data: NTPSettings) {
 		try {
 			const response = await fetch('/rest/ntpSettings', {
 				method: 'POST',
 				headers: {
-					Authorization: $page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
+					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify(data)
@@ -143,11 +143,22 @@
 
 		return result;
 	}
+
+	function preventDefault(fn) {
+		return function (event) {
+			event.preventDefault();
+			fn.call(this, event);
+		};
+	}
 </script>
 
 <SettingsCard collapsible={false}>
-	<Clock slot="icon" class="lex-shrink-0 mr-2 h-6 w-6 self-end" />
-	<span slot="title">Сетевое время</span>
+	{#snippet icon()}
+		<Clock class="lex-shrink-0 mr-2 h-6 w-6 self-end" />
+	{/snippet}
+	{#snippet title()}
+		<span>Сетевое время</span>
+	{/snippet}
 	<div class="w-full overflow-x-auto">
 		{#await getNTPStatus()}
 			<Spinner />
@@ -234,12 +245,14 @@
 		{/await}
 	</div>
 
-	{#if !$page.data.features.security || $user.admin}
+	{#if !page.data.features.security || $user.admin}
 		<Collapsible open={false} class="shadow-lg" on:closed={getNTPSettings}>
-			<span slot="title">Изменение настроек NTP сервера</span>
+			{#snippet title()}
+				<span>Изменение настроек NTP сервера</span>
+			{/snippet}
 			<form
 				class="form-control w-full"
-				on:submit|preventDefault={handleSubmitNTP}
+				onsubmit={preventDefault(handleSubmitNTP)}
 				novalidate
 				bind:this={formField}
 			>
@@ -267,7 +280,7 @@
 				/>
 				<label class="label" for="subnet">
 					<span class="label-text-alt text-error {formErrors.server ? '' : 'hidden'}"
-						>MДолжен быть действительный IPv4-адрес или URL-адрес электронной почты</span
+						>Должен быть действительный IPv4-адрес или URL-адрес электронной почты</span
 					>
 				</label>
 				<label class="label" for="tz">

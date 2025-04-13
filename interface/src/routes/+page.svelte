@@ -3,7 +3,11 @@
 	import logo from '$lib/assets/logo.png';
 	import { notifications } from '$lib/components/toasts/notifications';
 
-	export let data: PageData;
+	interface Props {
+		data: PageData;
+	}
+
+	let { data }: Props = $props();
 </script>
 
 <div class="hero bg-base-100 h-screen">
@@ -14,8 +18,8 @@
 			<h2 class="card-title text-center text-2xl">SSVC Open Connect</h2>
 			<a
 				class="btn btn-primary"
-				href="ssvc/telemetry/"
-				on:click={() => notifications.success('Начнем!', 1000)}>SSVC Open Connect</a
+				href="/oc/telemetry"
+				onclick={() => notifications.success('Начнем!', 1000)}>SSVC Open Connect</a
 			>
 		</div>
 	</div>

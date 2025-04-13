@@ -1,9 +1,9 @@
 /**
  *   ESP32 SvelteKit
  *
- *   A simple, secure and extensible framework for IoT projects for ESP32 platforms
- *   with responsive Sveltekit front-end built with TailwindCSS and DaisyUI.
- *   https://github.com/theelims/ESP32-sveltekit
+ *   A simple, secure and extensible framework for IoT projects for ESP32
+ *platforms with responsive Sveltekit front-end built with TailwindCSS and
+ *DaisyUI. https://github.com/theelims/ESP32-sveltekit
  *
  *   Copyright (C) 2018 - 2023 rjwats
  *   Copyright (C) 2023 - 2024 theelims
@@ -12,59 +12,50 @@
  *   the terms of the LGPL v3 license. See the LICENSE file for details.
  **/
 
+#include "components/StatusLed.h"
+#include "core/SsvcOpenConnect.h"
 #include <ESP32SvelteKit.h>
 #include <PsychicHttpServer.h>
-#include <SsvcTelemetryService.h>
-#include <RectificationProcess.h>
-#include <HttpRequestHandler.h>
-
-// Глобальный мультиплексор для критических секций
-portMUX_TYPE ssvcMux = portMUX_INITIALIZER_UNLOCKED;
-SemaphoreHandle_t mutex = xSemaphoreCreateMutex();
 
 #define SERIAL_BAUD_RATE 115200
+
+// #define configCHECK_FOR_STACK_OVERFLOW 2
+
+portMUX_TYPE ssvcMux = portMUX_INITIALIZER_UNLOCKED;
+SemaphoreHandle_t mutex = xSemaphoreCreateMutex();
+EventGroupHandle_t eventGroup = xEventGroupCreate();
 
 PsychicHttpServer server;
 
 ESP32SvelteKit esp32sveltekit(&server, 120);
+StatusLed statusLed(&esp32sveltekit);
 
-EventGroupHandle_t eventGroup = xEventGroupCreate();
+SsvcOpenConnect *SsvcOpenConnect::instance = nullptr;
 
-SsvcTelemetryService ssvcTelemetryService = SsvcTelemetryService(&server,
-                                                                   esp32sveltekit.getSocket(),
-                                                                   esp32sveltekit.getSecurityManager(),
-                                                                   eventGroup);
+void setup() {
+  SsvcOpenConnect *instance = SsvcOpenConnect::getInstance(
+      server, esp32sveltekit, esp32sveltekit.getSocket(),
+      esp32sveltekit.getSecurityManager());
 
+  // start serial and filesystem
+  Serial.begin(SERIAL_BAUD_RATE);
 
-// Создаем экземпляр SsvcConnector, передаем созданный eventGroup в конструктор
-SsvcConnector& ssvcConnector = SsvcConnector::getConnector(eventGroup);
+#ifdef FACTORY_WIFI_HOSTNAME
+  esp32sveltekit.setMDNSAppName(FACTORY_WIFI_HOSTNAME);
+#endif
+  // start ESP32-SvelteKit
+  esp32sveltekit.begin();
+#if CONFIG_IDF_TARGET_ESP32S3
+  statusLed.begin();
+#endif
 
-// Статический экземпляр класса
-
-RectificationProcess& rProcess = RectificationProcess::createRectification(ssvcConnector, eventGroup);
-HttpRequestHandler httpRequestHandler = HttpRequestHandler(&server,
-                                                           esp32sveltekit.getSecurityManager(),
-                                                           rProcess,
-                                                           ssvcConnector);
-
-void setup()
-{
-    // start serial and filesystem
-    Serial.begin(SERIAL_BAUD_RATE);
-
-    #ifdef FACTORY_WIFI_HOSTNAME
-        esp32sveltekit.setMDNSAppName(FACTORY_WIFI_HOSTNAME);
-    #endif
-        // start ESP32-SvelteKit
-    esp32sveltekit.begin();
-    ssvcConnector.begin();
-    ssvcTelemetryService.begin();
-    
-    Serial.println("httpRequestHandler.begin");
-    httpRequestHandler.begin();
+  instance->begin();
 }
 
-void loop()
-{
-    vTaskDelete(nullptr);
+void loop() { vTaskDelete(nullptr); }
+
+extern "C" void vApplicationStackOverflowHook(TaskHandle_t xTask,
+                                              char *pcTaskName) {
+  ESP_LOGE("FreeRTOS", "Stack overflow in task %s", pcTaskName);
+  abort(); // Остановка работы для диагностики
 }

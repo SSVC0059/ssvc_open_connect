@@ -14,6 +14,7 @@
 #include <DownloadFirmwareService.h>
 
 extern const uint8_t rootca_crt_bundle_start[] asm("_binary_src_certs_x509_crt_bundle_bin_start");
+extern const uint8_t rootca_crt_bundle_end[] asm("_binary_src_certs_x509_crt_bundle_bin_end");
 
 static EventSocket *_socket = nullptr;
 static int previousProgress = 0;
@@ -54,7 +55,13 @@ void update_finished()
 void updateTask(void *param)
 {
     WiFiClientSecure client;
+
+#if ESP_ARDUINO_VERSION_MAJOR == 3
+    client.setCACertBundle(rootca_crt_bundle_start, rootca_crt_bundle_end - rootca_crt_bundle_start);
+#else
     client.setCACertBundle(rootca_crt_bundle_start);
+#endif
+
     client.setTimeout(10);
 
     httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
@@ -153,7 +160,7 @@ esp_err_t DownloadFirmwareService::downloadUpdate(PsychicRequest *request, JsonV
             &downloadURL,               // Pass reference to this class instance
             (configMAX_PRIORITIES - 1), // Pretty high task priority
             NULL,                       // Task handle
-            tskIDLE_PRIORITY                           // Have it on application core
+            1                           // Have it on application core
             ) != pdPASS)
     {
         ESP_LOGE("Download OTA", "Couldn't create download OTA task");

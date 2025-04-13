@@ -5,7 +5,7 @@
 	import InputPassword from '$lib/components/InputPassword.svelte';
 	import SettingsCard from '$lib/components/SettingsCard.svelte';
 	import { user } from '$lib/stores/user';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { notifications } from '$lib/components/toasts/notifications';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import Collapsible from '$lib/components/Collapsible.svelte';
@@ -15,17 +15,17 @@
 	import Devices from '~icons/tabler/devices';
 	import type { ApSettings, ApStatus } from '$lib/types/models';
 
-	let apSettings: ApSettings;
-	let apStatus: ApStatus;
+	let apSettings: ApSettings = $state();
+	let apStatus: ApStatus = $state();
 
-	let formField: any;
+	let formField: any = $state();
 
 	async function getAPStatus() {
 		try {
 			const response = await fetch('/rest/apStatus', {
 				method: 'GET',
 				headers: {
-					Authorization: $page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
+					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
 					'Content-Type': 'application/json'
 				}
 			});
@@ -41,7 +41,7 @@
 			const response = await fetch('/rest/apSettings', {
 				method: 'GET',
 				headers: {
-					Authorization: $page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
+					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
 					'Content-Type': 'application/json'
 				}
 			});
@@ -59,7 +59,7 @@
 	onDestroy(() => clearInterval(interval));
 
 	onMount(() => {
-		if (!$page.data.features.security || $user.admin) {
+		if (!page.data.features.security || $user.admin) {
 			getAPSettings();
 		}
 	});
@@ -85,21 +85,21 @@
 		{ bg_color: 'bg-warning', text_color: 'text-warning-content', description: 'Lingering' }
 	];
 
-	let formErrors = {
+	let formErrors = $state({
 		ssid: false,
 		channel: false,
 		max_clients: false,
 		local_ip: false,
 		gateway_ip: false,
 		subnet_mask: false
-	};
+	});
 
 	async function postAPSettings(data: ApSettings) {
 		try {
 			const response = await fetch('/rest/apSettings', {
 				method: 'POST',
 				headers: {
-					Authorization: $page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
+					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify(data)
@@ -177,11 +177,22 @@
 			postAPSettings(apSettings);
 		}
 	}
+
+	function preventDefault(fn) {
+		return function (event) {
+			event.preventDefault();
+			fn.call(this, event);
+		};
+	}
 </script>
 
 <SettingsCard collapsible={false}>
-	<AP slot="icon" class="lex-shrink-0 mr-2 h-6 w-6 self-end" />
-	<span slot="title">Access Point</span>
+	{#snippet icon()}
+		<AP class="lex-shrink-0 mr-2 h-6 w-6 self-end" />
+	{/snippet}
+	{#snippet title()}
+		<span>Access Point</span>
+	{/snippet}
 	<div class="w-full overflow-x-auto">
 		{#await getAPStatus()}
 			<Spinner />
@@ -243,7 +254,7 @@
 		{/await}
 	</div>
 
-	{#if !$page.data.features.security || $user.admin}
+	{#if !page.data.features.security || $user.admin}
 		<div class="bg-base-200 shadow-lg relative grid w-full max-w-2xl self-center overflow-hidden">
 			<div
 				class="min-h-16 flex w-full items-center justify-between space-x-3 p-0 text-xl font-medium"
@@ -259,7 +270,7 @@
 				>
 					<form
 						class="grid w-full grid-cols-1 content-center gap-x-4 p-0 mb-4 sm:grid-cols-2"
-						on:submit|preventDefault={handleSubmitAP}
+						onsubmit={preventDefault(handleSubmitAP)}
 						novalidate
 						bind:this={formField}
 					>

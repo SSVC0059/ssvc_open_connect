@@ -11,10 +11,12 @@
 		username: string;
 	};
 
-	let username = '';
-	let password = '';
+	let { signIn } = $props();
 
-	let loginFailed = false;
+	let username = $state('');
+	let password = $state('');
+
+	let loginFailed = $state(false);
 
 	let token = { access_token: '' };
 
@@ -32,6 +34,7 @@
 				user.init(token.access_token);
 				let username = $user.username;
 				notifications.success('Пользователь ' + username + ' вошел в систему', 5000);
+				signIn();
 			} else {
 				username = '';
 				password = '';
@@ -77,7 +80,7 @@
 				<div class="card-actions mt-4 justify-end">
 					<button
 						class="btn btn-primary inline-flex items-center"
-						on:click={() => {
+						onclick={() => {
 							signInUser({ username: username, password: password });
 						}}><Login class="mr-2 h-5 w-5" /><span>Вход</span></button
 					>

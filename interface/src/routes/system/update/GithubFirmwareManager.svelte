@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { user } from '$lib/stores/user';
-	import { page } from '$app/stores';
-	import { openModal, closeModal, closeAllModals } from 'svelte-modals';
+	import { page } from '$app/state';
+	import { modals } from 'svelte-modals';
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -14,14 +14,13 @@
 	import Error from '~icons/tabler/circle-x';
 	import { compareVersions } from 'compare-versions';
 	import GithubUpdateDialog from '$lib/components/GithubUpdateDialog.svelte';
-	import { assets } from '$app/paths';
 	import InfoDialog from '$lib/components/InfoDialog.svelte';
 	import Check from '~icons/tabler/check';
 
 	async function getGithubAPI() {
 		try {
 			const githubResponse = await fetch(
-				'https://api.github.com/repos/' + $page.data.github + '/releases',
+				'https://api.github.com/repos/' + page.data.github + '/releases',
 				{
 					method: 'GET',
 					headers: {
@@ -43,7 +42,7 @@
 			const apiResponse = await fetch('/rest/downloadUpdate', {
 				method: 'POST',
 				headers: {
-					Authorization: $page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
+					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({ download_url: url })
@@ -60,34 +59,34 @@
 			// check if the asset is of type *.bin
 			if (
 				assets[i].name.includes('.bin') &&
-				assets[i].name.includes($page.data.features.firmware_built_target)
+				assets[i].name.includes(page.data.features.firmware_built_target)
 			) {
 				url = assets[i].browser_download_url;
 			}
 		}
 		if (url === '') {
 			// if no asset was found, use the first one
-			openModal(InfoDialog, {
-				title: 'Подходящая прошивка не найдена',
+			modals.open(InfoDialog, {
+				title: 'No matching firmware found',
 				message:
-					'Для текущего устройства не найдено подходящей прошивки. Загрузите прошивку вручную или соберите из исходников.',
+					'No matching firmware was found for the current device. Upload the firmware manually or build from sources.',
 				dismiss: { label: 'OK', icon: Check },
-				onDismiss: () => closeModal()
+				onDismiss: () => modals.close()
 			});
 			return;
 		}
 
-		openModal(ConfirmDialog, {
-			title: 'Подтвердите перепрошивку устройства',
-			message: 'Вы уверены, что хотите перезаписать существующую прошивку новой?',
+		modals.open(ConfirmDialog, {
+			title: 'Confirm flashing new firmware to the device',
+			message: 'Are you sure you want to overwrite the existing firmware with a new one?',
 			labels: {
-				cancel: { label: 'Отменить', icon: Cancel },
-				confirm: { label: 'Загрузить', icon: CloudDown }
+				cancel: { label: 'Abort', icon: Cancel },
+				confirm: { label: 'Update', icon: CloudDown }
 			},
 			onConfirm: () => {
 				postGithubDownload(url);
-				openModal(GithubUpdateDialog, {
-					onConfirm: () => closeAllModals()
+				modals.open(GithubUpdateDialog, {
+					onConfirm: () => modals.closeAlls()
 				});
 			}
 		});
@@ -95,8 +94,12 @@
 </script>
 
 <SettingsCard collapsible={false}>
-	<Github slot="icon" class="lex-shrink-0 mr-2 h-6 w-6 self-end rounded-full" />
-	<span slot="title">Менеджер обновления Github</span>
+	{#snippet icon()}
+		<Github class="lex-shrink-0 mr-2 h-6 w-6 self-end rounded-full" />
+	{/snippet}
+	{#snippet title()}
+		<span>Github Firmware Manager</span>
+	{/snippet}
 	{#await getGithubAPI()}
 		<Spinner />
 	{:then githubReleases}
@@ -105,16 +108,16 @@
 				<table class="table w-full table-auto">
 					<thead>
 						<tr class="font-bold">
-							<th align="left">Релиз</th>
-							<th align="center" class="hidden sm:block">Дата релиза</th>
-							<th align="center">Эксперементальная</th>
-							<th align="center">Установка</th>
+							<th align="left">Release</th>
+							<th align="center" class="hidden sm:block">Release Date</th>
+							<th align="center">Experimental</th>
+							<th align="center">Install</th>
 						</tr>
 					</thead>
 					<tbody>
 						{#each githubReleases as release}
 							<tr
-								class={compareVersions($page.data.features.firmware_version, release.tag_name) === 0
+								class={compareVersions(page.data.features.firmware_version, release.tag_name) === 0
 									? 'bg-primary text-primary-content'
 									: 'bg-base-100 h-14'}
 							>
@@ -139,10 +142,10 @@
 									{/if}
 								</td>
 								<td align="center">
-									{#if compareVersions($page.data.features.firmware_version, release.tag_name) != 0}
+									{#if compareVersions(page.data.features.firmware_version, release.tag_name) != 0}
 										<button
 											class="btn btn-ghost btn-circle btn-sm"
-											on:click={() => {
+											onclick={() => {
 												confirmGithubUpdate(release.assets);
 											}}
 										>
@@ -159,7 +162,7 @@
 	{:catch error}
 		<div class="alert alert-error shadow-lg">
 			<Error class="h-6 w-6 flex-shrink-0" />
-			<span>Пожалуйста, подключитесь к сети с доступом в Интернет, чтобы выполнить обновление прошивки.</span>
+			<span>Please connect to a network with internet access to perform a firmware update.</span>
 		</div>
 	{/await}
 </SettingsCard>
