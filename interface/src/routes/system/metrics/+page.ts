@@ -1,5 +1,5 @@
 import type { PageLoad } from './$types';
 
 export const load = (async () => {
-	return { title: 'Метрики системы' };
+	return { title: 'System Metrics' };
 }) satisfies PageLoad;

@@ -1,0 +1,278 @@
+<script lang="ts">
+	import '$lib/styles/simple-grid-min.css';
+	import { user } from '$lib/stores/user';
+	import { page } from '$app/state';
+	import type { RectificationStatus, SsvcOpenConnectMessage, telemetry } from '$lib/types/models';
+	import RectImg from '$lib/assets/rect.png';
+	import { slide } from 'svelte/transition';
+	import TpSensors from '$lib/components/Telemetry/TpSensors.svelte';
+	import TimeBlock from '$lib/components/Telemetry/TimeBlock.svelte';
+	import ValveParameters from '$lib/components/Telemetry/ValveParameters.svelte';
+	import { Popover } from 'flowbite-svelte';
+	import HeatingMode from '$lib/components/Telemetry/HeatingMode.svelte';
+	import Stages from '$lib/components/Telemetry/Stages.svelte';
+	import StopsCounter from '$lib/components/Telemetry/StopsCounter.svelte';
+	import Bottom from '$lib/components/Telemetry/Bottom.svelte';
+	import PressureCubeSensor from '$lib/components/Telemetry/PressureCubeSensor.svelte';
+	import Pause from '$lib/components/Telemetry/Pause.svelte';
+
+	// Инициализация состояния данных
+	let data = $state<telemetry>({
+		common: {
+			mmhg: '',
+			tp1: 0,
+			tp2: 0,
+			relay: false,
+			overclockingOn: false,
+			heatingOn: false
+		},
+		time: '',
+		countdown: '',
+		tank_mmhg: 0
+	});
+
+	let initialLoad = $state(true);
+	let error = $state<string | null>(null);
+	let rectificationStatus = $state<RectificationStatus | undefined>();
+	let currentType: string = $state('');
+	let needUpdateStatus: boolean = $state(false);
+	let needUpdateRS: boolean = $state(false);
+
+	$effect(() => {
+		const controller = new AbortController();
+		let isMounted = true;
+
+		const fetchData = async () => {
+			try {
+				const response = await fetch('/rest/telemetry', {
+					method: 'GET',
+					headers: {
+						Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
+						'Content-Type': 'application/json',
+						Accept: '*/*'
+					},
+					signal: controller.signal
+				});
+
+				if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+				const _data: SsvcOpenConnectMessage = await response.json();
+				error = null; // Сбрасываем ошибку при успешном ответе
+
+				if (currentType != _data.telemetry.type) {
+					currentType = _data.telemetry.type;
+					needUpdateStatus = true;
+				} else {
+					needUpdateStatus = false;
+				}
+
+				// Используйте:
+				data = {
+					..._data.telemetry
+				};
+			} catch (err) {
+				if (err.name !== 'AbortError' && isMounted) {
+					error = err instanceof Error ? err.message : 'Unknown error';
+					console.error('Fetch error:', err);
+				}
+			} finally {
+				if (isMounted && initialLoad) initialLoad = false;
+			}
+		};
+
+		// Первый запрос сразу
+		fetchData();
+		const interval = setInterval(fetchData, 1000);
+
+		return () => {
+			isMounted = false;
+			clearInterval(interval);
+			controller.abort();
+		};
+	});
+
+	$effect(() => {
+		if ((data.type && needUpdateStatus) || needUpdateRS) {
+		}
+	});
+
+	function getDescriptionValve(name: string) {
+		switch (name) {
+			case 'heads':
+				return 'Головы';
+			case 'late_heads':
+				return 'Подголовники';
+			case 'hearts':
+				return 'Тело';
+			case 'tails':
+				return 'Хвосты';
+		}
+	}
+</script>
+
+
+<div class="container">
+	<!--	Шапка-->
+	<div>
+		<div class="row flex mt-2">
+			<div class="col">
+				<div
+					class="item bg-gray-100 dark:bg-opacity-25 border border-black rounded-lg shadow-sm mx-1"
+				>
+					<TimeBlock name="Время старта" timeString={data.start_time ? data.start_time : '-'} />
+				</div>
+			</div>
+			<div class="col">
+				<div
+					class="item bg-gray-100 dark:!bg-opacity-25 border border-black rounded-lg shadow-sm mx-1"
+				>
+					<TimeBlock name="Время окончания" timeString={data.end_time ? data.end_time : '-'} />
+				</div>
+			</div>
+		</div>
+	</div>
+	<!--	Разделитель-->
+	<div class="row flex justify-center">
+		<div class="my-1"></div>
+	</div>
+	<!--	Остновная часть-->
+	<div>
+		<div class="row bg-gray-100 dark:bg-opacity-25 rounded-lg">
+			<div class="col-6 flex justify-center mx-1 item">
+				<div class="relative min-w-full">
+					<img alt="Rect" class="object-contain mx-auto max-w-full h-auto" src={RectImg} />
+					<!-- Надпись на изображении -->
+					{#if data.tp1_target}
+						<div
+							id="tpTarget"
+							class="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/3 bg-white bg-opacity-40"
+						>
+							<TpSensors name="" temp={data.tp1_target} />
+							<Popover
+								class="w-64 text-sm font-light text-gray-500 bg-white dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800"
+								title="Целевая температура"
+								transition={slide}
+								triggeredBy="#tpTarget"
+							>
+								Целевая температура в колоне
+							</Popover>
+						</div>
+					{/if}
+					{#if data.countdown}
+						<div
+							id="countdown"
+							class="absolute top-2 left-2 bg-white bg-opacity-40 dark:bg-opacity-0"
+						>
+							<TimeBlock name="" timeString={data.countdown} />
+							<Popover
+								placement="right"
+								class="w-64 text-sm font-light text-gray-500 bg-white dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800"
+								transition={slide}
+								triggeredBy="#countdown"
+							>
+								Время до окончания этапа
+							</Popover>
+						</div>
+					{/if}
+					{#if data.time}
+						<div id="time" class="absolute top-2 right-0 bg-white bg-opacity-40 dark:bg-opacity-0">
+							<TimeBlock name="" timeString={data.time} />
+							<Popover
+								placement="left"
+								class="w-64 text-sm font-light text-gray-500 bg-white dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800"
+								transition={slide}
+								triggeredBy="#time"
+							>
+								Пройденное время этапа
+							</Popover>
+						</div>
+					{/if}
+					<div
+						class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/5 bg-white bg-opacity-40 dark:bg-opacity-0"
+					>
+						<TpSensors name="Колонна" temp={data.common.tp1} />
+					</div>
+					<div class="absolute top-3/4 left-1/2 transform -translate-x-1/2 -translate-y-3">
+						<TpSensors name="Куб" temp={data.common.tp2} />
+						{#if data.tank_mmhg}
+							<PressureCubeSensor pressute={data.tank_mmhg} />
+						{/if}
+					</div>
+					<div class="absolute top-3/4 left-1/2 transform -translate-x-1/2 -translate-y-3">
+						{#if data.stop || rectificationStatus?.response.status === 'paused'}
+							<Pause />
+						{/if}
+					</div>
+					<div class="absolute top-3/4 left-1/2 transform -translate-x-1/2 translate-y-14">
+						<HeatingMode
+							heatingOn={data.common.heatingOn}
+							overclockingOn={data.common.overclockingOn}
+						/>
+					</div>
+				</div>
+			</div>
+			<!--		Правая колонка-->
+			<div class="col">
+				{#if data.volume && Object.keys(data.volume).length > 0}
+					<div class="item border border-black rounded-lg shadow-sm my-1">
+						{#if data.volume}
+							{#each Object.entries(data.volume) as [name, value]}
+								{#if name === data.type}
+									<ValveParameters
+										n={getDescriptionValve(name)}
+										vo={data.valveOpen}
+										p={data.period}
+										o={data.open}
+										f={value ? value : 0}
+										s={data.volumeSpeed ? data.volumeSpeed : 0}
+									/>
+								{:else}
+									<ValveParameters n={getDescriptionValve(name)} f={value ? value : 0} c={true} />
+								{/if}
+							{/each}
+						{/if}
+					</div>
+				{/if}
+				<div class="absolute my-2 items-end">
+					<Stages />
+					{#if data.stops}
+						<div class="item">
+							<StopsCounter stops={data.stops} />
+						</div>
+					{/if}
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col">
+			<div class="flex flex-row flex-wrap justify-center items-center gap-2">
+				<!--				<Control onStatusUpdate={updateStatus} {rectificationStatus} />-->
+			</div>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col flex justify-center bg-gray-100 dark:bg-opacity-25 rounded-lg">
+			<Bottom event={data.info ? data.info : ''} type={data.type} />
+		</div>
+	</div>
+</div>
+
+<style>
+	@media (max-width: 768px) {
+		.item {
+			font-size: 12px;
+			padding: 8px;
+		}
+
+		img {
+			width: 100%; /* Scale image for smaller screens */
+			height: auto;
+		}
+	}
+
+	div {
+		font-family: 'Arial', sans-serif;
+	}
+</style>

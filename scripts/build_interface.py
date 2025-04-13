@@ -156,9 +156,6 @@ def add_app_to_filesystem():
     for current_path, _, files in os.walk(www_path):
         for file in files:
             gzip_file(os.path.join(current_path, file))
-    if not flag_exists("EMBED_WWW"):
-        print("To build LittleFS file system image and upload to ESP32")
-        print("pio run --target uploadfs")
     print("Build LittleFS file system image and upload to ESP32")
     env.Execute("pio run --target uploadfs")
 

@@ -2,86 +2,71 @@
 	import { Popover } from 'flowbite-svelte';
 	import { slide } from 'svelte/transition';
 
-	export let n: string;
-	export let vo: number  = 0; // Время открытия клапана в процентах
-	export let o: number = 0; // Время открытия в секундах
-	export let p: number = 0; // Периодичность открытия
-	export let s: number = 0; // скорость отбора клапана
-	export let f: string = "" ; // Отобранный объем
-	export let c: boolean = false;
+	interface Props {
+		n: string;
+		vo?: number; // Время открытия клапана в процентах
+		o?: number; // Время открытия в секундах
+		p?: number; // Периодичность открытия
+		s?: number; // скорость отбора клапана
+		f?: number; // Отобранный объем
+		c?: boolean;
+	}
+
+	let { n, vo = 0, o = 0, p = 0, s = 0, f = '', c = false }: Props = $props();
 </script>
 
-<div class="flex flex-col items-center justify-center p-2 ">
-	<div class="flex text-center">
-		<p class="text-lg font-semibold text-blue-600">{n}</p>
+<div
+	class="flex flex-col items-center justify-center p-2 font-sans text-sm md:text-base lg:text-lg"
+>
+	<!-- Название клапана -->
+	<div class="text-center">
+		<p class="font-semibold text-blue-600">{n}</p>
 	</div>
+
+	<!-- Этап завершен -->
 	{#if c}
-		<div class="text-center">
-			<p class="text-lg font-semibold text-green-500">Этап завершен</p>
-		</div>
-		<div  class="mt-2 flex text-center">
-			<p class="text-sm font-medium text-gray-700 ">Отобрано: {f ? f : "-"} мл</p>
-			<p class="text-lg font-bold text-gray-500"></p>
-		</div>
+		<p class="mt-1 font-semibold text-green-500 text-center">Этап завершен</p>
 	{:else}
-		<div class="flex items-center justify-center gap-2 text-xl">
-		<span
-			class="bg-blue-500 text-white py-1 px-3 rounded-full shadow">
-			{#if o}
-				{o.toFixed(2)} / {p}
+		<!-- Параметры клапана -->
+		<div class="flex items-center justify-center gap-2 text-base lg:text-xl mt-2">
+			<span class="bg-blue-500 text-white py-1 px-3 rounded-full shadow">
+				{#if o}
+					{o.toFixed(2)} / {p}
 				{:else}
-				Закрыт
-			{/if}
-		</span>
-			<Popover class="w-64 text-sm font-light text-gray-500 bg-white dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800"
-							 title="Параметры клапана" transition={slide} placement = 'left'>
+					Закрыт
+				{/if}
+			</span>
+
+			<!-- Всплывающая подсказка -->
+			<Popover
+				class="w-64 text-sm font-light text-gray-500 bg-white dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800"
+				title="Параметры клапана"
+				transition={slide}
+				placement="left"
+			>
 				<div class="flex justify-between my-1">
-					<p class="mb-2 text-sm font-normal leading-none text-gray-900 dark:text-white">
-						Время открытия:
-					</p>
-					<p class="mb-1 text-base font-semibold leading-none text-gray-900 dark:text-white">
-						{o} сек
-					</p>
+					<p class="font-normal text-gray-900 dark:text-white">Время открытия:</p>
+					<p class="font-semibold text-gray-900 dark:text-white">{o} сек</p>
+				</div>
+				<div class="flex justify-between mb-2">
+					<p class="font-normal text-gray-900 dark:text-white">Периодичность:</p>
+					<p class="font-semibold text-gray-900 dark:text-white">{p} сек</p>
+				</div>
+				<div class="flex justify-between mb-2">
+					<p class="font-normal text-gray-900 dark:text-white">Cкорость отбора:</p>
+					<p class="font-semibold text-gray-900 dark:text-white">{s} мл/ч</p>
 				</div>
 				<div class="flex justify-between">
-					<p class="mb-3 text-sm font-normal leading-none text-gray-900 dark:text-white">
-						Периодичность:
-					</p>
-					<p class="mb-1 text-base font-semibold leading-none text-gray-900 dark:text-white">
-						{p} сек
-					</p>
-				</div>
-				<div class="justify-between">
-					Расчетные параметры клапана.
-				</div>
-				<div class="flex justify-between">
-					<p class="mb-3 text-sm font-normal leading-none text-gray-900 dark:text-white">
-						Cкорость отбора:
-					</p>
-					<p class="mb-1 text-sm font-semibold leading-none text-gray-900 dark:text-white">
-						{s} мл/ч
-					</p>
-					<div class="flex justify-between">
-						<p class="mb-3 text-sm font-normal leading-none text-gray-900 dark:text-white">
-							Пропускная способность:
-						</p>
-						<p class="mb-1 text-sm font-semibold leading-none text-gray-900 dark:text-white">
-							{vo} %
-						</p>
-					</div>
+					<p class="font-normal text-gray-900 dark:text-white">Пропускная способность:</p>
+					<p class="font-semibold text-gray-900 dark:text-white">{vo / 100}%</p>
 				</div>
 			</Popover>
 		</div>
-		<div class=" flex justify-center mt-2">
-			<p class="text-lg font-medium text-gray-700 dark:text-white">Отобрано:</p>
-			<p class="text-lg font-bold text-green-500">{f ? f : "-"} мл</p>
-		</div>
 	{/if}
+
+	<!-- Общий блок Отобрано -->
+	<div class="flex justify-center mt-2 gap-2 text-center">
+		<p class="font-medium text-gray-700 dark:text-white">Отобрано:</p>
+		<p class="font-bold text-green-500">{f ? f : '-'} мл</p>
+	</div>
 </div>
-
-
-<style>
-    div {
-        font-family: 'Arial', sans-serif;
-    }
-</style>

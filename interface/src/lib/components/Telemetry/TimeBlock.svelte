@@ -1,6 +1,10 @@
 <script lang="ts">
-	export let name: string = "";
-	export let timeString: string = "-"
+	interface Props {
+		name?: string;
+		timeString?: string;
+	}
+
+	let { name = '', timeString = '-' }: Props = $props();
 </script>
 
 <div class="flex flex-col items-center gap-2 p-1 rounded-lg">
@@ -13,7 +17,7 @@
 </div>
 
 <style>
-    div {
-        font-family: 'Arial', sans-serif;
-    }
+	div {
+		font-family: 'Arial', sans-serif;
+	}
 </style>

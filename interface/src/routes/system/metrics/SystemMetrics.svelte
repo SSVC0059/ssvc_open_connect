@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import SettingsCard from '$lib/components/SettingsCard.svelte';
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
@@ -11,93 +11,14 @@
 
 	Chart.register(...registerables);
 
-	let heapChartElement: HTMLCanvasElement;
+	let heapChartElement: HTMLCanvasElement = $state();
 	let heapChart: Chart;
 
-	let psramChartElement: HTMLCanvasElement;
-	let psramChart: Chart;
-
-	let filesystemChartElement: HTMLCanvasElement;
+	let filesystemChartElement: HTMLCanvasElement = $state();
 	let filesystemChart: Chart;
 
-	let temperatureChartElement: HTMLCanvasElement;
+	let temperatureChartElement: HTMLCanvasElement = $state();
 	let temperatureChart: Chart;
-
-	function initPsramChart() {
-		psramChart = new Chart(psramChartElement, {
-			type: 'line',
-			data: {
-				labels: $analytics.uptime,
-				datasets: [
-					{
-						label: 'Total PSRAM',
-						borderColor: daisyColor('--p'),
-						backgroundColor: daisyColor('--p', 50),
-						borderWidth: 2,
-						data: $analytics.psram_size,
-						yAxisID: 'y'
-					},
-					{
-						label: 'Used PSRAM',
-						borderColor: daisyColor('--s'),
-						backgroundColor: daisyColor('--s', 50),
-						borderWidth: 2,
-						data: $analytics.used_psram,
-						yAxisID: 'y'
-					}
-				]
-			},
-			options: {
-				maintainAspectRatio: false,
-				responsive: true,
-				plugins: {
-					legend: {
-						display: true
-					},
-					tooltip: {
-						mode: 'index',
-						intersect: false
-					}
-				},
-				elements: {
-					point: {
-						radius: 1
-					}
-				},
-				scales: {
-					x: {
-						grid: {
-							color: daisyColor('--bc', 10)
-						},
-						ticks: {
-							color: daisyColor('--bc')
-						},
-						display: false
-					},
-					y: {
-						type: 'linear',
-						title: {
-							display: true,
-							text: 'PSRAM [kb]',
-							color: daisyColor('--bc'),
-							font: {
-								size: 16,
-								weight: 'bold'
-							}
-						},
-						position: 'left',
-						min: 0,
-						max: Math.round($analytics.psram_size[0]),
-						grid: { color: daisyColor('--bc', 10) },
-						ticks: {
-							color: daisyColor('--bc')
-						},
-						border: { color: daisyColor('--bc', 10) }
-					}
-				}
-			}
-		});
-	} //initPsramChart
 
 	onMount(() => {
 		heapChart = new Chart(heapChartElement, {
@@ -314,19 +235,6 @@
 		heapChart.data.datasets[1].data = $analytics.max_alloc_heap;
 		heapChart.update('none');
 
-		// psramFound
-		if ($analytics.psram_size[0]) {
-
-			if (!psramChart) { //init in updateData instead of onMount aspsram needs to init first before data is received
-				initPsramChart();
-			}
-
-			psramChart.data.labels = $analytics.uptime;
-			psramChart.data.datasets[0].data = $analytics.psram_size;
-			psramChart.data.datasets[1].data = $analytics.used_psram;
-			psramChart.update('none');
-		} //psram chart
-
 		filesystemChart.data.labels = $analytics.uptime;
 		filesystemChart.data.datasets[0].data = $analytics.fs_used;
 		filesystemChart.update('none');
@@ -365,42 +273,35 @@
 </script>
 
 <SettingsCard collapsible={false}>
-	<Metrics slot="icon" class="lex-shrink-0 mr-2 h-6 w-6 self-end" />
-	<span slot="title">System Metrics</span>
+	{#snippet icon()}
+		<Metrics class="lex-shrink-0 mr-2 h-6 w-6 self-end" />
+	{/snippet}
+	{#snippet title()}
+		<span>System Metrics</span>
+	{/snippet}
 
 	<div class="w-full overflow-x-auto">
 		<div
-				class="flex w-full flex-col space-y-1 h-60"
-				transition:slide|local={{ duration: 300, easing: cubicOut }}
+			class="flex w-full flex-col space-y-1 h-60"
+			transition:slide|local={{ duration: 300, easing: cubicOut }}
 		>
-			<canvas bind:this={heapChartElement} />
-		</div>
-	</div>
-	<!-- if psramFound -->
-	{#if ($analytics.psram_size[0])}
-		<div class="w-full overflow-x-auto">
-			<div
-					class="flex w-full flex-col space-y-1 h-60"
-					transition:slide|local={{ duration: 300, easing: cubicOut }}
-			>
-				<canvas bind:this={psramChartElement} />
-			</div>
-		</div>
-	{/if}
-	<div class="w-full overflow-x-auto">
-		<div
-				class="flex w-full flex-col space-y-1 h-52"
-				transition:slide|local={{ duration: 300, easing: cubicOut }}
-		>
-			<canvas bind:this={filesystemChartElement} />
+			<canvas bind:this={heapChartElement}></canvas>
 		</div>
 	</div>
 	<div class="w-full overflow-x-auto">
 		<div
-				class="flex w-full flex-col space-y-1 h-52"
-				transition:slide|local={{ duration: 300, easing: cubicOut }}
+			class="flex w-full flex-col space-y-1 h-52"
+			transition:slide|local={{ duration: 300, easing: cubicOut }}
 		>
-			<canvas bind:this={temperatureChartElement} />
+			<canvas bind:this={filesystemChartElement}></canvas>
+		</div>
+	</div>
+	<div class="w-full overflow-x-auto">
+		<div
+			class="flex w-full flex-col space-y-1 h-52"
+			transition:slide|local={{ duration: 300, easing: cubicOut }}
+		>
+			<canvas bind:this={temperatureChartElement}></canvas>
 		</div>
 	</div>
 </SettingsCard>

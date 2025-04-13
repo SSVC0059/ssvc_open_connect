@@ -5,7 +5,7 @@
 	import InputPassword from '$lib/components/InputPassword.svelte';
 	import SettingsCard from '$lib/components/SettingsCard.svelte';
 	import { user } from '$lib/stores/user';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { notifications } from '$lib/components/toasts/notifications';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import Collapsible from '$lib/components/Collapsible.svelte';
@@ -13,17 +13,17 @@
 	import Client from '~icons/tabler/robot';
 	import type { MQTTSettings, MQTTStatus } from '$lib/types/models';
 
-	let mqttSettings: MQTTSettings;
-	let mqttStatus: MQTTStatus;
+	let mqttSettings: MQTTSettings = $state();
+	let mqttStatus: MQTTStatus = $state();
 
-	let formField: any;
+	let formField: any = $state();
 
 	async function getMQTTStatus() {
 		try {
 			const response = await fetch('/rest/mqttStatus', {
 				method: 'GET',
 				headers: {
-					Authorization: $page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
+					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
 					'Content-Type': 'application/json'
 				}
 			});
@@ -39,7 +39,7 @@
 			const response = await fetch('/rest/mqttSettings', {
 				method: 'GET',
 				headers: {
-					Authorization: $page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
+					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
 					'Content-Type': 'application/json'
 				}
 			});
@@ -57,24 +57,24 @@
 	onDestroy(() => clearInterval(interval));
 
 	onMount(() => {
-		if (!$page.data.features.security || $user.admin) {
+		if (!page.data.features.security || $user.admin) {
 			getMQTTSettings();
 		}
 	});
 
-	let formErrors = {
+	let formErrors = $state({
 		host: false,
 		port: false,
 		keep_alive: false,
 		topic_length: false
-	};
+	});
 
 	async function postMQTTSettings(data: MQTTSettings) {
 		try {
 			const response = await fetch('/rest/mqttSettings', {
 				method: 'POST',
 				headers: {
-					Authorization: $page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
+					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify(data)
@@ -120,11 +120,22 @@
 			//alert('Form Valid');
 		}
 	}
+
+	function preventDefault(fn) {
+		return function (event) {
+			event.preventDefault();
+			fn.call(this, event);
+		};
+	}
 </script>
 
 <SettingsCard collapsible={false}>
-	<MQTT slot="icon" class="lex-shrink-0 mr-2 h-6 w-6 self-end" />
-	<span slot="title">MQTT</span>
+	{#snippet icon()}
+		<MQTT class="lex-shrink-0 mr-2 h-6 w-6 self-end" />
+	{/snippet}
+	{#snippet title()}
+		<span>MQTT</span>
+	{/snippet}
 	<div class="w-full overflow-x-auto">
 		{#await getMQTTStatus()}
 			<Spinner />
@@ -174,11 +185,13 @@
 		{/await}
 	</div>
 
-	{#if !$page.data.features.security || $user.admin}
+	{#if !page.data.features.security || $user.admin}
 		<Collapsible open={false} class="shadow-lg" on:closed={getMQTTSettings}>
-			<span slot="title">Change MQTT Settings</span>
+			{#snippet title()}
+				<span>Change MQTT Settings</span>
+			{/snippet}
 
-			<form on:submit|preventDefault={handleSubmitMQTT} novalidate bind:this={formField}>
+			<form onsubmit={preventDefault(handleSubmitMQTT)} novalidate bind:this={formField}>
 				<div class="grid w-full grid-cols-1 content-center gap-x-4 px-4 sm:grid-cols-2">
 					<!-- Enable -->
 					<label class="label inline-flex cursor-pointer content-end justify-start gap-4">
@@ -189,7 +202,7 @@
 						/>
 						<span>Enable MQTT</span>
 					</label>
-					<div class="hidden sm:block" />
+					<div class="hidden sm:block"></div>
 					<!-- URI -->
 					<div class="sm:col-span-2">
 						<label class="label" for="host">
@@ -278,7 +291,7 @@
 						<span class="">Clean Session?</span>
 					</label>
 				</div>
-				<div class="divider mb-2 mt-0" />
+				<div class="divider mb-2 mt-0"></div>
 				<div class="mx-4 flex flex-wrap justify-end gap-2">
 					<button class="btn btn-primary" type="submit">Apply Settings</button>
 				</div>

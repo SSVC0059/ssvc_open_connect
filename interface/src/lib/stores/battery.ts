@@ -2,9 +2,9 @@ import { type Battery } from '$lib/types/models';
 import { writable } from 'svelte/store';
 
 let battery_history = {
-    soc: <number[]>[],
-    charging: <number[]>[],
-    timestamp: <number[]>[]
+	soc: <number[]>[],
+	charging: <number[]>[],
+	timestamp: <number[]>[]
 };
 
 const maxAnalyticsData = 3600; // roughly 5 Hours of data at 1 update per 5 seconds
