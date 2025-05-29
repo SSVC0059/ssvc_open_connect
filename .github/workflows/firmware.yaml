@@ -48,6 +48,7 @@ jobs:
           mkdir -p artifacts/firmware/${{ matrix.env_name }}
           mkdir -p artifacts/zips/
           cp -r build/${{ matrix.env_name }}/* artifacts/firmware/${{ matrix.env_name }}/
+          ls -la artifacts/firmware/${{ matrix.env_name }}/
           cd artifacts/firmware/${{ matrix.env_name }}
           zip -r ../../../artifacts/zips/${{ matrix.env_name }}.zip .
 
@@ -62,8 +63,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: firmware-${{ matrix.env_name }}
-          path: artifacts/firmware/${{ matrix.env_name }}/SSVC-Open-Connect_*.{bin,md5}
-          if-no-files-found: error
+        path: |
+          artifacts/firmware/${{ matrix.env_name }}/SSVC-Open-Connect_*
+        if-no-files-found: error
 
   create-release:
     needs: build
