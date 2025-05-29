@@ -36,7 +36,7 @@ jobs:
 
       - name: Collect artifacts for ${{ matrix.env_name }}
         run: |
-          mkdir -p artifacts/${{ matrix.env_name }}
+          mkdir -p artifacts/firmware/${{ matrix.env_name }}
           cp -r build/${{ matrix.env_name }}/* artifacts/firmware/${{ matrix.env_name }}/
           cd artifacts/firmware/${{ matrix.env_name }}
           zip -r ../.. /artifacts/zips/${{ matrix.env_name }}.zip .
