@@ -27,6 +27,15 @@ jobs:
         with:
           python-version: 3.x
 
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          version=${GITHUB_REF#refs/tags/v}
+          version=${version//./-}
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "Using version: $version"
+
       - name: Install Python requirements
         run: |
           pip install -r requirements.txt
@@ -41,16 +50,6 @@ jobs:
           cp -r build/${{ matrix.env_name }}/* artifacts/firmware/${{ matrix.env_name }}/
           cd artifacts/firmware/${{ matrix.env_name }}
           zip -r ../../../artifacts/zips/${{ matrix.env_name }}.zip .
-
-      - name: Find firmware version
-        id: version
-        run: |
-          cd artifacts/${{ matrix.env_name }}
-          for file in SSVC-Open-Connect_*.bin; do
-            version=$(echo "$file" | grep -oP '(?<=_)[0-9]+-[0-9]+-[0-9]+-[0-9]+(?=\.bin)')
-            echo "version=$version" >> $GITHUB_OUTPUT
-            break
-          done
 
       - name: Upload zip archive for ${{ matrix.env_name }}
         uses: actions/upload-artifact@v4
