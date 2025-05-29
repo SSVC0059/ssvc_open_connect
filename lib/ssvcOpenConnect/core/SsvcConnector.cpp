@@ -115,12 +115,8 @@ void SsvcConnector::initSsvcController() {
     }
 
     // После чтения всей строки пробуем десериализовать JSON
-#ifdef CONFIG_IDF_TARGET_ESP32S3
-    SpiRamAllocator allocator;
-    JsonDocument doc(&allocator);
-#else
+
     JsonDocument doc;
-#endif
     DeserializationError error = deserializeJson(doc, data);
     if (error) {
       errorCounter++;
