@@ -18,7 +18,7 @@ jobs:
         env_name: [esp32dev, esp32-s3-devkitc-1-16m, esp32-s3-devkitc-1-8m]  # Указываем цели для сборки
 
     outputs:
-      version: ${{ steps.version.outputs.version }
+      version: ${{ steps.version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v4
