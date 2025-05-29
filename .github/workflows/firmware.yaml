@@ -37,9 +37,10 @@ jobs:
       - name: Collect artifacts for ${{ matrix.env_name }}
         run: |
           mkdir -p artifacts/firmware/${{ matrix.env_name }}
+          mkdir -p artifacts/zips/
           cp -r build/${{ matrix.env_name }}/* artifacts/firmware/${{ matrix.env_name }}/
           cd artifacts/firmware/${{ matrix.env_name }}
-          zip -r ../.. /artifacts/zips/${{ matrix.env_name }}.zip .
+          zip -r ../../../artifacts/zips/${{ matrix.env_name }}.zip .
 
       - name: Find firmware version
         id: version
