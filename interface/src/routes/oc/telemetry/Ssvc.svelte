@@ -72,10 +72,7 @@
 
 			error = null;
 		} catch (err) {
-			if (err.name !== 'AbortError') {
-				error = err instanceof Error ? err.message : 'Unknown error';
-				console.error('Fetch error:', err);
-			}
+			console.error('Fetch error:');
 		} finally {
 			if (initialLoad) initialLoad = false;
 		}
@@ -177,12 +174,12 @@
 						<div class="absolute top-[75%] left-1/2 transform -translate-x-1/2 -translate-y-3">
 							<TpSensors name="Куб" temp={telemetry.common.tp2} />
 						</div>
-						<div class="absolute top-[86%] left-1/2 transform -translate-x-1/2 -translate-y-3">
+						<div class="absolute top-[84%] left-1/2 transform -translate-x-1/2 -translate-y-3">
 							{#if telemetry.tank_mmhg}
 								<PressureCubeSensor pressure={telemetry.tank_mmhg} />
 							{/if}
 						</div>
-						<div class="absolute top-[93%] left-1/2 transform -translate-x-1/2 -translate-y-3">
+						<div class="absolute top-[91%] left-1/2 transform -translate-x-1/2 -translate-y-3">
 							{#if telemetry.alc}
 								<Alc alcohol={telemetry.alc}></Alc>
 							{/if}

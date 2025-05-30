@@ -15,7 +15,7 @@
 			</div>
 		{/if}
 		<div class="text-2xl font-bold text-blue-600 dark:text-blue-300 whitespace-nowrap">
-			{temp} °C
+			{temp.toFixed(2)} °C
 		</div>
 	</div>
 {/if}
