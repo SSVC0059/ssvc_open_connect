@@ -22,9 +22,9 @@ SsvcCommandsQueue::SsvcCommandsQueue() {
       "CmdProcessor",                          // Имя задачи для отладки
       4096,                                    // Размер стека (байт)
       this,                                    // Параметр для передачи в задачу
-      (tskIDLE_PRIORITY + 3), // Приоритет (0-24, где 24 - наивысший)
-      nullptr,                // Дескриптор задачи (не используется)
-      1                       // Ядро процессора (0 или 1)
+      (tskIDLE_PRIORITY), // Приоритет (0-24, где 24 - наивысший)
+      nullptr,            // Дескриптор задачи (не используется)
+      1                   // Ядро процессора (0 или 1)
   );
 
   //  // Отладочная задача на отправку AT команд
@@ -129,7 +129,6 @@ void SsvcCommandsQueue::registerCallbackCommands() {
         } else {
           ESP_LOGE("TIMER", "Failed to create timer");
         }
-
       } else {
         // Если таймер уже существует — просто сбросить отсчёт
         if (xTimerReset(_settingsTimer, 0) != pdPASS) {
@@ -230,7 +229,6 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
                                                pdFALSE, cmd->timeout);
 
         if ((bits & responseMask) != 0) {
-
           MutexLock lock(mutex);
 
           // Обработка ответа через зарегистрированные callback'и
@@ -275,7 +273,6 @@ void SsvcCommandsQueue::pushCommandInQueue(SsvcCommandType type,
                                            std::string parameters,
                                            int attempt_count,
                                            TickType_t timeout) {
-
   auto *cmd = new SsvcCommand();
   cmd->type = type;
   cmd->parameters = parameters;

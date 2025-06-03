@@ -5,7 +5,7 @@
 	import type { SsvcOpenConnectMessage } from '$lib/types/models';
 	import { slide } from 'svelte/transition';
 	import RectImg from '$lib/assets/rect.png';
-	import TpSensors from '$lib/components/Telemetry/TpSensors.svelte';
+	import TpSensor from '$lib/components/Telemetry/TpSensor.svelte';
 	import TimeBlock from '$lib/components/Telemetry/TimeBlock.svelte';
 	import ValveParameters from '$lib/components/Telemetry/ValveParameters.svelte';
 	import Bottom from '$lib/components/Telemetry/Bottom.svelte';
@@ -18,14 +18,12 @@
 	import HeatingMode from '$lib/components/Telemetry/HeatingMode.svelte';
 	import Control from '$lib/components/Telemetry/Control.svelte';
 	import Pause from '$lib/components/Telemetry/Pause.svelte';
+	import ThermalSensors from '$lib/components/Telemetry/ThermalSensors.svelte';
 
 	let data = $state<SsvcOpenConnectMessage | null>(null);
 
 	const telemetry = $derived(data?.telemetry);
 	const status = $derived(data?.status);
-	const common = $derived(telemetry?.common) as telemetry['common'] | undefined;
-	const showPause = $derived(telemetry?.stop || status?.status === 'paused');
-	const description = $derived(getStageDescription(telemetry?.type || ''));
 
 	let initialLoad = $state(true);
 	let error = $state<string | null>(null);
@@ -72,7 +70,10 @@
 
 			error = null;
 		} catch (err) {
-			console.error('Fetch error:');
+			if (err.name !== 'AbortError') {
+				error = err instanceof Error ? err.message : 'Unknown error';
+				console.error('Fetch error:', err);
+			}
 		} finally {
 			if (initialLoad) initialLoad = false;
 		}
@@ -155,7 +156,7 @@
 								id="tpTarget"
 								class="absolute top-[33%] left-1/2 -translate-x-1/2 translate-y-1/3 bg-white bg-opacity-40"
 							>
-								<TpSensors name="" temp={telemetry.tp1_target} />
+								<TpSensor name="" temp={telemetry.tp1_target} />
 								<Popover
 									class="w-64 text-sm font-light text-gray-500 bg-white dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800"
 									title="Целевая температура"
@@ -167,19 +168,24 @@
 							</div>
 						{/if}
 						<div
+							class="absolute top-6 left-1/4 transform -translate-x-1/2 -translate-y-1/5 bg-white bg-opacity-40 dark:bg-opacity-0"
+						>
+							<ThermalSensors />
+						</div>
+						<div
 							class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/5 bg-white bg-opacity-40 dark:bg-opacity-0"
 						>
-							<TpSensors name="Колонна" temp={telemetry.common.tp1} />
+							<TpSensor name="Колонна" temp={telemetry.common.tp1} />
 						</div>
 						<div class="absolute top-[75%] left-1/2 transform -translate-x-1/2 -translate-y-3">
-							<TpSensors name="Куб" temp={telemetry.common.tp2} />
+							<TpSensor name="Куб" temp={telemetry.common.tp2} />
 						</div>
-						<div class="absolute top-[84%] left-1/2 transform -translate-x-1/2 -translate-y-3">
+						<div class="absolute top-[86%] left-1/2 transform -translate-x-1/2 -translate-y-3">
 							{#if telemetry.tank_mmhg}
 								<PressureCubeSensor pressure={telemetry.tank_mmhg} />
 							{/if}
 						</div>
-						<div class="absolute top-[91%] left-1/2 transform -translate-x-1/2 -translate-y-3">
+						<div class="absolute top-[93%] left-1/2 transform -translate-x-1/2 -translate-y-3">
 							{#if telemetry.alc}
 								<Alc alcohol={telemetry.alc}></Alc>
 							{/if}

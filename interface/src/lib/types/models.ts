@@ -226,13 +226,13 @@ export type SsvcSettings = {
 	parallel_v3: [number, number, number][]; // Параметры Parallel V3, массив массивов из трех значений
 	parallel_v1: [number, number]; // Параметры Parallel V1
 	parallel: [number, number]; // Параметры Parallel V3 - подголовники
-	hearts_temp_shift: number; // Смещение температуры для Hearts
-	hearts_pause: number; // Пауза для Hearts
-	formula: number; // Формула
+	hearts_temp_shift: boolean; // Смещение температуры для Hearts
+	hearts_pause: boolean; // Пауза для Hearts
+	formula: boolean; // Формула
 	formula_start_temp: number; // Начальная температура для формулы
 	tank_mmhg: number;
 	tp2_shift: number; // Смещение TP2
-	tp_filter: number; // Температурный фильтр
+	tp_filter: boolean; // Температурный фильтр
 	signal_tp1_control: number; // Контроль сигнала TP1 (0 или 1)
 	signal_inverted: number; // Инвертирован сигнал (0 или 1)
 	tp1_control_temp: number; // Контроль температуры TP1

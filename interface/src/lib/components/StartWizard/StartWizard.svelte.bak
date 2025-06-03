@@ -1,0 +1,172 @@
+<script lang="ts">
+	import { modals } from 'svelte-modals';
+	import { focusTrap } from 'svelte-focus-trap';
+	import { fly } from 'svelte/transition';
+	import Cancel from '~icons/tabler/x';
+	import Check from '~icons/tabler/check';
+	import type { SsvcSettings } from '$lib/types/models';
+	import { fetchSettings } from '$lib/api/settingsApi';
+
+	// provided by <Modals />
+
+	interface Props {
+		isOpen: boolean;
+		onConfirm: any;
+		labels?: any;
+	}
+
+	let {
+		isOpen,
+		onConfirm,
+		labels = {
+			cancel: { label: 'Cancel', icon: Cancel },
+			confirm: { label: 'OK', icon: Check }
+		}
+	}: Props = $props();
+
+	// Svelte 5 с runes
+
+	let ssvcSetting = $state<SsvcSettings | null>(null); // Добавляем реактивное состояние
+	const isLoading = $state(false);
+
+	async function getSvvcSetting(): Promise<void> {
+		ssvcSetting = await fetchSettings();
+	}
+
+	$effect(() => {
+		getSvvcSetting();
+	});
+</script>
+
+{#if isOpen && ssvcSetting}
+	{@const SvelteComponent = labels?.confirm.icon}
+	<div
+		role="dialog"
+		class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center"
+		transition:fly={{ y: 50 }}
+		use:focusTrap
+	>
+		<div
+			class="rounded-box bg-base-100 shadow-secondary/30 pointer-events-auto flex min-w-fit max-w-md flex-col justify-between p-6 shadow-xl"
+		>
+			<div class="max-w-md mx-auto p-6 bg-gray-50 rounded-lg shadow-sm w-full">
+				<h2 class="text-3xl font-semibold text-gray-800 mb-8 text-center">Запуск ректификации</h2>
+
+				<div class="space-y-6">
+					<!-- Checkbox Group -->
+					<div class="space-y-5">
+						<div class="flex items-center space-x-4">
+							<input
+								id="heartsTempShift"
+								type="checkbox"
+								bind:checked={ssvcSetting.hearts_temp_shift}
+								class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+							/>
+							<label for="heartsTempShift" class="text-lg text-gray-700">
+								Сдвиг температуры отбора
+							</label>
+						</div>
+
+						<div class="flex items-center space-x-4">
+							<input
+								id="heartsPause"
+								type="checkbox"
+								bind:checked={ssvcSetting.hearts_pause}
+								class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+							/>
+							<label for="heartsPause" class="text-lg text-gray-700"> Пауза на себя </label>
+						</div>
+
+						<div class="flex items-center space-x-4">
+							<input
+								id="tpFilter"
+								type="checkbox"
+								bind:checked={ssvcSetting.tp_filter}
+								class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+							/>
+							<label for="tpFilter" class="text-lg text-gray-700"> Фильтр ТД2 </label>
+						</div>
+					</div>
+
+					<!-- Formula Section -->
+					<div class="flex flex-col space-y-1">
+						<div class="flex items-center space-x-4">
+							<input
+								id="formulaEnabled"
+								type="checkbox"
+								bind:checked={ssvcSetting.formula}
+								class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+							/>
+							<label for="formulaEnabled" class="text-lg text-gray-700">Формула</label>
+						</div>
+						{#if ssvcSetting.formula}
+							<div class="pl-9">
+								<input
+									type="number"
+									bind:value={ssvcSetting.formula_start_temp}
+									min="1"
+									max="720"
+									class="w-full px-4 py-3 text-lg border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+									placeholder="Начальная температура"
+								/>
+							</div>
+						{/if}
+					</div>
+
+					<!-- Input Fields -->
+					<div class="space-y-5">
+						<div>
+							<label for="tankPressure" class="block text-lg font-medium text-gray-700 mb-2">
+								Давление в кубе
+							</label>
+							<input
+								id="tankPressure"
+								type="number"
+								bind:value={ssvcSetting.tank_mmhg}
+								min="1"
+								max="720"
+								class="w-full px-4 py-3 text-lg border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+							/>
+						</div>
+
+						<div>
+							<label for="tp2Correction" class="block text-lg font-medium text-gray-700 mb-2">
+								Поправка ТД2, °С
+							</label>
+							<input
+								id="tp2Correction"
+								type="number"
+								bind:value={ssvcSetting.tp2_shift}
+								min="1"
+								max="720"
+								step="0.1"
+								class="w-full px-4 py-3 text-lg border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Buttons -->
+			<div class="divider my-4"></div>
+			<div class="flex justify-end gap-4">
+				<button
+					class="btn btn-primary btn-lg inline-flex items-center"
+					onclick={() => {
+						modals.close();
+					}}
+				>
+					<labels.cancel.icon class="mr-3 h-6 w-6" />
+					<span class="text-lg">{labels?.cancel.label}</span>
+				</button>
+				<button
+					class="btn btn-warning btn-lg text-warning-content inline-flex items-center"
+					onclick={onConfirm}
+				>
+					<SvelteComponent class="mr-3 h-6 w-6" />
+					<span class="text-lg">{labels?.confirm.label}</span>
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

@@ -14,12 +14,12 @@
 	import Avatar from '~icons/tabler/user-circle';
 	import Logout from '~icons/tabler/logout';
 	import Copyright from '~icons/tabler/copyright';
-	// import MQTT from '~icons/tabler/topology-star-3';
 	import NTP from '~icons/tabler/clock-check';
 	import Metrics from '~icons/tabler/report-analytics';
 	import Connected from '~icons/tabler/plug-connected';
 	// import Tool from '~icons/tabler/tool';
 	import SsvcIcon from '~icons/mdi/snake';
+	import Esp from '~icons/mdi/car-esp';
 	import { page } from '$app/state';
 	import { user } from '$lib/stores/user';
 
@@ -63,6 +63,12 @@
 					title: 'Настройки SSVC',
 					icon: Control,
 					href: '/oc/ssvc ',
+					feature: true
+				},
+				{
+					title: 'Open Connect',
+					icon: Esp,
+					href: '/oc/settings ',
 					feature: true
 				}
 			]
@@ -160,11 +166,11 @@
 <div class="bg-base-200 text-base-content flex h-full w-80 flex-col p-4">
 	<!-- Sidebar content here -->
 	<a
-		href="/"
 		class="rounded-box mb-4 flex items-center hover:scale-[1.02] active:scale-[0.98]"
+		href="/"
 		onclick={() => setActiveMenuItem('')}
 	>
-		<img src={logo} alt="Logo" class="h-12 w-12" />
+		<img alt="Logo" class="h-12 w-12" src={logo} />
 		<h1 class="px-4 text-2xl font-bold">{page.data.appName}</h1>
 	</a>
 	<ul class="menu rounded-box menu-vertical flex-nowrap overflow-y-auto">
@@ -187,7 +193,9 @@
 												class="text-ml font-bold"
 												onclick={() => {
 													setActiveMenuItem(subMenuItem.title);
-												}}><subMenuItem.icon class="h-5 w-5" />{subMenuItem.title}</a
+												}}
+											>
+												<subMenuItem.icon class="h-5 w-5" />{subMenuItem.title}</a
 											>
 										</li>
 									{/if}
@@ -201,7 +209,9 @@
 							class="text-lg font-bold"
 							onclick={() => {
 								setActiveMenuItem(menuItem.title);
-							}}><menuItem.icon class="h-6 w-6" />{menuItem.title}</a
+							}}
+						>
+							<menuItem.icon class="h-6 w-6" />{menuItem.title}</a
 						>
 					{/if}
 				</li>
@@ -232,17 +242,18 @@
 	<div class="divider my-0"></div>
 	<div class="flex items-center">
 		{#if github.active}
-			<a href={github.href} class="btn btn-ghost" target="_blank" rel="noopener noreferrer"
-				><Github class="h-5 w-5" /></a
-			>
+			<a href={github.href} class="btn btn-ghost" target="_blank" rel="noopener noreferrer">
+				<Github class="h-5 w-5" />
+			</a>
 		{/if}
 		{#if discord.active}
-			<a href={discord.href} class="btn btn-ghost" target="_blank" rel="noopener noreferrer"
-				><Discord class="h-5 w-5" /></a
-			>
+			<a href={discord.href} class="btn btn-ghost" target="_blank" rel="noopener noreferrer">
+				<Discord class="h-5 w-5" />
+			</a>
 		{/if}
 		<div class="inline-flex flex-grow items-center justify-end text-sm">
-			<Copyright class="h-4 w-4" /><span class="px-2">{page.data.copyright}</span>
+			<Copyright class="h-4 w-4" />
+			<span class="px-2">{page.data.copyright}</span>
 		</div>
 	</div>
 </div>

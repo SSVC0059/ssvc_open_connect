@@ -1,68 +1,26 @@
 <script lang="ts">
-	import { user } from '$lib/stores/user';
-	import { page } from '$app/state';
 	import type { SsvcSettings } from '$lib/types/models';
 
 	// Подкомпоненты
-	import GeneralSettings from '$lib/components/Settings/GeneralSettings.svelte';
-	import ValveBandwidth from '$lib/components/Settings/ValveBandwidth.svelte';
-	import SpeedSettings from '$lib/components/Settings/SpeedSettings.svelte';
-	import ParallelValve from '$lib/components/Settings/ParallelValve.svelte';
-	import ParallelValveLateHeads from '$lib/components/Settings/ParallelValveLateHeads.svelte';
+	import GeneralSettings from '$lib/components/SsvcSettings/GeneralSettings.svelte';
+	import ValveBandwidth from '$lib/components/SsvcSettings/ValveBandwidth.svelte';
+	import SpeedSettings from '$lib/components/SsvcSettings/SpeedSettings.svelte';
+	import ParallelValve from '$lib/components/SsvcSettings/ParallelValve.svelte';
+	import ParallelValveLateHeads from '$lib/components/SsvcSettings/ParallelValveLateHeads.svelte';
+	import { fetchSettings, updateSetting } from '$lib/api/settingsApi';
 
 	let ssvcSetting = $state<SsvcSettings | null>(null); // Добавляем реактивное состояние
 	let editingArray = $state('');
 
 	async function getSvvcSetting(): Promise<void> {
-		try {
-			const r = await fetch('/rest/settings', {
-				method: 'GET',
-				headers: {
-					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
-					'Content-Type': 'application/json',
-					Accept: '*/*'
-				}
-			});
-			const text = await r.text();
-			try {
-				let message = JSON.parse(text);
-				console.log(message);
-				ssvcSetting = message?.settings || null; // Обновляем реактивную переменную
-			} catch (parseError) {
-				console.error('JSON Parsing Error:', parseError);
-				ssvcSetting = null; // Обновляем реактивную переменную
-			}
-		} catch (error) {
-			console.error('Error:', error);
-			ssvcSetting = null;
-		}
+		ssvcSetting = await fetchSettings();
 	}
 
-	async function saveChanges(field: string, value: any) {
-		try {
-			// Форматируем value для URL
-			const formattedValue = Array.isArray(value)
-				? `[${value.join(',')}]` // Массив → [1,2,3]
-				: encodeURIComponent(value); // Строка → экранируем спецсимволы
-
-			const url = `/rest/settings?${field}=${formattedValue}`;
-			console.log('Отправка запроса:', url);
-
-			const response = await fetch(url, {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic'
-				}
-			});
-
-			if (response.ok) {
-				await getSvvcSetting(); // Обновляем данные после успеха
-			} else {
-				throw new Error(`HTTP error: ${response.status}`);
-			}
-		} catch (error) {
-			console.error('Ошибка сохранения:', error);
+	async function saveChanges(field: string, value: unknown): Promise<void> {
+		const success = await updateSetting(field, value);
+		if (success) {
+			await getSvvcSetting();
+		} else {
 			alert('Не удалось сохранить изменения');
 		}
 	}

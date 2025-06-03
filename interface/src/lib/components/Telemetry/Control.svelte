@@ -11,11 +11,19 @@
 	import Check from '~icons/tabler/check';
 	import { modals } from 'svelte-modals';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import StartWizard from '$lib/components/StartWizard/StartWizard.svelte';
 
 	const { status, onStatusUpdate } = $props<{
 		status: RectStatus | undefined;
 		onStatusUpdate: () => Promise<void>; // Функция возвращает Promise
 	}>();
+
+	let showWizard = $state(false);
+
+	async function handleSave(data: any) {
+		console.log('Settings saved:', data);
+		// Можно выполнить дополнительные действия после сохранения
+	}
 
 	function confirmModalStop() {
 		modals.open(ConfirmDialog, {
@@ -78,13 +86,13 @@
 	}
 
 	function confirmModalStart() {
-		modals.open(ConfirmDialog, {
+		modals.open(StartWizard, {
 			title: 'Запуск процесса',
 			message: 'Вы точно хотите начать ректификацию?',
-			labels: {
-				cancel: { label: 'Нет', icon: Cancel },
-				confirm: { label: 'Да', icon: Check }
-			},
+			// labels: {
+			// 	cancel: { label: 'Отмена', icon: Cancel },
+			// 	confirm: { label: 'Старт', icon: Check }
+			// },
 			onConfirm: () => {
 				modals.close();
 				sendRequest('start');
@@ -139,9 +147,6 @@
 				<Play class="h-6 w-6 sm:h-5 sm:w-5" />
 				<span class="hidden sm:inline">Начать</span>
 			</button>
-			<span class="text-xs text-gray-400 dark:text-gray-300 font-light text-center w-full">
-				Будет доступно в следующем релизе
-			</span>
 		</div>
 	{:else}
 		<!-- Остальные кнопки видны во всех режимах кроме waiting -->
@@ -182,3 +187,5 @@
 		</button>
 	{/if}
 </div>
+
+<StartWizard isOpen={showWizard} onConfirm={handleSave} />

@@ -3,8 +3,7 @@
 
 #include "ArduinoJson.h"
 #include "SsvcConnector.h"
-#include "SsvcSettings.h"
-#include "esp_log.h"
+#include <core/SsvcSettings/SsvcSettings.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include <Arduino.h>
@@ -15,7 +14,8 @@
 #define TIMEOUT pdMS_TO_TICKS(3000)
 #define GET_SETTINGS_REQUEST_TIMER 30000
 
-enum class SsvcCommandType {
+enum class SsvcCommandType
+{
   GET_SETTINGS,
   VERSION,
   STOP,
@@ -27,7 +27,8 @@ enum class SsvcCommandType {
   SET
 };
 
-struct SsvcCommand {
+struct SsvcCommand
+{
   SsvcCommandType type;
   std::string parameters;
   int8_t attempt_count = 0;
@@ -38,13 +39,15 @@ struct SsvcCommand {
  * @class MutexLock
  * @brief RAII-обертка для работы с мьютексами FreeRTOS
  */
-class MutexLock {
+class MutexLock
+{
 public:
   /**
    * @brief Захватывает мьютекс при создании
    * @param mutex Указатель на мьютекс FreeRTOS
    */
-  explicit MutexLock(SemaphoreHandle_t _mutex) : m_mutex(_mutex) {
+  explicit MutexLock(SemaphoreHandle_t _mutex) : m_mutex(_mutex)
+  {
     xSemaphoreTake(m_mutex, portMAX_DELAY);
   }
 
@@ -57,10 +60,12 @@ private:
   SemaphoreHandle_t m_mutex; ///< Указатель на мьютекс
 };
 
-class SsvcCommandsQueue {
+class SsvcCommandsQueue
+{
 public:
   // Метод для получения экземпляра синглтона
-  static SsvcCommandsQueue &getQueue() {
+  static SsvcCommandsQueue& getQueue()
+  {
     static SsvcCommandsQueue queue;
     return queue;
   }
@@ -86,14 +91,17 @@ public:
            TickType_t timeout = TIMEOUT);
 
   // Проверка очереди
-  UBaseType_t availableCommands() const {
+  UBaseType_t availableCommands() const
+  {
     return command_queue ? uxQueueMessagesWaiting(command_queue) : 0;
   }
 
   bool _cmdSetResult{false};
 
-  ~SsvcCommandsQueue() {
-    if (command_queue) {
+  ~SsvcCommandsQueue()
+  {
+    if (command_queue)
+    {
       vQueueDelete(command_queue);
     }
   }
@@ -108,28 +116,29 @@ private:
    * @brief Соответствие типов команд и битов событий
    */
   std::unordered_map<SsvcCommandType, EventBits_t> commandToExpectedBit = {
-      {SsvcCommandType::GET_SETTINGS, BIT10}, // BIT10 для GET_SETTINGS
-      {SsvcCommandType::VERSION, BIT11},      {SsvcCommandType::STOP, BIT9},
-      {SsvcCommandType::PAUSE, BIT9},         {SsvcCommandType::RESUME, BIT9},
-      {SsvcCommandType::NEXT, BIT9},          {SsvcCommandType::AT, BIT9},
-      {SsvcCommandType::SET, BIT9},
+    {SsvcCommandType::GET_SETTINGS, BIT10}, // BIT10 для GET_SETTINGS
+    {SsvcCommandType::VERSION, BIT11}, {SsvcCommandType::STOP, BIT9},
+    {SsvcCommandType::PAUSE, BIT9}, {SsvcCommandType::RESUME, BIT9},
+    {SsvcCommandType::NEXT, BIT9}, {SsvcCommandType::AT, BIT9},
+    {SsvcCommandType::SET, BIT9},
   };
 
   /// Тип callback-функции для обработки ответов
-  using ResponseCallback = std::function<bool(SsvcCommand *cmd)>;
+  using ResponseCallback = std::function<bool(SsvcCommand* cmd)>;
 
   std::unordered_map<SsvcCommandType, ResponseCallback>
-      responseCallbacks; ///< Обработчики команд
+  responseCallbacks; ///< Обработчики команд
 
   std::unordered_map<EventBits_t, ResponseCallback>
-      bitCallbacks; ///< Коллекция обработчиков
+  bitCallbacks; ///< Коллекция обработчиков
 
   /**
    * @brief Регистрация обработчика для бита события
    * @param bit Бит события
    * @param callback Функция-обработчик
    */
-  void registerBitHandler(EventBits_t bit, ResponseCallback callback) {
+  void registerBitHandler(EventBits_t bit, ResponseCallback callback)
+  {
     MutexLock lock(mutex);
     bitCallbacks[bit] = std::move(callback);
   }
@@ -138,13 +147,13 @@ private:
    * @brief Задача обработки команд из очереди
    * @param pvParameters Параметры задачи (указатель на экземпляр класса)
    */
-  [[noreturn]] static void commandProcessorTask(void *pvParameters);
+  [[noreturn]] static void commandProcessorTask(void* pvParameters);
 
   /**
    * @brief Задача периодической отправки AT-команд
    * @param pvParameters Параметры задачи (указатель на экземпляр класса)
    */
-  [[noreturn]] static void sendAT(void *pvParameters);
+  [[noreturn]] static void sendAT(void* pvParameters);
 
   /**
    * @brief Регистрация callback-обработчиков команд
