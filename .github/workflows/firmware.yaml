@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env_name: [esp32dev, esp32-s3-devkitc-1-16m, esp32-s3-devkitc-1-8m]  # Указываем цели для сборки
+        env_name: [esp32-s3-devkitc-1-16m, esp32-s3-devkitc-1-8m]  # Указываем цели для сборки
 
     outputs:
       version: ${{ steps.version.outputs.version }}
