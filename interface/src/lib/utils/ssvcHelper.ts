@@ -41,24 +41,24 @@ export function getStageDescription(stage: string): string {
  */
 export function getEventDescription(event: string): string {
 	switch (event) {
-		case "heads_finished":
-			return "Завершен этап Головы";
-		case "hearts_finished":
-			return "Завершен этап Тело";
-		case "tails_finished":
-			return "Завершен этап Хвосты";
-		case "ds_error":
-			return "Ошибка датчика температуры";
-		case "ds_error_stop":
-			return "Выключение оборудования (реле) из-за ошибки датчика";
-		case "stabilization_limit":
-			return "Превышен лимит времени стабилизации";
-		case "remote_stop":
-			return "Получена удаленная команда остановки, процесс остановлен";
-		case "manually_closed":
-			return "Включено ручное управление клапаном текущего этапа, клапан закрыт";
-		case "manually_opened":
-			return "Включено ручное управление клапаном текущего этапа, клапан открыт";
+		case 'heads_finished':
+			return 'Завершен этап Головы';
+		case 'hearts_finished':
+			return 'Завершен этап Тело';
+		case 'tails_finished':
+			return 'Завершен этап Хвосты';
+		case 'ds_error':
+			return 'Ошибка датчика температуры';
+		case 'ds_error_stop':
+			return 'Выключение оборудования (реле) из-за ошибки датчика';
+		case 'stabilization_limit':
+			return 'Превышен лимит времени стабилизации';
+		case 'remote_stop':
+			return 'Получена удаленная команда остановки, процесс остановлен';
+		case 'manually_closed':
+			return 'Включено ручное управление клапаном текущего этапа, клапан закрыт';
+		case 'manually_opened':
+			return 'Включено ручное управление клапаном текущего этапа, клапан открыт';
 		default:
 			return `Неизвестная команда: ${event}`;
 	}

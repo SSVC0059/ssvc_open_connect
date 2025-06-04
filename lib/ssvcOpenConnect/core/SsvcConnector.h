@@ -25,7 +25,7 @@
 #define SSVC_OPEN_CONNECT_UART_RX GPIO_NUM_16
 #endif
 
-constexpr size_t SSVC_OPEN_CONNECT_BUF_SIZE = 2048;
+constexpr size_t SSVC_OPEN_CONNECT_BUF_SIZE = 4096;
 
 extern SemaphoreHandle_t mutex;
 extern EventGroupHandle_t eventGroup;

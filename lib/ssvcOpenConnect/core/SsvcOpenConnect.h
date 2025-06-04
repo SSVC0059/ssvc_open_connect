@@ -9,13 +9,12 @@
 #include "API/HttpRequestHandler.h"
 #include "ESP32SvelteKit.h"
 #include "EventSocket.h"
-#include "HttpEndpoint.h"
-#include "OpenConnectSettings.h"
+
 #include "SecurityManager.h"
-#include "SsvcCommandsQueue.h"
 #include "SsvcConnector.h"
-#include "SsvcSettings.h"
-#include "rectification/RectificationProcess.h"
+#include "SsvcSettings/SsvcSettings.h"
+#include <rectification/RectificationProcess.h>
+#include <sensors/Thermal/ThermalSensors.h>
 
 /**
  * @def TASK_AT_COMMAND_SEND_STACK_PERIOD
@@ -23,74 +22,59 @@
  */
 #define TASK_AT_COMMAND_SEND_STACK_PERIOD 60
 
-#if __cplusplus < 201402L
-namespace std {
-/**
- * @brief Реализация make_unique для C++11
- */
-template <typename T, typename... Args>
-unique_ptr<T> make_unique(Args &&...args) {
-  return unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-} // namespace std
-#endif
 
 /**
  * @class SsvcOpenConnect
  * @brief Основной класс для работы с SSVC устройством через WiFi
- *
- * Класс реализует:
- * - Управление подключением к SSVC устройству
- * - Обработку команд устройства
- * - Взаимодействие через HTTP API
  */
-class SsvcOpenConnect {
+class SsvcOpenConnect
+{
 public:
   /**
    * @brief Получить экземпляр класса (Singleton)
-   * @param server HTTP сервер
-   * @param esp32sveltekit Фреймворк ESP32SvelteKit
-   * @param socket Сокет для событий
-   * @param securityManager Менеджер безопасности
-   * @return Указатель на экземпляр класса
    */
-  static SsvcOpenConnect *getInstance(PsychicHttpServer &server,
-                                      ESP32SvelteKit &esp32sveltekit,
-                                      EventSocket *socket,
-                                      SecurityManager *securityManager) {
-    if (!instance) {
-      instance =
-          new SsvcOpenConnect(server, esp32sveltekit, socket, securityManager);
-    }
+  static SsvcOpenConnect& getInstance() {
+    static SsvcOpenConnect instance;
     return instance;
   }
+
+  static void subsystemManager();
 
   /**
    * @brief Инициализация модуля
    */
-  void begin();
+  void begin(PsychicHttpServer& server,
+             ESP32SvelteKit& esp32sveltekit,
+             EventSocket* socket,
+             SecurityManager* securityManager);
 
+  // Удаляем конструкторы копирования и присваивания
+  SsvcOpenConnect(const SsvcOpenConnect&) = delete;
+  void operator=(const SsvcOpenConnect&) = delete;
+
+  bool isOnline() const;
 private:
   /**
-   * @brief Конструктор
+   * @brief Конструктор (приватный для Singleton)
    */
-  SsvcOpenConnect(PsychicHttpServer &server, ESP32SvelteKit &esp32sveltekit,
-                  EventSocket *socket, SecurityManager *securityManager);
+  SsvcOpenConnect() = default;
 
-  PsychicHttpServer &_server;        ///< HTTP сервер
-  ESP32SvelteKit &_esp32sveltekit;   ///< Фреймворк ESP32SvelteKit
-  EventSocket *_socket;              ///< Сокет для событий
-  SecurityManager *_securityManager; ///< Менеджер безопасности
+  PsychicHttpServer* _server = nullptr;       ///< HTTP сервер
+  ESP32SvelteKit* _esp32sveltekit = nullptr; ///< Фреймворк ESP32SvelteKit
+  EventSocket* _socket = nullptr;            ///< Сокет для событий
+  SecurityManager* _securityManager = nullptr; ///< Менеджер безопасности
 
-  SsvcConnector &_ssvcConnector; ///< Коннектор к SSVC устройству
-  OpenConnectSettingsService _openConnectSettingsService; ///< Сервис настроек
-  SsvcSettings &_ssvcSettings;    ///< Настройки SSVC устройства
-  RectificationProcess &rProcess; ///< Процесс ректификации
-  std::unique_ptr<HttpRequestHandler>
-      httpRequestHandler; ///< HTTP обработчик запросов
+  SsvcConnector& _ssvcConnector = SsvcConnector::getConnector(); ///< Коннектор к SSVC
+  OpenConnectSettingsService* _openConnectSettingsService = nullptr; ///< Сервис настроек
+  SsvcSettings& _ssvcSettings = SsvcSettings::init(); ///< Настройки SSVC
+  RectificationProcess& rProcess = RectificationProcess::rectController();
+  ThermalSensors& _thermalSensors = ThermalSensors::thermalController();
 
-  static SsvcOpenConnect
-      *instance; ///< Единственный экземпляр класса (Singleton)
+  std::unique_ptr<HttpRequestHandler> httpRequestHandler; ///< HTTP обработчик
+
+
+  static constexpr auto TAG = "SsvcOpenConnect";
+
 };
 
 #endif // SSVC_OPEN_CONNECT_SSVCOPENCONNECT_H
