@@ -37,11 +37,12 @@ public:
     }
 
     void disable() override {
-        if (_enabled) {
-            ESP_LOGI("TelegramBotSubsystem", "Disabling Telegram Bot subsystem");
-            // Остановка обработки сообщений и очистка ресурсов
-            _enabled = false;
-        }
+        if (!_enabled) return;
+
+        ESP_LOGI("TelegramBotSubsystem", "Disabling...");
+        bot->shutoff();
+        _enabled = false;
+        vTaskDelay(pdMS_TO_TICKS(100)); // Даём время на завершение операций
     }
 
     void setSettingsService(OpenConnectSettingsService& service) {

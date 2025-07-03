@@ -84,7 +84,7 @@ void ThermalSensors::readingTask(void* params) {
 }
 void ThermalSensors::performTemperatureReading() {
     const uint32_t startTime = millis();
-    ESP_LOGD(TAG, "Starting temperature reading process");
+    ESP_LOGV(TAG, "Starting temperature reading process");
 
     if (!_sensorManager.requestTemperaturesForAllZones()) {
         _readErrors++;
@@ -94,12 +94,12 @@ void ThermalSensors::performTemperatureReading() {
 
     std::vector<SensorTemperatureData> newData;
     const auto& config = _sensorManager.getConfig();
-    ESP_LOGD(TAG, "Reading temperatures for %zu sensors", config.size());
+    ESP_LOGV(TAG, "Reading temperatures for %zu sensors", config.size());
 
     size_t validReadings = 0;
-    for (const auto& entry : config) {
-        const std::string& address = entry.first;
-        const ThermalSensorZone zone = entry.second;
+    for (const auto& [fst, snd] : config) {
+        const std::string& address = fst;
+        const ThermalSensorZone zone = snd;
 
         if (const auto sensor = _sensorManager.getSensorByAddress(address)) {
             const float temperature = sensor->getTemperatureC();
@@ -116,7 +116,7 @@ void ThermalSensors::performTemperatureReading() {
             newData.push_back({address, zoneName, valid ? temperature : -999.0f, valid});
             if (valid) validReadings++;
 
-            ESP_LOGD(TAG, "Sensor %s: %s (%.2f°C) %s",
+            ESP_LOGV(TAG, "Sensor %s: %s (%.2f°C) %s",
                     address.c_str(),
                     zoneName.c_str(),
                     temperature,
@@ -124,16 +124,16 @@ void ThermalSensors::performTemperatureReading() {
         }
     }
 
-    ESP_LOGD(TAG, "Temperature reading complete. Valid readings: %zu/%zu",
+    ESP_LOGV(TAG, "Temperature reading complete. Valid readings: %zu/%zu",
              validReadings, config.size());
 
     if (xSemaphoreTake(_dataMutex, pdMS_TO_TICKS(100))) {
         _cachedTemperatures = std::move(newData);
         xSemaphoreGive(_dataMutex);
-        ESP_LOGD(TAG, "Cache updated successfully");
+        ESP_LOGV(TAG, "Cache updated successfully");
 
         // Уведомление подписчиков
-        ESP_LOGD(TAG, "Notifying %zu registered callbacks", _callbacks.size());
+        ESP_LOGV(TAG, "Notifying %zu registered callbacks", _callbacks.size());
         for (const auto& callback : _callbacks) {
             callback(_cachedTemperatures);
         }
@@ -143,14 +143,14 @@ void ThermalSensors::performTemperatureReading() {
     }
 
     const uint32_t elapsed = millis() - startTime;
-    ESP_LOGD(TAG, "Temperature reading process completed in %ums", elapsed);
+    ESP_LOGV(TAG, "Temperature reading process completed in %ums", elapsed);
 }
 
 // Получить свежие данные (игнорируя кэш)
 // auto freshTemperatures = ThermalSensors::thermalController().getTemperatures(true);
 
 std::vector<SensorTemperatureData> ThermalSensors::getTemperatures(const bool forceUpdate) {
-    ESP_LOGD(TAG, "getTemperatures() called, forceUpdate: %d, continuousReading: %d",
+    ESP_LOGV(TAG, "getTemperatures() called, forceUpdate: %d, continuousReading: %d",
              forceUpdate, _continuousReading);
 
     if (forceUpdate && !_continuousReading) {

@@ -71,7 +71,7 @@ bool DS18B20Bus::requestTemperatures(const bool waitForConversion) {
     // Просто запоминаем время начала конверсии
     const uint16_t conversionTime = DallasTemperature::millisToWaitForConversion(sensors.getResolution());
     uint32_t _conversionTimeout = pdMS_TO_TICKS(conversionTime + 100);
-    ESP_LOGD(TAG, "Conversion started, will take ~%d ms", conversionTime);
+    ESP_LOGV(TAG, "Conversion started, will take ~%d ms", conversionTime);
   }
 
   return true;

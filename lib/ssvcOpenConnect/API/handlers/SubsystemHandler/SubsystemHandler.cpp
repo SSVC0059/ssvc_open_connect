@@ -13,14 +13,51 @@ esp_err_t SubsystemHandler::getStatus(PsychicRequest* request)
 {
     PsychicJsonResponse response(request, false);
     JsonObject root = response.getRoot();
-    JsonArray _subsystems = root["subsystem"].to<JsonArray>();
+    // JsonArray _subsystems = root["subsystem"].to<JsonArray>();
     const std::unordered_map<std::string, bool> subsystems = SubsystemManager::instance().getSubsystemsStatus();
 
-    for (const auto& pair : subsystems) {
-        auto subsystem = _subsystems.add<JsonObject>();
-        subsystem[pair.first] = pair.second;;
+    for (const auto& [fst, snd] : subsystems) {
+        // auto subsystem = _subsystems.add<JsonObject>();
+        root[fst] = snd;;
     }
 
+    return response.send();
+}
+
+esp_err_t SubsystemHandler::state(PsychicRequest* request) {
+    JsonDocument doc;
+    auto response = PsychicJsonResponse(request, false);
+
+    if (deserializeJson(doc, request->body()) != DeserializationError::Ok) {
+        ESP_LOGE("SubsystemHandler", "Invalid JSON received");
+        return request->reply(400);
+    }
+
+    JsonObject root = response.getRoot();
+    bool allSuccess = true;
+    auto errors = root["errors"].to<JsonArray>();
+
+    for (JsonPair kv : doc.as<JsonObject>()) {
+        const std::string subsystem = kv.key().c_str();
+        bool enable = kv.value().as<bool>();
+
+        ESP_LOGI("SubsystemHandler", "Processing subsystem %s: %s",
+                subsystem.c_str(), enable ? "enable" : "disable");
+
+        bool result = enable
+            ? SubsystemManager::instance().enableSubsystem(subsystem)
+            : SubsystemManager::instance().disableSubsystem(subsystem);
+
+        if (!result) {
+            allSuccess = false;
+            auto error = errors.add<JsonObject>(); // Замена createNestedObject
+            error["subsystem"] = subsystem;
+            error["message"] = enable ? "Enable failed" : "Disable failed";
+            ESP_LOGW("SubsystemHandler", "Failed to change state for %s", subsystem.c_str());
+        }
+    }
+
+    root["success"] = allSuccess;
     return response.send();
 }
 

@@ -16,6 +16,7 @@ public:
     SubsystemHandler();
 
     static esp_err_t getStatus(PsychicRequest* request);
+    static esp_err_t  state(PsychicRequest* request);
     static esp_err_t  disable(PsychicRequest* request);
     static esp_err_t  enable(PsychicRequest* request);
 

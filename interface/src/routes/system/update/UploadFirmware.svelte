@@ -7,7 +7,6 @@
 	import OTA from '~icons/tabler/file-upload';
 	import Warning from '~icons/tabler/alert-triangle';
 	import Cancel from '~icons/tabler/x';
-	import { openModal } from 'svelte-modals/legacy';
 
 	let files: FileList = $state();
 
@@ -23,7 +22,6 @@
 				body: formData
 			});
 			const result = await response.json();
-			console.log(result);
 		} catch (error) {
 			console.error('Error:', error);
 		}
@@ -53,7 +51,7 @@
 		<span>Загрузка обновления</span>
 	{/snippet}
 	<div class="alert alert-warning shadow-lg">
-		<Warning class="h-6 w-6 flex-shrink-0" />
+		<Warning class="h-6 w-6 shrink-0" />
 		<span
 			>Загрузка нового файла прошивки (.bin) заменит существующую прошивку. Вы можете сначала
 			загрузить файл (.md5), чтобы проверить загруженную прошивку.</span
@@ -61,11 +59,11 @@
 	</div>
 
 	<input
-		accept=".bin,.md5"
-		bind:files
-		class="file-input file-input-bordered file-input-secondary mt-4 w-full"
-		id="binFile"
-		onchange={confirmBinUpload}
 		type="file"
+		id="binFile"
+		class="file-input file-input-secondary mt-4 w-full"
+		bind:files
+		accept=".bin,.md5"
+		onchange={confirmBinUpload}
 	/>
 </SettingsCard>

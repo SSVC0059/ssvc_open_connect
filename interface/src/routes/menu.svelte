@@ -14,6 +14,7 @@
 	import Avatar from '~icons/tabler/user-circle';
 	import Logout from '~icons/tabler/logout';
 	import Copyright from '~icons/tabler/copyright';
+	import MQTT from '~icons/tabler/topology-star-3';
 	import NTP from '~icons/tabler/clock-check';
 	import Metrics from '~icons/tabler/report-analytics';
 	import Connected from '~icons/tabler/plug-connected';
@@ -61,7 +62,7 @@
 				},
 				{
 					title: 'Настройки SSVC',
-					icon: Control,
+			icon: Control,
 					href: '/oc/ssvc ',
 					feature: true
 				},
@@ -69,7 +70,7 @@
 					title: 'Open Connect',
 					icon: Esp,
 					href: '/oc/settings ',
-					feature: true
+			feature: true
 				}
 			]
 		},
@@ -166,14 +167,14 @@
 <div class="bg-base-200 text-base-content flex h-full w-80 flex-col p-4">
 	<!-- Sidebar content here -->
 	<a
-		class="rounded-box mb-4 flex items-center hover:scale-[1.02] active:scale-[0.98]"
 		href="/"
+		class="rounded-box mb-4 flex items-center hover:scale-[1.02] active:scale-[0.98]"
 		onclick={() => setActiveMenuItem('')}
 	>
-		<img alt="Logo" class="h-12 w-12" src={logo} />
+		<img src={logo} alt="Logo" class="h-12 w-12" />
 		<h1 class="px-4 text-2xl font-bold">{page.data.appName}</h1>
 	</a>
-	<ul class="menu rounded-box menu-vertical flex-nowrap overflow-y-auto">
+	<ul class="menu w-full rounded-box menu-vertical flex-nowrap overflow-y-auto">
 		{#each menuItems as menuItem, i (menuItem.title)}
 			{#if menuItem.feature}
 				<li>
@@ -193,9 +194,7 @@
 												class="text-ml font-bold"
 												onclick={() => {
 													setActiveMenuItem(subMenuItem.title);
-												}}
-											>
-												<subMenuItem.icon class="h-5 w-5" />{subMenuItem.title}</a
+												}}><subMenuItem.icon class="h-5 w-5" />{subMenuItem.title}</a
 											>
 										</li>
 									{/if}
@@ -209,9 +208,7 @@
 							class="text-lg font-bold"
 							onclick={() => {
 								setActiveMenuItem(menuItem.title);
-							}}
-						>
-							<menuItem.icon class="h-6 w-6" />{menuItem.title}</a
+							}}><menuItem.icon class="h-6 w-6" />{menuItem.title}</a
 						>
 					{/if}
 				</li>
@@ -220,12 +217,12 @@
 	</ul>
 
 	<div class="flex-col"></div>
-	<div class="flex-grow"></div>
+	<div class="grow"></div>
 
 	{#if page.data.features.security}
 		<div class="flex items-center">
 			<Avatar class="h-8 w-8" />
-			<span class="flex-grow px-4 text-xl font-bold">{$user.username}</span>
+			<span class="grow px-4 text-xl font-bold">{$user.username}</span>
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
@@ -242,18 +239,17 @@
 	<div class="divider my-0"></div>
 	<div class="flex items-center">
 		{#if github.active}
-			<a href={github.href} class="btn btn-ghost" target="_blank" rel="noopener noreferrer">
-				<Github class="h-5 w-5" />
-			</a>
+			<a href={github.href} class="btn btn-ghost" target="_blank" rel="noopener noreferrer"
+				><Github class="h-5 w-5" /></a
+			>
 		{/if}
 		{#if discord.active}
-			<a href={discord.href} class="btn btn-ghost" target="_blank" rel="noopener noreferrer">
-				<Discord class="h-5 w-5" />
-			</a>
+			<a href={discord.href} class="btn btn-ghost" target="_blank" rel="noopener noreferrer"
+				><Discord class="h-5 w-5" /></a
+			>
 		{/if}
-		<div class="inline-flex flex-grow items-center justify-end text-sm">
-			<Copyright class="h-4 w-4" />
-			<span class="px-2">{page.data.copyright}</span>
+		<div class="inline-flex grow items-center justify-end text-sm">
+			<Copyright class="h-4 w-4" /><span class="px-2">{page.data.copyright}</span>
 		</div>
 	</div>
 </div>

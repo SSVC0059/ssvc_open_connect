@@ -8,7 +8,7 @@
 // Определение статического члена
 SubsystemManager* SubsystemManager::_instance = nullptr;
 
-// Функции сериализации для GlobalConfig
+// Функции сериализация для GlobalConfig
 namespace {
     auto serializeSubsystem = [](const JsonObject& obj, const std::string& name, const bool& enabled) {
         obj["name"] = name;
@@ -39,6 +39,13 @@ SubsystemManager::SubsystemManager() {
     ESP_LOGV(TAG, "[CONSTRUCTOR] SubsystemManager created");
 }
 
+// Чётко определить порядок приоритетов в комментариях
+/*
+ * Priority:
+ * 1. Force enable if instance is missing
+ * 2. Current enabled state if exists
+ * 3. Initial state from config
+ */
 void SubsystemManager::begin() {
 
     if (_initialized) {
@@ -57,26 +64,22 @@ void SubsystemManager::begin() {
     ESP_LOGD(TAG, "[BEGIN] Initializing %zu subsystems", _subsystemFactories.size());
 
     // 2. Инициализируем подсистемы
-    for (const auto& factoryPair : _subsystemFactories) {
-        const std::string& name = factoryPair.first;
-        const auto& factory = factoryPair.second;
+    for (const auto& [fst, snd] : _subsystemFactories) {
+        const std::string& name = fst;
+        const auto& factory = snd;
 
         // Определяем нужно ли включать подсистему:
-        bool shouldEnable = _initialStates.at(name); // Приоритет у initialStates
+        bool shouldEnable = false; // Значение по умолчанию
+        if (_initialStates.count(name)) {
+            shouldEnable = _initialStates.at(name);
+        }
 
-        auto subsystemIt = _subsystems.find(name);
-        if (subsystemIt != _subsystems.end()) {
-            // Если подсистема уже есть в конфиге
-            if (!subsystemIt->second.instance) {
-                shouldEnable = true; // Принудительно включаем
-                ESP_LOGW(TAG, "[BEGIN] Recreating instance for '%s'", name.c_str());
-            } else {
-                shouldEnable = subsystemIt->second.enabled;
-            }
+        // Если подсистема есть в конфиге, используем её значение
+        if (auto subsystemIt = _subsystems.find(name); subsystemIt != _subsystems.end()) {
+            shouldEnable = subsystemIt->second.enabled;
         }
 
         ESP_LOGD(TAG, "[BEGIN] %s - enabled: %d", name.c_str(), shouldEnable);
-
         if (shouldEnable) {
             // 3. Гарантированно создаём экземпляр
             if (_subsystems[name].instance == nullptr) {
@@ -98,7 +101,7 @@ void SubsystemManager::begin() {
 }
 
 
-void SubsystemManager::setInitialState(const std::string& name, bool enabled) {
+void SubsystemManager::setInitialState(const std::string& name, const bool enabled) {
     ESP_LOGD(TAG, "[SET_INITIAL] Subsystem '%s' initial state set to %d", name.c_str(), enabled);
     _initialStates[name] = enabled;
 }
@@ -113,7 +116,7 @@ bool SubsystemManager::enableSubsystem(const std::string& name) {
     // 2. Проверяем текущее состояние
     const auto it = _subsystems.find(name);
     if (it != _subsystems.end() && it->second.enabled) {
-        ESP_LOGW(TAG, "[ENABLE] Subsystem '%s' already enabled", name.c_str());
+        ESP_LOGV(TAG, "[ENABLE] Subsystem '%s' already enabled", name.c_str());
         return true;
     }
 
@@ -132,7 +135,7 @@ bool SubsystemManager::enableSubsystem(const std::string& name) {
             ESP_LOGD(TAG, "[ENABLE] Created new instance of '%s' at %p",
                     name.c_str(), subsystem.get());
 
-            subsystem->initialize();
+            // subsystem->initialize();
             ESP_LOGD(TAG, "[ENABLE] Subsystem '%s' initialized", name.c_str());
         }
 
@@ -173,6 +176,7 @@ bool SubsystemManager::disableSubsystem(const std::string& name) {
         _subsystems[name].enabled = false;
         ESP_LOGD(TAG, "[DISABLE] Subsystem '%s' state updated", name.c_str());
 
+        // _subsystems.erase(name);
         // Сохраняем конфигурацию
         saveConfig();
         ESP_LOGD(TAG, "[DISABLE] Configuration saved for '%s'", name.c_str());
@@ -196,18 +200,20 @@ bool SubsystemManager::exists(const std::string& name) const
 void SubsystemManager::loadConfig() {
     ESP_LOGI(TAG, "[LOAD_CONFIG] Starting configuration load process");
 
-    // 1. Создаем временный контейнер для загруженных данных
-    std::unordered_map<std::string, bool> loadedConfig;
+    // 1. Пытаемся загрузить конфиг из хранилища
+    if (
+        std::unordered_map<std::string, bool> loadedConfig;
+        GlobalConfig::config().getObject(
+            "subsystem", "config", loadedConfig, GlobalConfig::fromJson
+            )) {
 
-    // 2. Пытаемся загрузить конфиг из хранилища
-    if (GlobalConfig::config().getObject("subsystem", "config", loadedConfig, GlobalConfig::fromJson)) {
         ESP_LOGI(TAG, "[LOAD_CONFIG] Loaded %zu subsystem configurations", loadedConfig.size());
 
-        // 3. Для каждой зарегистрированной фабрики создаем запись в _subsystems
-        for (const auto& factoryPair : _subsystemFactories) {
-            const std::string& name = factoryPair.first;
+        // 2. Для каждой зарегистрированной фабрики создаем запись в _subsystems
+        for (const auto& [fst, snd] : _subsystemFactories) {
+            const std::string& name = fst;
 
-            // 4. Проверяем, есть ли настройки для этой подсистемы
+            // 3. Проверяем, есть ли настройки для этой подсистемы
             auto configIt = loadedConfig.find(name);
             bool enabled = _initialStates[name]; // Значение по умолчанию
 
@@ -218,22 +224,22 @@ void SubsystemManager::loadConfig() {
                 ESP_LOGD(TAG, "[LOAD_CONFIG] Using default state for '%s': %d", name.c_str(), enabled);
             }
 
-            // 5. Создаем запись (экземпляр пока nullptr)
+            // 4. Создаем запись (экземпляр пока nullptr)
             _subsystems[name] = {enabled, nullptr};
         }
 
-        // 6. Логируем нераспознанные записи
-        for (const auto& configPair : loadedConfig) {
-            if (_subsystemFactories.count(configPair.first) == 0) {
-                ESP_LOGW(TAG, "[LOAD_CONFIG] Unknown subsystem in config: '%s'", configPair.first.c_str());
+        // 5. Логируем нераспознанные записи
+        for (const auto& [fst, snd] : loadedConfig) {
+            if (_subsystemFactories.count(fst) == 0) {
+                ESP_LOGW(TAG, "[LOAD_CONFIG] Unknown subsystem in config: '%s'", fst.c_str());
             }
         }
     } else {
         ESP_LOGW(TAG, "[LOAD_CONFIG] No config found, using default states");
 
-        // 7. Если конфига нет, инициализируем все подсистемы значениями по умолчанию
-        for (const auto& factoryPair : _subsystemFactories) {
-            const std::string& name = factoryPair.first;
+        // 6. Если конфига нет, инициализируем все подсистемы значениями по умолчанию
+        for (const auto& [fst, snd] : _subsystemFactories) {
+            const std::string& name = fst;
             _subsystems[name] = {_initialStates[name], nullptr};
         }
     }
@@ -244,15 +250,15 @@ void SubsystemManager::saveConfig() const {
     ESP_LOGD(TAG, "[SAVE_CONFIG] Current subsystems state:");
 
     // Подробный лог текущего состояния перед сохранением
-    for (const auto& pair : _subsystems) {
-        ESP_LOGD(TAG, "  - %s: %s", pair.first.c_str(), pair.second.enabled ? "ENABLED" : "DISABLED");
+    for (const auto& [fst, snd] : _subsystems) {
+        ESP_LOGD(TAG, "  - %s: %s", fst.c_str(), snd.enabled ? "ENABLED" : "DISABLED");
     }
 
     std::unordered_map<std::string, bool> currentConfig;
     ESP_LOGD(TAG, "[SAVE_CONFIG] Preparing configuration data for saving");
 
-    for (const auto& pair : _subsystems) {
-        currentConfig[pair.first] = pair.second.enabled;
+    for (const auto& [fst, snd] : _subsystems) {
+        currentConfig[fst] = snd.enabled;
     }
 
     ESP_LOGD(TAG, "[SAVE_CONFIG] Attempting to save %zu subsystem states", currentConfig.size());
@@ -261,8 +267,8 @@ void SubsystemManager::saveConfig() const {
         GlobalConfig::config().setObject("subsystem", "config", currentConfig, GlobalConfig::toJson);
         ESP_LOGI(TAG, "[SAVE_CONFIG] Configuration successfully saved");
         ESP_LOGD(TAG, "[SAVE_CONFIG] Saved configuration contents:");
-        for (const auto& pair : currentConfig) {
-            ESP_LOGD(TAG, "  - %s: %s", pair.first.c_str(), pair.second ? "true" : "false");
+        for (const auto& [fst, snd] : currentConfig) {
+            ESP_LOGD(TAG, "  - %s: %s", fst.c_str(), snd ? "true" : "false");
         }
     } catch (const std::exception& e) {
         ESP_LOGE(TAG, "[SAVE_CONFIG] ERROR: Failed to save configuration - %s", e.what());
@@ -324,8 +330,7 @@ std::vector<std::string> SubsystemManager::getEnabledSubsystems() const {
 bool SubsystemManager::isSubsystemEnabled(const std::string& name) const {
     ESP_LOGD(TAG, "[IS_ENABLED] Checking if subsystem '%s' is enabled", name.c_str());
 
-    auto it = _subsystems.find(name);
-    if (it != _subsystems.end()) {
+    if (auto it = _subsystems.find(name); it != _subsystems.end()) {
         bool enabled = it->second.enabled;
         ESP_LOGD(TAG, "[IS_ENABLED] Subsystem '%s' is %s",
                 name.c_str(), enabled ? "ENABLED" : "DISABLED");

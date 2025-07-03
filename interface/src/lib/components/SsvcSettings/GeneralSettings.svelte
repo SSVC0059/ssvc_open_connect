@@ -21,7 +21,7 @@
 		<tbody>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
 				<td class="px-4 py-2 text-left">Гистерезис при отборе тела</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2">
+				<td class="border px-4 py-2">
 					<div class="editable-container flex justify-center">
 						<EditNumbersModal
 							onSave={(newValues) => {
@@ -43,10 +43,10 @@
 				</td>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Декремент при отборе тела, %
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center items-center">
+				<td class="border px-4 py-2 text-center items-center">
 					<div class="editable-container flex justify-center">
 						<EditNumbersModal
 							onSave={(newValues) => {
@@ -67,10 +67,10 @@
 				</td>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Время отбора голов
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center">
+				<td class="border px-4 py-2 text-center">
 					<div class="editable-container flex justify-center">
 						<EditTimeModal
 							max={36000}
@@ -83,10 +83,10 @@
 			</tr>
 			{#if settings.late_heads_timer}
 				<tr class="dark:bg-gray-700 dark:text-gray-100">
-					<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+					<td class="border px-4 py-2 text-left"
 						>Время отбора подголовников
 					</td>
-					<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center">
+					<td class="border px-4 py-2 text-center">
 						<div class="editable-container flex justify-center">
 							<EditTimeModal
 								seconds={settings.late_heads_timer}
@@ -99,10 +99,10 @@
 				</tr>
 			{/if}
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Таймер фиксации температуры отбора тела
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center">
+				<td class="border px-4 py-2 text-center">
 					<div class="editable-container flex justify-center">
 						<EditNumbersModal
 							onSave={(newValues) => {
@@ -124,10 +124,10 @@
 			</tr>
 			{#if settings.tails_temp}
 				<tr class="dark:bg-gray-700 dark:text-gray-100">
-					<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+					<td class="border px-4 py-2 text-left"
 						>Температура завершения отбора хвостов
 					</td>
-					<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center">
+					<td class="border px-4 py-2 text-center">
 						<div class="editable-container flex justify-center">
 							<EditNumbersModal
 								values={[
@@ -150,46 +150,46 @@
 				</tr>
 			{/if}
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left">Звук</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-left">Звук</td>
+				<td class="border px-4 py-2 text-center"
 					>{settings.sound ? 'Включен' : 'Отключен'}</td
 				>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left">Барометр</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-left">Барометр</td>
+				<td class="border px-4 py-2 text-center"
 					>{settings.pressure ? 'Включен' : 'Отключен'}</td
 				>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Реле инвертировано
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-center"
 					>{settings.relay_inverted ? 'Да' : 'Нет'}</td
 				>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Автовключение реле
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-center"
 					>{settings.relay_autostart ? 'Да' : 'Нет'}</td
 				>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Автоматический переход между этапами
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-center"
 					>{settings.auto_mode ? 'Да' : 'Нет'}</td
 				>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Температура ТД2 завершения отбора тела
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center">
+				<td class="border px-4 py-2 text-center">
 					<div class="editable-container flex justify-center">
 						<EditNumbersModal
 							onSave={(newValues) => {
@@ -211,10 +211,10 @@
 				</td>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Скорость сброса (время открытого клапана)
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center">
+				<td class="border px-4 py-2 text-center">
 					<div class="editable-container flex justify-center">
 						<EditNumbersModal
 							onSave={(newValues) => {
@@ -234,10 +234,10 @@
 				</td>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Отложенный пуск
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center">
+				<td class="border px-4 py-2 text-center">
 					<div class="editable-container flex justify-center">
 						<EditTimeModal
 							max={18000}
@@ -248,13 +248,13 @@
 				</td>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left">Фильтр ТД</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-left">Фильтр ТД</td>
+				<td class="border px-4 py-2 text-center"
 					>{settings.tp_filter}</td
 				>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left">Подсветка</td>
+				<td class="border px-4 py-2 text-left">Подсветка</td>
 				<td class="text-center">
 					<p>
 						{#if settings.backlight === 'active'}
@@ -270,24 +270,24 @@
 				</td>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Сдвиг температуры отбора тела на 0.07°С
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-center"
 					>{settings.hearts_temp_shift ? 'Включен' : 'Отключен'}</td
 				>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Пауза "на себя"
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-center"
 					>{settings.hearts_pause ? 'Включен' : 'Отключен'}</td
 				>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left">Формула</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center items-center">
+				<td class="border px-4 py-2 text-left">Формула</td>
+				<td class="border px-4 py-2 text-center items-center">
 					<div class="editable-container flex justify-center">
 						<EditBooleanModal
 							labels={{ true: 'Включено', false: 'Выключено' }}
@@ -298,10 +298,10 @@
 				</td>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Температура начала формулы
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center">
+				<td class="border px-4 py-2 text-center">
 					<div class="editable-container flex justify-center">
 						<EditNumbersModal
 							onSave={(newValues) => {
@@ -323,10 +323,10 @@
 				</td>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Поправка давления в кубе
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center">
+				<td class="border px-4 py-2 text-center">
 					<div class="editable-container flex justify-center">
 						<EditNumbersModal
 							onSave={(newValues) => {
@@ -347,66 +347,66 @@
 				</td>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Поправка ТД2
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-center"
 					>{settings.tp2_shift} °С
 				</td>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Контроль ТД1 для выхода SIGNAL
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-center"
 					>{settings.signal_tp1_control ? 'Включен' : 'Отключен'}</td
 				>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Инвертировать SIGNAL
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-center"
 					>{settings.signal_inverted ? 'Включен' : 'Отключен'}</td
 				>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Целевая температура на ТД1 при контроле ТД1 для выхода SIGNAL
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-center"
 					>{settings.tp1_control_temp} °С
 				</td>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Старт по ТД1 при контроле ТД1 для выхода SIGNAL.
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-center"
 					>{settings.tp1_control_start ? 'Включен' : 'Отключен'}</td
 				>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Лимит стабилизации
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-center"
 					>{settings.tp1_control_start === 0 ? 'Выключен' : settings.tp1_control_start} сек
 				</td>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Завершить этап при превышении лимита стабилизации
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center"
+				<td class="border px-4 py-2 text-center"
 					>{settings.tp1_control_start ? 'Да' : 'Нет'}</td
 				>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Время сброса. Включается опция "Сброс и снижение" при значении больше 0
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center">
+				<td class="border px-4 py-2 text-center">
 					<div class="editable-container flex justify-center">
 						<EditNumbersModal
 							onSave={(newValues) => {
@@ -427,11 +427,11 @@
 				</td>
 			</tr>
 			<tr class="dark:bg-gray-700 dark:text-gray-100">
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-left"
+				<td class="border px-4 py-2 text-left"
 					>Скорость отбора к окончанию голов, с. Включается опция "Сброс и снижение" при любом
 					знаении.
 				</td>
-				<td class="border border-gray-700 dark:border-gray-500 px-4 py-2 text-center">
+				<td class="border px-4 py-2 text-center">
 					<div class="editable-container flex justify-center">
 						<EditNumbersModal
 							onSave={(newValues) => {
@@ -458,22 +458,22 @@
 
 <style>
 	.settings-table {
-		@apply w-full border-collapse border border-gray-700 dark:border-gray-500;
+		@apply w-full border-collapse border  ;
 	}
 
 	.settings-table th,
 	.settings-table td {
-		@apply border border-gray-700 dark:border-gray-500;
+		@apply border  ;
 	}
 
 	.settings-table {
-		@apply w-full border-collapse border border-gray-700 dark:border-gray-500;
+		@apply w-full border-collapse border  ;
 		table-layout: fixed;
 	}
 
 	.settings-table th,
 	.settings-table td {
-		@apply border border-gray-700 dark:border-gray-500;
+		@apply border  ;
 	}
 
 	.settings-table th:first-child,

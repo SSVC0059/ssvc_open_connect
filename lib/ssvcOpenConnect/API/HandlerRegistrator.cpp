@@ -35,7 +35,7 @@ void HandlerRegistrator::registerAllHandlers() const
     registerSettingsHandlers();
     registerCommandHandlers();
     registerSensorHandlers();
-    registerMetricsHandlers();
+    // registerMetricsHandlers();
     registerTelegramBot();
     registerSubsystemHandler();
 
@@ -103,52 +103,25 @@ void HandlerRegistrator::registerSensorHandlers() const
                   AuthenticationPredicates::IS_AUTHENTICATED));
 }
 
-void HandlerRegistrator::registerMetricsHandlers() const
-{
-    _server.on("/rest/metrics", HTTP_GET,
-              _securityManager->wrapRequest(
-                  [this](PsychicRequest* request) {
-                      return MetricsHandler::getMetrics(request);
-                  },
-                  AuthenticationPredicates::IS_AUTHENTICATED));
-}
 
 void HandlerRegistrator::registerTelegramBot() const
 {
-    _server.on("/rest/telegram/settings", HTTP_PUT,
-          _securityManager->wrapRequest(
-              [this](PsychicRequest* request) {
-                  return TelegramBotHandler::settings(request);
-              },
-              AuthenticationPredicates::IS_AUTHENTICATED));
 
-    _server.on("/rest/telegram/token", HTTP_PUT,
+    _server.on("/rest/telegram/config", HTTP_PUT,
       _securityManager->wrapRequest(
           [this](PsychicRequest* request) {
-              return TelegramBotHandler::setToken(request);
+              return TelegramBotHandler::updateSettings(request);
           },
           AuthenticationPredicates::IS_AUTHENTICATED));
 
-    _server.on("/rest/telegram/chat_id", HTTP_PUT,
-      _securityManager->wrapRequest(
-      [this](PsychicRequest* request) {
-          return TelegramBotHandler::setChatId(request);
-      },
-      AuthenticationPredicates::IS_AUTHENTICATED));
 
-    _server.on("/rest/telegram/token", HTTP_GET,
+    _server.on("/rest/telegram/config", HTTP_GET,
     _securityManager->wrapRequest(
       [this](PsychicRequest* request) {
-          return TelegramBotHandler::getToken(request);
+          return TelegramBotHandler::getSettings(request);
       },
       AuthenticationPredicates::IS_AUTHENTICATED));
 
-    _server.on("/rest/telegram/chat_id", HTTP_GET,
-      _securityManager->wrapRequest(
-      [this](PsychicRequest* request) {
-          return TelegramBotHandler::getChatId(request);
-      },
-      AuthenticationPredicates::IS_AUTHENTICATED));
 }
 
 void HandlerRegistrator::registerSubsystemHandler() const
@@ -160,17 +133,12 @@ void HandlerRegistrator::registerSubsystemHandler() const
               },
               AuthenticationPredicates::IS_AUTHENTICATED));
 
-    _server.on("/rest/subsystem/disable", HTTP_PUT,
+    _server.on("/rest/subsystem/state", HTTP_PUT,
       _securityManager->wrapRequest(
           [this](PsychicRequest* request) {
-              return SubsystemHandler::disable(request);
+             return SubsystemHandler::state(request);
           },
-          AuthenticationPredicates::IS_AUTHENTICATED));
-
-    _server.on("/rest/subsystem/enable", HTTP_PUT,
-      _securityManager->wrapRequest(
-      [this](PsychicRequest* request) {
-          return SubsystemHandler::enable(request);
-      },
-      AuthenticationPredicates::IS_AUTHENTICATED));
+          AuthenticationPredicates::IS_AUTHENTICATED
+      )
+    );
 }

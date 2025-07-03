@@ -295,7 +295,7 @@ void RectificationProcess::update(void* pvParameters)
           //                    Значение PID в телеметрии приходит только в
           //                    момент работы процесса.
           int newPid = telemetry["pid"].as<int>();
-          ESP_LOGI("RectificationProcess", "PID: %d", newPid);
+          ESP_LOGV("RectificationProcess", "PID: %d", newPid);
           //                  Попадание в условие означает что запускается новый
           //                  процесс
           if (self->pid != newPid && newPid != 0)

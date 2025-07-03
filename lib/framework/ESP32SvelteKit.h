@@ -38,6 +38,7 @@
 #include <SecuritySettingsService.h>
 #include <SleepService.h>
 #include <SystemStatus.h>
+#include <CoreDump.h>
 #include <WiFiScanner.h>
 #include <WiFiSettingsService.h>
 #include <WiFiStatus.h>
@@ -237,6 +238,9 @@ private:
 #endif
 #if FT_ENABLED(FT_ANALYTICS)
     AnalyticsService _analyticsService;
+#endif
+#if FT_ENABLED(FT_COREDUMP)
+    CoreDump _coreDump;
 #endif
     RestartService _restartService;
     FactoryResetService _factoryResetService;

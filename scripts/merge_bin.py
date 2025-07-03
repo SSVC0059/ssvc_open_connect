@@ -1,11 +1,36 @@
+import os
+import re
 Import("env")
 
 APP_BIN = "$BUILD_DIR/${PROGNAME}.bin"
-MERGED_BIN = "$BUILD_DIR/firmware_merged.bin"
+build_target = env.get('PIOENV')
+OUTPUT_DIR = "build{}{}{}".format(os.path.sep, build_target, os.path.sep)
+
 BOARD_CONFIG = env.BoardConfig()
+
+def readFlag(flag):
+    buildFlags = env.ParseFlags(env["BUILD_FLAGS"])
+    # print(buildFlags.get("CPPDEFINES"))
+    for define in buildFlags.get("CPPDEFINES"):
+        if (define == flag or (isinstance(define, list) and define[0] == flag)):
+            # print("Found "+flag+" = "+define[1])
+            # strip quotes ("") from define[1]
+            cleanedFlag = re.sub(r'^"|"$', '', define[1])
+            return cleanedFlag
+    return None
 
 
 def merge_bin(source, target, env):
+
+    # check if output directories exist and create if necessary
+    if not os.path.isdir("build"):
+        os.mkdir("build")
+
+    if not os.path.isdir(OUTPUT_DIR):
+        os.mkdir(OUTPUT_DIR)
+
+    MERGED_BIN = "$PROJECT_DIR{}{}{}_{}_{}_webflash.bin".format(os.path.sep, OUTPUT_DIR, readFlag("APP_NAME"), env.get('PIOENV'), readFlag("APP_VERSION").replace(".", "-"))
+
     # The list contains all extra images (bootloader, partitions, eboot) and
     # the final application binary
     flash_images = env.Flatten(env.get("FLASH_EXTRA_IMAGES", [])) + ["$ESP32_APP_OFFSET", APP_BIN]

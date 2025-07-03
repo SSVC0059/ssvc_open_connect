@@ -8,7 +8,7 @@
 	import type { SubsystemsState } from '$lib/types/api';
 
 	interface Tab {
-		id: keyof SubsystemsState;
+		id: string;
 		title: string;
 		component: any;
 	}
@@ -57,15 +57,6 @@
 		}
 	}
 
-	const toggleSubsystemHandler = (subsystem: keyof SubsystemsState) => {
-		return async () => {
-			try {
-				await toggleSubsystem(subsystem);
-			} catch (err) {
-				console.error(`Error toggling ${subsystem}:`, err);
-			}
-		};
-	};
 
 	let activeTab = $state(0);
 	let isMenuCollapsed = $state(true);
@@ -77,7 +68,7 @@
 			component: ThermalSensorSettings
 		},
 		{
-			id: 'telegram_bot',
+			id: 'telegram',
 			title: 'Telegram',
 			component: TelegramSettings
 		}
@@ -87,13 +78,6 @@
 	function toggleMenu() {
 		isMenuCollapsed = !isMenuCollapsed;
 	}
-
-	// Добавим вспомогательную функцию
-	function isSubsystemEnabled(id: string): boolean {
-		const key = id as keyof SubsystemsState;
-		return subsystemsState[key] ?? false;
-	}
-
 </script>
 
 
@@ -164,10 +148,7 @@
 			{#each availableTabs as tab, index}
 				{#if activeTab === index}
 					{@const Component = tab.component}
-					<Component
-						disabled={!isSubsystemEnabled(tab.id)}
-						onToggle={toggleSubsystemHandler(tab.id)}
-					/>
+					<Component />
 				{/if}
 			{/each}
 		</div>
@@ -175,11 +156,11 @@
 </div>
 
 <style>
-	.hide-scrollbar::-webkit-scrollbar {
-		display: none;
-	}
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
 
-	.hide-scrollbar {
-		scrollbar-width: none;
-	}
+    .hide-scrollbar {
+        scrollbar-width: none;
+    }
 </style>

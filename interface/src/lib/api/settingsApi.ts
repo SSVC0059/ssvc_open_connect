@@ -1,8 +1,12 @@
 import { page } from '$app/state';
 import { user } from '$lib/stores/user';
 import { get } from 'svelte/store';
-import type { SsvcSettings } from '$lib/types/models';
 import type { SensorsData, ZoneName } from '$lib/types/OCSettings';
+import type { SsvcSettings } from "$lib/types/models"
+import type { TelegramConfig, SubsystemsState } from '$lib/types/api';
+
+// ======================== Базовые утилиты ======================== //
+type ApiResponse<T> = { success: true; data: T } | { success: false; error: string };
 
 /**
  * Возвращает заголовки авторизации
@@ -18,181 +22,146 @@ function getAuthHeaders(): HeadersInit {
 	return {
 		Authorization: authHeader,
 		'Content-Type': 'application/json',
-		Accept: '*/*'
+		Accept: '*/*',
 	};
 }
 
 /**
- * Универсальный fetch-запрос с поддержкой GET
+ * Универсальный fetch-запрос с обработкой ошибок
  */
-async function apiFetch<T>(url: string, method: string = 'GET'): Promise<T | null> {
+async function apiFetch<T>(url: string, method: string = 'GET', body?: unknown): Promise<ApiResponse<T>> {
 	try {
 		const response = await fetch(url, {
 			method,
-			headers: getAuthHeaders()
+			headers: getAuthHeaders(),
+			body: body ? JSON.stringify(body) : undefined,
 		});
 
-		const text = await response.text();
-		if (!text) return null;
+		if (!response.ok) {
+			return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
+		}
 
-		return JSON.parse(text);
+		const text = await response.text();
+		const data = text ? JSON.parse(text) : null;
+
+		return { success: true, data };
 	} catch (error) {
-		console.error(`API error on ${method} ${url}:`, error);
-		return null;
+		console.error(`API error (${method} ${url}):`, error);
+		return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
 	}
 }
+// ======================== API-функции ======================== //
 
 /**
  * Получение настроек SSVC
  */
 export async function fetchSettings(): Promise<SsvcSettings | null> {
-	const data = await apiFetch<{ settings: SsvcSettings }>('/rest/settings');
-	return data?.settings || null;
+	const response = await apiFetch<{ settings: SsvcSettings }>('/rest/settings');
+	return response.success ? response.data.settings : null;
 }
 
 /**
  * Обновление отдельного поля в настройках
  */
 export async function updateSetting(field: string, value: unknown): Promise<boolean> {
-	try {
-		const formattedValue = Array.isArray(value)
-			? `[${value.join(',')}]`
-			: encodeURIComponent(String(value));
-
-		const url = `/rest/settings?${field}=${formattedValue}`;
-
-		const response = await fetch(url, {
-			method: 'PUT',
-			headers: getAuthHeaders()
-		});
-
-		return response.ok;
-	} catch (error) {
-		console.error('Ошибка сохранения:', error);
-		return false;
-	}
+	const formattedValue = Array.isArray(value) ? `[${value.join(',')}]` : String(value);
+	const url = `/rest/settings?${field}=${encodeURIComponent(formattedValue)}`;
+	const response = await apiFetch<unknown>(url, 'PUT');
+	return response.success;
 }
 
 /**
  * Получение термодатчиков по зонам
  */
-
 export async function fetchSensorsByZone(): Promise<Record<ZoneName, string[]> | null> {
-	try {
-		const response = await fetch('/rest/sensors/zone');
-		const data = await response.json();
-		console.log('API Response:', data);
-		return data?.zones || null;
-	} catch (err) {
-		console.error('Fetch error:', err);
-		return null;
-	}
-}
-
-export async function fetchSensorsTemperatureByZone(): Promise<SensorsData | undefined> {
-	try {
-		const response = await fetch('/rest/sensors/temperatures');
-		const data = await response.json();
-		return data || null;
-	} catch (err) {
-		console.error('Fetch error:', err);
-		return undefined;
-	}
+	const response = await apiFetch<{ zones: Record<ZoneName, string[]> }>('/rest/sensors/zone');
+	return response.success ? response.data.zones : null;
 }
 
 /**
- * Update sensor zone
- * @param address Sensor address
- * @param zone New zone
+ * Получение температур датчиков по зонам
+ */
+export async function fetchSensorsTemperatureByZone(): Promise<SensorsData | null> {
+	const response = await apiFetch<SensorsData>('/rest/sensors/temperatures');
+	return response.success ? response.data : null;
+}
+
+/**
+ * Обновление зоны датчика
  */
 export async function updateSensorZone(address: string, zone: string): Promise<boolean> {
-	try {
-		const url = `/rest/sensors/zone?address=${encodeURIComponent(address)}&zone=${encodeURIComponent(zone)}`;
-		const response = await fetch(url, {
-			method: 'PUT',
-			headers: getAuthHeaders()
-		});
-
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
-		}
-
-		return true;
-	} catch (error) {
-		console.error('Error updating sensor zone:', error);
-		return false;
-	}
+	const url = `/rest/sensors/zone?address=${encodeURIComponent(address)}&zone=${encodeURIComponent(zone)}`;
+	const response = await apiFetch<unknown>(url, 'PUT');
+	return response.success;
 }
 
 /**
- * Update sensor thresholds
- * @param address Sensor address
- * @param warning Warning threshold temperature
- * @param critical Critical threshold temperature
+ * Обновление порогов датчика
  */
 export async function updateSensorThresholds(
 	address: string,
 	warning: number,
-	critical: number
+	critical: number,
 ): Promise<boolean> {
-	try {
-		const url = `/rest/sensors/thresholds?address=${encodeURIComponent(address)}&warning=${warning}&critical=${critical}`;
-		const response = await fetch(url, {
-			method: 'PUT',
-			headers: getAuthHeaders()
-		});
-
-		return response.ok;
-	} catch (error) {
-		console.error('Error updating sensor thresholds:', error);
-		return false;
-	}
+	const url = `/rest/sensors/thresholds?address=${encodeURIComponent(address)}&warning=${warning}&critical=${critical}`;
+	const response = await apiFetch<unknown>(url, 'PUT');
+	return response.success;
 }
 
-export const getTelegramSettings = async (): Promise<{ botToken: string; chatId: string }> => {
-	try {
-		const [tokenResponse, chatIdResponse] = await Promise.all([
-			fetch(`/rest/telegram/token`),
-			fetch(`/rest/telegram/chat_id`)
-		]);
-
-		if (!tokenResponse.ok || !chatIdResponse.ok) {
-			throw new Error('Не удалось загрузить настройки Telegram');
-		}
-
-		const tokenData = await tokenResponse.json();
-		const chatIdData = await chatIdResponse.json();
-
-		return {
-			botToken: tokenData.token || '',
-			chatId: chatIdData.chat_id || ''
-		};
-	} catch (err) {
-		console.error('Ошибка загрузки настроек Telegram:', err);
-		throw new Error('Ошибка соединения с сервером');
+/**
+ * Получение настроек Telegram (токен и chat ID)
+ */
+export async function getTelegramSettings(): Promise< TelegramConfig| null> {
+	const url = `/rest/telegram/config`;
+	const response = await apiFetch<TelegramConfig>(url, 'GET');
+	if (!response.success || !response.success) {
+		console.error('Ошибка загрузки настроек Telegram');
+		return null;
 	}
-};
+	return {
+		token: response.data.token || '',
+		chat_id: response.data.chat_id || '',
+	};
+}
 
-export const saveTelegramSettings = async (settings: { botToken: string; chatId: string }) => {
-	try {
-		const [tokenResponse, chatIdResponse] = await Promise.all([
-			fetch(`/rest/telegram/token`, {
-				method: 'PUT',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ token: settings.botToken })
-			}),
-			fetch(`/rest/telegram/chat_id`, {
-				method: 'PUT',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ chat_id: settings.chatId })
-			})
-		]);
-
-		if (!tokenResponse.ok || !chatIdResponse.ok) {
-			throw new Error('Не удалось сохранить настройки Telegram');
+/**
+ * Сохранение настроек Telegram
+ * @param settings Объект с настройками { botToken: string; chatId: string }
+ * @returns true при успешном сохранении, false при ошибке
+ */
+export async function saveTelegramSettings(settings: TelegramConfig): Promise<boolean> {
+	// Отправляем оба параметра в одном запросе
+	const response = await apiFetch<{ success: boolean }>(
+		'/rest/telegram/config',
+		'PUT',
+		{
+			token: settings.token,
+			chat_id: settings.chat_id
 		}
-	} catch (err) {
-		console.error('Ошибка сохранения настроек Telegram:', err);
-		throw new Error('Ошибка соединения с сервером');
+	);
+
+	if (!response.success) {
+		console.error('Ошибка сохранения настроек Telegram:', response.error);
+		return false;
 	}
-};
+
+	return true;
+}
+
+export async function setSubsystemState(states: Record<string, boolean>): Promise<boolean> {
+	const response = await apiFetch<{ success: boolean }>(
+		'/rest/subsystem/state',
+		'PUT',
+		states
+	);
+	return true;
+	// return response?.success ?? false;
+}
+
+export async function getSubsystemState(): Promise<SubsystemsState | null> {
+	const response = await apiFetch<SubsystemsState>(
+		'/rest/subsystem',
+		'GET'
+	);
+	return response.success ? response.data : null;
+}

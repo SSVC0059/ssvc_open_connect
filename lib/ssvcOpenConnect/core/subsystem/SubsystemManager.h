@@ -38,7 +38,7 @@ public:
     
     template<typename T>
     void registerSubsystem() {
-        static_assert(std::is_base_of<Subsystem, T>::value,
+        static_assert(std::is_base_of_v<Subsystem, T>,
                      "T must inherit from Subsystem");
 
         const std::string name = T::getName();

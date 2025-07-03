@@ -44,7 +44,6 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     // Инициализация подсистем
     subsystemManager();
 
-
 }
 
 
@@ -94,8 +93,6 @@ void SsvcOpenConnect::subsystemManager()
     // Запуск менеджера подсистем
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] Starting subsystem manager...");
     subsystemManager.begin();
-    ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] Subsystem manager started");
-
     ESP_LOGI(TAG, "[SUBSYSTEM_MANAGER] Initialization complete");
 }
 

@@ -5,6 +5,7 @@
 #include "DallasTemperature.h"
 #include <vector>
 #include <array>
+#include <memory>
 
 #include "DS18B20Sensor.h"
 

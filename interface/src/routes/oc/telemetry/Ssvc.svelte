@@ -168,7 +168,7 @@
 							</div>
 						{/if}
 						<div
-							class="absolute top-6 left-1/4 transform -translate-x-1/2 -translate-y-1/5 bg-white bg-opacity-40 dark:bg-opacity-0"
+							class="absolute top-12 left-1/4 transform -translate-x-1/2 -translate-y-1/5 bg-white bg-opacity-40 dark:bg-opacity-0"
 						>
 							<ThermalSensors />
 						</div>

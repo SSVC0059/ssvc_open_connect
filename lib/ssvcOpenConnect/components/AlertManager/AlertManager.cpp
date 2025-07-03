@@ -47,7 +47,7 @@ AlertManager::~AlertManager() {
     }
 }
 
-[[noreturn]] void AlertManager::asyncTask(void* params) {
+void AlertManager::asyncTask(void* params) {
     const auto manager = static_cast<AlertManager*>(params);
     while (true) {
         manager->processAsyncEvents();

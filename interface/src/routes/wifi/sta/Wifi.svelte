@@ -51,8 +51,6 @@
 	let wifiStatus: WifiStatus = $state();
 	let wifiSettings: WifiSettings = $state();
 
-	let dndNetworkList: KnownNetworkItem[] = $state([]);
-
 	let showWifiDetails = $state(false);
 
 	let formField: any = $state();
@@ -112,7 +110,6 @@
 		} catch (error) {
 			console.error('Error:', error);
 		}
-		dndNetworkList = wifiSettings.wifi_networks;
 		return wifiSettings;
 	}
 
@@ -133,10 +130,10 @@
 				body: JSON.stringify(data)
 			});
 			if (response.status == 200) {
-				notifications.success('Wi-Fi settings updated.', 3000);
+				notifications.success('Настройки Wi-Fi обновлены.', 3000);
 				wifiSettings = await response.json();
 			} else {
-				notifications.error('User not authorized.', 3000);
+				notifications.error('Пользователь не авторизован.', 3000);
 			}
 		} catch (error) {
 			console.error('Error:', error);
@@ -148,8 +145,6 @@
 			formErrorhostname = true;
 		} else {
 			formErrorhostname = false;
-			// Update global wifiSettings object
-			wifiSettings.wifi_networks = dndNetworkList;
 			// Post to REST API
 			postWiFiSettings(wifiSettings);
 		}
@@ -171,7 +166,7 @@
 		if (static_ip_config) {
 			// RegEx for IPv4
 			const regexExp =
-				/\b(?:(?:2(?:[0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9])\.){3}(?:(?:2([0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9]))\b/;
+					/\b(?:(?:2(?:[0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9])\.){3}(?:(?:2([0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9]))\b/;
 
 			// Validate gateway IP
 			if (!regexExp.test(networkEditable.gateway_ip!)) {
@@ -222,12 +217,16 @@
 		// Submit JSON to REST API
 		if (valid) {
 			if (newNetwork) {
-				dndNetworkList.push(networkEditable);
+				wifiSettings.wifi_networks.push(networkEditable);
 			} else {
-				dndNetworkList.splice(dndNetworkList.indexOf(networkEditable), 1, networkEditable);
+				wifiSettings.wifi_networks.splice(
+						wifiSettings.wifi_networks.indexOf(networkEditable),
+						1,
+						networkEditable
+				);
 			}
 			addNetwork();
-			dndNetworkList = [...dndNetworkList]; //Trigger reactivity
+			wifiSettings.wifi_networks = [...wifiSettings.wifi_networks]; //Trigger reactivity
 			showNetworkEditor = false;
 		}
 	}
@@ -260,7 +259,7 @@
 	function handleEdit(index: number) {
 		newNetwork = false;
 		showNetworkEditor = true;
-		networkEditable = dndNetworkList[index];
+		networkEditable = wifiSettings.wifi_networks[index];
 	}
 
 	function confirmDelete(index: number) {
@@ -273,12 +272,12 @@
 			},
 			onConfirm: () => {
 				// Check if network is currently been edited and delete as well
-				if (dndNetworkList[index].ssid === networkEditable.ssid) {
+				if (wifiSettings.wifi_networks[index].ssid === networkEditable.ssid) {
 					addNetwork();
 				}
 				// Remove network from array
-				dndNetworkList.splice(index, 1);
-				dndNetworkList = [...dndNetworkList]; //Trigger reactivity
+				wifiSettings.wifi_networks.splice(index, 1);
+				wifiSettings.wifi_networks = [...wifiSettings.wifi_networks]; //Trigger reactivity
 				showNetworkEditor = false;
 				modals.close();
 			}
@@ -286,11 +285,11 @@
 	}
 
 	function checkNetworkList() {
-		if (dndNetworkList.length >= 5) {
+		if (wifiSettings.wifi_networks.length >= 5) {
 			modals.open(InfoDialog, {
 				title: 'Reached Maximum Networks',
 				message:
-					'You have reached the maximum number of networks. Please delete one to add another.',
+						'You have reached the maximum number of networks. Please delete one to add another.',
 				dismiss: { label: 'OK', icon: Check },
 				onDismiss: () => {
 					modals.close();
@@ -307,8 +306,8 @@
 			return;
 		}
 
-		dndNetworkList = reorder(dndNetworkList, from.index, to.index);
-		console.log(dndNetworkList);
+		wifiSettings.wifi_networks = reorder(wifiSettings.wifi_networks, from.index, to.index);
+		console.log(wifiSettings.wifi_networks);
 	}
 
 	function preventDefault(fn) {
@@ -326,22 +325,22 @@
 	{#snippet title()}
 		<span>WiFi Connection</span>
 	{/snippet}
-	<div class="w-full overflow-x-auto">
+	<div class="w-full">
 		{#await getWifiStatus()}
 			<Spinner />
 		{:then nothing}
 			<div
-				class="flex w-full flex-col space-y-1"
-				transition:slide|local={{ duration: 300, easing: cubicOut }}
+					class="flex w-full flex-col space-y-1"
+					transition:slide|local={{ duration: 300, easing: cubicOut }}
 			>
 				<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
 					<div
-						class="mask mask-hexagon h-auto w-10 {wifiStatus.status === 3
+							class="mask mask-hexagon h-auto w-10 {wifiStatus.status === 3
 							? 'bg-success'
 							: 'bg-error'}"
 					>
 						<AP
-							class="h-auto w-full scale-75 {wifiStatus.status === 3
+								class="h-auto w-full scale-75 {wifiStatus.status === 3
 								? 'text-success-content'
 								: 'text-error-content'}"
 						/>
@@ -390,13 +389,13 @@
 						</div>
 						<div class="grow"></div>
 						<button
-							class="btn btn-circle btn-ghost btn-sm modal-button"
-							onclick={() => {
+								class="btn btn-circle btn-ghost btn-sm modal-button"
+								onclick={() => {
 								showWifiDetails = !showWifiDetails;
 							}}
 						>
 							<Down
-								class="text-base-content h-auto w-6 transition-transform duration-300 ease-in-out {showWifiDetails
+									class="text-base-content h-auto w-6 transition-transform duration-300 ease-in-out {showWifiDetails
 									? 'rotate-180'
 									: ''}"
 							/>
@@ -408,8 +407,8 @@
 			<!-- Folds open -->
 			{#if showWifiDetails}
 				<div
-					class="flex w-full flex-col space-y-1 pt-1"
-					transition:slide|local={{ duration: 300, easing: cubicOut }}
+						class="flex w-full flex-col space-y-1 pt-1"
+						transition:slide|local={{ duration: 300, easing: cubicOut }}
 				>
 					<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
 						<div class="mask mask-hexagon bg-primary h-auto w-10">
@@ -485,8 +484,8 @@
 			{:then nothing}
 				<div class="relative w-full overflow-visible">
 					<button
-						class="btn btn-primary text-primary-content btn-md absolute -top-14 right-16"
-						onclick={() => {
+							class="btn btn-primary text-primary-content btn-md absolute -top-14 right-16"
+							onclick={() => {
 							if (checkNetworkList()) {
 								addNetwork();
 								showNetworkEditor = true;
@@ -496,8 +495,8 @@
 						<Add class="h-6 w-6" /></button
 					>
 					<button
-						class="btn btn-primary text-primary-content btn-md absolute -top-14 right-0"
-						onclick={() => {
+							class="btn btn-primary text-primary-content btn-md absolute -top-14 right-0"
+							onclick={() => {
 							if (checkNetworkList()) {
 								scanForNetworks();
 								showNetworkEditor = true;
@@ -508,15 +507,15 @@
 					>
 
 					<div
-						class="overflow-x-auto space-y-1"
-						transition:slide|local={{ duration: 300, easing: cubicOut }}
+							class="overflow-x-auto space-y-1"
+							transition:slide|local={{ duration: 300, easing: cubicOut }}
 					>
 						<DragDropList
-							id="networks"
-							type={VerticalDropZone}
-							itemSize={60}
-							itemCount={dndNetworkList.length}
-							on:drop={onDrop}
+								id="networks"
+								type={VerticalDropZone}
+								itemSize={60}
+								itemCount={wifiSettings.wifi_networks.length}
+								on:drop={onDrop}
 						>
 							{#snippet children({ index })}
 								<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -525,22 +524,22 @@
 										<Router class="text-primary-content h-auto w-full scale-75" />
 									</div>
 									<div>
-										<div class="font-bold">{dndNetworkList[index].ssid}</div>
+										<div class="font-bold">{wifiSettings.wifi_networks[index].ssid}</div>
 									</div>
 									{#if !page.data.features.security || $user.admin}
-										<div class="flex-grow"></div>
+										<div class="grow"></div>
 										<div class="space-x-0 px-0 mx-0">
 											<button
-												class="btn btn-ghost btn-sm"
-												onclick={() => {
+													class="btn btn-ghost btn-sm"
+													onclick={() => {
 													handleEdit(index);
 												}}
 											>
 												<Edit class="h-6 w-6" /></button
 											>
 											<button
-												class="btn btn-ghost btn-sm"
-												onclick={() => {
+													class="btn btn-ghost btn-sm"
+													onclick={() => {
 													confirmDelete(index);
 												}}
 											>
@@ -556,47 +555,39 @@
 
 				<div class="divider mb-0"></div>
 				<div
-					class="flex flex-col gap-2 p-0"
-					transition:slide|local={{ duration: 300, easing: cubicOut }}
+						class="flex flex-col gap-2 p-0"
+						transition:slide|local={{ duration: 300, easing: cubicOut }}
 				>
 					<form
-						class=""
-						onsubmit={preventDefault(validateWiFiForm)}
-						novalidate
-						bind:this={formField}
+							class="fieldset"
+							onsubmit={preventDefault(validateWiFiForm)}
+							novalidate
+							bind:this={formField}
 					>
 						<div class="grid w-full grid-cols-1 content-center gap-x-4 px-4 sm:grid-cols-2">
 							<div>
-								<label class="label" for="channel">
-									<span class="label-text text-md">Host Name</span>
-								</label>
+								<label class="label" for="channel">Имя хоста</label>
 								<input
-									type="text"
-									min="1"
-									max="32"
-									class="input input-bordered invalid:border-error w-full invalid:border-2 {formErrorhostname
+										type="text"
+										min="1"
+										max="32"
+										class="input w-full invalid:border-error invalid:border-2 {formErrorhostname
 										? 'border-error border-2'
 										: ''}"
-									bind:value={wifiSettings.hostname}
-									id="channel"
-									required
+										bind:value={wifiSettings.hostname}
+										id="channel"
+										required
 								/>
 								<label class="label" for="channel">
-									<span class="label-text-alt text-error {formErrorhostname ? '' : 'hidden'}"
-										>Host name must be between 2 and 32 characters long</span
+									<span class=" text-error {formErrorhostname ? '' : 'hidden'}"
+									>Host name must be between 2 and 32 characters long</span
 									>
 								</label>
 							</div>
 
 							<div>
-								<label class="label" for="apmode">
-									<span class="label-text">WiFi Connection Mode</span>
-								</label>
-								<select
-									class="select select-bordered w-full"
-									id="apmode"
-									bind:value={wifiSettings.connection_mode}
-								>
+								<label class="label" for="apmode">WiFi Connection Mode </label>
+								<select class="select w-full" id="apmode" bind:value={wifiSettings.connection_mode}>
 									{#each connectionMode as mode}
 										<option value={mode.id}>
 											{mode.text}
@@ -609,162 +600,136 @@
 						{#if showNetworkEditor}
 							<div class="divider my-0"></div>
 							<div
-								class="grid w-full grid-cols-1 content-center gap-x-4 px-4 sm:grid-cols-2"
-								transition:slide|local={{ duration: 300, easing: cubicOut }}
+									class="grid w-full grid-cols-1 content-center gap-x-4 px-4 gap-y-2 sm:grid-cols-2"
+									transition:slide|local={{ duration: 300, easing: cubicOut }}
 							>
 								<div>
-									<label class="label" for="ssid">
-										<span class="label-text text-md">SSID</span>
-									</label>
+									<label class="label" for="ssid">SSID </label>
 									<input
-										type="text"
-										class="input input-bordered invalid:border-error w-full invalid:border-2 {formErrors.ssid
+											type="text"
+											class="input w-full invalid:border-error invalid:border-2 {formErrors.ssid
 											? 'border-error border-2'
 											: ''}"
-										bind:value={networkEditable.ssid}
-										id="ssid"
-										min="2"
-										max="32"
-										required
+											bind:value={networkEditable.ssid}
+											id="ssid"
+											min="2"
+											max="32"
+											required
 									/>
 									<label class="label" for="ssid">
-										<span class="label-text-alt text-error {formErrors.ssid ? '' : 'hidden'}"
-											>SSID must be between 3 and 32 characters long</span
+										<span class=" text-error {formErrors.ssid ? '' : 'hidden'}"
+										>SSID must be between 3 and 32 characters long</span
 										>
 									</label>
 								</div>
 								<div>
-									<label class="label" for="pwd">
-										<span class="label-text text-md">Password</span>
-									</label>
+									<label class="label" for="pwd">Пароль </label>
 									<InputPassword bind:value={networkEditable.password} id="pwd" />
 								</div>
 								<label
-									class="label inline-flex cursor-pointer content-end justify-start gap-4 mt-2 sm:mb-4"
+										class="label inline-flex cursor-pointer content-end justify-start gap-4 mt-2 sm:mb-4"
 								>
 									<input
-										type="checkbox"
-										bind:checked={static_ip_config}
-										class="checkbox checkbox-primary sm:-mb-5"
+											type="checkbox"
+											bind:checked={static_ip_config}
+											class="checkbox checkbox-primary sm:-mb-5"
 									/>
 									<span class="sm:-mb-5">Static IP Config?</span>
 								</label>
 							</div>
 							{#if static_ip_config}
 								<div
-									class="grid w-full grid-cols-1 content-center gap-x-4 px-4 sm:grid-cols-2"
-									transition:slide|local={{ duration: 300, easing: cubicOut }}
+										class="grid w-full grid-cols-1 content-center gap-x-4 px-4 gap-y-2 sm:grid-cols-2"
+										transition:slide|local={{ duration: 300, easing: cubicOut }}
 								>
 									<div>
-										<label class="label" for="localIP">
-											<span class="label-text text-md">Local IP</span>
-										</label>
+										<label class="label" for="localIP">Local IP </label>
 										<input
-											type="text"
-											class="input input-bordered w-full {formErrors.local_ip
-												? 'border-error border-2'
-												: ''}"
-											minlength="7"
-											maxlength="15"
-											size="15"
-											bind:value={networkEditable.local_ip}
-											id="localIP"
-											required
+												type="text"
+												class="input w-full {formErrors.local_ip ? 'border-error border-2' : ''}"
+												minlength="7"
+												maxlength="15"
+												size="15"
+												bind:value={networkEditable.local_ip}
+												id="localIP"
+												required
 										/>
 										<label class="label" for="localIP">
-											<span class="label-text-alt text-error {formErrors.local_ip ? '' : 'hidden'}"
-												>Must be a valid IPv4 address</span
+											<span class=" text-error {formErrors.local_ip ? '' : 'hidden'}"
+											>Must be a valid IPv4 address</span
 											>
 										</label>
 									</div>
 
 									<div>
-										<label class="label" for="gateway">
-											<span class="label-text text-md">Gateway IP</span>
-										</label>
+										<label class="label" for="gateway">Gateway IP </label>
 										<input
-											type="text"
-											class="input input-bordered w-full {formErrors.gateway_ip
-												? 'border-error border-2'
-												: ''}"
-											minlength="7"
-											maxlength="15"
-											size="15"
-											bind:value={networkEditable.gateway_ip}
-											id="gateway"
-											required
+												type="text"
+												class="input w-full {formErrors.gateway_ip ? 'border-error border-2' : ''}"
+												minlength="7"
+												maxlength="15"
+												size="15"
+												bind:value={networkEditable.gateway_ip}
+												id="gateway"
+												required
 										/>
 										<label class="label" for="gateway">
-											<span
-												class="label-text-alt text-error {formErrors.gateway_ip ? '' : 'hidden'}"
-												>Must be a valid IPv4 address</span
+											<span class=" text-error {formErrors.gateway_ip ? '' : 'hidden'}"
+											>Must be a valid IPv4 address</span
 											>
 										</label>
 									</div>
 									<div>
-										<label class="label" for="subnet">
-											<span class="label-text text-md">Subnet Mask</span>
-										</label>
+										<label class="label" for="subnet">Subnet Mask </label>
 										<input
-											type="text"
-											class="input input-bordered w-full {formErrors.subnet_mask
-												? 'border-error border-2'
-												: ''}"
-											minlength="7"
-											maxlength="15"
-											size="15"
-											bind:value={networkEditable.subnet_mask}
-											id="subnet"
-											required
+												type="text"
+												class="input w-full {formErrors.subnet_mask ? 'border-error border-2' : ''}"
+												minlength="7"
+												maxlength="15"
+												size="15"
+												bind:value={networkEditable.subnet_mask}
+												id="subnet"
+												required
 										/>
 										<label class="label" for="subnet">
-											<span
-												class="label-text-alt text-error {formErrors.subnet_mask ? '' : 'hidden'}"
-												>Must be a valid IPv4 address</span
+											<span class=" text-error {formErrors.subnet_mask ? '' : 'hidden'}"
+											>Must be a valid IPv4 address</span
 											>
 										</label>
 									</div>
 									<div>
-										<label class="label" for="gateway">
-											<span class="label-text text-md">DNS 1</span>
-										</label>
+										<label class="label" for="gateway">DNS 1 </label>
 										<input
-											type="text"
-											class="input input-bordered w-full {formErrors.dns_1
-												? 'border-error border-2'
-												: ''}"
-											minlength="7"
-											maxlength="15"
-											size="15"
-											bind:value={networkEditable.dns_ip_1}
-											id="gateway"
-											required
+												type="text"
+												class="input w-full {formErrors.dns_1 ? 'border-error border-2' : ''}"
+												minlength="7"
+												maxlength="15"
+												size="15"
+												bind:value={networkEditable.dns_ip_1}
+												id="gateway"
+												required
 										/>
 										<label class="label" for="gateway">
-											<span class="label-text-alt text-error {formErrors.dns_1 ? '' : 'hidden'}"
-												>Must be a valid IPv4 address</span
+											<span class=" text-error {formErrors.dns_1 ? '' : 'hidden'}"
+											>Must be a valid IPv4 address</span
 											>
 										</label>
 									</div>
 									<div>
-										<label class="label" for="subnet">
-											<span class="label-text text-md">DNS 2</span>
-										</label>
+										<label class="label" for="subnet">DNS 2 </label>
 										<input
-											type="text"
-											class="input input-bordered w-full {formErrors.dns_2
-												? 'border-error border-2'
-												: ''}"
-											minlength="7"
-											maxlength="15"
-											size="15"
-											bind:value={networkEditable.dns_ip_2}
-											id="subnet"
-											required
+												type="text"
+												class="input w-full {formErrors.dns_2 ? 'border-error border-2' : ''}"
+												minlength="7"
+												maxlength="15"
+												size="15"
+												bind:value={networkEditable.dns_ip_2}
+												id="subnet"
+												required
 										/>
 										<label class="label" for="subnet">
-											<span class="label-text-alt text-error {formErrors.dns_2 ? '' : 'hidden'}"
-												>Must be a valid IPv4 address</span
+											<span class=" text-error {formErrors.dns_2 ? '' : 'hidden'}"
+											>Must be a valid IPv4 address</span
 											>
 										</label>
 									</div>
@@ -775,10 +740,10 @@
 						<div class="divider mb-2 mt-0"></div>
 						<div class="mx-4 mb-4 flex flex-wrap justify-end gap-2">
 							<button class="btn btn-primary" type="submit" disabled={!showNetworkEditor}
-								>{newNetwork ? 'Add Network' : 'Update Network'}</button
+							>{newNetwork ? 'Add Network' : 'Update Network'}</button
 							>
 							<button class="btn btn-primary" type="button" onclick={validateHostName}
-								>Apply Settings</button
+							>Apply Settings</button
 							>
 						</div>
 					</form>

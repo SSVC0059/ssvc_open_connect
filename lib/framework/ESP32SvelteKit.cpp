@@ -53,13 +53,16 @@ ESP32SvelteKit::ESP32SvelteKit(PsychicHttpServer *server, unsigned int numberEnd
 #endif
                                                                                           _restartService(server, &_securitySettingsService),
                                                                                           _factoryResetService(server, &ESPFS, &_securitySettingsService),
+#if FT_ENABLED(FT_COREDUMP)
+                                                                                          _coreDump(server, &_securitySettingsService),
+#endif
                                                                                           _systemStatus(server, &_securitySettingsService)
 {
 }
 
 void ESP32SvelteKit::begin()
 {
-    ESP_LOGV("ESP32SvelteKit", "Loading settings from files system");
+    ESP_LOGV(SVK_TAG, "Loading settings from files system");
     ESPFS.begin(true);
 
     _wifiSettingsService.initWiFi();
@@ -71,7 +74,7 @@ void ESP32SvelteKit::begin()
 
 #ifdef EMBED_WWW
     // Serve static resources from PROGMEM
-    ESP_LOGV("ESP32SvelteKit", "Registering routes from PROGMEM static resources");
+    ESP_LOGV(SVK_TAG, "Registering routes from PROGMEM static resources");
     WWWData::registerRoutes(
         [&](const String &uri, const String &contentType, const uint8_t *content, size_t len)
         {
@@ -81,7 +84,7 @@ void ESP32SvelteKit::begin()
                 response.setCode(200);
                 response.setContentType(contentType.c_str());
                 response.addHeader("Content-Encoding", "gzip");
-                response.addHeader("Cache-Control", "public,immutable,  max-age=86400");
+                response.addHeader("Cache-Control", "public, immutable, max-age=31536000");
                 response.setContent(content, len);
                 return response.send();
             };
@@ -98,7 +101,7 @@ void ESP32SvelteKit::begin()
         });
 #else
     // Serve static resources from /www/
-    ESP_LOGV("ESP32SvelteKit", "Registering routes from FS /www/ static resources");
+    ESP_LOGV(SVK_TAG, "Registering routes from FS /www/ static resources");
     _server->serveStatic("/_app/", ESPFS, "/www/_app/");
     _server->serveStatic("/favicon.png", ESPFS, "/www/favicon.png");
     //  Serving all other get requests with "/www/index.htm"
@@ -118,13 +121,13 @@ void ESP32SvelteKit::begin()
 #endif
 
 #if defined(ENABLE_CORS)
-    ESP_LOGV("ESP32SvelteKit", "Enabling CORS headers");
+    ESP_LOGV(SVK_TAG, "Enabling CORS headers");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", CORS_ORIGIN);
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Accept, Content-Type, Authorization");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
 #endif
 
-    ESP_LOGV("ESP32SvelteKit", "Starting MDNS");
+    ESP_LOGV(SVK_TAG, "Starting MDNS");
     MDNS.begin(_wifiSettingsService.getHostname().c_str());
     MDNS.setInstanceName(_appName);
     MDNS.addService("http", "tcp", 80);
@@ -148,6 +151,9 @@ void ESP32SvelteKit::begin()
     _wifiScanner.begin();
     _wifiStatus.begin();
 
+#if FT_ENABLED(FT_COREDUMP)
+    _coreDump.begin();
+#endif
 #if FT_ENABLED(FT_UPLOAD_FIRMWARE)
     _uploadFirmwareService.begin();
 #endif
@@ -177,7 +183,7 @@ void ESP32SvelteKit::begin()
 #endif
 
     // Start the loop task
-    ESP_LOGV("ESP32SvelteKit", "Starting loop task");
+    ESP_LOGV(SVK_TAG, "Starting loop task");
     xTaskCreatePinnedToCore(
         this->_loopImpl,            // Function that should be called
         "ESP32 SvelteKit Loop",     // Name of the task (for debugging)

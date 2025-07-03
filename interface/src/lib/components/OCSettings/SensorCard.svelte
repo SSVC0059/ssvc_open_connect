@@ -24,11 +24,20 @@
 	}
 
 	// Handle moving sensor to new zone
-	let selectedZones: Record<string, string> = {}; // Объект для хранения выбранных зон для каждого датчика
+	let selectedZoneForSensor: Record<string, string> = $state({}); // Объект для хранения выбранных зон для каждого датчика
+
+	// Добавьте эту функцию для безопасного доступа к значению
+	function getSelectedZone(address: string): string {
+		return selectedZoneForSensor[address] || '';
+	}
+
+	function setSelectedZone(address: string, value: string) {
+		selectedZoneForSensor[address] = value;
+	}
 
 	// Обработка перемещения датчика в новую зону
 	async function moveSensor(address: string) {
-		const zone = selectedZones[address];
+		const zone = selectedZoneForSensor[address];
 		if (!zone) return;
 
 		movingSensor = address;
@@ -64,6 +73,13 @@
 		editingSensor = sensor.address;
 		warningThreshold = sensor.warningThreshold || 0;
 		criticalThreshold = sensor.criticalThreshold || 0;
+	}
+
+	function handleZoneChange(address: string, event: Event) {
+		const select = event.target as HTMLSelectElement;
+		if (select) {
+			selectedZones[address] = select.value;
+		}
 	}
 </script>
 
@@ -176,7 +192,8 @@
 						<div class="flex-1 flex flex-col sm:flex-row gap-2 min-w-0">
 							<select
 								class="flex-1 border border-gray-300 rounded-md px-2 py-1 text-sm min-w-0"
-								bind:value={selectedZones[sensor.address]}
+								value={getSelectedZone(sensor.address)}
+								onchange={(e) => handleZoneChange(sensor.address, e)}
 								disabled={movingSensor === sensor.address}
 							>
 								<option value="">Зона...</option>

@@ -4,29 +4,42 @@ TelegramBotClient::TelegramBotClient() = default;
 
 void TelegramBotClient::initTelemetryTaskSender()
 {
+    if (_telemetryTaskHandle != nullptr) {
+        ESP_LOGW("TelegramBotClient", "Telemetry task already running");
+        return;
+    }
+
     xTaskCreatePinnedToCore(
         statusMessageSender,
         "TelegramBotClient",
-        8192,
+        5120,
         this,
         tskIDLE_PRIORITY,
-        nullptr,
+        &_telemetryTaskHandle,
         1
     );
 }
 
 TelegramBotClient::~TelegramBotClient() {
-
+    shutoff();
 }
 
 
-void TelegramBotClient::init() {
+bool TelegramBotClient::init() {
+    // Проверяем, не инициализирован ли уже бот
+    if (_initialized) {
+        ESP_LOGW("TelegramBotClient", "Already initialized");
+        return true;
+    }
+
     vTaskDelay(pdMS_TO_TICKS(10000)); // Пауза для предотвращения перегрузки
+
     while (!SsvcOpenConnect::getInstance().isOnline())
     {
         ESP_LOGD("TelegramBotClient", "Waiting for connection...");
         vTaskDelay(pdMS_TO_TICKS(5000)); // Пауза для предотвращения перегрузки
     }
+
     ESP_LOGI("TelegramBotClient", "Initializing TelegramBotClient");
     {
         token = GlobalConfig::config().get<String>(bootName, "token", "");
@@ -47,9 +60,35 @@ void TelegramBotClient::init() {
     sendHello();
 
     initTelemetryTaskSender();
+    _initialized = true;
+    return true;
 }
 
-[[noreturn]] void TelegramBotClient::statusMessageSender(void* params) {
+void TelegramBotClient::shutoff() {
+    if (!_initialized) return;
+
+    ESP_LOGI("TelegramBotClient", "Deinitializing TelegramBotClient");
+
+    // Останавливаем задачу отправки телеметрии
+    if (_telemetryTaskHandle != nullptr) {
+        vTaskDelete(_telemetryTaskHandle);
+        _telemetryTaskHandle = nullptr;
+    }
+
+    // Освобождаем мьютекс
+    if (_botMutex != nullptr) {
+        vSemaphoreDelete(_botMutex);
+        _botMutex = nullptr;
+    }
+
+    // Сбрасываем состояние
+    token = "";
+    chatID = 0;
+    statusMessageID = 0;
+    _initialized = false;
+}
+
+void TelegramBotClient::statusMessageSender(void* params) {
     const auto manager = static_cast<TelegramBotClient*>(params);
     while (true) {
         ESP_LOGD("TelegramBotClient", "statusMessageSender - tick");
@@ -120,17 +159,28 @@ void TelegramBotClient::updateSensorInfo() {
     cachedStatus.sensorZones.clear();
 
     // Группируем датчики по зонам
-    for (const SensorTemperatureData& sensor : currentTemperatures) {
-        // Пропускаем невалидные данные
+    size_t validCount = 0;
+    for (const auto& sensor : currentTemperatures) {
+        if (sensor.temperature != -127.0f && !sensor.address.empty()) {
+            validCount++;
+        }
+    }
+
+    // Теперь выводим в обратном порядке с правильной нумерацией
+    size_t currentNumber = validCount;
+    for (auto it = currentTemperatures.rbegin(); it != currentTemperatures.rend(); ++it) {
+        const SensorTemperatureData& sensor = *it;
+
         if (sensor.temperature == -127.0f || sensor.address.empty()) {
             continue;
         }
 
         char tempBuffer[64];
-        snprintf(tempBuffer, sizeof(tempBuffer), "  • %s: <b>%.2f°C</b>\n",
-                sensor.address.c_str(), sensor.temperature);
+        snprintf(tempBuffer, sizeof(tempBuffer), "  •TP%u: <b>%.2f°C</b>\n",
+                currentNumber, sensor.temperature);
 
         cachedStatus.sensorZones[sensor.zone].emplace_back(tempBuffer);
+        currentNumber--;
     }
     cachedStatus.lastUpdateTime = millis();
 }
@@ -187,11 +237,22 @@ void TelegramBotClient::updateRectificationInfo() {
     std::ostringstream buffer;
     cachedStatus.rectificationInfo.clear();
 
+    // Обновление даты
+    const time_t now = time(nullptr);
+    struct tm timeInfo{};
+    localtime_r(&now, &timeInfo);
+
+    char time_buffer[64];
+    strftime(time_buffer, sizeof(time_buffer), "%d.%m.%Y %H:%M:%S", &timeInfo);  // Форматируем
+
+    // Добавляем время в буфер
+    buffer << "Время обновления: <b>" << time_buffer << "</b>\n\n";  // Можно изменить формат вывода
+
     // Тип процесса (из кэша или текущих данных)
     if (hasTypeData || !lastValidData.type.empty()) {
         buffer << "<b>"
                << (hasTypeData ? RectificationProcess::translateRectificationStage(metrics.type)
-                              : lastValidData.type)
+                               : lastValidData.type)
                << "</b>\n";
     }
 

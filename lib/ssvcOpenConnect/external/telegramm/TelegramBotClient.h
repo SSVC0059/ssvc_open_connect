@@ -22,12 +22,14 @@ public:
 
     void initTelemetryTaskSender();
     ~TelegramBotClient();
+    TaskHandle_t _telemetryTaskHandle = nullptr;
 
-    void init();
-    bool setBotToken(const String&  botToken) const;
-    String getBotToken() const;
+    bool init();
+    void shutoff();
+    [[nodiscard]] bool setBotToken(const String&  botToken) const;
+    [[nodiscard]] String getBotToken() const;
     void setChatID (int64_t _chatID);
-    int64_t getChatId () const;
+    [[nodiscard]] int64_t getChatId () const;
     void setPullMode(int pullMode);
 
     uint32_t sendMessage(const std::string& message);
@@ -43,6 +45,8 @@ public:
 private:
     TelegramBotClient(); // Приватный конструктор
     SemaphoreHandle_t _botMutex = xSemaphoreCreateMutex();;
+
+    bool _initialized = false;
 
     // Добавляем новые приватные поля
     struct CachedMessage {

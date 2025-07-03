@@ -9,26 +9,26 @@ DS18B20Sensor::DS18B20Sensor(DallasTemperature &sensors,
                              const DeviceAddress &address)
     : sensors(sensors), address(address)
 {
-    ESP_LOGD(TAG, "Creating sensor for address: %s",
+    ESP_LOGV(TAG, "Creating sensor for address: %s",
             getAddressString().c_str());
 
     // Проверка подключения датчика
     if (!sensors.isConnected(address.data())) {
         ESP_LOGE(TAG, "Sensor %s not connected!", getAddressString().c_str());
     } else {
-        ESP_LOGI(TAG, "Sensor %s initialized successfully",
+        ESP_LOGV(TAG, "Sensor %s initialized successfully",
                 getAddressString().c_str());
 
         // Устанавливаем максимальное разрешение (12 бит)
         sensors.setResolution(address.data(), 12);
-        ESP_LOGD(TAG, "Resolution set to %d bits",
+        ESP_LOGE(TAG, "Resolution set to %d bits",
                 sensors.getResolution(address.data()));
     }
 }
 
 float DS18B20Sensor::getTemperatureC() const {
 
-    ESP_LOGD(TAG, "Getting temperature for %s", getAddressString().c_str());
+    ESP_LOGV(TAG, "Getting temperature for %s", getAddressString().c_str());
 
     if (!sensors.isConnected(address.data())) {
         ESP_LOGW(TAG, "Sensor %s disconnected!", getAddressString().c_str());
@@ -49,11 +49,11 @@ float DS18B20Sensor::getTemperatureC() const {
                 getAddressString().c_str());
     }
     else if (temp == 85.0f) {
-        ESP_LOGW(TAG, "[%s] Got default value 85°C - check timing",
+        ESP_LOGV(TAG, "[%s] Got default value 85°C - check timing",
                 getAddressString().c_str());
     }
     else {
-        ESP_LOGD(TAG, "[%s] Temperature: %.2f°C",
+        ESP_LOGV(TAG, "[%s] Temperature: %.2f°C",
                 getAddressString().c_str(), temp);
     }
 
