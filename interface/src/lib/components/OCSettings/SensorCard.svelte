@@ -44,6 +44,7 @@
 		try {
 			const success = await updateSensorZone(address, zone);
 			if (success) {
+				await new Promise(resolve => setTimeout(resolve, 1500));
 				onUpdate?.(); // Вызываем коллбэк после успешного обновления
 			}
 		} catch (err) {
@@ -78,7 +79,7 @@
 	function handleZoneChange(address: string, event: Event) {
 		const select = event.target as HTMLSelectElement;
 		if (select) {
-			selectedZones[address] = select.value;
+			selectedZoneForSensor[address] = select.value;
 		}
 	}
 </script>

@@ -6,7 +6,7 @@
 	import { getZoneDescription } from '$lib/components/OCSettings/OSSettingsHelper';
 	import SensorCard from '$lib/components/OCSettings/SensorCard.svelte';
 
-	let sensorData: SensorsData | undefined = $state();
+	let sensorData: SensorsData | null | undefined = $state();
 	let isLoading: boolean = $state(true);
 	let error: string | null = $state('');
 
