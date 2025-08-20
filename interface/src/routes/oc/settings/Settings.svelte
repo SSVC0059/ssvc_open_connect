@@ -21,6 +21,7 @@
 
 	let error = $state('');
 	let isLoading = $state(true);
+	let filteredTabs = $state<Tab[]>([]);
 
 	$effect(() => {
 		loadSubsystemState();
@@ -31,7 +32,12 @@
 			const state = await getSubsystemState();
 			if (state) {
 				subsystemsState = state;
-				$inspect(subsystemsState)
+				if (state) {
+					subsystemsState = state;
+					// Фильтруем вкладки, оставляя только те, которые есть в ответе сервера
+					filteredTabs = availableTabs.filter(tab => tab.id in state);
+					$inspect(subsystemsState)
+				}
 			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Ошибка загрузки';
@@ -121,7 +127,7 @@
 				out:fade={{ duration: 200 }}
 				class="absolute top-1 left-2 right-2 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl p-2 md:hidden"
 			>
-				{#each availableTabs as tab, index}
+				{#each filteredTabs as tab, index}
 					<button
 						class={`w-full text-left px-4 py-3 text-sm font-semibold tracking-wide rounded-lg transition-colors
 						${
@@ -144,7 +150,7 @@
 		<div
 			class="hidden md:block bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 min-w-[220px] p-2"
 		>
-			{#each availableTabs as tab, index}
+			{#each filteredTabs as tab, index}
 				<button
 					class={`flex w-full text-left px-4 py-3 text-[15px] font-semibold tracking-wide rounded-lg transition-colors
 					${
@@ -161,7 +167,7 @@
 
 		<!-- Контент -->
 		<div class="flex-1 p-4 bg-white dark:bg-gray-800 min-h-[300px]">
-			{#each availableTabs as tab, index}
+			{#each filteredTabs as tab, index}
 				{#if activeTab === index}
 					{@const Component = tab.component}
 					<Component

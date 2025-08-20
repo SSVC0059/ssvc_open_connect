@@ -8,7 +8,9 @@
 #include "commons/commons.h"
 #include "subsystem/SubsystemManager.h"
 #include <subsystem/ThermalSubsystem.h>
+#if FT_ENABLED(FT_TELEGRAM_BOT)
 #include <subsystem/TelegramBotSubsystem.h>
+#endif
 #include <ESP32Ping.h>
 
 
@@ -81,13 +83,19 @@ void SsvcOpenConnect::subsystemManager()
     // Регистрация подсистем
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] Registering subsystems...");
     SubsystemManager::instance().registerSubsystem<ThermalSubsystem>();
-    SubsystemManager::instance().registerSubsystem<TelegramBotSubsystem>();
+    #if FT_ENABLED(FT_TELEGRAM_BOT)
+        SubsystemManager::instance().registerSubsystem<TelegramBotSubsystem>();
+    #endif
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] ThermalSubsystem registered");
 
     // Настройка начальных состояний
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] Setting initial states...");
     subsystemManager.setInitialState("thermal", true);
-    subsystemManager.setInitialState("telegram_bot", false);
+
+    #if FT_ENABLED(FT_TELEGRAM_BOT)
+        subsystemManager.setInitialState("telegram_bot", false);
+    #endif
+
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] thermal subsystem set to enabled by default");
 
     // Запуск менеджера подсистем
