@@ -5,17 +5,49 @@ on:
     branches: [ ]
     tags:
       - 'v*'
+  pull_request:
+    branches: [ main, master ]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Линтер не будет блокировать весь workflow
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+          
+      - name: Install Python requirements
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Run linter
+        run: |
+          # Замените на вашу команду линтера
+          platformio check --environment esp32dev || echo "Linter completed with warnings"
+          
+      - name: Upload lint results
+        uses: actions/upload-artifact@v4
+        if: always()  # Загружаем артефакты даже если линтер упал
+        with:
+          name: lint-results
+          path: |
+            **/.pio/**/*.log
+            **/lint*.txt
+          retention-days: 7
+
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env_name: [esp32dev, esp32-s3-devkitc-1-16m, esp32-s3-devkitc-1-8m]  # Указываем цели для сборки
+        env_name: [esp32dev, esp32-s3-devkitc-1-16m, esp32-s3-devkitc-1-8m]
 
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -27,12 +59,15 @@ jobs:
         with:
           python-version: 3.x
 
-
-      - name: Extract version from tag
+      - name: Extract version from tag or commit
         id: version
         run: |
-          version=${GITHUB_REF#refs/tags/v}
-          version=${version//./-}
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version=${GITHUB_REF#refs/tags/v}
+            version=${version//./-}
+          else
+            version="pr-${GITHUB_SHA:0:8}"
+          fi
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "Using version: $version"
 
@@ -44,19 +79,17 @@ jobs:
         run: platformio run --environment ${{ matrix.env_name }}
 
       - name: Collect and archive artifacts for ${{ matrix.env_name }}
+        if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_artifacts == 'true')
         run: |
-          # 1. Создаем директории для артефактов
           mkdir -p artifacts/firmware/${{ matrix.env_name }} artifacts/zips
-          # 2. Копируем собранные файлы
           cp -r build/${{ matrix.env_name }}/* artifacts/firmware/${{ matrix.env_name }}/
-          # 3. Архивируем в ZIP (используя абсолютный путь для наглядности)
           (cd artifacts/firmware/${{ matrix.env_name }} && zip -r ../../zips/${{ matrix.env_name }}.zip .)
           
-          # 4. Выводим список файлов для проверки
           ls -la artifacts/firmware/${{ matrix.env_name }}/
           ls -la artifacts/zips/
 
       - name: Upload zip archive for ${{ matrix.env_name }}
+        if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_artifacts == 'true')
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.env_name }}
@@ -64,16 +97,26 @@ jobs:
           if-no-files-found: error
 
       - name: Upload firmware binaries for ${{ matrix.env_name }}
+        if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_artifacts == 'true')
         uses: actions/upload-artifact@v4
         with:
           name: firmware-${{ matrix.env_name }}
           path: artifacts/firmware/${{ matrix.env_name }}/SSVC-Open-Connect_*
           if-no-files-found: error
 
+      - name: Upload PR artifacts
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-firmware-${{ matrix.env_name }}-${{ github.sha }}
+          path: build/${{ matrix.env_name }}/SSVC-Open-Connect_*
+          retention-days: 3
+
   create-release:
-    needs: build
+    needs: [build, lint]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    
     steps:
       - name: Download zip artifacts
         uses: actions/download-artifact@v4
