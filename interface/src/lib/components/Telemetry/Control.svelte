@@ -1,21 +1,25 @@
 <script lang="ts">
-	import type { RectStatus } from '$lib/types/models';
+	import type { RectStatus, SendCommandResponse } from '$lib/types/ssvc';
 
 	import Stop from '~icons/tabler/player-stop-filled';
 	import Pause from '~icons/tabler/player-pause-filled';
+	import Allert from '~icons/tabler/alert-triangle';
 	import Play from '~icons/tabler/player-play-filled';
 	import Next from '~icons/tabler/player-track-next'; // Иконка для кнопки Start
-	import { user } from '$lib/stores/user';
-	import { page } from '$app/state';
 	import Cancel from '~icons/tabler/x';
 	import Check from '~icons/tabler/check';
 	import { modals } from 'svelte-modals';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import StartWizard from '$lib/components/StartWizard/StartWizard.svelte';
+	import ChangeStageModal from '$lib/components/Telemetry/ChangeStageModal.svelte'
+	import { sendCommand } from '$lib/api/ssvcApi'
 
 	const { status, onStatusUpdate } = $props<{
 		status: RectStatus | undefined;
 		onStatusUpdate: () => Promise<void>; // Функция возвращает Promise
 	}>();
+
+	let showWizard = $state(false);
 
 	function confirmModalStop() {
 		modals.open(ConfirmDialog, {
@@ -78,13 +82,7 @@
 	}
 
 	function confirmModalStart() {
-		modals.open(ConfirmDialog, {
-			title: 'Запуск процесса',
-			message: 'Вы точно хотите начать ректификацию?',
-			labels: {
-				cancel: { label: 'Нет', icon: Cancel },
-				confirm: { label: 'Да', icon: Check }
-			},
+		modals.open(StartWizard, {
 			onConfirm: () => {
 				modals.close();
 				sendRequest('start');
@@ -92,25 +90,26 @@
 		});
 	}
 
-	async function sendRequest(command: string) {
-		let endpoint = '/rest/commands';
-		let method = 'POST';
-		const headers = {
-			Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
-			'Content-Type': 'application/json',
-			Accept: '*/*'
-		};
-
-		const body = JSON.stringify({ commands: command }); // Преобразование параметров в JSON
-
-		const response = await fetch(endpoint, {
-			method,
-			headers,
-			body // Добавление тела запроса
+	function changeStageModal() {
+		modals.open(ChangeStageModal, {
+			onConfirm: () => {
+				modals.close();
+				sendRequest('start');
+			},
+			onCancel: () => {
+				modals.close();
+				console.log('Настройки этапа отменены');
+				// Можно добавить дополнительные действия при отмене
+			}
 		});
+	}
 
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
+	async function sendRequest(command: string) {
+
+		const response: SendCommandResponse = await sendCommand(command)
+
+		if (!response.success) {
+			throw new Error(`HTTP error! status: ${response.message}`);
 		} else {
 			await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 секунда
 			await onStatusUpdate();
@@ -127,58 +126,185 @@
 		resumeShow: status?.status === 'paused',
 		isWaiting: status?.stage === 'waiting'
 	});
+
+
 </script>
 
-<div class="flex flex-row flex-wrap justify-center items-center gap-2">
-	{#if isWaiting}
-		<div class="inline-flex flex-col items-center gap-1">
-			<button
-				class="btn btn-primary inline-flex items-center justify-center gap-2"
-				onclick={() => confirmModalStart()}
-			>
-				<Play class="h-6 w-6 sm:h-5 sm:w-5" />
-				<span class="hidden sm:inline">Начать</span>
-			</button>
-			<span class="text-xs text-gray-400 dark:text-gray-300 font-light text-center w-full">
-				Будет доступно в следующем релизе
-			</span>
+<button class="emergency-stop"
+				onclick={() => sendRequest('stop')}
+>
+	<Allert/>
+	<span>АВАРИЙНАЯ ОСТАНОВКА</span>
+</button>
+
+<!-- Power Controls -->
+<div class="power-controls">
+
+	<button class="control-btn power-btn"
+					disabled={stopDisabled}
+					onclick={() => confirmModalStop()}
+	>
+		<div class="icon">
+			<Stop data-feather="play"/>
 		</div>
-	{:else}
-		<!-- Остальные кнопки видны во всех режимах кроме waiting -->
-		<button class="btn btn-primary" disabled={stopDisabled} onclick={() => confirmModalStop()}>
-			<Stop class="h-6 w-6 sm:h-5 sm:w-5" />
-			<span class="hidden sm:inline">Прервать</span>
-		</button>
+		<span class="btn-label">Прервать</span>
+	</button>
 
-		<!-- Кнопка "Продолжить" или "Пауза" -->
-		{#if resumeShow}
-			<button
-				disabled={pauseResumeDisabled}
-				class="btn btn-primary inline-flex items-center justify-center gap-2"
-				onclick={() => confirmModalResume()}
-			>
-				<Play class="h-6 w-6 sm:h-5 sm:w-5" />
-				<span class="hidden sm:inline">Продолжить</span>
-			</button>
-		{:else}
-			<button
-				disabled={pauseResumeDisabled}
-				class="btn btn-primary inline-flex items-center justify-center gap-2"
-				onclick={() => confirmModalPause()}
-			>
-				<Pause class="h-6 w-6 sm:h-5 sm:w-5" />
-				<span class="hidden sm:inline">Пауза</span>
-			</button>
-		{/if}
+	<button
+		class="control-btn start-btn"
+		onclick={() => isWaiting ? confirmModalStart() : (resumeShow ? confirmModalResume() : confirmModalPause())}
+		hidden={!isWaiting ? false : !resumeShow && !isWaiting}
+	>
+		<div class="icon">
+			{#if isWaiting}
+				<Play data-feather="play"/>
+			{:else if resumeShow}
+				<Play data-feather="play"/>
+			{:else}
+				<Pause data-feather="play"/>
+			{/if}
+		</div>
+		<span class="btn-label">
+        {isWaiting ? 'Старт' : (resumeShow ? 'Продолжить' : 'Пауза')}
+    </span>
+	</button>
 
-		<!-- Кнопка "Следующий этап" -->
-		<button
-			class="btn btn-primary inline-flex items-center justify-center gap-2"
-			disabled={nextStageDisabled}
-			onclick={() => confirmModalNext()}
-		>
-			<Next class="h-6 w-6 sm:h-5 sm:w-5" />
-			<span class="hidden sm:inline">Следующий этап</span>
-		</button>
-	{/if}
+	<button class="control-btn pause-btn"
+					onclick={() => confirmModalNext()}
+					disabled={stopDisabled}
+	>
+		<div class="icon">
+			<Next data-feather="play"/>
+		</div>
+		<span class="btn-label">Далее</span>
+	</button>
 </div>
+
+<button class="control-btn change-btn"
+				onclick={changeStageModal}
+				disabled={isWaiting}
+>
+	<span>Настройки этапа</span>
+</button>
+
+
+<StartWizard isOpen={showWizard}/>
+
+<style lang="scss">
+
+  @mixin transition-all {
+    transition: var(--transition);
+  }
+
+  .emergency-stop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+
+    background-color: var(--red-600);
+    color: var(--white);
+    font-weight: 700;
+    padding: 1rem 1rem;
+    border-radius: 0.75rem;
+
+    transform: scale(1);
+    @include transition-all;
+
+    &:hover {
+      background-color: var(--red-700);
+      transform: scale(1.05);
+    }
+
+  }
+
+  .change-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+
+    background-color: var(--primary-700);
+    color: var(--white);
+    font-weight: 700;
+    padding: 1rem 1rem;
+    border-radius: 0.75rem;
+
+    &:hover {
+      background-color: var(--primary-800);
+
+    }
+  }
+
+  .power-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.5rem;
+
+    .control-btn {
+      padding: 0.8rem 0.5rem; /* увеличил вертикальные отступы */
+      border-radius: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem; /* добавил отступ между иконкой и текстом */
+      min-height: 80px; /* минимальная высота для красоты */
+      @include transition-all;
+
+      .icon {
+        height: 24px; /* фиксированная высота для иконки */
+        width: 24px; /* фиксированная ширина для иконки */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+          height: 100%;
+          width: 100%;
+        }
+      }
+
+      .btn-label {
+        font-size: 1.2rem; /* немного уменьшил размер шрифта */
+        text-align: center;
+        line-height: 1.2;
+      }
+
+      &.power-btn {
+        background-color: var(--blue-500);
+        color: var(--white);
+
+        &:hover {
+          background-color: var(--blue-600);
+        }
+      }
+
+      &.start-btn {
+        background-color: var(--green-500);
+        color: var(--white);
+
+        &:hover {
+          background-color: var(--green-600);
+        }
+      }
+
+      &.pause-btn {
+        background-color: var(--yellow-500);
+        color: var(--white);
+
+        &:hover {
+          background-color: var(--yellow-600);
+        }
+      }
+    }
+  }
+
+  button[disabled] {
+    cursor: not-allowed;
+    opacity: 0.4;
+    filter: grayscale(0.3);
+    border: 2px dashed var(--gray-400);
+    color: var(--gray-500) !important;
+  }
+</style>

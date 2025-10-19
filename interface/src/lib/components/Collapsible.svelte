@@ -21,7 +21,7 @@
 			<slot name="icon" />
 			<slot name="title" />
 		</span>
-		<button class="btn btn-circle btn-ghost btn-sm" on:click={() => openCollapsible()}>
+		<button class="btn btn-circle btn-ghost btn-sm" onclick={() => openCollapsible()}>
 			<Down
 				class="text-base-content h-auto w-6 transition-transform duration-300 ease-in-out {open
 					? 'rotate-180'

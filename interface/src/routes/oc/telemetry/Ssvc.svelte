@@ -1,255 +1,363 @@
 <script lang="ts">
-	import '$lib/styles/simple-grid-min.css';
-	import { user } from '$lib/stores/user';
-	import { page } from '$app/state';
-	import type { SsvcOpenConnectMessage } from '$lib/types/models';
-	import { slide } from 'svelte/transition';
-	import RectImg from '$lib/assets/rect.png';
-	import TpSensors from '$lib/components/Telemetry/TpSensors.svelte';
-	import TimeBlock from '$lib/components/Telemetry/TimeBlock.svelte';
-	import ValveParameters from '$lib/components/Telemetry/ValveParameters.svelte';
-	import Bottom from '$lib/components/Telemetry/Bottom.svelte';
-	import { Popover } from 'flowbite-svelte';
-	import Stages from '$lib/components/Telemetry/Stages.svelte';
-	import StopsCounter from '$lib/components/Telemetry/StopsCounter.svelte';
-	import Alc from '$lib/components/Telemetry/Alc.svelte';
-	import PressureCubeSensor from '$lib/components/Telemetry/PressureCubeSensor.svelte';
-	import { getStageDescription } from '$lib/utils/ssvcHelper';
-	import HeatingMode from '$lib/components/Telemetry/HeatingMode.svelte';
-	import Control from '$lib/components/Telemetry/Control.svelte';
-	import Pause from '$lib/components/Telemetry/Pause.svelte';
+		import RectImg from '$lib/components/Telemetry/RectImg.svelte';
+		import type { RectStatus, SsvcOpenConnectMessage } from '$lib/types/ssvc.ts';
+		import { fetchSensorsTemperatureByZone, fetchStatus, fetchTelemetry } from '$lib/api/ssvcApi';
+		import Control from '$lib/components/Telemetry/Control.svelte';
+		import ValveParameters from '$lib/components/Telemetry/ValveParameters.svelte';
+		import { getDescriptionStage, getStageDescription } from '$lib/utils/ssvcHelper';
+		import ThermalSensors from '$lib/components/Telemetry/ThermalSensors.svelte';
+		import type { TemperatureResponse } from '$lib/types/OCSettings';
 
-	let data = $state<SsvcOpenConnectMessage | null>(null);
+		let data = $state<SsvcOpenConnectMessage | null>();
+		let temperatureResponse = $state<TemperatureResponse | null>();
 
-	const telemetry = $derived(data?.telemetry);
-	const status = $derived(data?.status);
-	const common = $derived(telemetry?.common) as telemetry['common'] | undefined;
-	const showPause = $derived(telemetry?.stop || status?.status === 'paused');
-	const description = $derived(getStageDescription(telemetry?.type || ''));
+		let telemetry = $derived(data?.telemetry)
+		let status = $derived(data?.status)
 
-	let initialLoad = $state(true);
-	let error = $state<string | null>(null);
-	let rectificationStatus = $state<SsvcOpenConnectMessage | undefined>();
-	let currentType: string = $state('');
-	let needUpdateStatus: boolean = $state(false);
-	let needUpdateRS: boolean = $state(false);
+		// параметры опроса
+		const TELEMETRY_INTERVAL = 2000;
+		const STATUS_INTERVAL = 3000;
+		const BASE_INTERVAL = 1000; // Базовый интервал
+		let TEMPERATURE_REQUEST_INTERVAL = 3000;
 
-	const controller = new AbortController();
+		let telemetryCounter = 0;
+		let statusCounter = 0;
 
-	async function fetchData(withStatus = false) {
-		try {
-			const url = withStatus ? '/rest/telemetry?mode=status' : '/rest/telemetry';
-			const response = await fetch(url, {
-				method: 'GET',
-				headers: {
-					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
-					'Content-Type': 'application/json',
-					Accept: '*/*'
-				},
-				signal: controller.signal
-			});
-
-			if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-			const _data: SsvcOpenConnectMessage = await response.json();
-			data = {
-				// Сохраняем существующие данные только для поля 'status'
-				status: withStatus ? _data.status : data?.status,
-
-				// Копируем все данные из ответа
-				..._data,
-
-				// Перезаписываем telemetry новыми данными
-				telemetry: {
-					..._data.telemetry
+		// Функция для перезагрузки данных
+		const reloadSensors = async () => {
+			try {
+				temperatureResponse = await fetchSensorsTemperatureByZone();
+			} catch (err) {
+				if (err instanceof Error) {
 				}
-			};
-
-			// Обновляем currentType если изменился тип
-			if (_data.telemetry?.type !== currentType) {
-				currentType = _data.telemetry?.type || '';
 			}
-
-			error = null;
-		} catch (err) {
-			console.error('Fetch error:');
-		} finally {
-			if (initialLoad) initialLoad = false;
-		}
-	}
-
-	$effect(() => {
-		let isMounted = true;
-
-		// Первый запрос со статусом
-		fetchData(true);
-		const interval = setInterval(() => fetchData(false), 1000);
-
-		return () => {
-			isMounted = false;
-			clearInterval(interval);
-			controller.abort();
 		};
-	});
 
-	// Добавляем метод для явного обновления статуса
-	async function updateStatus() {
-		needUpdateStatus = true;
-	}
+		async function loadTelemetry(forceUpdateStatus: boolean = false): Promise<void> {
+			try {
+				const shouldGetTelemetry = telemetryCounter % (TELEMETRY_INTERVAL / BASE_INTERVAL) === 0;
+				const shouldGetStatus = statusCounter % (STATUS_INTERVAL / BASE_INTERVAL) === 0;
 
-	$effect(() => {
-		// Безопасная проверка с учётом новой типизации
-		const shouldFetch = data?.telemetry?.type && (needUpdateStatus || needUpdateRS);
+				let _data;
+				if (shouldGetTelemetry && shouldGetStatus || forceUpdateStatus) {
+					// Если совпали оба интервала - делаем оба запроса
+					_data = await fetchTelemetry();
+					await fetchStatus(); // или объединить данные
+				} else if (shouldGetTelemetry) {
+					_data = await fetchTelemetry();
+				} else if (shouldGetStatus) {
+					_data = await fetchStatus();
+				}
 
-		if (shouldFetch) {
-			fetchData(true);
-			updateStatus().finally(() => (needUpdateRS = false));
+				if (_data) {
+					// Собираем новый объект: берём предыдущие поля (если есть), затем накладываем _data.
+					// Это позволяет сохранять status, если _data не содержит status.
+					const base = { ...(data ?? {}) };
+					const merged = {
+						...base,
+						..._data,
+						telemetry: {
+							...(_data.telemetry ?? base.telemetry ?? {})
+						}
+					};
+
+					// Если в ответе нет status — сохраняем старый статус (если был)
+					if (_data.status === undefined && base.status !== undefined) {
+						merged.status = base.status;
+					}
+
+					data = merged;
+				}
+
+				telemetryCounter++;
+				statusCounter++;
+			} catch (err: any) {
+
+			}
 		}
-	});
 
-	function getDescriptionValve(name: string) {
-		switch (name) {
-			case 'heads':
-				return 'Головы';
-			case 'late_heads':
-				return 'Подголовники';
-			case 'hearts':
-				return 'Тело';
-			case 'tails':
-				return 'Хвосты';
+		async function updateStatus() {
+			await fetchStatus();
 		}
-	}
+
+		$effect(() => {
+
+			loadTelemetry();
+			reloadSensors()
+
+			const telemetryInt = setInterval(() => loadTelemetry(), BASE_INTERVAL);
+			const thermal_sensors = setInterval(() => reloadSensors(), TEMPERATURE_REQUEST_INTERVAL);
+
+			return () => {
+				clearInterval(telemetryInt);
+				clearInterval(thermal_sensors);
+			};
+		});
+
+
 </script>
 
-{#if telemetry}
-	<!-- Общий контейнер высотой 85% от экрана -->
-	<div class="flex flex-col h-[85vh] overflow-hidden text-gray-900 dark:text-gray-100">
-		<!-- Верхняя панель -->
-		<div class="p-2 h-[10vh]">
-			<div
-				class="grid grid-cols-2 gap-2 h-full items-center bg-white/40 dark:bg-gray-800/40 backdrop-blur rounded-lg shadow px-4 py-2"
-			>
-				<TimeBlock name="Старт" timeString={telemetry.start_time || '-'} />
-				<TimeBlock name="Конец" timeString={telemetry.end_time || '-'} />
-			</div>
+<div class="telemetry-container">
+	<div class="status-bar">
+		<div class="status-left">
+			<span class="status-item">
+				<span class="label">Этап:</span> {getStageDescription(telemetry? telemetry.type : "")}
+			</span>
+
 		</div>
-
-		<!-- Центральная часть -->
-		<div class="px-2 h-[65vh]">
-			<!-- grid layout с одинаковой высотой колонок -->
-			<div class="grid grid-cols-2 gap-2 h-full">
-				<!-- Левая колонка -->
-				<div class="flex flex-col h-full min-h-0 space-y-2">
-					<!-- Блок с изображением -->
-					<div
-						class="relative flex-1 bg-white/40 dark:bg-gray-800/40 backdrop-blur rounded-lg shadow p-2 flex items-center justify-center overflow-hidden"
-					>
-						<img
-							alt="Rectification"
-							class="w-full h-full max-w-full max-h-full object-contain"
-							src={RectImg}
-						/>
-
-						{#if telemetry.tp1_target}
-							<div
-								id="tpTarget"
-								class="absolute top-[33%] left-1/2 -translate-x-1/2 translate-y-1/3 bg-white bg-opacity-40"
-							>
-								<TpSensors name="" temp={telemetry.tp1_target} />
-								<Popover
-									class="w-64 text-sm font-light text-gray-500 bg-white dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800"
-									title="Целевая температура"
-									transition={slide}
-									triggeredBy="#tpTarget"
-								>
-									Целевая температура в колоне
-								</Popover>
-							</div>
-						{/if}
-						<div
-							class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/5 bg-white bg-opacity-40 dark:bg-opacity-0"
-						>
-							<TpSensors name="Колонна" temp={telemetry.common.tp1} />
-						</div>
-						<div class="absolute top-[75%] left-1/2 transform -translate-x-1/2 -translate-y-3">
-							<TpSensors name="Куб" temp={telemetry.common.tp2} />
-						</div>
-						<div class="absolute top-[84%] left-1/2 transform -translate-x-1/2 -translate-y-3">
-							{#if telemetry.tank_mmhg}
-								<PressureCubeSensor pressure={telemetry.tank_mmhg} />
-							{/if}
-						</div>
-						<div class="absolute top-[91%] left-1/2 transform -translate-x-1/2 -translate-y-3">
-							{#if telemetry.alc}
-								<Alc alcohol={telemetry.alc}></Alc>
-							{/if}
-						</div>
-						<div class="absolute top-[87%] left-1/2 transform -translate-x-1/2 -translate-y-3">
-							<HeatingMode
-								heatingOn={telemetry.common.heatingOn}
-								overclockingOn={telemetry.common.overclockingOn}
-							/>
-						</div>
-						<div class="absolute top-[74%] left-1/2 transform -translate-x-1/2 -translate-y-3">
-							{#if telemetry.stop || (data?.status && data.status.status === 'paused')}
-								<Pause />
-							{/if}
-						</div>
-					</div>
-
-					<!-- Компонент управления -->
-					<div class="p-2 rounded-lg bg-white/30 dark:bg-gray-800/30 shadow">
-						<Control {status} onStatusUpdate={updateStatus} />
-					</div>
-				</div>
-
-				<!-- Правая колонка -->
-				<div class="flex flex-col h-full min-h-0">
-					<div
-						class="flex flex-col flex-1 min-h-0 divide-y divide-gray-300/40 dark:divide-gray-600/40"
-					>
-						<!-- Блок с клапанами -->
-						{#if telemetry.volume && Object.keys(telemetry.volume).length > 0}
-							<div
-								class="basis-[60%] min-h-0 overflow-auto p-1 sm:p-4 bg-white/40 dark:bg-gray-800/40 rounded-lg"
-							>
-								<div class="flex flex-col h-full justify-around space-y-1">
-									{#each Object.entries(telemetry.volume) as [name, value]}
-										{#if name === telemetry.type}
-											<ValveParameters
-												n={getDescriptionValve(name)}
-												vo={telemetry.valveOpen}
-												p={telemetry.period}
-												o={telemetry.open}
-												f={value ?? 0}
-												s={telemetry.volumeSpeed ?? 0}
-											/>
-										{:else}
-											<ValveParameters n={getDescriptionValve(name)} f={value ?? 0} c={true} />
-										{/if}
-									{/each}
-								</div>
-							</div>
-						{/if}
-
-						<div class="flex-grow"></div>
-
-						<div class="basis-[20%] min-h-0 overflow-hidden p-2 sm:p-4">
-							<Stages {data} />
-						</div>
-
-						<!-- Счётчик остановок -->
-						{#if telemetry.type === 'hearts'}
-							<div class="basis-[20%] min-h-0 overflow-hidden p-2 sm:p-4">
-								<StopsCounter stops={telemetry.stops} />
-							</div>
-						{/if}
-					</div>
-				</div>
-			</div>
+		<div class="status-right">
+			<span class="status-item">
+				<span class="label">T1:</span> {telemetry?.common.tp1}°C
+			</span>
+			<span class="status-item">
+				<span class="label">T2:</span> {telemetry?.common.tp2}°C
+			</span>
+			<span class="status-item">
+				<span class="label">Давление:</span> {telemetry?.tank_mmhg} ммРс
+			</span>
 		</div>
-
-		<!-- Нижний блок -->
-		<Bottom {telemetry} {status} {getStageDescription} />
 	</div>
-{/if}
+
+	<!-- Main Content -->
+	<main class="main-content">
+		<div class="responsive-grid">
+			<!-- Left Sidebar - Controls -->
+			<div class="sidebar-left">
+				<div class="glassmorphism panel">
+					<div class="controls-container">
+						<Control {status} onStatusUpdate={updateStatus} />
+						<div class="sensor-readings ">
+							<h3 class="section-title">Данные датчиков</h3>
+							{#if telemetry}
+								<h5 class="section-title">SSVC</h5>
+								<div class="readings-list">
+									<div class="reading-item">
+										<span class="reading-label">Колонна</span>
+										<span class="reading-value">{telemetry.common.tp1}°C</span>
+									</div>
+									<div class="reading-item">
+										<span class="reading-label">Куб</span>
+										<span class="reading-value">{telemetry.common.tp2}°C</span>
+									</div>
+									{#if telemetry.tank_mmhg}
+										<div class="reading-item">
+											<span class="reading-label">Атмосферное давление:</span>
+											<span class="reading-value">{telemetry.tank_mmhg} ммРс</span>
+										</div>
+									{/if}
+								</div>
+							{/if}
+							{#if temperatureResponse}
+								<ThermalSensors temperatureResponse={temperatureResponse}/>
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- Center Panel - Column Schematic -->
+			<div class="center-panel">
+				<div class="glassmorphism panel">
+					<h2 class="panel-title">{getStageDescription(telemetry? telemetry.type : "")}</h2>
+						{#if telemetry && temperatureResponse}
+							<div class="svg-container">
+								<RectImg telemetry={telemetry} temperatureResponse={temperatureResponse}/>
+							</div>
+						{/if}
+				</div>
+			</div>
+
+			<!-- Right Sidebar - Process Management -->
+			<div class="sidebar-right">
+				<div class="glassmorphism panel">
+					<div class="stage-controls">
+						{#if telemetry && telemetry.volume && Object.keys(telemetry.volume).length > 0}
+							{#each Object.entries(telemetry.volume) as [name, value]}
+								{#if value !== 0}
+									<div class="valves-block">
+										<ValveParameters
+											n={getDescriptionStage(name) ?? ""}
+											vo={name === telemetry.type ? telemetry.valveOpen : 0}
+											o={name === telemetry.type ? telemetry.open : 0}
+											p={name === telemetry.type ? telemetry.period : 0}
+											s={name === telemetry.type ? telemetry.volumeSpeed ?? 0 : 0}
+											f={value ?? 0}
+											active={name === telemetry.type}
+										/>
+									</div>
+								{/if}
+							{/each}
+						{/if}
+					</div>
+					<div class="parameters-readings parameters-bottom">
+						<h3 class="section-title">Параметры работы</h3>
+						{#if telemetry}
+							<div class="readings-list">
+								<div class="reading-item">
+									<span class="reading-label">Количество стопов</span>
+									<span class="reading-value">{telemetry.stops}</span>
+								</div>
+								{#if telemetry && telemetry.start_time}
+									<span class="reading-item">
+										<span class="reading-label">Время старта:</span> <span class="reading-value">{telemetry.start_time}</span>
+									</span>
+								{/if}
+								{#if telemetry && telemetry.countdown}
+									<span class="reading-item">
+										<span class="reading-label">Время до завершения этапа:</span> <span class="reading-value">{telemetry.countdown}</span>
+									</span>
+								{/if}
+								{#if telemetry && telemetry.time}
+									<span class="reading-item">
+										<span class="reading-label">Общее время:</span> <span class="reading-value">{telemetry.time}</span>
+									</span>
+								{/if}
+								{#if telemetry && telemetry.alc}
+									<span class="reading-item">
+										<span class="reading-label">Количество спирта:</span> <span class="reading-value">{telemetry.alc}</span>
+									</span>
+								{/if}
+							</div>
+						{/if}
+					</div>
+				</div>
+			</div>
+		</div>
+	</main>
+</div>
+
+<style lang="scss">
+	@use "$lib/styles/mixins.scss" as *;
+
+  // Base Styles
+  .telemetry-container {
+    .status-bar {
+      max-width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+
+      .status-left,
+      .status-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .status-item {
+        .label {
+          font-weight: 700;
+					color: var(--primary-800);
+          @include dark-theme-color;
+        }
+        .time-value {
+          font-weight: 700;
+        }
+      }
+    }
+
+    .main-content {
+      max-width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 1rem 1rem;
+
+
+      .responsive-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+
+        .sidebar-right {
+          display: flex;
+          flex-direction: column;
+
+          @media (min-width: 1024px) {
+            grid-column: span 3;
+          }
+
+          .glassmorphism.panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+
+            .stage-controls {
+              flex: 1;
+
+              .valves-block {
+                @include glassmorphism;
+                border-radius: var(--border-radius);
+
+                &:not(:last-child) {
+                  border-bottom: 1px solid var(--glass-primary-200);
+                  margin-bottom: 1rem;
+                  padding-bottom: 1.5rem;
+                }
+              }
+            }
+
+            .parameters-readings {
+              @include parameter-container;
+              margin-top: auto; // Гарантированно прижимает к низу
+            }
+          }
+        }
+
+        @media (min-width: 1024px) {
+          flex-direction: row;
+
+          .sidebar-left {
+            flex: 0 0 25%; // 25% ширины, не растягивается
+            min-width: 250px;
+          }
+
+          .center-panel {
+            flex: 1; // Занимает оставшееся пространство
+            min-width: 0; // Важно для корректного сжатия
+          }
+
+          .sidebar-right {
+            flex: 0 0 25%; // 25% ширины
+            min-width: 250px;
+          }
+        }
+      }
+		}
+
+    .glassmorphism {
+      @include glassmorphism;
+      padding: 1rem 1rem;
+      height: 81vh;
+      box-sizing: border-box;;
+
+      &.panel {
+        margin-bottom: auto;
+
+        .panel-title {
+          font-size: 2rem;
+          font-weight: 700;
+          color: var(--primary-800);
+          margin-bottom: 1rem;
+          text-align: center;
+          @include dark-theme-color;
+        }
+      }
+
+      .controls-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+
+        .sensor-readings {
+          @include parameter-container;
+        }
+      }
+
+      .parameters-readings {
+        @include parameter-container;
+        margin-top: auto; // Гарантированно прижимает к низу
+      }
+
+    }
+  }
+</style>

@@ -50,7 +50,7 @@
 	}
 </script>
 
-<div class="hero from-primary/30 to-secondary/30 min-h-screen bg-gradient-to-br">
+<div class="hero from-primary/30 to-secondary/30 min-h-screen bg-linear-to-br">
 	<div
 		class="card lg:card-side bg-base-100 shadow-primary face shadow-2xl {loginFailed
 			? 'failure border-error border-2'
@@ -61,20 +61,11 @@
 		<figure class="bg-base-200"><img src={logo} alt="Logo" class="h-auto w-48 lg:w-64" /></figure>
 		<div class="card-body w-80">
 			<h2 class="card-title text-2xl">Вход в систему</h2>
-			<form class="form-control w-full max-w-xs">
-				<label class="label" for="user">
-					<span class="label-text text-md">Пользователь</span>
-				</label>
-				<input
-					type="text"
-					class="input input-bordered w-full max-w-xs"
-					id="user"
-					bind:value={username}
-				/>
+			<form class="fieldset w-full max-w-xs">
+				<label class="label" for="user">Пользователь</label>
+				<input type="text" class="input w-full max-w-xs" id="user" bind:value={username} />
 
-				<label class="label" for="pwd">
-					<span class="label-text text-md">Пароль</span>
-				</label>
+				<label class="label" for="pwd">Пароль </label>
 				<InputPassword id="pwd" bind:value={password} />
 
 				<div class="card-actions mt-4 justify-end">

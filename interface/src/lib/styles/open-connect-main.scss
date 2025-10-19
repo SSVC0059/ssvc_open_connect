@@ -1,0 +1,1297 @@
+@use "$lib/styles/mixins.scss" as *;
+
+/* ===== ОСНОВНЫЕ КОМПОНЕНТЫ КОНТЕЙНЕРА ===== */
+.container {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+/* ===== КОМПОНЕНТ НАСТРОЕК ===== */
+.settings-container {
+  @include glassmorphism;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  width: 100%;
+  max-height: 80vh;
+  overflow: auto;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+
+}
+
+.settings-panel {
+  background: var(--glass-background);
+  border: var(--glass-border);
+  border-radius: var(--border-radius);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+  box-shadow: var(--glass-shadow);
+}
+
+.settings-section {
+  padding: 1.5rem;
+  border-bottom: 2px solid var(--primary-200);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--primary-800);
+  margin-bottom: 1rem;
+  @include dark-theme-color;
+}
+
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--primary-200);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.settings-label {
+  color: var(--primary-700);
+  font-weight: 500;
+  flex: 1;
+  margin-right: 1rem;
+  @include dark-theme-color;
+}
+
+/* ===== КОМПОНЕНТ ВКЛАДОК (TABS) ===== */
+.tabs-container {
+  /* Десктопная навигация */
+  .tabs-nav {
+    display: flex;
+    gap: 2rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+
+    @media (max-width: 768px) {
+      display: none;
+    }
+  }
+
+  .tab {
+    padding: 0.3rem 0.25rem;
+    white-space: nowrap;
+    color: var(--primary-500);
+    transition: color 0.2s;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+
+    @include dark-theme-color;
+
+    &:hover {
+      color: var(--primary-700);
+    }
+
+    &.tab-active {
+      border-bottom: 2px solid var(--blue-600);
+      color: var(--blue-600);
+      border-radius: 0;
+    }
+
+    @media (min-width: 768px) {
+      font-size: clamp(1.125rem, 1.5vw + 0.5rem, 1.5rem);
+    }
+  }
+
+  /* Мобильная навигация */
+  .mobile-tabs-header {
+    position: relative;
+    display: none;
+
+    @media (max-width: 768px) {
+      display: block;
+      margin-bottom: 1rem;
+    }
+    .mobile-menu-header {
+      @include dark-theme-color;
+    }
+
+
+    &.menu-open {
+      .mobile-tabs-dropdown {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .mobile-menu-toggle svg {
+        transform: rotate(180deg);
+      }
+
+      .mobile-menu-header {
+        @include dark-theme-color;
+      }
+    }
+  }
+
+  .mobile-menu-toggle {
+    @include glassmorphism;
+    @include flex-center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--primary-700);
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    @include transition-all;
+
+    svg {
+      transition: transform 0.2s ease;
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.9);
+    }
+  }
+
+  .mobile-tabs-dropdown {
+    @include glassmorphism;
+    background: var(--white);
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    margin-top: 0.25rem;
+    border-radius: var(--border-radius);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    max-height: 60vh;
+    overflow-y: auto;
+
+    // Кастомный скроллбар для dropdown
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-300) transparent;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--primary-300);
+      border-radius: 2px;
+    }
+  }
+
+  .mobile-tab {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.9rem;
+    color: var(--primary-600);
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--primary-200);
+    cursor: pointer;
+    @include transition-all;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: rgba(var(--primary-100), 0.3);
+      color: var(--primary-700);
+    }
+
+    &.mobile-tab-active {
+      background: rgba(var(--primary-500), 0.1);
+      color: var(--primary-800);
+      font-weight: 600;
+    }
+  }
+
+  /* Утилитарные классы для responsive */
+  .desktop-only {
+    @media (max-width: 768px) {
+      display: none !important;
+    }
+  }
+
+  .mobile-only {
+    @media (min-width: 769px) {
+      display: none !important;
+    }
+  }
+}
+
+/* ===== СТИЛИ РАЗДЕЛОВ НАСТРОЕК ====== */
+
+.settings-grid {
+  @include glassmorphism;
+  position: relative;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .settings-panel {
+
+    .settings-section {
+      padding: 1rem;
+      @include compact-points;
+
+      .settings-section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--primary-800);
+        margin-bottom: 1rem;
+        @include dark-theme-color;
+      }
+
+      .settings-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+
+        .settings-label {
+          color: var(--primary-700);
+          font-weight: 500;
+          @include dark-theme-color;
+        }
+
+        .settings-value {
+          color: var(--primary-800);
+          font-weight: 500;
+          @include dark-theme-color;
+        }
+
+        .toggle-container {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          cursor: pointer;
+
+          .toggle-input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+
+            &:disabled {
+              & + .toggle-slider {
+                background-color: var(--primary-300) !important;
+                opacity: 50%;
+                cursor: not-allowed;
+              }
+              &:checked + .toggle-slider {
+                background-color: var(--green-300) !important;
+              }
+
+              & + .toggle-slider:after {
+                background-color: var(--primary-100);
+                border-color: var(--primary-300);
+              }
+            }
+          }
+
+          .toggle-slider {
+            width: 2.75rem;
+            height: 1.5rem;
+            background-color: var(--primary-500);
+            border-radius: 9999px;
+            position: relative;
+            transition: background-color 0.2s;
+          }
+
+          .toggle-slider:after {
+            content: '';
+            position: absolute;
+            top: 0.125rem;
+            left: 0.125rem;
+            background-color: var(--white);
+            border: 1px solid var(--primary-500);
+            border-radius: 50%;
+            height: 1.25rem;
+            width: 1.25rem;
+            transition: transform 0.2s;
+          }
+
+          .toggle-input:checked + .toggle-slider {
+            background-color: var(--green-500);
+          }
+
+          .toggle-input:checked + .toggle-slider:after {
+            transform: translateX(1.25rem);
+            border-color: var(--white);
+          }
+
+        }
+
+        .text-xs {
+          font-size: 0.75rem;
+        }
+
+      }
+
+
+    }
+  }
+}
+
+/* ===== ОСНОВНЫЕ СТИЛИ МОДАЛЬНЫХ ОКОН ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(var(--black), 0.5);
+  backdrop-filter: blur(4px);
+
+  &.fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+}
+
+.modal-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center; /* И центрирование по обеим осям */
+  pointer-events: none;
+}
+
+.modal-content {
+  background: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--glass-shadow);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1rem;
+  max-height: 100vh;
+  min-width: fit-content;
+  max-width: min(28rem, 90vw);
+  border: var(--glass-border);
+  background: var(--glass-background);
+  backdrop-filter: blur(8px);
+}
+
+.modal-title {
+  color: inherit;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 2rem;
+  margin: 0;
+}
+
+.modal-divider {
+  height: 1px;
+  background-color: currentColor;
+  opacity: 0.2;
+  margin: 0.5rem 0;
+  border: none;
+}
+
+.modal-body {
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  @include compact-points;
+
+  // Кастомный скроллбар
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-300) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--primary-300);
+    border-radius: 2px;
+  }
+
+}
+
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* ===== СТИЛИ ДЛЯ КОМПОНЕНТА РЕДАКТИРОВАНИЯ ПЕРЕМЕННЫХ ===== */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.input-label {
+  font-weight: 500;
+  text-align: center;
+  margin: 0;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.input-field {
+  flex: 1;
+  min-width: 0;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--primary-300);
+  border-radius: calc(var(--border-radius) / 2);
+  background: var(--white);
+  transition: var(--transition);
+  font: inherit;
+
+  &:focus {
+    outline: none;
+    border-color: var(--blue-500);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+
+  &.input-error {
+    background: var(--red-300);
+    border-color: var(--red-500);
+  }
+}
+
+.input-unit {
+  white-space: nowrap;
+  font-size: 0.9em;
+  color: var(--primary-600);
+}
+
+.precision-info {
+  font-size: 0.875rem;
+  color: var(--primary-500);
+  margin: 0;
+}
+
+.range-info {
+  font-size: 0.875rem;
+  color: var(--primary-500);
+  white-space: nowrap;
+  margin: 0;
+
+  &.range-error {
+    color: var(--red-500);
+  }
+}
+
+.error-message {
+  margin-left: 0.5rem;
+  color: var(--red-500);
+}
+
+/* ===== СТИЛИ ДЛЯ КОМПОНЕНТА РЕДАКТИРОВАНИЯ ВРЕМЕНИ ===== */
+.time-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.time-inputs {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.time-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.time-input-label {
+  font-weight: 500;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.time-input {
+  width: 5rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--primary-300);
+  border-radius: calc(var(--border-radius) / 2);
+  background: var(--white);
+  transition: var(--transition);
+  font: inherit;
+  text-align: center;
+
+  &:focus {
+    outline: none;
+    border-color: var(--blue-500);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+
+  &.input-error {
+    background: var(--red-300);
+    border-color: var(--red-500);
+  }
+}
+
+.time-separator {
+  font-size: 1.5rem;
+  color: var(--primary-500);
+  align-self: center;
+  margin-bottom: 0.5rem;
+}
+
+.validation-message {
+  font-size: 0.875rem;
+  margin: 0;
+
+  &.validation-info {
+    color: var(--primary-500);
+  }
+
+  &.validation-error {
+    color: var(--red-500);
+  }
+}
+
+/* ===== ОБЩИЕ СТИЛИ КНОПОК И КОНТЕЙНЕРОВ ===== */
+.btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 0.5rem 1rem;
+  border-radius: calc(var(--border-radius) / 2);
+  font-weight: 500;
+  transition: var(--transition);
+  text-decoration: none;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  &.btn-primary {
+    background: var(--blue-500);
+    color: var(--white);
+
+    &:hover:not(:disabled) {
+      background: var(--blue-600);
+    }
+  }
+
+  &.btn-warning {
+    background: var(--yellow-500);
+    color: var(--white);
+
+    &:hover:not(:disabled) {
+      background: var(--yellow-600);
+    }
+  }
+}
+
+.btn-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.5rem;
+}
+
+.values-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.value-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.value-text {
+  font: inherit;
+  @include dark-theme-color
+}
+
+.value-unit {
+  font-size: 0.875rem;
+  opacity: 0.75;
+  @include dark-theme-color
+}
+
+.edit-button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  flex-shrink: 0;
+  color: var(--blue-500);
+  padding: 0.25rem;
+  border-radius: calc(var(--border-radius) / 4);
+  transition: var(--transition);
+  @include dark-theme-color;
+
+  &:hover {
+    color: var(--blue-600);
+  }
+
+}
+
+/* ===== КОМПОНЕНТ ПЕРЕКЛЮЧАТЕЛЕЙ ===== */
+.toggle-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toggle-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+
+  &:disabled {
+    & + .toggle-slider {
+      background-color: var(--primary-300);
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &:checked + .toggle-slider {
+      background-color: var(--green-300);
+    }
+
+    & + .toggle-slider:after {
+      background-color: var(--primary-100);
+      border-color: var(--primary-300);
+    }
+  }
+}
+
+.toggle-slider {
+  width: 2.75rem;
+  height: 1.5rem;
+  background-color: var(--primary-500);
+  border-radius: 9999px;
+  position: relative;
+  transition: background-color 0.2s;
+
+  &:after {
+    content: '';
+    position: absolute;
+    top: 0.125rem;
+    left: 0.125rem;
+    background-color: var(--white);
+    border: 1px solid var(--primary-500);
+    border-radius: 50%;
+    height: 1.25rem;
+    width: 1.25rem;
+    transition: transform 0.2s;
+  }
+}
+
+.toggle-input:checked + .toggle-slider {
+  background-color: var(--green-500);
+}
+
+.toggle-input:checked + .toggle-slider:after {
+  transform: translateX(1.25rem);
+  border-color: var(--white);
+}
+
+/* ===== АНИМАЦИИ ===== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ===== АДАПТИВНОСТЬ ===== */
+@media (max-width: 640px) {
+  .settings-container {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .settings-section {
+    padding: 1rem;
+  }
+
+  .settings-item {
+    gap: 0.5rem;
+  }
+
+  .settings-label {
+    margin-right: 0;
+  }
+
+  .modal-content {
+    margin: 1rem;
+    max-width: none;
+    min-width: auto;
+  }
+
+  .modal-actions {
+    justify-content: stretch;
+
+    .btn {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+
+  .input-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+
+    .input-unit {
+      align-self: flex-start;
+    }
+  }
+
+  .time-inputs {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .time-separator {
+    display: none;
+  }
+
+  .time-input-group {
+    align-items: center;
+  }
+
+  .time-input {
+    width: 4rem;
+  }
+}
+
+/* ===== ТЕМНАЯ ТЕМА ===== */
+@media (prefers-color-scheme: dark) {
+  .settings-container,
+  .settings-panel {
+    background: var(--glass-background);
+    color: var(--white);
+  }
+
+  .section-title,
+  .settings-label {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .settings-section {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .settings-item {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .modal-content {
+    color: var(--white);
+  }
+
+  .input-field,
+  .time-input {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--white);
+    border-color: rgba(255, 255, 255, 0.2);
+
+    &:focus {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    &.input-error {
+      background: rgba(220, 38, 38, 0.2);
+      border-color: var(--red-500);
+    }
+  }
+
+  .time-separator {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .input-unit,
+  .precision-info,
+  .range-info:not(.range-error),
+  .validation-message.validation-info {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  /* Темная тема для tabs */
+  .tab {
+    color: rgba(255, 255, 255, 0.7);
+
+    &:hover {
+      color: var(--white);
+    }
+
+    &.tab-active {
+      color: var(--blue-500);
+      border-bottom-color: var(--blue-500);
+    }
+  }
+
+  .mobile-menu-toggle {
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.1);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+  }
+
+  .mobile-tabs-dropdown {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .mobile-tab {
+    color: rgba(255, 255, 255, 0.7);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--white);
+    }
+
+    &.mobile-tab-active {
+      background: rgba(59, 130, 246, 0.2);
+      color: var(--blue-400);
+    }
+  }
+
+  .value-unit {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+}
+/* ===== СТИЛИ ДЛЯ КАРТОЧКИ ДАТЧИКА ===== */
+.sensor-card {
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1rem;
+  border: var(--glass-border);
+}
+
+.sensor-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.sensor-address,
+.sensor-temperature {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.sensor-label {
+  color: var(--primary-600);
+  font-weight: 500;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.sensor-value {
+  color: var(--primary-800);
+  font-weight: 600;
+  font-size: 1rem;
+
+  &.font-mono {
+    font-family: monospace;
+    font-style: italic;
+    font-size: 0.9rem;
+  }
+}
+
+/* Компактная температурная шкала - как в оригинале */
+.temperature-bar-compact-container {
+  margin: 0.5rem 0;
+}
+
+.temperature-bar-compact {
+  height: 0.625rem; /* h-2.5 */
+  background-color: var(--primary-100);
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 0.25rem;
+}
+
+.temperature-fill-compact {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue-500), var(--red-600));
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.temperature-threshold-marker {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 2px; /* w-0.5 */
+  z-index: 10;
+}
+
+.warning-marker {
+  background-color: var(--yellow-500);
+}
+
+.critical-marker {
+  background-color: var(--red-500);
+}
+
+.temperature-labels-compact {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem; /* text-xs */
+  color: var(--primary-500); /* text-gray-500 */
+  overflow: hidden;
+
+  span {
+    white-space: nowrap; /* whitespace-nowrap */
+  }
+}
+
+/* Элементы управления */
+.sensor-controls {
+  margin-top: 1rem;
+}
+
+.sensor-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+}
+
+.zone-controls-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+  }
+
+  .input-field {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.threshold-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.control-actions {
+  display: flex;
+  gap: 0.5rem;
+
+  .btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* Адаптивность */
+@media (max-width: 640px) {
+  .sensor-card {
+    padding: 0.75rem;
+  }
+
+  .sensor-header {
+    gap: 0.5rem;
+  }
+
+  .sensor-label {
+    font-size: 0.8rem;
+  }
+
+  .sensor-value {
+    font-size: 0.9rem;
+
+    &.font-mono {
+      font-size: 0.8rem;
+    }
+  }
+}
+
+/* ===== СТИЛИ ДЛЯ КОНТЕЙНЕРА СЕНСОРОВ ===== */
+
+.sensors-main-container {
+  //width: 100%;
+  //max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.zone-panel {
+  @include glassmorphism;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  border: var(--glass-border);
+}
+
+.zone-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--primary-800);
+  padding: 0.75rem 1rem;
+  margin: 0;
+  text-align: center;
+  border-bottom: 2px solid var(--primary-200);
+  @include dark-theme-color;
+}
+
+.sensors-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  padding: 1rem;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
+
+/* Стили для состояний загрузки и ошибок */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--primary-600);
+}
+
+.loading-text {
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 0.25rem solid var(--primary-200);
+  border-top: 0.25rem solid var(--blue-500);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.error-container {
+  padding: 1rem;
+  color: var(--red-600);
+  background: var(--red-50);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--red-200);
+}
+
+.error-text {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: var(--primary-500);
+}
+
+.empty-text {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Анимация спиннера */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Адаптивность */
+@media (max-width: 640px) {
+  .sensors-main-container {
+    padding: 0.5rem;
+    gap: 1rem;
+  }
+
+  .sensors-grid {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .zone-title {
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+  }
+}
+
+/* ===== СТИЛИ ДЛЯ КОМПОНЕНТА TELEGRAM ===== */
+
+// Стили для отключенного состояния
+.disabled-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 10;
+  border-radius: var(--border-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  @media (prefers-color-scheme: dark) {
+    background: rgba(0, 0, 0, 0.8);
+  }
+}
+
+.disabled-modal {
+  @include glassmorphism;
+  text-align: center;
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  border: var(--glass-border);
+  max-width: 18rem;
+  width: 100%;
+}
+
+.disabled-text {
+  color: var(--primary-600);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+
+  @media (prefers-color-scheme: dark) {
+    color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+// Стили для описания настроек
+.settings-description {
+  font-size: 0.875rem;
+  color: var(--primary-500);
+  margin: 0.25rem 0 0 0;
+
+  @media (prefers-color-scheme: dark) {
+    color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+// Стили для кода в тексте
+code {
+  background: var(--primary-100);
+  padding: 0.125rem 0.375rem;
+  border-radius: calc(var(--border-radius) / 4);
+  font-family: monospace;
+  font-size: 0.8rem;
+
+  @media (prefers-color-scheme: dark) {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+  }
+}
+
+// Стили для спиннера в кнопках
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+// Анимация спиннера
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Адаптивность для компонента Telegram
+@media (max-width: 640px) {
+  .disabled-modal {
+    margin: 1rem;
+    padding: 1rem;
+  }
+
+  .input-group {
+    gap: 0.75rem;
+  }
+}

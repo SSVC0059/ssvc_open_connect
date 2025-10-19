@@ -10,7 +10,13 @@
 		children?: import('svelte').Snippet;
 	}
 
-	let { open = $bindable(true), collapsible = true, icon, title, children }: Props = $props();
+	let {
+		open = $bindable(true),
+		collapsible = true,
+		icon,
+		title,
+		children
+	}: Props = $props();
 </script>
 
 {#if collapsible}

@@ -1,21 +1,40 @@
-//
-// Created by demoncat on 23.12.2024.
-//
-
 #ifndef SSVC_OPEN_CONNECT_SSVCOPENCONNECT_H
 #define SSVC_OPEN_CONNECT_SSVCOPENCONNECT_H
 
-#include "utility"
-#include "API/HttpRequestHandler.h"
+/**
+ *   SSVC Open Connect
+ *
+ *   A firmware for ESP32 to interface with SSVC 0059 distillation controller
+ *   via UART protocol. Features a responsive SvelteKit web interface for
+ *   monitoring and controlling the distillation process.
+ *   https://github.com/SSVC0059/ssvc_open_connect
+ *
+ *   Copyright (C) 2024 SSVC Open Connect Contributors
+ *
+ *   This software is independent and not affiliated with SSVC0059 company.
+ *   All Rights Reserved. This software may be modified and distributed under
+ *   the terms of the LGPL v3 license. See the LICENSE file for details.
+ *
+ *   Disclaimer: Use at your own risk. High voltage safety precautions required.
+ **/
+
 #include "ESP32SvelteKit.h"
 #include "EventSocket.h"
-#include "HttpEndpoint.h"
-#include "OpenConnectSettings.h"
 #include "SecurityManager.h"
-#include "SsvcCommandsQueue.h"
-#include "SsvcConnector.h"
-#include "SsvcSettings.h"
+
+#include "core/SsvcConnector.h"
+
+#include "core/SsvcSettings/SsvcSettings.h"
+#include "core/StatefulServices/SensorZoneService/SensorZoneService.h"
+#include "core/SubsystemManager/SubsystemManager.h"
+
+#include "API/HttpRequestHandler.h"
 #include "rectification/RectificationProcess.h"
+
+#include "components/sensors/SensorManager/SensorManager.h"
+#include "components/subsystem/ThermalSubsystem.h"
+#include "components/subsystem/SettingsSubsystem.h"
+#include "commons/commons.h"
 
 /**
  * @def TASK_AT_COMMAND_SEND_STACK_PERIOD
@@ -23,74 +42,58 @@
  */
 #define TASK_AT_COMMAND_SEND_STACK_PERIOD 60
 
-#if __cplusplus < 201402L
-namespace std {
-/**
- * @brief Реализация make_unique для C++11
- */
-template <typename T, typename... Args>
-unique_ptr<T> make_unique(Args &&...args) {
-  return unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-} // namespace std
-#endif
 
-/**
- * @class SsvcOpenConnect
- * @brief Основной класс для работы с SSVC устройством через WiFi
- *
- * Класс реализует:
- * - Управление подключением к SSVC устройству
- * - Обработку команд устройства
- * - Взаимодействие через HTTP API
- */
-class SsvcOpenConnect {
+class NotificationSubscriber;
+
+class SsvcOpenConnect
+{
 public:
-  /**
-   * @brief Получить экземпляр класса (Singleton)
-   * @param server HTTP сервер
-   * @param esp32sveltekit Фреймворк ESP32SvelteKit
-   * @param socket Сокет для событий
-   * @param securityManager Менеджер безопасности
-   * @return Указатель на экземпляр класса
-   */
-  static SsvcOpenConnect *getInstance(PsychicHttpServer &server,
-                                      ESP32SvelteKit &esp32sveltekit,
-                                      EventSocket *socket,
-                                      SecurityManager *securityManager) {
-    if (!instance) {
-      instance =
-          new SsvcOpenConnect(server, esp32sveltekit, socket, securityManager);
-    }
+  static SsvcOpenConnect& getInstance() {
+    static SsvcOpenConnect instance;
     return instance;
   }
+  static void subsystemManager();
+  void begin(PsychicHttpServer& server,
+             ESP32SvelteKit& esp32sveltekit,
+             EventSocket* socket,
+             SecurityManager* securityManager);
 
-  /**
-   * @brief Инициализация модуля
-   */
-  void begin();
+  ESP32SvelteKit* getESP32SvelteKit() const {
+    return _esp32sveltekit;
+  }
+
+  SensorZoneService* getSensorZoneService() const {
+    return _sensorZoneService;
+  }
+  SsvcOpenConnect(const SsvcOpenConnect&) = delete;
+  void operator=(const SsvcOpenConnect&) = delete;
+
+  bool isOnline() const;
 
 private:
-  /**
-   * @brief Конструктор
-   */
-  SsvcOpenConnect(PsychicHttpServer &server, ESP32SvelteKit &esp32sveltekit,
-                  EventSocket *socket, SecurityManager *securityManager);
+  SsvcOpenConnect() = default;
 
-  PsychicHttpServer &_server;        ///< HTTP сервер
-  ESP32SvelteKit &_esp32sveltekit;   ///< Фреймворк ESP32SvelteKit
-  EventSocket *_socket;              ///< Сокет для событий
-  SecurityManager *_securityManager; ///< Менеджер безопасности
+  PsychicHttpServer* _server = nullptr;
+  ESP32SvelteKit* _esp32sveltekit = nullptr;
+  EventSocket* _socket = nullptr;
+  SecurityManager* _securityManager = nullptr;
 
-  SsvcConnector &_ssvcConnector; ///< Коннектор к SSVC устройству
-  OpenConnectSettingsService _openConnectSettingsService; ///< Сервис настроек
-  SsvcSettings &_ssvcSettings;    ///< Настройки SSVC устройства
-  RectificationProcess &rProcess; ///< Процесс ректификации
-  std::unique_ptr<HttpRequestHandler>
-      httpRequestHandler; ///< HTTP обработчик запросов
+  SsvcConnector& _ssvcConnector = SsvcConnector::getConnector();
+  OpenConnectSettingsService* _openConnectSettingsService = nullptr;
+  NotificationSubscriber* _notificationSubscriber = nullptr;
 
-  static SsvcOpenConnect
-      *instance; ///< Единственный экземпляр класса (Singleton)
+  AlarmThresholdService* _alarmThresholdService = nullptr;
+  SensorZoneService* _sensorZoneService = nullptr;
+  AlarmMonitor* _alarmMonitor = nullptr;
+
+  SsvcSettings& _ssvcSettings = SsvcSettings::init();
+  RectificationProcess& rProcess = RectificationProcess::rectController();
+  SensorManager& _sensorManager = SensorManager::getInstance();
+
+  std::unique_ptr<HttpRequestHandler> httpRequestHandler ;
+
+  static constexpr auto TAG = "SsvcOpenConnect";
+
 };
 
 #endif // SSVC_OPEN_CONNECT_SSVCOPENCONNECT_H

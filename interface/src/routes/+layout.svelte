@@ -13,6 +13,7 @@
 	import { notifications } from '$lib/components/toasts/notifications';
 	import { fade } from 'svelte/transition';
 	import '../app.css';
+	import '../normalize.css'
 	import Menu from './menu.svelte';
 	import Statusbar from './statusbar.svelte';
 	import Login from './login.svelte';
@@ -20,6 +21,9 @@
 	import type { RSSI } from '$lib/types/models';
 	import type { Battery } from '$lib/types/models';
 	import type { DownloadOTA } from '$lib/types/models';
+
+	import '$lib/styles/open-connect-main.scss';
+
 
 	interface Props {
 		data: LayoutData;
@@ -130,6 +134,7 @@
 	const handleOAT = (data: DownloadOTA) => telemetry.setDownloadOTA(data);
 
 	let menuOpen = $state(false);
+
 </script>
 
 <svelte:head>
@@ -164,11 +169,14 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	{#snippet backdrop({ close })}
 		<div
-			class="fixed inset-0 z-40 max-h-full max-w-full bg-black/20 backdrop-blur"
+			class="fixed inset-0 z-40 max-h-full max-w-full bg-black/20 backdrop-blur-sm"
 			transition:fade|global
+			role="button"
+			tabindex="0"
 			onclick={() => close()}
 		></div>
 	{/snippet}
 </Modals>
 
 <Toast />
+
