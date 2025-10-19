@@ -1,4 +1,5 @@
 {"type": "waiting","common": {"mmhg": 750,"tp1": 30.31,"tp2": 30.81,"relay": 1,"signal": 0}}
+{"type": "settings","common": {"mmhg": 750,"tp1": 30.31,"tp2": 30.81,"relay": 1,"signal": 0}}
 {"type": "tp1_waiting","tp1_target": 60,"common": {"mmhg": 750,"tp1": 30.31,"tp2": 30.81,"relay": 1,"signal": 0}}
 {"type": "delayed_start","countdown": "0:09:59","common": {"mmhg": 750,"tp1": 30.75,"tp2": 31.44,"relay": 1,"signal": 0}}
 {"type": "heads","countdown": "5:00:00","release": "0:03:00","common": {"mmhg": 736,"tp1": 25.31,"tp2": 25.56,"relay": 1,"signal": 1},"time": "0:00:00","open": 99.90,"period": 100,"tank_mmhg": 736,"tp1_sap": 26.13,"tp2_sap": 26.38,"v1": 0,"v2": 0,"v3": 0,"alc": 0.0}
