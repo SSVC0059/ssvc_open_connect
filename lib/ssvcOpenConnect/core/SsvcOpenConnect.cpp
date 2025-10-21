@@ -52,7 +52,10 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     rProcess.begin(
       _ssvcConnector, _ssvcSettings, *_openConnectSettingsService);
 
-    httpRequestHandler = std::make_unique<HttpRequestHandler>(*_server, _securityManager, rProcess);
+    _telemetryService = new TelemetryService(_server, _esp32sveltekit, rProcess);
+    _telemetryService->begin();
+
+    httpRequestHandler = std::make_unique<HttpRequestHandler>(*_server, _securityManager);
     httpRequestHandler->begin();
 
     // Отправка начальных команд

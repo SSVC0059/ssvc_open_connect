@@ -22,3 +22,4 @@ interface/.idea/
 build
 .idea
 docs
+platformio.ini

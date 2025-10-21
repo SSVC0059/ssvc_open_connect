@@ -73,8 +73,11 @@ StateUpdateResult OpenConnectSettingsManager::update(const JsonObject& root, Ope
 OpenConnectSettingsService::OpenConnectSettingsService(
     PsychicHttpServer *server, ESP32SvelteKit *_esp32sveltekit,
     SecurityManager *_securityManager)
-    : _httpEndpoint(OpenConnectSettingsManager::read, OpenConnectSettingsManager::update,
-                    this, server, OPEN_CONNECT_SETTINGS_ENDPOINT_PATH,
+    : _httpEndpoint(OpenConnectSettingsManager::read,
+      OpenConnectSettingsManager::update,
+                    this,
+                    server,
+                    OPEN_CONNECT_SETTINGS_ENDPOINT_PATH,
                     _securityManager,
                     AuthenticationPredicates::IS_AUTHENTICATED),
       _fsPersistence(OpenConnectSettingsManager::read, OpenConnectSettingsManager::update,

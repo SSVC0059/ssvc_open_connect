@@ -23,7 +23,6 @@ const config: UserConfig = {
 				changeOrigin: true
 			},
 			// Proxying websockets ws://localhost:5173/ws -> ws://192.168.1.83/ws
-
 			'/ws': {
 				target: 'ws://10.5.1.117/',
 				changeOrigin: true,
@@ -32,6 +31,5 @@ const config: UserConfig = {
 		}
 	}
 };
-
 
 export default config;

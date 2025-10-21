@@ -1,27 +1,36 @@
-//
-// Created by demoncat on 05.05.25.
-//
-
 #include "HandlerRegistrator.h"
+/**
+*   SSVC Open Connect
+ *
+ *   A firmware for ESP32 to interface with SSVC 0059 distillation controller
+ *   via UART protocol. Features a responsive SvelteKit web interface for
+ *   monitoring and controlling the distillation process.
+ *   https://github.com/SSVC0059/ssvc_open_connect
+ *
+ *   Copyright (C) 2024 SSVC Open Connect Contributors
+ *
+ *   This software is independent and not affiliated with SSVC0059 company.
+ *   All Rights Reserved. This software may be modified and distributed under
+ *   the terms of the LGPL v3 license. See the LICENSE file for details.
+ *
+ *   Disclaimer: Use at your own risk. High voltage safety precautions required.
+ **/
+
 #define TAG "HandlerRegistrar"
 
 HandlerRegistrator::HandlerRegistrator(PsychicHttpServer& server,
                                  SecurityManager* securityManager,
-                                 TelemetryHandler& telemetryHandler,
                                  SettingsHandler& settingsHandler,
                                  CommandHandler& commandHandler,
                                  SensorHandler& sensorHandler,
-                                 MetricsHandler& metricsHandler,
                                  TelegramBotHandler& telegramBot,
                                  SubsystemHandler& subsystemHandler,
                                  OpenConnectHandler& openConnectHandler)
     : _server(server),
       _securityManager(securityManager),
-      _telemetryHandler(telemetryHandler),
       _settingsHandler(settingsHandler),
       _commandHandler(commandHandler),
       _sensorHandler(sensorHandler),
-      _metricsHandler(metricsHandler),
       _telegramBot(telegramBot),
       _subsystemHandler(subsystemHandler),
       _openConnectHandler(openConnectHandler)
@@ -30,8 +39,7 @@ HandlerRegistrator::HandlerRegistrator(PsychicHttpServer& server,
 void HandlerRegistrator::registerAllHandlers() const
 {
     ESP_LOGI(TAG, "Registering all HTTP handlers");
-    
-    registerTelemetryHandlers();
+
     registerSettingsHandlers();
     registerCommandHandlers();
     registerSensorHandlers();
@@ -41,16 +49,6 @@ void HandlerRegistrator::registerAllHandlers() const
     registerTelegramBotHandler();
 
     ESP_LOGI(TAG, "All HTTP handlers registered successfully");
-}
-
-void HandlerRegistrator::registerTelemetryHandlers() const
-{
-    _server.on("/rest/telemetry", HTTP_GET,
-              _securityManager->wrapRequest(
-                  [this](PsychicRequest* request) {
-                      return _telemetryHandler.handleRequest(request);
-                  },
-                  AuthenticationPredicates::IS_AUTHENTICATED));
 }
 
 void HandlerRegistrator::registerSettingsHandlers() const
@@ -128,7 +126,7 @@ void HandlerRegistrator::registerSubsystemHandler() const
               },
               AuthenticationPredicates::IS_AUTHENTICATED));
 
-    _server.on("/rest/subsystem/state", HTTP_PUT,
+    _server.on("/rest/subsystem", HTTP_PUT,
       _securityManager->wrapRequest(
           [](PsychicRequest* request) {
              return SubsystemHandler::state(request);

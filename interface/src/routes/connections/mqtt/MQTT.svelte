@@ -13,8 +13,8 @@
 	import Client from '~icons/tabler/robot';
 	import type { MQTTSettings, MQTTStatus } from '$lib/types/models';
 
-	let mqttSettings: MQTTSettings = $state();
-	let mqttStatus: MQTTStatus = $state();
+	let mqttSettings: MQTTSettings = $state()!;
+	let mqttStatus: MQTTStatus = $state()!;
 
 	let formField: any = $state();
 
@@ -66,7 +66,8 @@
 		host: false,
 		port: false,
 		keep_alive: false,
-		topic_length: false
+		topic_length: false,
+		rate_limit: false
 	});
 
 	async function postMQTTSettings(data: MQTTSettings) {
@@ -111,6 +112,15 @@
 			formErrors.keep_alive = false;
 		} else {
 			formErrors.keep_alive = true;
+			valid = false;
+		}
+
+		// Validate it rate limit is a number and within the right range
+		let ratelimit = Number(mqttSettings.message_interval_ms);
+		if (0 <= ratelimit && ratelimit <= 1000) {
+			formErrors.rate_limit = false;
+		} else {
+			formErrors.rate_limit = true;
 			valid = false;
 		}
 
@@ -188,7 +198,7 @@
 	{#if !page.data.features.security || $user.admin}
 		<Collapsible open={false} class="shadow-lg" icon={null} opened={() => {}} closed={() => {}}>
 			{#snippet title()}
-				<span>Change MQTT Settings</span>
+				<span>Изменение настроек MQTT</span>
 			{/snippet}
 
 			<form
@@ -205,7 +215,7 @@
 							bind:checked={mqttSettings.enabled}
 							class="checkbox checkbox-primary"
 						/>
-						Enable MQTT
+						Включение MQTT
 					</label>
 
 					<div class="hidden sm:block"></div>
@@ -252,7 +262,7 @@
 						<label class="label" for="keepalive">Keep Alive </label>
 						<label
 							for="keepalive"
-							class="input invalid:border-error invalid:border-2 {formErrors.keep_alive
+							class="input w-full invalid:border-error invalid:border-2 {formErrors.keep_alive
 								? 'border-error border-2'
 								: ''}"
 						>
@@ -272,10 +282,37 @@
 								>Must be between 1 and 600 seconds</span
 							></label
 						>
+						>
+					</div>
+					<!-- Rate Limit -->
+					<div>
+						<label class="label" for="ratelimit">Publish Message Interval</label>
+						<label
+							for="ratelimit"
+							class="input w-full invalid:border-error invalid:border-2 {formErrors.rate_limit
+								? 'border-error border-2'
+								: ''}"
+						>
+							<input
+								type="number"
+								min="0"
+								max="1000"
+								class=""
+								bind:value={mqttSettings.message_interval_ms}
+								id="ratelimit"
+								required
+							/>
+							<span class="label">Milliseconds</span>
+						</label>
+						<label for="ratelimit" class=""
+							><span class=" text-error {formErrors.rate_limit ? '' : 'hidden'}"
+								>Must be between 0 and 1000 milliseconds</span
+							></label
+						>
 					</div>
 					<!-- Clean Session -->
 					<label
-						class="label inline-flex cursor-pointer content-end justify-start gap-4 text-base mt-2"
+						class="label inline-flex cursor-pointer content-end justify-start gap-4 text-base mt-2 sm:mt-4"
 					>
 						<input
 							type="checkbox"

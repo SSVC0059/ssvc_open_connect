@@ -157,7 +157,7 @@
 		<Clock class="lex-shrink-0 mr-2 h-6 w-6 self-end" />
 	{/snippet}
 	{#snippet title()}
-		<span>Сетевое время</span>
+		<span>Network Time</span>
 	{/snippet}
 	<div class="w-full">
 		{#await getNTPStatus()}
@@ -180,7 +180,7 @@
 						/>
 					</div>
 					<div>
-						<div class="font-bold">Статус</div>
+						<div class="font-bold">Status</div>
 						<div class="text-sm opacity-75">
 							{ntpStatus.status === 1 ? 'Active' : 'Inactive'}
 						</div>
@@ -192,7 +192,7 @@
 						<Server class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">NTP Сервер</div>
+						<div class="font-bold">NTP Server</div>
 						<div class="text-sm opacity-75">
 							{ntpStatus.server}
 						</div>
@@ -204,7 +204,7 @@
 						<Clock class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">Локальное время</div>
+						<div class="font-bold">Local Time</div>
 						<div class="text-sm opacity-75">
 							{new Intl.DateTimeFormat('en-GB', {
 								dateStyle: 'long',
@@ -219,7 +219,7 @@
 						<UTC class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">Время по Гринвичу</div>
+						<div class="font-bold">UTC Time</div>
 						<div class="text-sm opacity-75">
 							{new Intl.DateTimeFormat('en-GB', {
 								dateStyle: 'long',
@@ -235,7 +235,7 @@
 						<Stopwatch class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">Время работы</div>
+						<div class="font-bold">Uptime</div>
 						<div class="text-sm opacity-75">
 							{convertSeconds(ntpStatus.uptime)}
 						</div>
@@ -248,7 +248,7 @@
 	{#if !page.data.features.security || $user.admin}
 		<Collapsible open={false} class="shadow-lg" icon={null} opened={() => {}} closed={() => {}}>
 			{#snippet title()}
-				<span>Изменение настроек NTP сервера</span>
+				<span>Change NTP Settings</span>
 			{/snippet}
 			<form
 				class="fieldset"
@@ -261,8 +261,7 @@
 						type="checkbox"
 						bind:checked={ntpSettings.enabled}
 						class="checkbox checkbox-primary"
-					/>
-					<span class="">Включение NTP Сервера</span>
+					/>Enable NTP
 				</label>
 
 				<label class="label" for="server">Server</label>
@@ -289,7 +288,7 @@
 				</select>
 
 				<div class="mt-4 place-self-end">
-					<button class="btn btn-primary" type="submit">Применить настройки</button>
+					<button class="btn btn-primary" type="submit">Apply Settings</button>
 				</div>
 			</form>
 		</Collapsible>

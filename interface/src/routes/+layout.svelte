@@ -43,8 +43,9 @@
 
 	const initSocket = () => {
 		const ws_token = page.data.features.security ? '?access_token=' + $user.bearer_token : '';
+		const ws_protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
 		socket.init(
-			`ws://${window.location.host}/ws/events${ws_token}`,
+			`${ws_protocol}://${window.location.host}/ws/events${ws_token}`,
 			page.data.features.event_use_json
 		);
 		addEventListeners();
@@ -171,12 +172,12 @@
 		<div
 			class="fixed inset-0 z-40 max-h-full max-w-full bg-black/20 backdrop-blur-sm"
 			transition:fade|global
+			onclick={() => close()}
 			role="button"
 			tabindex="0"
-			onclick={() => close()}
+			aria-label="Close modal"
 		></div>
 	{/snippet}
 </Modals>
 
 <Toast />
-

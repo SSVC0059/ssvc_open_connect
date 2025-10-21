@@ -29,8 +29,6 @@
 #define TEMP_GRAPH_ARRAY_SIZE 720
 #define PERIOD_GRAPH_SEC 20
 
-static auto TAG = "RectificationProcess";
-
 extern portMUX_TYPE ssvcMux;
 
 class RectificationProcess
@@ -126,8 +124,8 @@ public:
                  OpenConnectSettingsService& openConnectSettingsService);
 
 
-  std::string getTelemetry();
-  bool getStatus(JsonVariant temperBuffer);
+  void writeTelemetryTo(JsonVariant telemetry);
+
   static std::string translateRectificationStage(const std::string& stageStr);
 
   Metrics& getMetrics();
@@ -189,6 +187,7 @@ private:
 
   static bool isNonEmptyString(const char* str);
 
+  static constexpr auto TAG = "RectificationProcess";
 };
 
 #endif // RECTIFICATION_PROCESS_H

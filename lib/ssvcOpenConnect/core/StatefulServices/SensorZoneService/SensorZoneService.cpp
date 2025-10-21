@@ -80,10 +80,6 @@ StateUpdateResult SensorZoneState::update(const JsonObject& root, SensorZoneStat
         ESP_LOGV(TAG, "Skipping deletion logic: SensorManager is empty (likely during early boot).");
     }
 
-    // Логируем результат работы update-метода
-    ESP_LOGV(TAG, "Finished processing incoming settings. Deleted: %d. Result: %s",
-             deleted_count, changed ? "CHANGED" : "UNCHANGED");
-
     if (changed) return StateUpdateResult::CHANGED;
     return StateUpdateResult::UNCHANGED;
 }

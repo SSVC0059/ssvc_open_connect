@@ -115,7 +115,7 @@ export async function saveTelegramSettings(settings: TelegramConfig): Promise<bo
 
 export async function setSubsystemState(states: Record<string, boolean>): Promise<boolean> {
 	const response = await apiFetch<{ success: boolean }>(
-		'/rest/subsystem/state',
+		'/rest/subsystem',
 		'PUT',
 		states
 	);

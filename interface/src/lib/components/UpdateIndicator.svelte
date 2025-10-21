@@ -17,7 +17,7 @@
 
 	let { update = $bindable(false) }: Props = $props();
 
-	let firmwareVersion = $state("");
+	let firmwareVersion: string = $state('');
 	let firmwareDownloadLink: string;
 
 	async function getGithubAPI() {
@@ -31,6 +31,7 @@
 				}
 			});
 			if (response.status !== 200) {
+				notifications.error('Failed to fetch latest release from GitHub.', 5000);
 				throw new Error(`Failed to fetch latest release from ${githubUrl}`);
 			}
 			const results = await response.json();
@@ -54,7 +55,7 @@
 				}
 			}
 		} catch (error) {
-			console.error('Error:', error);
+			console.warn(error);
 		}
 	}
 
@@ -87,11 +88,11 @@
 
 	function confirmGithubUpdate(url: string) {
 		modals.open(ConfirmDialog, {
-			title: 'Подтвердите установку новой прошивки на устройство',
-			message: 'Вы уверены, что хотите перезаписать существующую прошивку новой?',
+			title: 'Confirm flashing new firmware to the device',
+			message: 'Are you sure you want to overwrite the existing firmware with a new one?',
 			labels: {
-				cancel: { label: 'Отменить', icon: Cancel },
-				confirm: { label: 'Обновить', icon: CloudDown }
+				cancel: { label: 'Abort', icon: Cancel },
+				confirm: { label: 'Update', icon: CloudDown }
 			},
 			onConfirm: () => {
 				postGithubDownload(url);
@@ -112,6 +113,6 @@
 			class="indicator-item indicator-top indicator-center badge badge-info badge-xs top-2 scale-75 lg:top-1"
 			>{firmwareVersion}</span
 		>
-		<Firmware class="inline-block h-7 w-7" />
+		<Firmware class="h-7 w-7" />
 	</button>
 {/if}

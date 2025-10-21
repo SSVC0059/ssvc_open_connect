@@ -35,6 +35,7 @@
 #include "components/subsystem/ThermalSubsystem.h"
 #include "components/subsystem/SettingsSubsystem.h"
 #include "commons/commons.h"
+#include "StatefulServices/TelemetryService/TelemetryService.h"
 
 /**
  * @def TASK_AT_COMMAND_SEND_STACK_PERIOD
@@ -79,18 +80,23 @@ private:
   SecurityManager* _securityManager = nullptr;
 
   SsvcConnector& _ssvcConnector = SsvcConnector::getConnector();
-  OpenConnectSettingsService* _openConnectSettingsService = nullptr;
+
   NotificationSubscriber* _notificationSubscriber = nullptr;
 
+  OpenConnectSettingsService* _openConnectSettingsService = nullptr;
   AlarmThresholdService* _alarmThresholdService = nullptr;
   SensorZoneService* _sensorZoneService = nullptr;
+  TelemetryService* _telemetryService = nullptr;
+
   AlarmMonitor* _alarmMonitor = nullptr;
 
   SsvcSettings& _ssvcSettings = SsvcSettings::init();
   RectificationProcess& rProcess = RectificationProcess::rectController();
   SensorManager& _sensorManager = SensorManager::getInstance();
 
-  std::unique_ptr<HttpRequestHandler> httpRequestHandler ;
+
+  std::unique_ptr<HttpRequestHandler> httpRequestHandler = nullptr;
+
 
   static constexpr auto TAG = "SsvcOpenConnect";
 

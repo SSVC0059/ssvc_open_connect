@@ -7,8 +7,9 @@
 	import OTA from '~icons/tabler/file-upload';
 	import Warning from '~icons/tabler/alert-triangle';
 	import Cancel from '~icons/tabler/x';
+    import {openModal} from "svelte-modals/legacy";
 
-	let files: FileList = $state();
+	let files: FileList | undefined = $state();
 
 	async function uploadBIN() {
 		try {

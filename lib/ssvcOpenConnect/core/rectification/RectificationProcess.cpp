@@ -658,136 +658,97 @@ void RectificationProcess::endEventHandler(const std::string& currentEvent)
   }
 }
 
-bool RectificationProcess::getStatus(JsonVariant status)
-{
-  if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE)
-  {
-    status["stage"] = stageToString(currentStage);
-    status["status"] = stateToString(currentProcessStatus);
-    status["startTime"] = startTime;
-    status["endTime"] = endTime;
-
-    const JsonObject stages = status["stages"].to<JsonObject>();
-    for (auto& rectificationStageState : rectificationStageStates)
-    {
-      auto& stage =
-        rectificationStageState.first; 
-      const auto& state =
-        rectificationStageState.second;
-      if (stage != RectificationStage::EMPTY)
-      {
-        stages[stageToString(stage)] = stateToString(state);
-      }
-    }
-
-    xSemaphoreGive(mutex);
-    char buffer[512];
-    const size_t len = serializeJson(status, buffer, sizeof(buffer));
-
-    if (len >= sizeof(buffer))
-    {
-      ESP_LOGV(TAG, "JSON truncated! Needed %d bytes", len);
-    }
-    ESP_LOGV(TAG, "JSON: %.*s", len, buffer);
-    return true;
-  }
-  return false;
-}
-
 RectificationProcess::Metrics& RectificationProcess::getMetrics()
 {
   return  metric;
 }
 
-std::string RectificationProcess::getTelemetry()
+void RectificationProcess::writeTelemetryTo(const JsonVariant telemetry)
 {
-  if (xSemaphoreTake(mutex, portMAX_DELAY))
-  {
-    JsonDocument _message;
 
-    _message["type"] = metric.type;
+    telemetry["type"] = metric.type;
 
     if (pid != 0)
     {
-      _message["pid"] = pid;
+      telemetry["pid"] = pid;
     }
 
     if (strlen(startTime) > 0)
     {
-      _message["start_time"] = startTime;
+      telemetry["start_time"] = startTime;
     }
     if (strlen(endTime) > 0)
     {
-      _message["end_time"] = endTime;
+      telemetry["end_time"] = endTime;
     }
     if (metric.tank_mmhg != 0)
     {
-      _message["tank_mmhg"] = metric.tank_mmhg;
+      telemetry["tank_mmhg"] = metric.tank_mmhg;
     }
 
     if (metric.tp1_target != 0)
     {
-      _message["tp1_target"] = metric.tp1_target;
+      telemetry["tp1_target"] = metric.tp1_target;
     }
     if (metric.tp2_target != 0)
     {
-      _message["tp2_target"] = metric.tp2_target;
+      telemetry["tp2_target"] = metric.tp2_target;
     }
 
     if (!metric.countdown.empty())
     {
-      _message["countdown"] = metric.countdown;
+      telemetry["countdown"] = metric.countdown;
     }
 
     if (!metric.release.empty())
     {
-      _message["release"] = metric.release;
+      telemetry["release"] = metric.release;
     }
 
     if (!metric.time.empty())
     {
-      _message["time"] = metric.time;
+      telemetry["time"] = metric.time;
     }
 
     if (metric.open > 0)
     {
-      _message["open"] = metric.open;
+      telemetry["open"] = metric.open;
     }
     if (metric.period > 0)
     {
-      _message["period"] = metric.period;
+      telemetry["period"] = metric.period;
     }
 
     if (metric.period > 0)
     {
       const int valveOpen = static_cast<int>(
         std::round((100.0 * metric.open / metric.period) * 100.0));
-      _message["valveOpen"] = valveOpen;
+      telemetry["valveOpen"] = valveOpen;
       int volumeSpeed = 0;
       if (calculateVolumeSpeed(valveOpen, volumeSpeed))
       {
-        _message["volumeSpeed"] = volumeSpeed;
+        telemetry["volumeSpeed"] = volumeSpeed;
       }
     }
     if (metric.v1 > 0)
     {
-      _message["v1"] = metric.v1;
+      telemetry["v1"] = metric.v1;
     }
 
     if (metric.v2 > 0)
     {
-      _message["v2"] = metric.v2;
+      telemetry["v2"] = metric.v2;
     }
 
     if (metric.v3 > 0)
     {
-      _message["v3"] = metric.v3;
+      telemetry["v3"] = metric.v3;
     }
 
-    _message["stop"] = metric.stop;
-    _message["stops"] = metric.stops;
+    telemetry["stop"] = metric.stop;
+    telemetry["stops"] = metric.stops;
 
-    const JsonObject common = _message["common"].to<JsonObject>();
+    const JsonObject common = telemetry["common"].to<JsonObject>();
     if (metric.common.mmhg)
     {
       common["mmhg"] = metric.common.mmhg;
@@ -814,11 +775,11 @@ std::string RectificationProcess::getTelemetry()
     common["overclockingOn"] = isOverclockingOn();
 
 
-    _message["hysteresis"] = metric.hysteresis;
+    telemetry["hysteresis"] = metric.hysteresis;
 
     // TODO Вопрос по отправке каждый раз данных по уже прошедшим отборам сомнительный
     // Пока оставлю так как есть. Затем возможно переделаю. На получение через POST
-    const JsonObject volume = _message["volume"].to<JsonObject>();
+    const JsonObject volume = telemetry["volume"].to<JsonObject>();
     volume["heads"]       = flowVolumeValves[RectificationStage::HEADS];
     volume["late_heads"]  = flowVolumeValves[RectificationStage::LATE_HEADS];
     volume["hearts"]      = flowVolumeValves[RectificationStage::HEARTS];
@@ -827,37 +788,34 @@ std::string RectificationProcess::getTelemetry()
     // Сообщение о событии и прочее уведомление
     if (metric.event != RectificationEvent::EMPTY)
     {
-      _message["event"] = rectificationEventToString(metric.event);
+      telemetry["event"] = rectificationEventToString(metric.event);
       // TODO В информацию пока заводим только обработку event. В
       // последствии это нужно будет расширить
-      _message["info"] = rectificationEventToDescription(metric.event);
+      telemetry["info"] = rectificationEventToDescription(metric.event);
     }
 
     if (metric.alc != 0)
     {
-      _message["alc"] = metric.alc;
+      telemetry["alc"] = metric.alc;
     }
-    std::string json;
-    serializeJson(_message, json);
-    ESP_LOGV("RECTIFICATION", "Отладка json: %s", json.c_str());
-    xSemaphoreGive(mutex);
-    return json;
-  }
-  else
-  {
-    ESP_LOGE(TAG, "Failed to take mutex");
-    return "{}";
-  }
+
 }
 
 bool RectificationProcess::isHeatingOn() const
 {
+  // Добавляем проверку указателя
+  if (_ssvcSettings == nullptr) {
+    return false;
+  }
   const bool relay_inverted = _ssvcSettings->getRelayInverted();
   return relay_inverted ? !metric.common.relay : metric.common.relay;
 }
 
 bool RectificationProcess::isOverclockingOn() const
 {
+  if (_ssvcSettings == nullptr) {
+    return false;
+  }
   const bool signal_inverted = _ssvcSettings->getSignalInverted();
   return signal_inverted ? metric.common.signal : !metric.common.signal;
 }
@@ -890,8 +848,8 @@ void RectificationProcess::recalculateFlowVolume(const int v1, const int v2, con
 
   for (auto& _flowVolumeValves : flowVolumeValves)
   {
-    auto& stage = _flowVolumeValves.first; 
-    auto& _value =
+    auto& stage = _flowVolumeValves.first;
+    const auto& _value =
       _flowVolumeValves.second; 
     ESP_LOGV("Volume", "Processing stage: %s, current value: %d",
              stageToString(stage).c_str(), _value);

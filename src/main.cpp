@@ -14,7 +14,7 @@ EventGroupHandle_t eventGroup = xEventGroupCreate();
 
 PsychicHttpServer server;
 
-ESP32SvelteKit esp32sveltekit(&server, 120);
+ESP32SvelteKit esp32sveltekit(&server, 130);
 StatusLed statusLed(&esp32sveltekit);
 
 void setup() {
