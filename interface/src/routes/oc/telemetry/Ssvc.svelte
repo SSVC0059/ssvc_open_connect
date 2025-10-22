@@ -1,15 +1,21 @@
 <script lang="ts">
 		import RectImg from '$lib/components/Telemetry/RectImg.svelte';
 		import type { RectStatus, SsvcOpenConnectMessage } from '$lib/types/ssvc.ts';
-		import { fetchSensorsTemperatureByZone, fetchStatus, fetchTelemetry } from '$lib/api/ssvcApi';
+        import {
+            fetchAlarmThresholds,
+            fetchSensorsTemperatureByZone,
+            fetchStatus,
+            fetchTelemetry
+        } from '$lib/api/ssvcApi';
 		import Control from '$lib/components/Telemetry/Control.svelte';
 		import ValveParameters from '$lib/components/Telemetry/ValveParameters.svelte';
 		import { getDescriptionStage, getStageDescription } from '$lib/utils/ssvcHelper';
 		import ThermalSensors from '$lib/components/Telemetry/ThermalSensors.svelte';
-		import type { TemperatureResponse } from '$lib/types/OCSettings';
+        import type {AlarmThresholdsState, TemperatureResponse} from '$lib/types/Sensors';
 
 		let data = $state<SsvcOpenConnectMessage | null>();
 		let temperatureResponse = $state<TemperatureResponse | null>();
+        let alarmThresholds = $state<AlarmThresholdsState | null>();
 
 		let telemetry = $derived(data?.telemetry)
 		let status = $derived(data?.status)
@@ -22,6 +28,15 @@
 
 		let telemetryCounter = 0;
 		let statusCounter = 0;
+
+        const loadAlarmThresholds = async () => {
+            try {
+                alarmThresholds = await fetchAlarmThresholds();
+            } catch (err) {
+                if (err instanceof Error) {
+                }
+            }
+        };
 
 		// Функция для перезагрузки данных
 		const reloadSensors = async () => {
@@ -84,6 +99,7 @@
 
 			loadTelemetry();
 			reloadSensors()
+            loadAlarmThresholds();
 
 			const telemetryInt = setInterval(() => loadTelemetry(), BASE_INTERVAL);
 			const thermal_sensors = setInterval(() => reloadSensors(), TEMPERATURE_REQUEST_INTERVAL);
@@ -148,7 +164,7 @@
 								</div>
 							{/if}
 							{#if temperatureResponse}
-								<ThermalSensors temperatureResponse={temperatureResponse}/>
+								<ThermalSensors temperatureResponse={temperatureResponse} alarmThresholds={alarmThresholds}/>
 							{/if}
 						</div>
 					</div>
@@ -160,7 +176,7 @@
 					<h2 class="panel-title">{getStageDescription(telemetry? telemetry.type : "")}</h2>
 						{#if telemetry && temperatureResponse}
 							<div class="svg-container">
-								<RectImg telemetry={telemetry} temperatureResponse={temperatureResponse}/>
+								<RectImg telemetry={telemetry} temperatureResponse={temperatureResponse} alarmThresholds={alarmThresholds}/>
 							</div>
 						{/if}
 				</div>

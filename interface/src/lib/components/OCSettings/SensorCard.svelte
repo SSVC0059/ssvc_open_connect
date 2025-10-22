@@ -1,21 +1,18 @@
 <script lang="ts">
-	import type { SensorData } from '$lib/types/OCSettings';
-
 	import {
 		updateAlarmThresholds,
-		updateSensorThresholds,
 		updateSensorZone
 	} from '$lib/api/ssvcApi';
 	import { availableZones } from '$lib/components/OCSettings/OSSettingsHelper';
 	import { Spinner } from 'flowbite-svelte';
-	import type { AlarmThresholdsState, ThresholdSettings } from '$lib/types/ssvc';
+	import type { AlarmThresholdsState, ThresholdSettings, SensorReading } from '$lib/types/Sensors';
 
 	let {
 		sensor,
 		onUpdate,
 		alarmThresholdsState
 	}: {
-		sensor: SensorData;
+		sensor: SensorReading;
 		onUpdate: () => void;
 		alarmThresholdsState: AlarmThresholdsState | null;
 	} = $props();
@@ -83,7 +80,7 @@
 
 
 	// Инициализируем пороги при начале редактирования
-	function startEditing(sensor: SensorData) {
+	function startEditing(sensor: SensorReading) {
 		editingSensor = sensor.address;
 		error = null;
 
@@ -105,7 +102,6 @@
 	}
 
 	// --- Функция: Сохранение порогов ---
-	// --- Функция: Сохранение порогов ---
 	async function saveThresholds(address: string) {
 		// ... (Валидация остается прежней)
 		if (dangerousThreshold >= criticalThreshold) {
@@ -118,12 +114,12 @@
 
 		try {
 			// 1. Создаем обновленный объект ThresholdSettings для текущего сенсора
-			const updatedSettings: ThresholdSettings = {
-				enabled: monitoringEnabled,
-				min: minThreshold,
-				dangerous: dangerousThreshold,
-				critical: criticalThreshold
-			};
+            const updatedSettings: ThresholdSettings = {
+                enabled: monitoringEnabled,
+                min: minThreshold,
+                dangerous: dangerousThreshold,
+                critical: criticalThreshold
+            };
 
 			// 2. Клонируем текущее состояние порогов, чтобы внести изменение
 			const newState: AlarmThresholdsState = {

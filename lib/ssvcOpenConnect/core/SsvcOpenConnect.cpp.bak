@@ -40,28 +40,20 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     _openConnectSettingsService = new OpenConnectSettingsService(_server, _esp32sveltekit, _securityManager);
     _openConnectSettingsService->begin();
 
-    // сенсоры
     _alarmThresholdService = new AlarmThresholdService(_server, _esp32sveltekit);
     _alarmThresholdService->begin();
-
-    _sensorConfigService = new SensorConfigService(_server, _esp32sveltekit);
-    _sensorConfigService->begin();
 
     _sensorDataService = new SensorDataService(_server, _esp32sveltekit);
     SensorDataService::setInstance(_sensorDataService);
     _sensorDataService->begin();
 
-    // Регистрация подсистемы OneWireThermalSubsystem для периодического опроса датчиков
-    SensorCoordinator::getInstance().registerPollingSubsystem(
-        &OneWireThermalSubsystem::getInstance()
-    );
-    SensorCoordinator::getInstance().startPolling(SENSOR_POLL_INTERVAL_MS);
-
-
     _notificationSubscriber = new NotificationSubscriber(_esp32sveltekit);
 
     AlarmMonitor::getInstance().initialize(_alarmThresholdService);
 
+    _sensorConfigService = new SensorConfigService(_server, _esp32sveltekit);
+    _sensorConfigService->begin();
+    
     rProcess.begin(
       _ssvcConnector, _ssvcSettings, *_openConnectSettingsService);
 
@@ -115,13 +107,21 @@ void SsvcOpenConnect::subsystemManager()
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] SubsystemManager instance obtained");
 
     // Запуск менеджера работы с датчиками
-
+    SensorManager manager = SensorManager::getInstance();
 
     // Регистрация подсистем
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] Registering subsystems...");
     SubsystemManager::instance().registerSubsystem<SettingsSubsystem>();
 
     SubsystemManager::instance().registerSubsystem<ThermalSubsystem>();
+
+    AlarmMonitor::getInstance().checkAllSensors();
+
+    // Регистрация подсистемы OneWireThermalSubsystem для периодического опроса датчиков
+    SensorCoordinator::getInstance().registerPollingSubsystem(
+        &OneWireThermalSubsystem::getInstance()
+    );
+    SensorCoordinator::getInstance().startPolling(SENSOR_POLL_INTERVAL_MS);
 
     #if FT_ENABLED(FT_TELEGRAM_BOT)
         SubsystemManager::instance().registerSubsystem<TelegramBotSubsystem>();

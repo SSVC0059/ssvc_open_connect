@@ -23,18 +23,18 @@
 #define OPEN_CONNECT_SETTINGS_ENDPOINT_PATH "/rest/oc_settings"
 #define OPEN_CONNECT_SETTINGS_FILE "/config/Settings.json"
 
-class OpenConnectSettingsManager
+class OpenConnectSettings
 {
 public:
     int pid;
     std::string sensorsConfig;
 
-    static void read(const OpenConnectSettingsManager& settings, const JsonObject& root);
-    static StateUpdateResult update(const JsonObject& root, OpenConnectSettingsManager& settings);
+    static void read(const OpenConnectSettings& settings, const JsonObject& root);
+    static StateUpdateResult update(const JsonObject& root, OpenConnectSettings& settings);
 
 };
 
-class OpenConnectSettingsService : public StatefulService<OpenConnectSettingsManager>
+class OpenConnectSettingsService : public StatefulService<OpenConnectSettings>
 {
 public:
     OpenConnectSettingsService(PsychicHttpServer* server,
@@ -46,8 +46,8 @@ public:
     void begin();
 
 private:
-    HttpEndpoint<OpenConnectSettingsManager> _httpEndpoint;
-    FSPersistence<OpenConnectSettingsManager> _fsPersistence;
+    HttpEndpoint<OpenConnectSettings> _httpEndpoint;
+    FSPersistence<OpenConnectSettings> _fsPersistence;
 
     static void onConfigUpdated();
 };

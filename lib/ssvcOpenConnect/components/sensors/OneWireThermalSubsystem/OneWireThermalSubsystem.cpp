@@ -26,7 +26,7 @@ OneWireThermalSubsystem& OneWireThermalSubsystem::getInstance() {
 }
 
 bool OneWireThermalSubsystem::initialize() {
-    ESP_LOGV(TAG, "Initializing OneWire Thermal Subsystem on pin %d.", ONEWIRE_PIN);
+    ESP_LOGI(TAG, "Initializing OneWire Thermal Subsystem on pin %d.", ONEWIRE_PIN);
 
     // 1. Инициализация аппаратных ресурсов
     oneWireBus = new OneWire(ONEWIRE_PIN);
@@ -34,16 +34,16 @@ bool OneWireThermalSubsystem::initialize() {
     
     // Начало работы DallasTemperature
     dallasTemp->begin();
-    ESP_LOGV(TAG, "DallasTemperature started successfully.");
+    ESP_LOGI(TAG, "DallasTemperature started successfully.");
 
     // 2. Поиск и регистрация датчиков
     discoverAndRegisterSensors();
 
     const auto* ssvcConnect = &SsvcOpenConnect::getInstance();
 
-    if (auto* zoneService = ssvcConnect->getSensorZoneService()) {
+    if (auto* zoneService = ssvcConnect->getSensorConfigService()) {
 
-        zoneService->read([&](const SensorZoneState& state) {
+        zoneService->read([&](const SensorConfigState& state) {
             ESP_LOGI(TAG, "[ZONE_CONFIG] Loaded zones in memory: %zu entries.", state.sensor_zones.size());
             for (const auto& pair : state.sensor_zones) {
                 ESP_LOGI(TAG, "[ZONE_CONFIG] Address: %s, Zone: %d",
@@ -62,10 +62,14 @@ bool OneWireThermalSubsystem::initialize() {
     return true;
 }
 
+const char* OneWireThermalSubsystem::getName() const {
+    return "OW_THERMAL_SUBSYS";
+}
+
 void OneWireThermalSubsystem::discoverAndRegisterSensors(){
     // 1. Поиск
     const int deviceCount = dallasTemp->getDeviceCount();
-    ESP_LOGV(TAG, "Starting sensor discovery. Found %d DS18B20 devices on bus.", deviceCount);
+    ESP_LOGI(TAG, "Starting sensor discovery. Found %d DS18B20 devices on bus.", deviceCount);
 
     AbstractSensor::Address addr;
     SensorManager& manager = SensorManager::getInstance();
@@ -90,7 +94,7 @@ void OneWireThermalSubsystem::discoverAndRegisterSensors(){
             char nameBuffer[20];
             sprintf(nameBuffer, "DS_%s_%d", lastFourDigits.c_str(), i + 1);
 
-            ESP_LOGV(TAG, "Device found: %s at index %d.", nameBuffer, i);
+            ESP_LOGI(TAG, "Device found: %s at index %d.", nameBuffer, i);
 
             // 2. Создание и регистрация
             auto newSensor = new DS18B20Sensor(
@@ -106,12 +110,12 @@ void OneWireThermalSubsystem::discoverAndRegisterSensors(){
             // Сохраняем указатель в специфичном списке
             ds18b20Sensors.push_back(newSensor);
             
-            ESP_LOGV(TAG, "Sensor %s successfully registered and added to poll list.", nameBuffer);
+            ESP_LOGI(TAG, "Sensor %s successfully registered and added to poll list.", nameBuffer);
         } else {
             ESP_LOGW(TAG, "Could not get address for device at index %d.", i);
         }
     }
-    ESP_LOGV(TAG, "Sensor discovery finished. %zu DS18B20 sensors registered.", ds18b20Sensors.size());
+    ESP_LOGI(TAG, "Sensor discovery finished. %zu DS18B20 sensors registered.", ds18b20Sensors.size());
 }
 
 
@@ -120,12 +124,11 @@ void OneWireThermalSubsystem::discoverAndRegisterSensors(){
 void OneWireThermalSubsystem::poll() {
     // 1. Фаза 1: Запрос температуры (специфика 1-Wire)
     if (dallasTemp) {
-        ESP_LOGV(TAG, "Polling cycle started. Requesting temperatures for all %zu devices.", ds18b20Sensors.size());
-        
-        // Запускает преобразование (блокировка на ~750мс для 12-бит)
+        ESP_LOGI(TAG, "Polling cycle started. Requesting temperatures for all %zu devices.", ds18b20Sensors.size());
+
         dallasTemp->requestTemperatures(); 
         
-        ESP_LOGV(TAG, "Temperature conversion initiated/completed.");
+        ESP_LOGI(TAG, "Temperature conversion initiated/completed.");
     }
 
     // 2. Фаза 2: Считывание и обновление состояния
@@ -140,14 +143,12 @@ void OneWireThermalSubsystem::poll() {
         const float temp = dsSensor->getData();
         const std::string address = SensorManager::addressToString(dsSensor->getAddress());
         
-        ESP_LOGV(TAG, "Read temp %.2f C for sensor %s.", temp, address.c_str());
+        ESP_LOGI(TAG, "Read temp %.2f C for sensor %s.", temp, address.c_str());
         
         if (temp == DEVICE_DISCONNECTED_C) {
              ESP_LOGW(TAG, "Sensor %s returned DEVICE_DISCONNECTED_C (Error: %.2f).", address.c_str(), temp);
         }
         readCount++;
     }
-    ESP_LOGV(TAG, "Polling cycle finished. %d sensor values processed.", readCount);
+    ESP_LOGI(TAG, "Polling cycle finished. %d sensor values processed.", readCount);
 }
-
-// ... (Деструктор и остальные методы PollingSubsystem.cpp) ...

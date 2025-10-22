@@ -1,4 +1,4 @@
-#include "SensorZoneService.h"
+#include "SensorConfigService.h"
 
 /**
 *   SSVC Open Connect
@@ -17,14 +17,14 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
-void SensorZoneState::read(const SensorZoneState& state, const JsonObject& root) {
+void SensorConfigState::read(const SensorConfigState& state, const JsonObject& root) {
     // Создаем вложенный объект "zones"
     const auto zones_obj = root["zones"].to<JsonObject>();
     for (const auto& pair : state.sensor_zones) {
         zones_obj[pair.first] = static_cast<int>(pair.second);
     }
 }
-StateUpdateResult SensorZoneState::update(const JsonObject& root, SensorZoneState& state){
+StateUpdateResult SensorConfigState::update(const JsonObject& root, SensorConfigState& state){
 
     // Определяем фазу загрузки: если SensorManager пуст, то это, скорее всего, ранний boot.
     const bool isEarlyBoot = SensorManager::getInstance().getRegisteredSensorCount() == 0;
@@ -40,11 +40,30 @@ StateUpdateResult SensorZoneState::update(const JsonObject& root, SensorZoneStat
     // 2. Обновление/добавление зон
     for (JsonPair kv : zones) {
         const std::string addr_str = kv.key().c_str();
+        auto newZone = SensorZone::UNKNOWN;
+        bool validZone = false;
+
 
         // Проверка: значение должно быть целым числом (Zone ID)
         if (kv.value().is<int>()) {
-            const SensorZone newZone = static_cast<SensorZone>(kv.value().as<int>());
+            // Вариант 1: Пришел числовой ID (обратная совместимость)
+            newZone = static_cast<SensorZone>(kv.value().as<int>());
+            validZone = true;
+        } else if (kv.value().is<const char*>()) {
+            // Вариант 2: Пришло строковое имя (удобный формат)
+            const std::string zoneName = kv.value().as<const char*>();
+            try {
+                // Используем существующий SensorZoneHelper (или SensorConfigHelper)
+                newZone = SensorZoneHelper::fromString(zoneName);
+                validZone = true;
+            } catch (const std::invalid_argument& e) {
+                // Логгирование ошибки, если строка зоны недействительна
+                ESP_LOGW(TAG, "Invalid zone name received for %s: %s",
+                         addr_str.c_str(), zoneName.c_str());
+            }
+        }
 
+        if (validZone) {
             // Проверка на фактическое изменение перед установкой 'changed = true'
             if (state.sensor_zones.count(addr_str) == 0 || state.sensor_zones.at(addr_str) != newZone) {
                 state.sensor_zones[addr_str] = newZone;
@@ -84,7 +103,7 @@ StateUpdateResult SensorZoneState::update(const JsonObject& root, SensorZoneStat
     return StateUpdateResult::UNCHANGED;
 }
 
-void SensorZoneState::applyZonesToSensors() const {
+void SensorConfigState::applyZonesToSensors() const {
     const SensorManager& sm = SensorManager::getInstance();
     int applied_count = 0;
 
@@ -105,12 +124,12 @@ void SensorZoneState::applyZonesToSensors() const {
     ESP_LOGV(TAG, "[ZONE_APPLY] Applied %d saved zones to sensors.", applied_count);
 }
 
-bool SensorZoneService::setZoneForSensor(const std::string& addressStr, SensorZone newZone) {
+bool SensorConfigService::setZoneForSensor(const std::string& addressStr, SensorZone newZone) {
 
     // КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Добавляем originId
     const String originId = "HTTP_ZONE_UPDATE";
 
-    const StateUpdateResult result = this->update([&](SensorZoneState& state) {
+    const StateUpdateResult result = this->update([&](SensorConfigState& state) {
 
         // 1. Проверяем, изменилась ли зона
         if (state.sensor_zones.count(addressStr) &&

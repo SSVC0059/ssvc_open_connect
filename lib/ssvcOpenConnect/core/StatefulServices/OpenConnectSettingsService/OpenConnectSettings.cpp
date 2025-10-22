@@ -1,4 +1,4 @@
-#include "OpenConnectSettingsManager.h"
+#include "OpenConnectSettings.h"
 
 /**
 *   SSVC Open Connect
@@ -17,7 +17,7 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
-void OpenConnectSettingsManager::read(const OpenConnectSettingsManager& settings, const JsonObject& root)
+void OpenConnectSettings::read(const OpenConnectSettings& settings, const JsonObject& root)
 {
   ESP_LOGI("OpenConnectSettings", "Reading settings from JSON");
   if (settings.pid)
@@ -30,7 +30,7 @@ void OpenConnectSettingsManager::read(const OpenConnectSettingsManager& settings
   }
 }
 
-StateUpdateResult OpenConnectSettingsManager::update(const JsonObject& root, OpenConnectSettingsManager& settings)
+StateUpdateResult OpenConnectSettings::update(const JsonObject& root, OpenConnectSettings& settings)
 {
   ESP_LOGI("OpenConnectSettingsManager", "Updating settings from JSON");
 
@@ -73,14 +73,14 @@ StateUpdateResult OpenConnectSettingsManager::update(const JsonObject& root, Ope
 OpenConnectSettingsService::OpenConnectSettingsService(
     PsychicHttpServer *server, ESP32SvelteKit *_esp32sveltekit,
     SecurityManager *_securityManager)
-    : _httpEndpoint(OpenConnectSettingsManager::read,
-      OpenConnectSettingsManager::update,
+    : _httpEndpoint(OpenConnectSettings::read,
+      OpenConnectSettings::update,
                     this,
                     server,
                     OPEN_CONNECT_SETTINGS_ENDPOINT_PATH,
                     _securityManager,
                     AuthenticationPredicates::IS_AUTHENTICATED),
-      _fsPersistence(OpenConnectSettingsManager::read, OpenConnectSettingsManager::update,
+      _fsPersistence(OpenConnectSettings::read, OpenConnectSettings::update,
                      this, _esp32sveltekit->getFS(), OPEN_CONNECT_SETTINGS_FILE)
 
 {

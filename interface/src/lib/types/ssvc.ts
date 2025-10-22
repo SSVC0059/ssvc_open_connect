@@ -147,14 +147,3 @@ export type SendCommandResponse = {
 	success: boolean;
 	message: string;
 }
-
-export type AlarmThresholdsState =  {
-	thresholds: Record<string, ThresholdSettings>;
-}
-
-export type ThresholdSettings = {
-	enabled: boolean;
-	min: number;
-	dangerous: number;
-	critical: number;
-}

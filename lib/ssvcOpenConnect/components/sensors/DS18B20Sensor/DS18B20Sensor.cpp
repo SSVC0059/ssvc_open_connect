@@ -53,11 +53,11 @@ void DS18B20Sensor::readValue() {
     lastReading = dallasSensors->getTempC(address);
     
     if (lastReading == DEVICE_DISCONNECTED_C) {
-        ESP_LOGI(TAG, "Sensor %s (%s) read failed. Value: %.2f.",
+        ESP_LOGV(TAG, "Sensor %s (%s) read failed. Value: %.2f.",
                  getName().c_str(), addressStr.c_str(), lastReading);
         this->_dataValid = false;
     } else {
-        ESP_LOGI(TAG, "Sensor %s (%s) updated. New temperature: %.2f C.",
+        ESP_LOGV(TAG, "Sensor %s (%s) updated. New temperature: %.2f C.",
                  getName().c_str(), addressStr.c_str(), lastReading);
         this->_dataValid = true;
     }
@@ -69,7 +69,7 @@ void DS18B20Sensor::readValue() {
   */
 float DS18B20Sensor::getData() const {
     // При получении данных часто достаточно уровня DEBUG
-    ESP_LOGI(TAG, "Returning last reading (%.2f C) for sensor %s.",
+    ESP_LOGV(TAG, "Returning last reading (%.2f C) for sensor %s.",
              lastReading, getName().c_str());
              
     return lastReading;

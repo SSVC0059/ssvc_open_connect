@@ -41,9 +41,6 @@ public:
 
         if (!_enabled) {
             ESP_LOGI("ThermalSubsystem", "Enabling thermal subsystem");
-            // Запускаем сбор данных с датчиков
-            OneWireThermalSubsystem::getInstance().begin();
-            AlarmMonitor::getInstance().checkAllSensors();
             _enabled = true;
         }
     }

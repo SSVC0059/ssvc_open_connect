@@ -6,7 +6,7 @@
 	import { focusTrap } from 'svelte-focus-trap';
 	import { fly } from 'svelte/transition';
 	import type { SsvcOpenConnectMessage } from '$lib/types/ssvc';
-	import type { SensorsData } from '$lib/types/OCSettings';
+	import type { SensorsData } from '$lib/types/Sensors';
 	import { fetchTelemetry, updateSetting } from '$lib/api/ssvcApi';
 	import { notifications } from '$lib/components/toasts/notifications';
 

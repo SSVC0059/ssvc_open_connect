@@ -20,7 +20,7 @@
 
 #include "map"
 #include "ArduinoJson.h"
-#include "core/StatefulServices/OpenConnectSettings/OpenConnectSettingsManager.h"
+#include "core/StatefulServices/OpenConnectSettingsService/OpenConnectSettings.h"
 #include "core/SsvcCommandsQueue.h"
 #include "core/SsvcConnector.h"
 #include "core/SsvcSettings/SsvcSettings.h"

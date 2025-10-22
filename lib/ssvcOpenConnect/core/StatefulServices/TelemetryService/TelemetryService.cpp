@@ -42,13 +42,22 @@ void TelemetryService::vUpdateTimerCallback(TimerHandle_t xTimer)
 TelemetryService::TelemetryService(PsychicHttpServer *server,
                                     ESP32SvelteKit* sveltekit,
                                    RectificationProcess& rProcess)
-    : _rProcess(rProcess),
-      _httpEndpoint(TelemetryState::read,
+    :   _rProcess(rProcess),
+        _httpEndpoint(TelemetryState::read,
                     TelemetryState::update,
                     this,
                     server,
                     TELEMETRY_REST_PATH,
-                    sveltekit->getSecurityManager())
+                    sveltekit->getSecurityManager()),
+        _mqttEndpoint(TelemetryState::read,
+               TelemetryState::update,
+               this,
+               sveltekit->getMqttClient(),
+               TELEMETRY_PUB_TOPIC,
+               "", // Топик для подписки: пустой, так как телеметрия Read-Only
+               0, // QoS (Quality of Service)
+               false)
+
 {
     // Создание FreeRTOS Timer
     _updateTimer = xTimerCreate(
@@ -136,6 +145,9 @@ void TelemetryService::updateTelemetryState()
 
         // 3. Вызываем обработчики обновления (триггер для WebSockets/EventSockets)
         this->callUpdateHandlers("InternalTimer");
+
+        _mqttEndpoint.commit();
+        ESP_LOGV(TAG, "MQTT Commit triggered. Topic: %s", TELEMETRY_PUB_TOPIC);
     } else {
         // НОВЫЙ ЛОГ: Состояние не изменилось
         ESP_LOGV(TAG, "Telemetry state unchanged.");

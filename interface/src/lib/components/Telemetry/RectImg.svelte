@@ -1,11 +1,15 @@
 <script lang="ts">
 
-	import type { SsvcTelemetryMessage } from '$lib/types/ssvc';
-	import type { TemperatureResponse, SensorData } from '$lib/types/OCSettings';
+    import type {SsvcTelemetryMessage} from '$lib/types/ssvc';
+    import type {AlarmThresholdsState,
+        SensorMap,
+        TemperatureResponse, ThresholdSettings} from '$lib/types/Sensors';
+    import {fetchAlarmThresholds} from "$lib/api/ssvcApi";
 
-	const { telemetry, temperatureResponse } = $props<{
+    const { telemetry, temperatureResponse, alarmThresholds } = $props<{
 		telemetry: SsvcTelemetryMessage | null;
 		temperatureResponse: TemperatureResponse | null;
+        alarmThresholds?: AlarmThresholdsState | null;
 	}>();
 
 	let headsBeginSelected = $derived(telemetry.type === "heads")
@@ -17,7 +21,7 @@
 
 	// tca
 	let tcaTempValue = $derived(getMaxTemperatureByZone("act"));
-	let tcaCriticalTemp = $state(50);
+	let tcaCriticalTemp = $state(55);
 	let isCriticalTcaTemp = $state(false);
 
 	// Исходящая вода
@@ -27,7 +31,7 @@
 
 	// Входящая вода
 	let waterInTempValue =  $derived(getMaxTemperatureByZone("inlet_water"));
-	let WaterInCriticalTemp = $state(20);
+	let WaterInCriticalTemp = $state(30);
 	let isCriticalWaterInTemp = $state(false);
 
 	let WaterMinTempValue = $state(10)
@@ -102,30 +106,59 @@
 		return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
 	}
 
+    function checkCriticalTempByZone(zone: string, criticalTempByZone: number): boolean {
+        // 1. Проверяем наличие данных
+        if (!temperatureResponse || !temperatureResponse[zone]) {
+            return false;
+        }
+
+        const sensorMap: SensorMap = temperatureResponse[zone];
+        const sensorEntries = Object.entries(sensorMap);
+
+        // 2. Если есть глобальные пороги, используем их
+        if (alarmThresholds) {
+            const thresholds = alarmThresholds.thresholds;
+            for (const [address, temp] of sensorEntries) {
+                const threshold: ThresholdSettings | undefined = thresholds[address];
+                if (threshold && threshold.enabled && temp >= threshold.critical) {
+                    return true;
+                }
+            }
+        }
+
+        // 3. Если нет порогов или ни один датчик не критичен по порогу,
+        // используем запасной общий порог зоны
+        const maxTemp = getMaxTemperatureByZone(zone);
+        return maxTemp >= criticalTempByZone;
+    }
+
 	function getMaxTemperatureByZone(zone: string ): number {
+        if (!temperatureResponse || !temperatureResponse[zone]) {
+            return 0;
+        }
 
-		if (!temperatureResponse || !temperatureResponse.zones) {
-			return 0;
-		}
+        const sensorMap: SensorMap = temperatureResponse[zone];
+        const sensorEntries = Object.entries(sensorMap); // [[address, temp], ...]
 
-		const zoneSensors: SensorData[] = temperatureResponse.zones[zone];
+        if (sensorEntries.length === 0) {
+            return 0;
+        }
 
-		if (!zoneSensors || zoneSensors.length === 0) {
-			return 0;
-		}
+        // Находим максимальную температуру в SensorMap
+        const maxTemp = Math.max(...sensorEntries.map(([, temp]) => temp));
 
-		const maxTemp = Math.max(...zoneSensors.map((sensor: SensorData) => sensor.temp));
-
-		return Number(maxTemp.toFixed(2)); // Корректно.
+        return Number(maxTemp.toFixed(2));
 	}
 
-	$effect(() => {
-		isCriticalTcaTemp = tcaTempValue >= tcaCriticalTemp;
-		isCriticalWaterOutTemp = waterOutTempValue >= WaterOutCriticalTemp;
-		isCriticalWaterInTemp = waterInTempValue >= WaterInCriticalTemp;
-		isCriticalColumnTemp = columnThermalValue > columnCriticalTemp;
-		isCriticalTankTemp = tankThermalValue > tankCriticalTemp;
-	});
+    $effect(() => {
+        isCriticalTcaTemp = checkCriticalTempByZone("act", tcaCriticalTemp);
+        isCriticalWaterOutTemp = checkCriticalTempByZone("outlet_water", WaterOutCriticalTemp);
+        isCriticalWaterInTemp = checkCriticalTempByZone("inlet_water", WaterInCriticalTemp);
+
+        // Для колонны и куба (если они не используют DS18B20 с порогами по адресам)
+        isCriticalColumnTemp = columnThermalValue > columnCriticalTemp;
+        isCriticalTankTemp = tankThermalValue > tankCriticalTemp;
+    });
 
 </script>
 
@@ -290,7 +323,6 @@
 	<circle class="cls-8" cx="217.18" cy="159.1" r="4.81"/>
 </svg>
 
-{JSON.stringify()}
 <style>
 
     .sensor-text {

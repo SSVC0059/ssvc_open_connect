@@ -1,9 +1,8 @@
 import { page } from '$app/state';
 import { user } from '$lib/stores/user';
 import { get } from 'svelte/store';
-import type {TemperatureResponse, ZoneName } from '$lib/types/OCSettings';
+import type { AlarmThresholdsState, TemperatureResponse, ZoneName } from '$lib/types/Sensors';
 import type {
-	AlarmThresholdsState,
 	SendCommandResponse,
 	SsvcOpenConnectMessage,
 	SsvcSettings,
@@ -47,7 +46,7 @@ export async function saveSettings(settings: SsvcSettings): Promise<boolean> {
  * Получение температур датчиков по зонам
  */
 export async function fetchSensorsTemperatureByZone(): Promise<TemperatureResponse | null> {
-	const response = await apiFetch<TemperatureResponse>('/rest/sensors/zone');
+	const response = await apiFetch<TemperatureResponse>('/rest/sensor');
 	return response.success ? response.data : null;
 }
 
@@ -190,6 +189,9 @@ export async function sendTelemetryCommand(command: string): Promise<ApiResponse
  */
 export async function fetchAlarmThresholds(): Promise<AlarmThresholdsState | null> {
 	const response = await apiFetch<AlarmThresholdsState>('/rest/alarms');
+	if (!response.success) {
+		console.error('Ошибка при получении порогов:', response.error);
+	}
 	return response.success ? response.data : null;
 }
 

@@ -28,22 +28,25 @@
 #include "components/Zone/SensorZone.h"
 #include "components/sensors/SensorManager/SensorManager.h"
 
+#include "core/StatefulServices/SensorConfigService/SensorConfigHelper.h"
+
 #define ZONE_SETTINGS_ENDPOINT "/rest/zones"
 #define ZONE_SETTINGS_FILE "/config/zones.json"
-
+#define SENSOR_ZONE_PUB_TOPIC "openconnect/sensor/state"
+#define SENSOR_ZONE_SET_TOPIC "openconnect/sensor/set"
 /**
  * @brief Класс состояния для хранения настроек зон.
  * Хранит карту: "адрес_датчика" -> SensorZone
  */
-class SensorZoneState {
+class SensorConfigState {
 public:
     std::map<std::string, SensorZone> sensor_zones;
 
     // Читает состояние в JSON для отправки клиенту или сохранения
-    static void read(const SensorZoneState& state, const JsonObject& root);
+    static void read(const SensorConfigState& state, const JsonObject& root);
 
     // Обновляет состояние из JSON, полученного от клиента
-    static StateUpdateResult update(const JsonObject& root, SensorZoneState& state);
+    static StateUpdateResult update(const JsonObject& root, SensorConfigState& state);
 
     /**
      * @brief Метод для применения всех сохраненных зон к SensorManager (используется при запуске)
@@ -58,31 +61,39 @@ private:
  * @brief Сервис, управляющий зонами датчиков.
  * Отвечает за сохранение/загрузку из FS и REST API.
  */
-class SensorZoneService : public StatefulService<SensorZoneState> {
+class SensorConfigService : public StatefulService<SensorConfigState> {
 public:
-    SensorZoneService(PsychicHttpServer* server, ESP32SvelteKit* sveltekit) :
+    SensorConfigService(PsychicHttpServer* server, ESP32SvelteKit* sveltekit) :
         _httpEndpoint(
-            SensorZoneState::read,
-            SensorZoneState::update,
+            SensorConfigState::read,
+            SensorConfigState::update,
             this,
             server,
             ZONE_SETTINGS_ENDPOINT,
             sveltekit->getSecurityManager()
             ),
         _fsPersistence(
-            SensorZoneState::read,
-            SensorZoneState::update,
+            SensorConfigState::read,
+            SensorConfigState::update,
             this,
             sveltekit->getFS(),
             ZONE_SETTINGS_FILE
-            )
+            ),
+        _mqttEndpoint(SensorConfigState::read,
+                   SensorConfigState::update,
+                   this,
+                   sveltekit->getMqttClient(),
+                   SENSOR_ZONE_PUB_TOPIC,
+                   SENSOR_ZONE_SET_TOPIC,
+                   0, // QoS (Quality of Service)
+                   false)
     {
     }
 
     void begin(){
         _httpEndpoint.begin();
         _fsPersistence.readFromFS();
-        this->read([&](const SensorZoneState& state) {
+        this->read([&](const SensorConfigState& state) {
             state.applyZonesToSensors();
         });
     }
@@ -97,8 +108,9 @@ public:
     bool setZoneForSensor(const std::string& addressStr, SensorZone newZone);
 
 private:
-    HttpEndpoint<SensorZoneState> _httpEndpoint;
-    FSPersistence<SensorZoneState> _fsPersistence;
+    HttpEndpoint<SensorConfigState> _httpEndpoint;
+    FSPersistence<SensorConfigState> _fsPersistence;
+    MqttEndpoint<SensorConfigState> _mqttEndpoint;
 
     static constexpr auto TAG = "SENSOR_ZONE_SERVICE";
 };

@@ -32,6 +32,8 @@
 // Максимальный размер JSON-документа для телеметрии (подберите размер под свои данные)
 #define TELEMETRY_STATE_DOC_SIZE 2048
 
+#define TELEMETRY_PUB_TOPIC "openconnect/telemetry"
+
 // Структура, содержащая сериализованные данные телеметрии
 class TelemetryState
 {
@@ -69,6 +71,7 @@ public:
 private:
     RectificationProcess& _rProcess;
     HttpEndpoint<TelemetryState> _httpEndpoint;
+    MqttEndpoint<TelemetryState> _mqttEndpoint;
 
     TimerHandle_t _updateTimer = nullptr;
     static void vUpdateTimerCallback(TimerHandle_t xTimer);

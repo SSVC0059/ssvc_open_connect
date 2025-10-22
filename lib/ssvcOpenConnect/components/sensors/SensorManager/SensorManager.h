@@ -104,6 +104,12 @@ public:
     static bool stringToAddress(const std::string& addrStr, AbstractSensor::Address& addr);
 
 
+    /**
+     * @brief Выполняет считывание данных со всех зарегистрированных датчиков,
+     * группирует их по зонам и обновляет SensorDataService.
+     * Должен вызываться после того, как все подсистемы (Subsystems) завершили свои циклы.
+     */
+    void processReadingsAndPublish() const;
 
     // --- Lifecycle ---
     ~SensorManager();

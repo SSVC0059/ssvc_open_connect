@@ -25,7 +25,6 @@
 #include <vector>
 #include <core/GlobalConfig/GlobalConfig.h>
 
-class OpenConnectSettingsService;
 
 class Subsystem {
 public:

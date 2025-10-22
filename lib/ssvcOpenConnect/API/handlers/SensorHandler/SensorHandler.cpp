@@ -21,13 +21,11 @@
 #include "esp_log.h"
 #include "components/sensors/SensorManager/SensorManager.h"
 #include "core/SsvcOpenConnect.h"
-#include "core/StatefulServices/SensorZoneService/SensorZoneService.h"
+#include "core/StatefulServices/SensorConfigService/SensorConfigService.h"
 
 #define TAG "SensorHandler"
 
 SensorHandler::SensorHandler() = default;
-
-
 
 esp_err_t SensorHandler::getSensorAddresses(PsychicRequest* request)
 {
@@ -135,7 +133,7 @@ esp_err_t SensorHandler::updateSensorZone(PsychicRequest* request)
 
     // Обновление зоны датчика
     // Убираем 'const', так как setZoneForSensor модифицирует состояние сервиса
-    SensorZoneService* service = SsvcOpenConnect::getInstance().getSensorZoneService();
+    SensorConfigService* service = SsvcOpenConnect::getInstance().getSensorConfigService();
     if (!service) {
         // Логирование ошибки и возврат 500, если сервис не найден
         root["message"] = "Zone Service not initialized";

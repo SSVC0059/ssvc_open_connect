@@ -21,7 +21,6 @@ private:
     static void parseQueryParams(const String& query,
                                std::vector<std::pair<String, String>>& output);
 
-
 };
 
 #endif

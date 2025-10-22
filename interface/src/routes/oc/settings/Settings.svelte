@@ -1,8 +1,5 @@
 <script lang="ts">
 	import ThermalSensorSettings from '$lib/components/OCSettings/ThermalSensorSettings.svelte';
-	import { page } from '$app/state';
-	import MenuIcon from '~icons/tabler/menu-2';
-	import { fade, fly } from 'svelte/transition';
 	import TelegramSettings from '$lib/components/OCSettings/TelegramSettings.svelte';
 	import { getSubsystemState, setSubsystemState } from '$lib/api/ssvcApi';
 	import type { SubsystemsState } from '$lib/types/ssvc';

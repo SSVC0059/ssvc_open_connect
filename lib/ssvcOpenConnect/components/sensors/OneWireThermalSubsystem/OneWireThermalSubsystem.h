@@ -39,6 +39,8 @@ public:
     bool initialize() override;
     void poll() override; // Здесь будет вызываться requestTemperatures и считывание
 
+    const char* getName() const override;
+
 private:
     // Константы для конструктора родителя
     static constexpr auto DEFAULT_TASK_NAME = "OneWireTask";
@@ -46,7 +48,7 @@ private:
 
     // Приватный конструктор, вызывающий родительский
     OneWireThermalSubsystem()
-        : PollingSubsystem(DEFAULT_TASK_NAME, DEFAULT_POLL_INTERVAL) {}
+        : PollingSubsystem() {}
 
     OneWire* oneWireBus = nullptr;
     DallasTemperature* dallasTemp = nullptr;

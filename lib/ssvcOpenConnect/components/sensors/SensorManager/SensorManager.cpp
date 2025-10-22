@@ -19,6 +19,7 @@
 
 #include "FSPersistence.h"
 #include "core/SsvcOpenConnect.h"
+#include "core/StatefulServices/SensorDataService/SensorDataService.h"
 
 
 // Глобальная константа ошибки
@@ -192,6 +193,13 @@ bool SensorManager::stringToAddress(const std::string& addrStr, AbstractSensor::
     ESP_LOGV(TAG, "Address %s converted successfully.", addrStr.c_str());
     return true;
 }
+
+void SensorManager::processReadingsAndPublish() const {
+    const auto groupedData = this->getAllSensorsGroupedByZone();
+    SensorDataService::getInstance()->updateSensorData(groupedData);
+    ESP_LOGV(TAG, "Sensor data gathered and published to SensorDataService.");
+}
+
 
 SensorManager::~SensorManager() {
     ESP_LOGW(TAG, "SensorManager destructor called. Initiating cleanup.");

@@ -1,4 +1,4 @@
-import type { SensorData } from '$lib/types/OCSettings';
+import type { SensorData } from '$lib/types/Sensors';
 
 export function formatSecondsToHHMMSS(seconds: number): string {
 	const hours = Math.floor(seconds / 3600);

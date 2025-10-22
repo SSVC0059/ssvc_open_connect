@@ -22,7 +22,7 @@
 
 #include "core/SubsystemManager/SubsystemManager.h"
 #include <unordered_map>
-#include "core/StatefulServices/OpenConnectSettings/OpenConnectSettingsManager.h"
+#include "core/StatefulServices/OpenConnectSettingsService/OpenConnectSettings.h"
 
 class SubsystemHandler {
 public:
