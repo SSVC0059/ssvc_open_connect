@@ -64,7 +64,7 @@
 		try {
 			const success = await updateSensorZone(address, newZone);
 			if (success) {
-				await new Promise(resolve => setTimeout(resolve, 1500));
+				await new Promise(resolve => setTimeout(resolve, 1000));
 				onUpdate?.();
 				delete selectedZoneForSensor[address];
 			} else {

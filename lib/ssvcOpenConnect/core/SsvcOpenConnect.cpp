@@ -44,12 +44,19 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     _alarmThresholdService = new AlarmThresholdService(_server, _esp32sveltekit);
     _alarmThresholdService->begin();
 
-    _sensorConfigService = new SensorConfigService(_server, _esp32sveltekit);
-    _sensorConfigService->begin();
-
     _sensorDataService = new SensorDataService(_server, _esp32sveltekit);
     SensorDataService::setInstance(_sensorDataService);
     _sensorDataService->begin();
+
+    _sensorConfigService = new SensorConfigService(_server, _esp32sveltekit);
+    _sensorConfigService->begin();
+    // В коде инициализации сервисов (main.cpp/setup)
+    _sensorConfigService->addUpdateHandler([&](const String& originId) {
+        // Вызвать метод, который инициирует перестройку SensorDataState
+        _sensorDataService->triggerZoneDataRecalculation();
+    });
+
+
 
     // Регистрация подсистемы OneWireThermalSubsystem для периодического опроса датчиков
     SensorCoordinator::getInstance().registerPollingSubsystem(

@@ -21,7 +21,6 @@
 			]);
 			temperatureResponse = tempResp;
 			alarmThresholdsState = thresholdsResp; // <-- Сохраняем пороги
-
 		} catch (err) {
 			console.error('Ошибка загрузки данных:', err);
 			error = 'Ошибка при загрузке данных о датчиках и порогах.';

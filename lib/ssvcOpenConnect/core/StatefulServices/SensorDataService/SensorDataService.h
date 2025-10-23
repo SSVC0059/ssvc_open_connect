@@ -88,6 +88,8 @@ public:
         const std::map<SensorZone, std::vector<AbstractSensor*>>& groupedSensors
     );
 
+    void triggerZoneDataRecalculation();
+
 private:
     HttpEndpoint<SensorDataState> _httpEndpoint;
     MqttEndpoint<SensorDataState> _mqttEndpoint;

@@ -130,9 +130,6 @@ esp_err_t SensorHandler::updateSensorZone(PsychicRequest* request)
         response.setCode(400);
         return response.send();
     }
-
-    // Обновление зоны датчика
-    // Убираем 'const', так как setZoneForSensor модифицирует состояние сервиса
     SensorConfigService* service = SsvcOpenConnect::getInstance().getSensorConfigService();
     if (!service) {
         // Логирование ошибки и возврат 500, если сервис не найден

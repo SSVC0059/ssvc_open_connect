@@ -42,7 +42,7 @@ void HandlerRegistrator::registerAllHandlers() const
 
     registerSettingsHandlers();
     registerCommandHandlers();
-    // registerSensorHandlers();
+    registerSensorHandlers();
     registerTelegramBot();
     registerSubsystemHandler();
     registerTelegramBotHandler();
@@ -77,22 +77,22 @@ void HandlerRegistrator::registerCommandHandlers() const
                   AuthenticationPredicates::IS_AUTHENTICATED));
 }
 
-// void HandlerRegistrator::registerSensorHandlers() const
-// {
-//     _server.on("/rest/sensors/zone", HTTP_GET,
-//               _securityManager->wrapRequest(
-//                   [](PsychicRequest* request) {
-//                       return SensorHandler::getSensorAddresses(request);
-//                   },
-//                   AuthenticationPredicates::IS_AUTHENTICATED));
-//
-//     _server.on("/rest/sensors/zone", HTTP_PUT,
-//               _securityManager->wrapRequest(
-//                   [](PsychicRequest* request) {
-//                       return SensorHandler::updateSensorZone(request);
-//                   },
-//                   AuthenticationPredicates::IS_AUTHENTICATED));
-// }
+void HandlerRegistrator::registerSensorHandlers() const
+{
+    // _server.on("/rest/sensors/zone", HTTP_GET,
+    //           _securityManager->wrapRequest(
+    //               [](PsychicRequest* request) {
+    //                   return SensorHandler::getSensorAddresses(request);
+    //               },
+    //               AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/sensors/zone", HTTP_PUT,
+              _securityManager->wrapRequest(
+                  [](PsychicRequest* request) {
+                      return SensorHandler::updateSensorZone(request);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
+}
 
 
 void HandlerRegistrator::registerTelegramBot() const

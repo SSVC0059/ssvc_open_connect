@@ -49,7 +49,7 @@ public:
     static StateUpdateResult update(const JsonObject& root, SensorConfigState& state);
 
     /**
-     * @brief Метод для применения всех сохраненных зон к SensorManager (используется при запуске)
+     * @brief Метод для применения всех сохраненных зон к SensorManager
      */
     void applyZonesToSensors() const;
 

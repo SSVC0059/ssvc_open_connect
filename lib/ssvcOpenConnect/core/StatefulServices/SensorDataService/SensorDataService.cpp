@@ -45,6 +45,14 @@ void SensorDataState::read(const SensorDataState& state, const JsonObject& root)
     }
 }
 
+void SensorDataService::triggerZoneDataRecalculation()
+{
+    const std::map<SensorZone, std::vector<AbstractSensor*>> groupedSensors =
+        SensorManager::getInstance().getAllSensorsGroupedByZone();
+    updateSensorData(groupedSensors);
+    ESP_LOGI(TAG, "Triggered data recalculation due to zone change.");
+}
+
 SensorDataService::SensorDataService(PsychicHttpServer *server,
                                     ESP32SvelteKit* sveltekit)
     : _httpEndpoint(
