@@ -17,6 +17,8 @@
 
 #include "SsvcSettings.h"
 
+#include "core/StatefulServices/SensorDataService/SensorDataService.h"
+
 SsvcSettings *SsvcSettings::_ssvcSettings = nullptr;
 
 SsvcSettings &SsvcSettings::init() {
@@ -33,6 +35,10 @@ bool SsvcSettings::load(const std::string &json) {
   JsonDocument doc;
 
   const DeserializationError error = deserializeJson(doc, json);
+
+  OpenConnectSettingsService* settingsService = OpenConnectSettingsService::getInstance();
+  auto jsonObject = doc.as<JsonObject>();
+  settingsService->update(jsonObject, OpenConnectSettings::update, "settings");
 
   if (error) {
     ESP_LOGV("SssvcController", "ошибка десериализации настроек: %s",

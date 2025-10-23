@@ -37,7 +37,7 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     _securityManager = securityManager;
     _mqttClient = _esp32sveltekit->getMqttClient();
 
-    _openConnectSettingsService = new OpenConnectSettingsService(_server, _esp32sveltekit, _securityManager);
+    _openConnectSettingsService = new OpenConnectSettingsService(_server, _esp32sveltekit);
     _openConnectSettingsService->begin();
 
     // сенсоры

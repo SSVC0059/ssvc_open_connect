@@ -27,68 +27,7 @@
 
 SensorHandler::SensorHandler() = default;
 
-esp_err_t SensorHandler::getSensorAddresses(PsychicRequest* request)
-{
-    ESP_LOGD(TAG, "Processing sensor addresses request");
-    auto response = PsychicJsonResponse(request, false);
-    const JsonObject root = response.getRoot();
 
-    ESP_LOGD(TAG, "Getting sensor addresses by zone");
-    const auto sensorsByZone =
-        SensorManager::getInstance().getAllSensorsGroupedByZone(MeasuredValueType::TEMPERATURE);
-    ESP_LOGD(TAG, "Received %zu zones", sensorsByZone.size());
-
-    const JsonObject zonesJson = root["zones"].to<JsonObject>();
-    // Перебор всех зон
-    for (const auto& zoneEntry : sensorsByZone) {
-
-        // 1. Преобразуем enum SensorZone в строку для ключа JSON
-        const std::string zoneName = SensorZoneHelper::toString(zoneEntry.first);
-
-        ESP_LOGD(TAG, "Processing zone: %s with %zu sensors",
-                zoneName.c_str(), zoneEntry.second.size());
-
-        auto sensorArray = zonesJson[zoneName].to<JsonArray>();
-
-        // 2. Перебор всех датчиков в зоне
-        for (const auto& sensor : zoneEntry.second) {
-
-            // Получаем 1-Wire адрес в строковом формате
-            const std::string addressStr = SensorManager::addressToString(sensor->getAddress());
-
-            // Получаем последнее кэшированное значение
-            float temperature = sensor->getData();
-
-            // Проверка на ошибку (например, -127.0f)
-            if (temperature == DEVICE_DISCONNECTED_C) {
-                ESP_LOGW(TAG, "Sensor %s reported error (%.2f). Excluding from successful response.",
-                        addressStr.c_str(), temperature);
-                continue; // Пропускаем датчик с ошибкой
-            }
-
-            ESP_LOGV(TAG, "Adding sensor address: %s to zone: %s",
-                    addressStr.c_str(), zoneName.c_str());
-
-            auto sensorObject = sensorArray.add<JsonObject>();
-
-            sensorObject["address"] = addressStr; // Добавляем адрес
-            sensorObject["temp"] = temperature;   // Добавляем температуру
-
-            ESP_LOGV(TAG, "Adding sensor address: %s and temp: %.2f to zone: %s",
-                    addressStr.c_str(), temperature, zoneName.c_str());
-
-        }
-    }
-
-#if CONFIG_LOG_DEFAULT_LEVEL >= ESP_LOG_DEBUG
-    String jsonOutput;
-    serializeJson(root, jsonOutput);
-    ESP_LOGD(TAG, "Response JSON: %s", jsonOutput.c_str());
-#endif
-
-    response.setCode(200);
-    return response.send();
-}
 esp_err_t SensorHandler::updateSensorZone(PsychicRequest* request)
 {
     auto response = PsychicJsonResponse(request, false);

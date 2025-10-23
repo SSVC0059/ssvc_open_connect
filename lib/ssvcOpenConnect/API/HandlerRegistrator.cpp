@@ -52,13 +52,6 @@ void HandlerRegistrator::registerAllHandlers() const
 
 void HandlerRegistrator::registerSettingsHandlers() const
 {
-    _server.on("/rest/settings", HTTP_GET,
-              _securityManager->wrapRequest(
-                  [](PsychicRequest* request) {
-                      return SettingsHandler::getSettings(request);
-                  },
-                  AuthenticationPredicates::IS_AUTHENTICATED));
-
     _server.on("/rest/settings", HTTP_PUT,
               _securityManager->wrapRequest(
                   [](PsychicRequest* request) {
@@ -79,13 +72,6 @@ void HandlerRegistrator::registerCommandHandlers() const
 
 void HandlerRegistrator::registerSensorHandlers() const
 {
-    // _server.on("/rest/sensors/zone", HTTP_GET,
-    //           _securityManager->wrapRequest(
-    //               [](PsychicRequest* request) {
-    //                   return SensorHandler::getSensorAddresses(request);
-    //               },
-    //               AuthenticationPredicates::IS_AUTHENTICATED));
-
     _server.on("/rest/sensors/zone", HTTP_PUT,
               _securityManager->wrapRequest(
                   [](PsychicRequest* request) {

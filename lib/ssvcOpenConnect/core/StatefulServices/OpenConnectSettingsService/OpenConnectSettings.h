@@ -18,38 +18,42 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
+#include "ArduinoJson.h"
 #include "ESP32SvelteKit.h"
+#include "StatefulService.h"
+#include "core/SsvcSettings/SsvcSettings.h"
 
+#define OPEN_CONNECT_SETTINGS_PUB_TOPIC "openconnect/settings"
 #define OPEN_CONNECT_SETTINGS_ENDPOINT_PATH "/rest/oc_settings"
-#define OPEN_CONNECT_SETTINGS_FILE "/config/Settings.json"
 
 class OpenConnectSettings
 {
 public:
-    int pid;
-    std::string sensorsConfig;
-
     static void read(const OpenConnectSettings& settings, const JsonObject& root);
-    static StateUpdateResult update(const JsonObject& root, OpenConnectSettings& settings);
-
+    static StateUpdateResult update(JsonObject& root, OpenConnectSettings& state) {
+        return StateUpdateResult::UNCHANGED;
+    }
 };
 
 class OpenConnectSettingsService : public StatefulService<OpenConnectSettings>
 {
 public:
-    OpenConnectSettingsService(PsychicHttpServer* server,
-                               ESP32SvelteKit* _esp32sveltekit,
-                               SecurityManager* _securityManager);
 
-    ~OpenConnectSettingsService();
+    OpenConnectSettingsService(PsychicHttpServer* server,
+                               ESP32SvelteKit* _esp32sveltekit);
+
+    ~OpenConnectSettingsService() = default;
+
+    static OpenConnectSettingsService* getInstance() {return _instance;}
 
     void begin();
 
 private:
+    static OpenConnectSettingsService* _instance;
     HttpEndpoint<OpenConnectSettings> _httpEndpoint;
-    FSPersistence<OpenConnectSettings> _fsPersistence;
+    MqttEndpoint<OpenConnectSettings> _mqttEndpoint;
 
-    static void onConfigUpdated();
+
 };
 
 

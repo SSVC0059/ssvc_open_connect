@@ -18,8 +18,8 @@ import type {
  * Получение настроек SSVC
  */
 export async function fetchSettings(): Promise<SsvcSettings | null> {
-	const response = await apiFetch<{ settings: SsvcSettings }>('/rest/settings');
-	return response.success ? response.data.settings : null;
+	const response = await apiFetch<{ ssvcSettings: SsvcSettings }>('/rest/oc_settings');
+	return response.success ? response.data.ssvcSettings : null;
 }
 
 /**

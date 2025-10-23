@@ -19,20 +19,6 @@
 
 SettingsHandler::SettingsHandler() = default;
 
-esp_err_t SettingsHandler::getSettings(PsychicRequest* request)
-{
-    auto response = PsychicJsonResponse(request, false);
-    const JsonObject root = response.getRoot();
-    root["request"] = "settings";
-    const JsonVariant _response = root["settings"].to<JsonVariant>();
-
-    // Получаем настройки из системы
-    SsvcSettings::init().fillSettings(_response);
-    response.setCode(200);
-
-    return response.send();
-}
-
 esp_err_t SettingsHandler::updateSettings(PsychicRequest* request)
 {
     JsonDocument jsonBuffer;

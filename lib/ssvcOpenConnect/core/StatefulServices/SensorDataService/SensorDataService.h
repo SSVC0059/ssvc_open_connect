@@ -55,7 +55,7 @@ struct SensorDataState {
      * @brief Десериализация JSON в состояние.
      * Мы не разрешаем клиентам устанавливать показания, поэтому метод неактивен.
      */
-    static StateUpdateResult update(const JsonObject& root, SensorDataState& state) {
+    static StateUpdateResult update(JsonObject& root, SensorDataState& state) {
         // Данные датчиков являются READ-ONLY (только чтение) для внешних клиентов.
         return StateUpdateResult::UNCHANGED;
     }

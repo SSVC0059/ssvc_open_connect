@@ -18,11 +18,13 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
-#include <core/SsvcConnector.h>
-#include <core/SsvcCommandsQueue.h>
+
 #include <Arduino.h>
 #include <memory>
 #include <string>
+#include <core/SsvcConnector.h>
+#include <core/SsvcCommandsQueue.h>
+#include "core/StatefulServices/OpenConnectSettingsService/OpenConnectSettings.h"
 
 // Класс настроек SsvcSettings
 class SsvcSettings

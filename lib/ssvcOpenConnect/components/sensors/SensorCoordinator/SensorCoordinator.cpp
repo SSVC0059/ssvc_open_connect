@@ -39,7 +39,7 @@ void SensorCoordinator::pollTimerCallback(const TimerHandle_t xTimer) {
 
 void SensorCoordinator::startPolling(const uint32_t periodMs) {
     if (_pollTimerHandle) {
-        ESP_LOGI(TAG, "Polling timer already created. Restarting.");
+        ESP_LOGV(TAG, "Polling timer already created. Restarting.");
         xTimerStop(_pollTimerHandle, 0);
         xTimerChangePeriod(_pollTimerHandle, pdMS_TO_TICKS(periodMs), 0);
         xTimerStart(_pollTimerHandle, 0);
@@ -64,7 +64,7 @@ void SensorCoordinator::startPolling(const uint32_t periodMs) {
     if (xTimerStart(_pollTimerHandle, 0) != pdPASS) {
         ESP_LOGE(TAG, "Failed to start FreeRTOS Sensor Poll Timer!");
     } else {
-        ESP_LOGI(TAG, "FreeRTOS Sensor Poll Timer started, interval: %lu ms", periodMs);
+        ESP_LOGV(TAG, "FreeRTOS Sensor Poll Timer started, interval: %lu ms", periodMs);
     }
 }
 
@@ -78,10 +78,10 @@ void SensorCoordinator::registerPollingSubsystem(PollingSubsystem* subsystem) {
 void SensorCoordinator::executePollCycle() const
 {
     if (_pollingSubsystems.empty()) {
-        ESP_LOGI(TAG, "No polling subsystems registered. Skipping poll cycle.");
+        ESP_LOGV(TAG, "No polling subsystems registered. Skipping poll cycle.");
         return;
     }
-    ESP_LOGI(TAG, "Starting sensor poll cycle for %zu subsystems.", _pollingSubsystems.size());
+    ESP_LOGV(TAG, "Starting sensor poll cycle for %zu subsystems.", _pollingSubsystems.size());
     // 1. СБОР ДАННЫХ (Вызов poll() у каждой подсистемы) ---
     for (PollingSubsystem* subsystem : _pollingSubsystems) {
         subsystem->poll();
@@ -90,6 +90,6 @@ void SensorCoordinator::executePollCycle() const
     // SensorManager собирает данные из AbstractSensor'ов и обновляет SensorDataService.
     SensorManager::getInstance().processReadingsAndPublish();
 
-    ESP_LOGI(TAG, "Sensor poll cycle finished. Data published.");
+    ESP_LOGV(TAG, "Sensor poll cycle finished. Data published.");
 }
 #include "SensorCoordinator.h"
