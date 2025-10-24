@@ -92,7 +92,6 @@ void TelemetryService::begin() const
         if (xTimerStart(_updateTimer, 0) != pdPASS) {
             ESP_LOGE(TAG, "Failed to start FreeRTOS Telemetry timer!");
         } else {
-            // Улучшенный ЛОГ: Указываем интервал
             ESP_LOGV(TAG, "FreeRTOS Telemetry service update timer started (Interval: %d ms).", 
                      TELEMETRY_UPDATE_INTERVAL_MS);
         }
@@ -110,11 +109,11 @@ void TelemetryService::updateTelemetryState()
     ESP_LOGV(TAG, "Calling _rProcess.writeTelemetryTo(root)...");
     const JsonVariant _telemetry = doc["telemetry"].to<JsonVariant>();
     _rProcess.writeTelemetryTo(_telemetry);
-    // НОВЫЙ ЛОГ: После вызова критической функции (если сюда дойдет)
+
+    const JsonVariant _status = doc["status"].to<JsonVariant>();
+    _rProcess.getStatus(_status);
     ESP_LOGV(TAG, "Finished _rProcess.writeTelemetryTo(root).");
 
-
-    // 3. Сериализуем документ в строку
     String newTelemetryJson;
     const size_t size = serializeJson(doc, newTelemetryJson); // Захват размера
 

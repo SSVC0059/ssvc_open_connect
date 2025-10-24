@@ -246,7 +246,7 @@ void RectificationProcess::update(void* pvParameters)
 {
   auto* self = static_cast<RectificationProcess*>(pvParameters);
   const char* taskName = pcTaskGetName(nullptr);
-  ESP_LOGE(TAG,
+  ESP_LOGV(TAG,
            "Запуск задачи подготовки данных ректификации");
   std::string currentEvent;
 
@@ -799,6 +799,40 @@ void RectificationProcess::writeTelemetryTo(const JsonVariant telemetry)
       telemetry["alc"] = metric.alc;
     }
 
+}
+
+bool RectificationProcess::getStatus(const JsonVariant status) {
+  if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+
+    status["stage"] = stageToString(currentStage);
+    status["status"] = stateToString(currentProcessStatus);
+    status["startTime"] = startTime;
+    status["endTime"] = endTime;
+
+    const auto stages = status["stages"].to<JsonObject>();
+    for (auto &rectificationStageState : rectificationStageStates) {
+      auto &stage =
+          rectificationStageState.first; // Ключ (тип RectificationStage)
+      const auto &state =
+          rectificationStageState.second; // Значение (тип RectificationState)
+      if (stage != RectificationStage::EMPTY) {
+        stages[stageToString(stage)] = stateToString(state);
+      }
+    }
+
+    xSemaphoreGive(mutex);
+    char buffer[512]; // Размер подберите под ваши нужды
+    const size_t len = serializeJson(status, buffer, sizeof(buffer));
+
+    if (len >= sizeof(buffer)) {
+      ESP_LOGV("RectificationProcess", "JSON truncated! Needed %d bytes", len);
+    }
+
+    // Выводим результат
+    ESP_LOGV("RectificationProcess", "JSON: %.*s", len, buffer);
+    return true;
+  }
+  return false;
 }
 
 bool RectificationProcess::isHeatingOn() const

@@ -125,6 +125,7 @@ public:
 
 
   void writeTelemetryTo(JsonVariant telemetry);
+  bool getStatus(const JsonVariant status);
 
   static std::string translateRectificationStage(const std::string& stageStr);
 
