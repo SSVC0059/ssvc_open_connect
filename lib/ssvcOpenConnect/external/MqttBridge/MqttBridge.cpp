@@ -60,18 +60,74 @@ uint16_t MqttBridge::subscribe(const char *topic, uint8_t qos) const
 /**
  * @brief Публикация сообщения в указанный топик.
  */
-uint16_t MqttBridge::publish(const char *topic, const char *payload, uint8_t qos, bool retained) const
+uint16_t MqttBridge::publish(const char *topic, const char *payload, uint8_t qos, bool retained)
 {
-    if (!_settingsService || !_settingsService->isConnected())
+    // Проверка наличия подключения к сервису, но НЕ к MQTT-брокеру.
+    if (!_settingsService)
     {
-        ESP_LOGV(TAG, "Cannot publish to %s: MQTT client is not connected.", topic);
+        ESP_LOGE(TAG, "Cannot publish to %s: MqttSettingsService is not initialized.", topic);
         return 0;
     }
-    // Используем PsychicMqttClient, который управляется сервисом
+
+    if (!_settingsService->isEnabled())
+    {
+        ESP_LOGW(TAG, "MQTT is disabled. Not publishing to %s with QoS %d", topic, qos);
+        return 0;
+    }
+    if (!_settingsService->isConnected())
+    {
+
+        ESP_LOGW(TAG, "MQTT client is not connected. Queuing message for topic: %s", topic);
+
+        // Добавляем сообщение в очередь
+        _publishQueue.push_back({
+            topic,
+            payload, // String/char* конструкторы справятся
+            qos,
+            retained
+        });
+        // Возвращаем фиктивный ID или 1, чтобы показать, что операция принята
+        return 1;
+    }
+
+    ESP_LOGI(TAG, "Publishing to %s with QoS %d", topic, qos);
     return _settingsService->getMqttClient()->publish(topic, qos, retained, payload);
 }
 
-uint16_t MqttBridge::publish(const char *topic, const std::string& payload, uint8_t qos, bool retained) const
+void MqttBridge::processPublishQueue()
+{
+    if (!_settingsService || !_settingsService->isConnected()) {
+        return;
+    }
+
+    ESP_LOGI(TAG, "Processing publish queue (%zu messages).", _publishQueue.size());
+
+    while (!_publishQueue.empty()) {
+        // Берем сообщение из начала очереди
+        const QueuedMessage& msg = _publishQueue.front();
+
+        // Отправляем сообщение
+        const uint16_t msgId = _settingsService->getMqttClient()->publish(
+            msg.topic.c_str(),
+            msg.qos,
+            msg.retained,
+            msg.payload.c_str()
+        );
+
+        if (msgId != 0) {
+            // Успешно отправлено. Удаляем из очереди и переходим к следующему
+            ESP_LOGD(TAG, "Queued message sent to %s (ID: %d)", msg.topic.c_str(), msgId);
+            _publishQueue.pop_front();
+        } else {
+            // НЕ УСПЕШНО: это очень маловероятно сразу после onConnect.
+            // Это может указывать на потерю соединения прямо сейчас. Прекращаем.
+            ESP_LOGE(TAG, "Failed to send queued message to %s. Stopping queue processing.", msg.topic.c_str());
+            break;
+        }
+    }
+}
+
+uint16_t MqttBridge::publish(const char *topic, const std::string& payload, uint8_t qos, bool retained)
 {
     // ✅ Вызываем оригинальный метод, используя payload.c_str()
     return this->publish(topic, payload.c_str(), qos, retained);
@@ -103,7 +159,7 @@ void MqttBridge::registerSubscription(const std::string& topic, uint8_t qos)
     ESP_LOGD(TAG, "Registered topic for auto-resubscription: %s (QoS %d)", topic.c_str(), qos);
 }
 
-void MqttBridge::onMqttConnect(const bool sessionPresent) const
+void MqttBridge::onMqttConnect(const bool sessionPresent)
 {
     ESP_LOGD(TAG, "MQTT client connected (sessionPresent: %s). Starting subscriptions.", sessionPresent ? "true" : "false");
     for (const auto& sub : _subscriptions) {
@@ -118,6 +174,7 @@ void MqttBridge::onMqttConnect(const bool sessionPresent) const
             ESP_LOGD(TAG, "Resubscribed to '%s' (QoS %d, MsgId: %d)", topic, qos, msgId);
         }
     }
+    processPublishQueue();
 }
 
 /**

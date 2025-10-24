@@ -23,6 +23,7 @@
  **/
 #include <MqttSettingsService.h>
 #include <functional>
+#include <deque>
 
 /**
  * @brief Ленивый синглтон-обертка для взаимодействия с MQTT-клиентом из MqttSettingsService.
@@ -33,17 +34,18 @@ public:
     using MqttMessageHandler = std::function<void(const String &, const String &, int, bool, bool)>;
     using Subscription = std::pair<std::string, uint8_t>;
 
-    // ------------------------------------------------
-    // Управление синглтоном
-    // ------------------------------------------------
     static MqttBridge &getInstance(MqttSettingsService *settingsService = nullptr);
 
-    // ------------------------------------------------
-    // Методы взаимодействия с MQTT
-    // ------------------------------------------------
+    struct QueuedMessage {
+        std::string topic;
+        std::string payload;
+        uint8_t qos;
+        bool retained;
+    };
+
     uint16_t subscribe(const char *topic, uint8_t qos = 0) const;
-    uint16_t publish(const char *topic, const char *payload, uint8_t qos = 0, bool retained = false) const;
-    uint16_t publish(const char *topic, const std::string& payload, uint8_t qos = 0, bool retained = false) const;
+    uint16_t publish(const char *topic, const char *payload, uint8_t qos = 0, bool retained = false);
+    uint16_t publish(const char *topic, const std::string& payload, uint8_t qos = 0, bool retained = false);
     void setMessageHandler(const MqttMessageHandler& handler);
 
     /**
@@ -58,10 +60,13 @@ private:
     MqttMessageHandler _userHandler;
 
     std::vector<Subscription> _subscriptions;
+    std::deque<QueuedMessage> _publishQueue;
+
+    void processPublishQueue();
 
     explicit MqttBridge(MqttSettingsService *settingsService);
 
-    void onMqttConnect(bool sessionPresent) const;
+    void onMqttConnect(bool sessionPresent);
 
     void onMqttMessage(char *topic, char *payload, int retain, int qos, bool dup);
 
