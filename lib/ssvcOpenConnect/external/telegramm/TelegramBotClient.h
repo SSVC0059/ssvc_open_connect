@@ -49,6 +49,8 @@ public:
     void shutoff();
     [[nodiscard]] bool setBotToken(const String&  botToken) const;
     [[nodiscard]] String getBotToken() const;
+    [[nodiscard]] String createControlKeyboard() const;
+
     void setChatID (int64_t _chatID);
     [[nodiscard]] int64_t getChatId () const;
     void setPullMode(int pullMode);
@@ -56,7 +58,6 @@ public:
     uint32_t sendMessage(const std::string& message);
     void updateMessage(const std::string& message, uint32_t messageId);
 
-    void handleUpdate(fb::Update& u);
     static bool isReadiness();
 
     TelegramBotClient(const TelegramBotClient&) = delete;
@@ -73,6 +74,7 @@ private:
         std::string rectificationInfo;
         std::map<std::string, std::vector<std::string>> sensorZones;
         uint32_t lastUpdateTime = 0;
+        bool showControlButtons = false;
     };
 
     CachedMessage cachedStatus;

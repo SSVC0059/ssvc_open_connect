@@ -20,6 +20,19 @@
 
 TelegramBotClient::TelegramBotClient() = default;
 
+static constexpr auto CALLBACK_RECT_STOP = "/rect_stop";
+
+String TelegramBotClient::createControlKeyboard() const {
+    if (cachedStatus.showControlButtons) {
+        fb::InlineMenu keyboard;
+        // Кнопка, которая при нажатии отправит CALLBACK_RECT_STOP
+        keyboard.addButton("❌ Остановить процесс", CALLBACK_RECT_STOP);
+        // Можно добавить дополнительные кнопки, например:
+        // keyboard.addButton("🔄 Перезапустить", "/rect_restart");
+    }
+    return ""; // Возвращаем пустую строку, если кнопки не нужны
+}
+
 void TelegramBotClient::initTelemetryTaskSender()
 {
     if (_telemetryTaskHandle != nullptr) {
@@ -131,68 +144,76 @@ void TelegramBotClient::statusMessageSender(void* params) {
 }
 
 void TelegramBotClient::updateSensorInfo() {
-    // if (!SubsystemManager::instance().isSubsystemEnabled(ThermalSubsystem::getName())) {
-    //     if (!cachedStatus.sensorZones.empty()) {
-    //         cachedStatus.sensorZones.clear();
-    //     }
-    //     return;
-    // }
-    //
-    // const auto& currentTemperatures = ThermalSensors::thermalController().getTemperatures();
-    // if (currentTemperatures.empty()) {
-    //     if (!cachedStatus.sensorZones.empty()) {
-    //         cachedStatus.sensorZones.clear(); // Очищаем кэш если нет данных
-    //     }
-    //     return;
-    // }
-    //
-    // static std::vector<SensorTemperatureData> lastTemperatures;
-    // bool dataChanged = false;
-    //
-    // if (lastTemperatures.size() != currentTemperatures.size()) {
-    //     dataChanged = true;
-    // } else {
-    //     for (size_t i = 0; i < lastTemperatures.size(); ++i) {
-    //         if (lastTemperatures[i].address != currentTemperatures[i].address ||
-    //             fabs(lastTemperatures[i].temperature - currentTemperatures[i].temperature) > 0.1f) {
-    //             dataChanged = true;
-    //             break;
-    //             }
-    //     }
-    // }
-    //
-    // if (!dataChanged) {
-    //     return;
-    // }
-    //
-    // lastTemperatures = currentTemperatures;
-    // cachedStatus.sensorZones.clear();
-    //
-    // // Группируем датчики по зонам
-    // size_t validCount = 0;
-    // for (const auto& sensor : currentTemperatures) {
-    //     if (sensor.temperature != -127.0f && !sensor.address.empty()) {
-    //         validCount++;
-    //     }
-    // }
-    //
-    // // Теперь выводим в обратном порядке с правильной нумерацией
-    // size_t currentNumber = validCount;
-    // for (auto it = currentTemperatures.rbegin(); it != currentTemperatures.rend(); ++it) {
-    //     const SensorTemperatureData& sensor = *it;
-    //
-    //     if (sensor.temperature == -127.0f || sensor.address.empty()) {
-    //         continue;
-    //     }
-    //
-    //     char tempBuffer[64];
-    //     snprintf(tempBuffer, sizeof(tempBuffer), "  •TP%u: <b>%.2f°C</b>\n",
-    //             currentNumber, sensor.temperature);
-    //
-    //     cachedStatus.sensorZones[sensor.zone].emplace_back(tempBuffer);
-    //     currentNumber--;
-    // }
-    // cachedStatus.lastUpdateTime = millis();
+    // 1. Получаем экземпляр сервиса данных датчиков
+    SensorDataService* sensorService = SensorDataService::getInstance();
+
+    if (sensorService == nullptr) {
+        if (!cachedStatus.sensorZones.empty()) {
+            cachedStatus.sensorZones.clear();
+        }
+        ESP_LOGE("TelegramBotClient", "SensorDataService is not initialized!");
+        return;
+    }
+
+    sensorService->read([&](const SensorDataState& currentState) {
+
+        // Проверяем, есть ли вообще данные
+        if (currentState.readings_by_zone.empty()) {
+            cachedStatus.sensorZones.clear();
+            return; // Выходим из лямбды, если нет данных
+        }
+
+        // Временная структура для сравнения и хранения новых данных
+        // Использовать 'value' вместо 'temperature' для обобщения
+        std::map<std::string, std::vector<std::string>> newSensorZones;
+        bool dataChanged = false;
+
+        // 3. Итерируем по данным, сгруппированным по зонам
+        for (const auto& zonePair : currentState.readings_by_zone) {
+            const SensorZone zone = zonePair.first;
+            const auto& readings = zonePair.second;
+
+            // Получаем переведенное название зоны
+            const std::string zoneName = SensorZoneHelper::toString(zone);
+
+            // Создаем список для текстовых строк датчиков в этой зоне
+            std::vector<std::string> sensorTexts;
+
+            for (auto it = readings.rbegin(); it != readings.rend(); ++it) {
+                const std::string& address = it->first; // Адрес датчика не используется в выводе
+                const float sensorValue = it->second; // Использовать 'sensorValue' вместо 'temperature'
+
+                std::string shortAddress;
+                if (address.length() > 4) {
+                    shortAddress = address.substr(address.length() - 4);
+                } else {
+                    shortAddress = address;
+                }
+
+                char tempBuffer[64];
+                snprintf(tempBuffer, sizeof(tempBuffer), "  %s: <b>%.2f°C</b>\n",
+                             shortAddress.c_str(), sensorValue);
+
+                sensorTexts.emplace_back(tempBuffer);
+            }
+
+            if (!sensorTexts.empty()) {
+                 newSensorZones[zoneName] = sensorTexts;
+            }
+        }
+
+        // 5. Проверяем, изменились ли данные по сравнению с кэшем
+        if (cachedStatus.sensorZones.size() != newSensorZones.size() || cachedStatus.sensorZones != newSensorZones) {
+            dataChanged = true;
+        }
+
+        // 6. Обновляем кэш, только если есть изменения
+        if (dataChanged) {
+            cachedStatus.sensorZones = std::move(newSensorZones);
+            cachedStatus.lastUpdateTime = millis();
+        }
+
+    }); // Нет необходимости в originId для метода read()
 }
 
 void TelegramBotClient::initializeMessageStructure() {
@@ -232,6 +253,8 @@ void TelegramBotClient::updateRectificationInfo() {
     const bool hasAnyData = hasTp1Data || hasTp2Data || hasTypeData;
     const bool cacheValid = (millis() - lastValidData.lastValidTime < 30000) &&
                           (!lastValidData.type.empty() || lastValidData.tp1 != 0 || lastValidData.tp2 != 0);
+
+    cachedStatus.showControlButtons = hasAnyData || cacheValid;
 
     if (!hasAnyData && !cacheValid) {
         cachedStatus.rectificationInfo.clear();
@@ -348,6 +371,8 @@ uint32_t TelegramBotClient::sendMessage(const std::string& message)
     msg.mode = fb::Message::Mode::HTML;
     msg.text = message.c_str();
     msg.chatID = chatID;
+    (void)createControlKeyboard();
+
     while (!_bot.isPolling())
     {
         fb::Result result = _bot.sendMessage(msg);
@@ -364,6 +389,7 @@ void TelegramBotClient::updateMessage(const std::string& message, uint32_t messa
     et.text = message.c_str();
     et.chatID = chatID;
     et.messageID = messageId;
+
     _bot.editText(et);
 }
 
