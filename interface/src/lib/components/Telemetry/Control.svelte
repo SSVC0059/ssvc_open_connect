@@ -14,9 +14,8 @@
 	import ChangeStageModal from '$lib/components/Telemetry/ChangeStageModal.svelte'
 	import { sendCommand } from '$lib/api/ssvcApi'
 
-	const { status, onStatusUpdate } = $props<{
+	const { status } = $props<{
 		status: RectStatus | undefined;
-		onStatusUpdate: () => Promise<void>; // Функция возвращает Promise
 	}>();
 
 	let showWizard = $state(false);

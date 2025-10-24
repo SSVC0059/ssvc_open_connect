@@ -26,6 +26,7 @@
 #include <Arduino.h>
 #include <string>
 #include <unordered_map>
+#include <map>
 
 #define ATTEMPT_COUNT 3
 #define TIMEOUT pdMS_TO_TICKS(3000)
@@ -110,6 +111,8 @@ public:
       vQueueDelete(command_queue);
     }
   }
+
+  static const std::map<std::string, std::function<void()>> COMMAND_MAP;
 
 private:
   QueueHandle_t command_queue;

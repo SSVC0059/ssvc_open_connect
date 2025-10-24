@@ -174,6 +174,12 @@ void SsvcConnector::initSsvcController() {
           ESP_LOGV("SsvcConnector", "ERROR send command");
           xEventGroupSetBits(eventGroup, BIT1);
         }
+        // Отправка ответа на MQTT
+        (void)MqttBridge::getInstance().publish(
+          MQTT_RSP_TOPIC,
+          data,
+          1,
+          true);
       } else {
         if (doc["common"]["cfg_chgd"]) {
           ESP_LOGV("SsvcConnector",

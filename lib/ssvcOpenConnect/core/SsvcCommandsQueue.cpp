@@ -17,6 +17,21 @@
 
 #include "SsvcCommandsQueue.h"
 
+// Инициализация статической карты команд
+const std::map<std::string, std::function<void()>> SsvcCommandsQueue::COMMAND_MAP = {
+      {"at",           []() { getQueue().at(); }},
+      {"next",         []() { getQueue().next(); }},
+      {"pause",        []() { getQueue().pause(); }},
+      {"stop",         []() { getQueue().stop(); }},
+      {"start",        []() { getQueue().start(); }},
+      {"resume",       []() { getQueue().resume(); }},
+      {"version",      []() { getQueue().version(); }},
+      {"get_settings", []() { getQueue().getSettings(); }},
+      {"settings",     []() { getQueue().getSettings(); }},
+      {"emergency_stop",     []() { getQueue().stop(); }},
+
+};
+
 SsvcCommandsQueue::SsvcCommandsQueue() {
   command_queue = xQueueCreate(COMMAND_QUEUE_LENGTH, COMMAND_QUEUE_ITEM_SIZE);
   if (command_queue == nullptr) {
@@ -46,7 +61,7 @@ SsvcCommandsQueue::SsvcCommandsQueue() {
  * @param xTimer Указатель на таймер, инициировавший вызов.
  */
 void delayed_get_settings_callback(const TimerHandle_t xTimer) {
-  auto *self = static_cast<SsvcCommandsQueue *>(pvTimerGetTimerID(xTimer));
+  const auto *self = static_cast<SsvcCommandsQueue *>(pvTimerGetTimerID(xTimer));
   if (self) {
     self->getSettings();
   }

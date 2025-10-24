@@ -31,7 +31,7 @@ SsvcSettings &SsvcSettings::init() {
 SsvcSettings::SsvcSettings() = default;
 
 bool SsvcSettings::load(const std::string &json) {
-  ESP_LOGI("SsvcConnector", "Загрузка настроек контроллера");
+  ESP_LOGD("SsvcConnector", "Загрузка настроек контроллера");
   JsonDocument doc;
 
   const DeserializationError error = deserializeJson(doc, json);
@@ -72,7 +72,7 @@ bool SsvcSettings::load(const std::string &json) {
     if (settings["tails"].is<JsonArray>()) {
       std::get<0>(tails) = settings["tails"][0].as<float>();
       std::get<1>(tails) = settings["tails"][1].as<int>();
-      ESP_LOGI("SsvcSettings", "Обновлены tails: %f, %d", std::get<0>(tails),
+      ESP_LOGD("SsvcSettings", "Обновлены tails: %f, %d", std::get<0>(tails),
                std::get<1>(tails));
     }
 
@@ -485,7 +485,7 @@ bool SsvcSettings::setSsvcVersion(std::string _ssvcVersion)
 
 bool SsvcSettings::setSsvcApiVersion(std::string _ssvcApiVersion)
 {
-  ESP_LOGI("SsvcSettings", "setSsvcApiVersion: %s", _ssvcApiVersion.c_str());
+  ESP_LOGD("SsvcSettings", "setSsvcApiVersion: %s", _ssvcApiVersion.c_str());
   this->ssvcApiVersion = std::move(_ssvcApiVersion);
   return true;
 }
@@ -594,7 +594,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHysteresis(float _hyst) {
   if (settings.hyst != prevHyst) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "hyst=%.2f", settings.hyst);
-    ESP_LOGI("SsvcSettings", "setHysteresis: %s", buffer);
+    ESP_LOGD("SsvcSettings", "setHysteresis: %s", buffer);
     SsvcCommandsQueue::getQueue().set(buffer);
   }
   return *this;
@@ -618,7 +618,7 @@ SsvcSettings::Builder::setDecrement(unsigned char _decrement) {
   if (settings.decrement != prevDecrement) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "decrement=%d", settings.decrement);
-    ESP_LOGI("SsvcSettings", "setDecrement: %s", buffer);
+    ESP_LOGD("SsvcSettings", "setDecrement: %s", buffer);
     SsvcCommandsQueue::getQueue().set(buffer);
   }
   return *this;
@@ -638,7 +638,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::formulaEnable(const bool enable) {
   if (settings.formula != prevFormula) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "formula=%d", settings.formula);
-    ESP_LOGI("SsvcSettings", "formulaEnable: %s", buffer);
+    ESP_LOGD("SsvcSettings", "formulaEnable: %s", buffer);
     SsvcCommandsQueue::getQueue().set(buffer);
   }
   return *this;
@@ -662,7 +662,7 @@ SsvcSettings::Builder::setTank_mmhg(unsigned char _tank_mmhg) {
   if (settings.tank_mmhg != prevTank_mmhg) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "tank_mmhg=%d", settings.tank_mmhg);
-    ESP_LOGI("SsvcSettings", "tank_mmhg: %s", buffer);
+    ESP_LOGD("SsvcSettings", "tank_mmhg: %s", buffer);
     SsvcCommandsQueue::getQueue().set(buffer);
   }
   return *this;
@@ -681,17 +681,17 @@ SsvcSettings::Builder::setTank_mmhg(unsigned char _tank_mmhg) {
 SsvcSettings::Builder &
 SsvcSettings::Builder::setHeadsTimer(unsigned int _headsTimer) {
   const unsigned int prevHeadsTimer = settings.heads_timer;
-  ESP_LOGI("SsvcSettings", "_headsTimer: %d", _headsTimer);
+  ESP_LOGD("SsvcSettings", "_headsTimer: %d", _headsTimer);
   const unsigned int headsTimer =
       std::min(std::max(_headsTimer,
         static_cast<unsigned int>(0)),
         static_cast<unsigned int>(86400));
-  ESP_LOGI("SsvcSettings", "headsTimer min|max: %d", _headsTimer);
+  ESP_LOGD("SsvcSettings", "headsTimer min|max: %d", _headsTimer);
   settings.heads_timer = headsTimer;
   if (settings.heads_timer != prevHeadsTimer) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "heads_timer=%d", settings.heads_timer);
-    ESP_LOGI("SsvcSettings", "heads_timer: %s", buffer);
+    ESP_LOGD("SsvcSettings", "heads_timer: %s", buffer);
     SsvcCommandsQueue::getQueue().set(buffer);
   }
   return *this;
@@ -717,7 +717,7 @@ SsvcSettings::Builder::setLateHeadsTimer(const unsigned int _liteHeadsTimer) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "late_heads_timer=%d",
                   settings.late_heads_timer);
-    ESP_LOGI("SsvcSettings", "late_heads_timer: %s", buffer);
+    ESP_LOGD("SsvcSettings", "late_heads_timer: %s", buffer);
     SsvcCommandsQueue::getQueue().set(buffer);
   }
   return *this;
@@ -741,7 +741,7 @@ SsvcSettings::Builder::setHeartsTimer(const unsigned char _heartsTimer) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "hearts_timer=%d",
                   settings.hearts_timer);
-    ESP_LOGI("SsvcSettings", "hearts_timer: %s", buffer);
+    ESP_LOGD("SsvcSettings", "hearts_timer: %s", buffer);
     SsvcCommandsQueue::getQueue().set(buffer);
   }
   return *this;
@@ -763,7 +763,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setTailsTemp(const float _tailsTem
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "tails_temp=%0.1f",
                   settings.tails_temp);
-    ESP_LOGI("SsvcSettings", "tails_temp: %s", buffer);
+    ESP_LOGD("SsvcSettings", "tails_temp: %s", buffer);
     SsvcCommandsQueue::getQueue().set(buffer);
   }
   return *this;
@@ -788,7 +788,7 @@ SsvcSettings::Builder::setStartDelay(const unsigned int _start_delay) {
   if (settings.start_delay != prevStartDelay) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "start_delay=%d", settings.start_delay);
-    ESP_LOGI("SsvcSettings", "Start_delay: %s", buffer);
+    ESP_LOGD("SsvcSettings", "Start_delay: %s", buffer);
     SsvcCommandsQueue::getQueue().set(buffer);
   }
   return *this;
@@ -813,7 +813,7 @@ SsvcSettings::Builder::setHeartsFinishTemp(const float _heartsFinishTemp) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "hearts_finish_temp=%0.1f",
                   settings.hearts_finish_temp);
-    ESP_LOGI("SsvcSettings", "Start_delay: %s", buffer);
+    ESP_LOGD("SsvcSettings", "Start_delay: %s", buffer);
     SsvcCommandsQueue::getQueue().set(buffer);
   }
   return *this;
@@ -838,7 +838,7 @@ SsvcSettings::Builder::setFormulaStartTemp(const float _formulaStartTemp) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "formula_start_temp=%0.1f",
                   settings.formula_start_temp);
-    ESP_LOGI("SsvcSettings", "formula_start_temp: %s", buffer);
+    ESP_LOGD("SsvcSettings", "formula_start_temp: %s", buffer);
     SsvcCommandsQueue::getQueue().set(buffer);
   }
   return *this;
@@ -885,7 +885,7 @@ SsvcSettings::Builder::setReleaseSpeed(const float _release_speed) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "release_speed=%0.1f",
                   settings.release_speed);
-    ESP_LOGI("SsvcSettings", "release_speed: %s", buffer);
+    ESP_LOGD("SsvcSettings", "release_speed: %s", buffer);
     SsvcCommandsQueue::getQueue().set(buffer);
   }
   return *this;
@@ -900,7 +900,7 @@ SsvcSettings::Builder::setReleaseTimer(const unsigned int _release_timer) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "start_delay=%d",
                   settings.release_timer);
-    ESP_LOGI("SsvcSettings", "release_speed: %s", buffer);
+    ESP_LOGD("SsvcSettings", "release_speed: %s", buffer);
     SsvcCommandsQueue::getQueue().set(buffer);
   }
   return *this;
@@ -914,7 +914,7 @@ SsvcSettings::Builder::setHeadsFinal(const float _heartsFinishTemp) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "heads_final=%0.1f",
                   settings.heads_final);
-    ESP_LOGI("SsvcSettings", "heads_final: %s", buffer);
+    ESP_LOGD("SsvcSettings", "heads_final: %s", buffer);
     SsvcCommandsQueue::getQueue().set(buffer);
   }
   return *this;
@@ -924,7 +924,7 @@ SsvcSettings::Builder& SsvcSettings::Builder::setStepTemp(const float stepTemp){
   char buffer[50];
   std::snprintf(buffer, sizeof(buffer), "s_temp=%0.1f",
                 stepTemp);
-  ESP_LOGI("SsvcSettings", "s_temp: %s", buffer);
+  ESP_LOGD("SsvcSettings", "s_temp: %s", buffer);
   SsvcCommandsQueue::getQueue().set(buffer);
   return *this;
 }
@@ -932,7 +932,7 @@ SsvcSettings::Builder& SsvcSettings::Builder::setStepTemp(const float stepTemp){
 SsvcSettings::Builder& SsvcSettings::Builder::setStepHysteresis(const float stepHysteresis) {
   char buffer[50];
   std::snprintf(buffer, sizeof(buffer), "s_hyst=%.2f", stepHysteresis);
-  ESP_LOGI("SsvcSettings", "s_hyst: %s", buffer);
+  ESP_LOGD("SsvcSettings", "s_hyst: %s", buffer);
   SsvcCommandsQueue::getQueue().set(buffer);
   return *this;
 }
@@ -950,7 +950,7 @@ SsvcSettings::Builder &
 SsvcSettings::Builder::setStepDecrement(const unsigned char _decrement) {
   char buffer[50];
   std::snprintf(buffer, sizeof(buffer), "s_decrement=%d", _decrement);
-  ESP_LOGI("SsvcSettings", "s_decrement: %s", buffer);
+  ESP_LOGD("SsvcSettings", "s_decrement: %s", buffer);
   SsvcCommandsQueue::getQueue().set(buffer);
   return *this;
 }
@@ -960,7 +960,7 @@ SsvcSettings::Builder::setStepTimer(const unsigned int _timer) {
   char buffer[50];
   std::snprintf(buffer, sizeof(buffer), "s_timer=%d",
                 settings.release_timer);
-  ESP_LOGI("SsvcSettings", "s_timer: %s", buffer);
+  ESP_LOGD("SsvcSettings", "s_timer: %s", buffer);
   SsvcCommandsQueue::getQueue().set(buffer);
   return *this;
 }

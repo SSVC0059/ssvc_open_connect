@@ -24,6 +24,8 @@
 
 #include "AlarmMonitor/Subscribers/NotificationSubscriber.h"
 #include "components/sensors/SensorCoordinator/SensorCoordinator.h"
+#include "external/MqttBridge/MqttBridge.h"
+#include "MqttCommandHandler/MqttCommandHandler.h"
 #include "StatefulServices/SensorDataService/SensorDataService.h"
 
 void SsvcOpenConnect::begin(PsychicHttpServer& server,
@@ -57,7 +59,6 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     });
 
 
-
     // Регистрация подсистемы OneWireThermalSubsystem для периодического опроса датчиков
     SensorCoordinator::getInstance().registerPollingSubsystem(
         &OneWireThermalSubsystem::getInstance()
@@ -80,8 +81,16 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
 
     // Отправка начальных команд
     vTaskDelay(pdMS_TO_TICKS(2000));
-    SsvcCommandsQueue::getQueue().getSettings();
-    SsvcCommandsQueue::getQueue().version();
+    const SsvcCommandsQueue* queue = &SsvcCommandsQueue::getQueue();
+    queue->getSettings();
+    queue->version();
+
+    // // Инициализация клиента MQTT
+    MqttBridge::getInstance(_esp32sveltekit->getMqttSettingsService());
+
+    // регистрация обработчика команд SSVC для MQTT
+    const auto commandHandler = new MqttCommandHandler();
+    commandHandler->begin();
 
     // Инициализация подсистем
     subsystemManager();

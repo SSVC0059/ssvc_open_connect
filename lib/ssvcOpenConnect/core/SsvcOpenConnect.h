@@ -35,6 +35,7 @@
 #include "components/subsystem/ThermalSubsystem.h"
 #include "components/subsystem/SettingsSubsystem.h"
 #include "commons/commons.h"
+#include "MqttCommandHandler/MqttCommandHandler.h"
 #include "StatefulServices/SensorDataService/SensorDataService.h"
 #include "StatefulServices/TelemetryService/TelemetryService.h"
 
@@ -91,6 +92,8 @@ private:
   AlarmThresholdService* _alarmThresholdService = nullptr;
   SensorConfigService* _sensorConfigService = nullptr;
   TelemetryService* _telemetryService = nullptr;
+
+  MqttCommandHandler* _mqttCommandHandler = nullptr;
 
   AlarmMonitor* _alarmMonitor = nullptr;
 

@@ -164,17 +164,6 @@ export async function fetchTelemetry(): Promise<SsvcOpenConnectMessage | null> {
 	return response.success ? response.data : null;
 }
 
-/**
- * Получение только статуса
- */
-export async function fetchStatus(): Promise<SsvcOpenConnectMessage | null> {
-	const response = await apiFetch<SsvcOpenConnectMessage>('/rest/telemetry?mode=status', 'GET');
-	if (!response.success) {
-		console.error('Ошибка при получении телеметрии:', response.error);
-	}
-	return response.success ? response.data : null;
-
-}
 
 /**
  * Отправка команды с автоматическим обновлением статуса

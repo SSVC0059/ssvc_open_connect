@@ -4,7 +4,6 @@
         import {
             fetchAlarmThresholds,
             fetchSensorsTemperatureByZone,
-            fetchStatus,
             fetchTelemetry
         } from '$lib/api/ssvcApi';
 		import Control from '$lib/components/Telemetry/Control.svelte';
@@ -48,20 +47,17 @@
 			}
 		};
 
-		async function loadTelemetry(forceUpdateStatus: boolean = false): Promise<void> {
+		async function loadTelemetry(): Promise<void> {
 			try {
 				const shouldGetTelemetry = telemetryCounter % (TELEMETRY_INTERVAL / BASE_INTERVAL) === 0;
 				const shouldGetStatus = statusCounter % (STATUS_INTERVAL / BASE_INTERVAL) === 0;
 
 				let _data;
-				if (shouldGetTelemetry && shouldGetStatus || forceUpdateStatus) {
+				if (shouldGetTelemetry && shouldGetStatus) {
 					// Если совпали оба интервала - делаем оба запроса
 					_data = await fetchTelemetry();
-					await fetchStatus(); // или объединить данные
 				} else if (shouldGetTelemetry) {
 					_data = await fetchTelemetry();
-				} else if (shouldGetStatus) {
-					_data = await fetchStatus();
 				}
 
 				if (_data) {
@@ -89,10 +85,6 @@
 			} catch (err: any) {
 
 			}
-		}
-
-		async function updateStatus() {
-			await fetchStatus();
 		}
 
 		$effect(() => {
@@ -141,7 +133,7 @@
 			<div class="sidebar-left">
 				<div class="glassmorphism panel">
 					<div class="controls-container">
-						<Control {status} onStatusUpdate={updateStatus} />
+						<Control {status} />
 						<div class="sensor-readings ">
 							<h3 class="section-title">Данные датчиков</h3>
 							{#if telemetry}
