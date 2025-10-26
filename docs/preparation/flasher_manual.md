@@ -1,51 +1,18 @@
 # Автоматическая установка актуальной версии
 
-
-
-!!! info inline end
-    Если загрузка актуальных прошивок происходит долго - обновите страницу
-
-
-## Использование установщика
-
-Установщик позволяет в автоматическом режиме установить актуальную или тестовую прошивку с правильным смещением. Для его использования на компьютере должны быть установленны драйвера.
-
-## Прошивка контроллера
-
-1. Подключите контроллер проводом к компьютеру проводом и убедитесь что драйвера установленны
-
-2. Нажмите кнопку установки, которая соответствует вашему чипу
+!!! warning "ВНИМАНИЕ"
+    При установке стабильной или тестовой версии через кнопку возможна полная очистка данных.
+    Рекомендуется сохранить настройки telegramm бота, если они были установленны ранее.
 
 !!! warning "ВНИМАНИЕ"
     Так как прошивальщик не может точно определить модель вашего чипа, то критически важно правильно выбрать тип.
     Убедитесь, что прошивка соответствует установленной памяти на вашем чипе. Подробнее как это определить - [читаем в начале](controller.md) 
 
-После нажатия появится окно выбора контроллера.
-
-![](media/flasher_1.png)
-
-
-После выбора появится меню, в нем выбираем установку и дале следуем пункам мастера. При первоначальной установке или при не корректной работе желательно произвести очистку.
-
-!!! warning "ВНИМАНИЕ"
-    При установке стабильной или тестовой версии через кнопку возможна полная очистка данных.
-    Рекомендуется сохранить настройки telegramm бота, если они были установленны ранее.
+!!! info inline end
+    Если загрузка актуальных прошивок происходит долго - обновите страницу
 
 
-<div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-<img src="/preparation/media/flasher_2.png" style="height:250px"> 
-<img src="/preparation/media/flasher_3.png" style="height:250px"> 
-<img src="/preparation/media/flasher_4.png" style="height:250px"> 
-</div>
-
-## Flash Tool
-
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>ESP Web Install Dynamic (Dual Chip & Local File)</title>
-    <script
+<script
         type="module"
         src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"
     ></script>
@@ -53,7 +20,8 @@
     <style>
         .install-button-wrapper { 
             margin: 20px auto; 
-            max-width: 400px; 
+            max-width: 90%; /* Занимает 90% ширины родительского контейнера */
+            width: 100%;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             text-align: center; 
             padding: 15px; 
@@ -64,7 +32,7 @@
             margin-bottom: 40px; 
             box-sizing: border-box;
         }
-        
+                
         /* Стили для кнопок GitHub и Локальной установки */
         .install-button-wrapper button[slot="activate"] { 
             background-color: #007bff; 
@@ -157,10 +125,8 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-</head>
-<body>
 
-    <div class="install-button-wrapper">
+<div class="install-button-wrapper">
         <p id="info-message">Идет загрузка данных о релизах с GitHub...</p>
         <div class="loader" id="loader"></div>
         <div id="install-buttons-container"></div>
@@ -411,8 +377,3 @@
 
         document.addEventListener('DOMContentLoaded', loadAndCreateButtons);
     </script>
-
-</body>
-</html>
-
-

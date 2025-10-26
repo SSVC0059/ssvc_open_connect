@@ -7,6 +7,7 @@ nav:
       - preparation/driver.md
       - preparation/firmware.md
       - preparation/flasher.md
+      - preparation/adafruit_webserial_esptool.md
 
 
 site_author: thedemoncat
