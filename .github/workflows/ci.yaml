@@ -1,26 +1,34 @@
-name: ci
+name: Deploy MkDocs
 on:
   push:
     branches:
       - master
       - main
-      - v0.2.4 # для отладки
+      - v0.2.4
+
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.x
-      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
-      - uses: actions/cache@v3
-        with:
-          key: mkdocs-material-${{ env.cache_id }}
-          path: .cache
-          restore-keys: |
-            mkdocs-material-
-      - run: pip install mkdocs-material
-      - run: mkdocs gh-deploy --force
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install mkdocs-material
+          pip install mkdocs-git-committers-plugin-2
+          
+      - name: Build and Deploy
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          mkdocs gh-deploy --force
