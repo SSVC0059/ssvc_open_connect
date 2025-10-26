@@ -27,6 +27,10 @@
 #include <PsychicHttp.h>
 #include <vector>
 
+// 🟥 🟥 🟥 БЛОК IMPROV WIFI 🟥 🟥 🟥
+#include <ImprovWiFiLibrary.h>
+// 🟥 🟥 🟥 КОНЕЦ БЛОКА IMPROV WIFI 🟥 🟥 🟥
+
 #ifndef FACTORY_WIFI_SSID
 #define FACTORY_WIFI_SSID ""
 #endif
@@ -241,6 +245,21 @@ private:
     void connectToWiFi();
     void configureNetwork(wifi_settings_t &network);
     void updateRSSI();
+
+    // Объявление экземпляра ImprovWiFi
+    ImprovWiFi _improvSerial;
+
+    // Статический callback-метод для обработки настроек Wi-Fi,
+    // регистрируется в ImprovWiFi. Он вызывает метод экземпляра.
+    static bool staticConnectToWiFiCallback(const char *ssid, const char *password);
+
+    // Метод экземпляра, реализующий логику сохранения настроек
+    bool connectToWiFiCallback(const char *ssid, const char *password);
+
+    // Статический callback-метод для обработки ошибок (опционально)
+    static void staticOnErrorCallback(ImprovTypes::Error err);
+
+
 };
 
 #endif // end WiFiSettingsService_h

@@ -14,6 +14,8 @@
 
 #include <WiFiSettingsService.h>
 
+static WiFiSettingsService *_instance = nullptr;
+
 WiFiSettingsService::WiFiSettingsService(PsychicHttpServer *server,
                                          FS *fs,
                                          SecurityManager *securityManager,
@@ -24,11 +26,35 @@ WiFiSettingsService::WiFiSettingsService(PsychicHttpServer *server,
                                                                 _fsPersistence(WiFiSettings::read, WiFiSettings::update, this, fs, WIFI_SETTINGS_FILE), _lastConnectionAttempt(0),
                                                                 _delayedReconnectTime(0),
                                                                 _delayedReconnectPending(false),
-                                                                _socket(socket)
+                                                                _socket(socket),
+                                                                _improvSerial(&Serial)
 {
+
+
     addUpdateHandler([&](const String &originId)
                      { delayedReconnect(); },
                      false);
+
+    _instance = this;
+
+    _improvSerial.setDeviceInfo(
+#if CONFIG_IDF_TARGET_ESP32C3
+                                ImprovTypes::ChipFamily::CF_ESP32_C3, // Укажите правильный чип
+#elif CONFIG_IDF_TARGET_ESP32S2
+                                ImprovTypes::ChipFamily::CF_ESP32_S2,
+#else
+                                ImprovTypes::ChipFamily::CF_ESP32,
+#endif
+                                APP_NAME,
+                                APP_VERSION, 
+                                getHostname().c_str(),
+                                "http://" FACTORY_WIFI_HOSTNAME ".local");
+
+    // 3. Регистрируем пользовательский callback для обработки настроек Wi-Fi
+    _improvSerial.setCustomConnectWiFi(WiFiSettingsService::staticConnectToWiFiCallback);
+
+    // 4. Регистрируем обработчик ошибок (опционально, для логирования)
+    _improvSerial.onImprovError(WiFiSettingsService::staticOnErrorCallback);
 }
 
 void WiFiSettingsService::initWiFi()
@@ -100,6 +126,8 @@ void WiFiSettingsService::reconfigureWiFiConnection()
     {
         _stopping = true;
     }
+
+    _improvSerial.handleSerial();
 }
 
 void WiFiSettingsService::loop()
@@ -125,6 +153,8 @@ void WiFiSettingsService::loop()
         _lastRssiUpdate = currentMillis;
         updateRSSI();
     }
+
+    _improvSerial.handleSerial();
 }
 
 String WiFiSettingsService::getHostname()
@@ -306,4 +336,49 @@ void WiFiSettingsService::onStationModeStop(WiFiEvent_t event, WiFiEventInfo_t i
         _lastConnectionAttempt = 0;
         _stopping = false;
     }
+}
+
+
+// --- IM PROV WIFI CALLBACKS ---
+
+bool WiFiSettingsService::staticConnectToWiFiCallback(const char *ssid, const char *password)
+{
+    if (_instance)
+    {
+        return _instance->connectToWiFiCallback(ssid, password);
+    }
+     return false;
+}
+
+bool WiFiSettingsService::connectToWiFiCallback(const char *ssid, const char *password)
+{
+    StateUpdateResult result = update([&](WiFiSettings &state) {
+
+        wifi_settings_t newSettings;
+        newSettings.ssid = ssid;
+        newSettings.password = password;
+
+        bool found = false;
+        // 2. Ищем, есть ли уже эта сеть в списке
+        for (auto &net : state.wifiSettings) {
+            if (net.ssid == newSettings.ssid) {
+                net.password = newSettings.password; // Обновляем пароль
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            state.wifiSettings.push_back(newSettings);
+        }
+
+        return StateUpdateResult::CHANGED;
+    }, "improv_serial"); // Идентификатор источника обновления
+
+    return result == StateUpdateResult::CHANGED;
+}
+
+void WiFiSettingsService::staticOnErrorCallback(const ImprovTypes::Error err)
+{
+    ESP_LOGE(SVK_TAG, "Improv error: %d", err);
 }
