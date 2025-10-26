@@ -31,6 +31,8 @@
 
 #define ALARM_SETTINGS_ENDPOINT "/rest/alarms"
 #define ALARM_SETTINGS_FILE "/config/alarms.json"
+#define MQTT_TOPIC_THRESHOLD_STATE "openconnect/sensor/threshold/state"
+#define MQTT_TOPIC_THRESHOLD_PUB "openconnect/sensor/threshold/pub"
 
 // Уровни тревоги
 enum class AlarmLevel {
@@ -96,18 +98,28 @@ public:
             AlarmThresholdsState::update,
             this,
             sveltekit->getFS(),
-            ALARM_SETTINGS_FILE)
+            ALARM_SETTINGS_FILE),
+        _mqttEndpoint(
+            AlarmThresholdsState::read,
+            AlarmThresholdsState::update,
+            this,
+            sveltekit->getMqttClient(),
+            MQTT_TOPIC_THRESHOLD_PUB,
+            MQTT_TOPIC_THRESHOLD_STATE
+        )
     {
     }
 
     void begin() {
         _fsPersistence.readFromFS();
         _httpEndpoint.begin();
+
     }
 
 private:
     HttpEndpoint<AlarmThresholdsState> _httpEndpoint;
     FSPersistence<AlarmThresholdsState> _fsPersistence;
+    MqttEndpoint<AlarmThresholdsState> _mqttEndpoint;
 };
 
 #endif //SSVC_OPEN_CONNECT_ALARMTHRESHOLDS_H
