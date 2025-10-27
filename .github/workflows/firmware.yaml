@@ -178,16 +178,6 @@ jobs:
           asset_name: SSVC-Open-Connect_esp32-s3-devkitc-1-8m_${{ needs.build.outputs.version }}.md5
           asset_content_type: text/plain
 
-      - name: Upload ESP32DEV Zip Archive
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/esp32dev/esp32dev.zip
-          asset_name: esp32dev_${{ needs.build.outputs.version }}.zip
-          asset_content_type: application/zip
-
       - name: Upload ESP32-S3-16M Zip Archive
         uses: actions/upload-release-asset@v1
         env:
