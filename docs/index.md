@@ -8,6 +8,7 @@
 
 Модуль SSVC0059 Open Connect  предназначен для расширения возможностей автоматика отбора для ректификации [SSVC0059 V2 ](https://smartmodule.ru/portfolio/0059_v2/)
 
+
 ## Возможности модуля
 
 ### :desktop:  WEB интерфейс
@@ -31,3 +32,24 @@ Open Connect в первую очередь предназначен для об
 ### :arrows_counterclockwise: Обмен данными с MQTT
 
 Контроллер реализует обмен данными и командами управления через брокер сообщений MQTT, позволяя управлять оборудованием ректификации через умный дом.
+
+
+### Полезные cсылки
+
+<a href="https://t.me/demoncat_home" target="_blank">
+    :simple-telegram: Группа проекта в Telegram
+</a>
+
+<a href="https://github.com/SSVC0059/ssvc_open_connect" target="_blank">
+    :simple-github: Репозитарий Github
+</a>
+
+<a href="https://rutube.ru/plst/937235/" target="_blank">
+    :material-youtube: Видео инструкции
+</a>
+
+<a href="https://t.me/ssvc0059_chat" target="_blank">
+    :simple-telegram: Группа производителя SSVC в Telegram
+</a>
+
+

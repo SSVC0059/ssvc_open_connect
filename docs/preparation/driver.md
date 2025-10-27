@@ -9,7 +9,7 @@
 
 
 <div class="flex">
-<img src="/preparation/media/usb_otg.png" style="height:240px"> 
+<img src="/ssvc_open_connect/preparation/media/usb_otg.png" style="height:240px"> 
 </div>
 
 ### USB to serial
@@ -17,7 +17,7 @@
 )
 
 <div style="flex">
-<img src="/preparation/media/usb_serial.png" style="height:240px"> 
+<img src="/ssvc_open_connect/ssvc_open_connect/preparation/media/usb_serial.png" style="height:240px"> 
 </div>
 
 Если драйвер не обнаружен, так же можно почитьать [эту статью](https://myrobot.ru/downloads/driver-ch9102x-esp32.php) по порядку установки
