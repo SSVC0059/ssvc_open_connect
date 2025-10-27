@@ -1,3 +1,63 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "daisyui" {
+    themes: corporate --default, business --prefersdark;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+    /* src/app.css */
+    :root {
+        /* Цвета */
+        --primary-100: #f0f4f8;
+        --primary-200: #d9e2ec;
+        --primary-300: #bcccdc;
+        --primary-500: #627d98;
+        --primary-600: #486581;
+        --primary-700: #334e68;
+        --primary-800: #243b53;
+        --blue-500: #3b82f6;
+        --blue-600: #2563eb;
+        --green-300: #80db93;
+        --green-500: #10b981;
+        --green-600: #059669;
+        --yellow-500: #f59e0b;
+        --yellow-600: #d97706;
+        --red-300: #d87c7c;
+        --red-500: #cd4848;
+        --red-600: #dc2626;
+        --red-700: #b91c1c;
+        --white: #ffffff;
+        --black: #000000;
+
+        /* Тени и эффекты */
+        --glass-shadow: 0 8px 32px 0 rgba(36, 59, 83, 0.37);
+        --glass-border: 1px solid rgba(255, 255, 255, 1);
+        --glass-background: rgba(255, 255, 255, 0.25);
+
+        /* Размеры */
+        --border-radius: 0.75rem;
+        --transition: all 0.3s ease;
+    }
+
+    /* Темная тема */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --glass-background: rgba(0, 0, 0, 0.25);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    }
+}

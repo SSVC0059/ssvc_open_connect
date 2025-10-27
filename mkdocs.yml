@@ -1,30 +1,27 @@
-site_name: ESP32 SvelteKit
+site_name: SSVC Open Connect
+site_url: https://SSVC0059.github.io/ssvc_open_connect/
 
 nav:
-  - Home: index.md
-  - "Build Tools":
-      - gettingstarted.md
-      - buildprocess.md
-  - "Front End":
-      - sveltekit.md
-      - structure.md
-      - stores.md
-      - components.md
-  - "Back End":
-      - statefulservice.md
-      - restfulapi.md
+  - "Главная": index.md
+  - "Подготовка":
+      - preparation/controller.md
+      - preparation/driver.md
+      - preparation/firmware.md
+      - preparation/flasher.md
+      - preparation/adafruit_webserial_esptool.md
 
-site_author: elims
+
+site_author: thedemoncat
 site_description: >-
-  A simple, secure and extensible framework for IoT projects on ESP32 platforms with responsive Sveltekit front-end built with TailwindCSS and DaisyUI.
+ Модуль расширения функционала автоматики отбора для ректификации  SSVC0059V2,
 
 # Repository
-repo_name: theelims/ESP32-sveltekit
-repo_url: https://github.com/theelims/ESP32-sveltekit
+repo_name: SSVC0059/ssvc_open_connect
+repo_url: https://github.com/SSVC0059/ssvc_open_connect
 
 theme:
   name: material
-  logo: media/svelte-logo.png
+  logo: media/logo.png
   favicon: media/favicon.png
   icon:
     repo: fontawesome/brands/github
@@ -71,20 +68,17 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
-
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/theelims/
+      link: https://github.com/thedemoncat
   consent:
     title: Cookie consent
     description: >-
-      We use cookies to recognize your repeated visits and preferences, as well
-      as to measure the effectiveness of our documentation and whether users
-      find what they're searching for. With your consent, you're helping us to
-      make our documentation better.
+      Сайт использует cookie-файлы, чтобы сделать ваше пребывание на нём максимально удобным. 
+      Оставаясь на сайте, вы даёте своё согласие на использование cookie-файлов.
     actions:
       - accept
       - reject
@@ -94,5 +88,5 @@ plugins:
       separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
 
 copyright: |
-  Copyright &copy; 2024 by <a href="https://github.com/theelims"  target="_blank" rel="noopener">elims</a> -
-  <a href="#__consent">Change cookie settings</a>
+  Copyright &copy; 2025 by <a href="https://github.com/thedemoncat"  target="_blank" rel="noopener">elims</a> -
+  <a href="#__consent">Изменить настройки файлов cookie</a>

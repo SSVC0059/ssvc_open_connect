@@ -7,7 +7,8 @@
 		id?: string;
 	}
 
-	let { value = $bindable(''), id = '' }: Props = $props();
+	let { value = $bindable('') as string, id = '' as string }: Props = $props();
+
 	function handleInput(e: any) {
 		value = e.target.value;
 	}
@@ -21,6 +22,9 @@
 			xmlns="http://www.w3.org/2000/svg"
 			class="text-base-content/50 h-6 {show ? 'block' : 'hidden'}"
 			onclick={() => (show = false)}
+			role="button"
+			aria-label="Hide password"
+			tabindex="0"
 			width="40"
 			height="40"
 			viewBox="0 0 24 24"
@@ -43,6 +47,9 @@
 			xmlns="http://www.w3.org/2000/svg"
 			class="text-base-content/50 h-6 {show ? 'hidden' : 'block'}"
 			onclick={() => (show = true)}
+			role="button"
+			aria-label="Show password"
+			tabindex="0"
 			width="40"
 			height="40"
 			viewBox="0 0 24 24"

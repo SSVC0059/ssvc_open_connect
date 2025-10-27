@@ -33,7 +33,8 @@
 	let formErrors = $state({
 		uid: false,
 		path: false,
-		name: false
+		name: false,
+		status_topic: false
 	});
 
 	async function postBrokerSettings() {
@@ -84,6 +85,14 @@
 			formErrors.path = false;
 		}
 
+		// Validate MQTT Status Topic
+		if (brokerSettings.status_topic.length > 64) {
+			valid = false;
+			formErrors.status_topic = true;
+		} else {
+			formErrors.status_topic = false;
+		}
+
 		// Submit JSON to REST API
 		if (valid) {
 			postBrokerSettings();
@@ -106,31 +115,30 @@
 	{#snippet title()}
 		<span>MQTT Broker Settings</span>
 	{/snippet}
-	<div class="w-full overflow-x-auto">
+	<div class="w-full">
 		{#await getBrokerSettings()}
 			<Spinner />
 		{:then nothing}
 			<form
+				class="fieldset"
 				onsubmit={preventDefault(handleSubmitBroker)}
 				novalidate
 				bind:this={formField}
 				transition:slide|local={{ duration: 300, easing: cubicOut }}
 			>
 				<div class="alert alert-info my-2 shadow-lg">
-					<Info class="h-6 w-6 flex-shrink-0 stroke-current" />
+					<Info class="h-6 w-6 shrink-0 stroke-current" />
 					<span
 						>The LED is controllable via MQTT with the demo project designed to work with Home
 						Assistant's auto discovery feature.</span
 					>
 				</div>
-				<div class="grid w-full grid-cols-1 content-center gap-x-4 px-4">
+				<div class="grid w-full grid-cols-1 content-center gap-x-4 gap-y-2 px-4">
 					<div>
-						<label class="label" for="uid">
-							<span class="label-text text-md">Unique ID</span>
-						</label>
+						<label class="label" for="uid">Unique ID</label>
 						<input
 							type="text"
-							class="input input-bordered invalid:border-error w-full invalid:border-2 {formErrors.uid
+							class="input w-full invalid:border-error invalid:border-2 {formErrors.uid
 								? 'border-error border-2'
 								: ''}"
 							bind:value={brokerSettings.unique_id}
@@ -140,18 +148,16 @@
 							required
 						/>
 						<label class="label" for="uid">
-							<span class="label-text-alt text-error {formErrors.uid ? '' : 'hidden'}"
+							<span class="text-error {formErrors.uid ? '' : 'hidden'}"
 								>Unique ID must be between 3 and 32 characters long</span
 							>
 						</label>
 					</div>
 					<div>
-						<label class="label" for="name">
-							<span class="label-text text-md">Name</span>
-						</label>
+						<label class="label" for="name">Name</label>
 						<input
 							type="text"
-							class="input input-bordered invalid:border-error w-full invalid:border-2 {formErrors.name
+							class="input w-full invalid:border-error invalid:border-2 {formErrors.name
 								? 'border-error border-2'
 								: ''}"
 							bind:value={brokerSettings.name}
@@ -161,18 +167,16 @@
 							required
 						/>
 						<label class="label" for="name">
-							<span class="label-text-alt text-error {formErrors.name ? '' : 'hidden'}"
+							<span class="text-error {formErrors.name ? '' : 'hidden'}"
 								>Name must be between 3 and 32 characters long</span
 							>
 						</label>
 					</div>
 					<div>
-						<label class="label" for="path">
-							<span class="label-text text-md">MQTT Path</span>
-						</label>
+						<label class="label" for="path">MQTT Path</label>
 						<input
 							type="text"
-							class="input input-bordered invalid:border-error w-full invalid:border-2 {formErrors.path
+							class="input w-full invalid:border-error invalid:border-2 {formErrors.path
 								? 'border-error border-2'
 								: ''}"
 							bind:value={brokerSettings.mqtt_path}
@@ -182,8 +186,27 @@
 							required
 						/>
 						<label class="label" for="path">
-							<span class="label-text-alt text-error {formErrors.path ? '' : 'hidden'}"
+							<span class="text-error {formErrors.path ? '' : 'hidden'}"
 								>MQTT path is limited to 64 characters</span
+							>
+						</label>
+					</div>
+					<div>
+						<label class="label" for="status_topic">MQTT Status Topic</label>
+						<input
+							type="text"
+							class="input w-full invalid:border-error invalid:border-2 {formErrors.status_topic
+								? 'border-error border-2'
+								: ''}"
+							bind:value={brokerSettings.status_topic}
+							id="status_topic"
+							min="0"
+							max="64"
+							required
+						/>
+						<label class="label" for="status_topic">
+							<span class="text-error {formErrors.status_topic ? '' : 'hidden'}"
+								>MQTT status topic is limited to 64 characters</span
 							>
 						</label>
 					</div>

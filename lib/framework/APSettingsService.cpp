@@ -6,7 +6,7 @@
  *   https://github.com/theelims/ESP32-sveltekit
  *
  *   Copyright (C) 2018 - 2023 rjwats
- *   Copyright (C) 2023 - 2024 theelims
+ *   Copyright (C) 2023 - 2025 theelims
  *
  *   All Rights Reserved. This software may be modified and distributed under
  *   the terms of the LGPL v3 license. See the LICENSE file for details.
@@ -94,10 +94,6 @@ void APSettingsService::startAP()
 #if CONFIG_IDF_TARGET_ESP32C3
     WiFi.setTxPower(WIFI_POWER_8_5dBm); // https://www.wemos.cc/en/latest/c3/c3_mini_1_0_0.html#about-wifi
 #endif
-#if CONFIG_IDF_TARGET_ESP32S3
-    WiFi.setTxPower(WIFI_POWER_18_5dBm); 
-#endif
-    WiFi.setSleep(false);
     if (!_dnsServer)
     {
         IPAddress apIp = WiFi.softAPIP();

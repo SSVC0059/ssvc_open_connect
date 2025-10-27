@@ -157,9 +157,9 @@
 		<Clock class="lex-shrink-0 mr-2 h-6 w-6 self-end" />
 	{/snippet}
 	{#snippet title()}
-		<span>Сетевое время</span>
+		<span>Network Time</span>
 	{/snippet}
-	<div class="w-full overflow-x-auto">
+	<div class="w-full">
 		{#await getNTPStatus()}
 			<Spinner />
 		{:then nothing}
@@ -180,7 +180,7 @@
 						/>
 					</div>
 					<div>
-						<div class="font-bold">Статус</div>
+						<div class="font-bold">Status</div>
 						<div class="text-sm opacity-75">
 							{ntpStatus.status === 1 ? 'Active' : 'Inactive'}
 						</div>
@@ -192,7 +192,7 @@
 						<Server class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">NTP Сервер</div>
+						<div class="font-bold">NTP Server</div>
 						<div class="text-sm opacity-75">
 							{ntpStatus.server}
 						</div>
@@ -204,7 +204,7 @@
 						<Clock class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">Локальное время</div>
+						<div class="font-bold">Local Time</div>
 						<div class="text-sm opacity-75">
 							{new Intl.DateTimeFormat('en-GB', {
 								dateStyle: 'long',
@@ -219,7 +219,7 @@
 						<UTC class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">Время по Гринвичу</div>
+						<div class="font-bold">UTC Time</div>
 						<div class="text-sm opacity-75">
 							{new Intl.DateTimeFormat('en-GB', {
 								dateStyle: 'long',
@@ -235,7 +235,7 @@
 						<Stopwatch class="text-primary-content h-auto w-full scale-75" />
 					</div>
 					<div>
-						<div class="font-bold">Время работы</div>
+						<div class="font-bold">Uptime</div>
 						<div class="text-sm opacity-75">
 							{convertSeconds(ntpStatus.uptime)}
 						</div>
@@ -246,54 +246,49 @@
 	</div>
 
 	{#if !page.data.features.security || $user.admin}
-		<Collapsible open={false} class="shadow-lg" on:closed={getNTPSettings}>
+		<Collapsible open={false} class="shadow-lg" icon={null} opened={() => {}} closed={() => {}}>
 			{#snippet title()}
-				<span>Изменение настроек NTP сервера</span>
+				<span>Change NTP Settings</span>
 			{/snippet}
 			<form
-				class="form-control w-full"
+				class="fieldset"
 				onsubmit={preventDefault(handleSubmitNTP)}
 				novalidate
 				bind:this={formField}
 			>
-				<label class="label cursor-pointer justify-start gap-4">
+				<label class="label text-base inline-flex cursor-pointer content-end justify-start gap-4">
 					<input
 						type="checkbox"
 						bind:checked={ntpSettings.enabled}
 						class="checkbox checkbox-primary"
-					/>
-					<span class="">Включение NTP Сервера</span>
+					/>Enable NTP
 				</label>
-				<label class="label" for="server">
-					<span class="label-text text-md">Сервер</span>
-				</label>
+
+				<label class="label" for="server">Server</label>
 				<input
 					type="text"
 					min="3"
 					max="64"
-					class="input input-bordered invalid:border-error w-full invalid:border-2 {formErrors.server
+					class="input w-full invalid:border-error invalid:border-2 {formErrors.server
 						? 'border-error border-2'
 						: ''}"
 					bind:value={ntpSettings.server}
 					id="server"
 					required
 				/>
-				<label class="label" for="subnet">
-					<span class="label-text-alt text-error {formErrors.server ? '' : 'hidden'}"
-						>Должен быть действительный IPv4-адрес или URL-адрес электронной почты</span
-					>
-				</label>
-				<label class="label" for="tz">
-					<span class="label-text text-md">Pick Time Zone</span>
-				</label>
-				<select class="select select-bordered" bind:value={ntpSettings.tz_label} id="tz">
+				{#if formErrors.server}
+					<p class="text-error text-sm">Please enter a valid NTP server.</p>
+				{/if}
+
+				<label class="label" for="tz">Pick Time Zone</label>
+				<select class="select w-full" bind:value={ntpSettings.tz_label} id="tz">
 					{#each Object.entries(TIME_ZONES) as [tz_label, tz_format]}
 						<option value={tz_label}>{tz_label}</option>
 					{/each}
 				</select>
 
-				<div class="mt-6 place-self-end">
-					<button class="btn btn-primary" type="submit">Применить настройки</button>
+				<div class="mt-4 place-self-end">
+					<button class="btn btn-primary" type="submit">Apply Settings</button>
 				</div>
 			</form>
 		</Collapsible>

@@ -1,0 +1,17 @@
+{
+  "name": "SSVC Open Connect",
+  "home_assistant_domain": "ssvc_open_connect",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-S3",
+      "parts": [
+        {
+          "path": "/ssvc_open_connect/firmware/SSVC-Open-Connect_esp32-s3-devkitc-1-8m_0-2-4-0_webflash.bin",
+          "offset": 0
+        }
+      ]
+    }
+  ],
+  "version": "0.2.4.0"
+}

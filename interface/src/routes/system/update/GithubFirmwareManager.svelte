@@ -14,6 +14,7 @@
 	import Error from '~icons/tabler/circle-x';
 	import { compareVersions } from 'compare-versions';
 	import GithubUpdateDialog from '$lib/components/GithubUpdateDialog.svelte';
+	import { assets } from '$app/paths';
 	import InfoDialog from '$lib/components/InfoDialog.svelte';
 	import Check from '~icons/tabler/check';
 
@@ -32,7 +33,7 @@
 			const results = await githubResponse.json();
 			return results;
 		} catch (error) {
-			console.error('Error:', error);
+			console.warn(error);
 		}
 		return;
 	}
@@ -95,10 +96,10 @@
 
 <SettingsCard collapsible={false}>
 	{#snippet icon()}
-		<Github class="lex-shrink-0 mr-2 h-6 w-6 self-end rounded-full" />
+		<Github  class="lex-shrink-0 mr-2 h-6 w-6 self-end rounded-full" />
 	{/snippet}
 	{#snippet title()}
-		<span>Github Firmware Manager</span>
+		<span >Github Firmware Manager</span>
 	{/snippet}
 	{#await getGithubAPI()}
 		<Spinner />
@@ -161,7 +162,7 @@
 		</div>
 	{:catch error}
 		<div class="alert alert-error shadow-lg">
-			<Error class="h-6 w-6 flex-shrink-0" />
+			<Error class="h-6 w-6 shrink-0" />
 			<span>Please connect to a network with internet access to perform a firmware update.</span>
 		</div>
 	{/await}

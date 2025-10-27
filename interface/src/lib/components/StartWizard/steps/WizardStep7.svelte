@@ -1,0 +1,88 @@
+<script lang="ts">
+	import type { SsvcSettings } from '$lib/types/models';
+	import { getSamplingRate, handleInputChange, secondsToTimeString } from '$lib/components/StartWizard/wizardLogic';
+
+	let { settings = $bindable() } = $props<{
+		settings: SsvcSettings;
+	}>();
+
+
+</script>
+
+
+<div class="settings-block">
+	<h2 class="settings-title">Настройка отбора хвостов</h2>
+
+	<div class="valve-card">
+
+		<div class="settings-item">
+			<label class="settings-label settings-label-center" for="heads">
+				Настройки клапана (время открытия / период)
+			</label>
+			<table class="valve-table">
+				<thead>
+				<tr>
+					<th>Открытие</th>
+					<th>Период</th>
+					<th>Скорость</th>
+				</tr>
+				</thead>
+				<tbody>
+				<tr>
+					<td>
+						<input
+							type="number"
+							step="0.1"
+							min="0"
+							class="input-cell"
+							bind:value={settings.tails[0]}
+						/>
+					</td>
+					<td>
+						<input
+							type="number"
+							step="1"
+							min="1"
+							class="input-cell"
+							bind:value={settings.tails[1]}
+						/>
+					</td>
+					<td>
+						<input
+							type="text"
+							readonly
+							class="input-readonly"
+							value={getSamplingRate(settings.tails[0], settings.tails[1], settings).toFixed(1)}
+						/>
+					</td>
+				</tr>
+				</tbody>
+			</table>
+
+		</div>
+	</div>
+
+	<div class="settings-item">
+		<label class="settings-label" for="tails_temp">
+			Стоп при температуре, °С
+		</label>
+		<input
+			bind:value={settings.tails_temp}
+			class="settings-input"
+			id="tails_temp"
+			max="50"
+			min="0"
+			step="0.01"
+			type="number"
+		/>
+	</div>
+
+</div>
+
+<style>
+    .settings-label-center {
+        text-align: center;
+        display: block;
+    }
+</style>
+

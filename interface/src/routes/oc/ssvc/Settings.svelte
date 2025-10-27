@@ -1,196 +1,140 @@
 <script lang="ts">
-	import { user } from '$lib/stores/user';
-	import { page } from '$app/state';
-	import type { SsvcSettings } from '$lib/types/models';
 
+	import type { SsvcSettings } from '$lib/types/ssvc';
+	import { fetchSettings, updateSetting } from '$lib/api/ssvcApi';
+	import { notifications } from '$lib/components/toasts/notifications';
 	// Подкомпоненты
-	import GeneralSettings from '$lib/components/Settings/GeneralSettings.svelte';
-	import ValveBandwidth from '$lib/components/Settings/ValveBandwidth.svelte';
-	import SpeedSettings from '$lib/components/Settings/SpeedSettings.svelte';
-	import ParallelValve from '$lib/components/Settings/ParallelValve.svelte';
-	import ParallelValveLateHeads from '$lib/components/Settings/ParallelValveLateHeads.svelte';
+	import GeneralSettings from '$lib/components/SsvcSettings/GeneralSettings.svelte';
+	import ValveBandwidth from '$lib/components/SsvcSettings/ValveBandwidth.svelte';
+	import SpeedSettings from '$lib/components/SsvcSettings/SpeedSettings.svelte';
+	import ParallelValve from '$lib/components/SsvcSettings/ParallelValve.svelte';
 
-	let ssvcSetting = $state<SsvcSettings | null>(null); // Добавляем реактивное состояние
-	let editingArray = $state('');
+	let ssvcSettings = $state<SsvcSettings | null>();
+	let activeTab = $state(0);
 
-	async function getSvvcSetting(): Promise<void> {
-		try {
-			const r = await fetch('/rest/settings', {
-				method: 'GET',
-				headers: {
-					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic',
-					'Content-Type': 'application/json',
-					Accept: '*/*'
-				}
-			});
-			const text = await r.text();
-			try {
-				let message = JSON.parse(text);
-				console.log(message);
-				ssvcSetting = message?.settings || null; // Обновляем реактивную переменную
-			} catch (parseError) {
-				console.error('JSON Parsing Error:', parseError);
-				ssvcSetting = null; // Обновляем реактивную переменную
-			}
-		} catch (error) {
-			console.error('Error:', error);
-			ssvcSetting = null;
-		}
+
+	let isMobileMenuOpen = $state(false);
+	function closeMobileMenu() {
+		isMobileMenuOpen = false;
 	}
+
+	const loadSsvcSettings = async () => {
+		try {
+			ssvcSettings = await fetchSettings();
+		} catch (err) {
+			if (err instanceof Error) {
+			}
+		}
+	};
 
 	async function saveChanges(field: string, value: any) {
-		try {
-			// Форматируем value для URL
-			const formattedValue = Array.isArray(value)
-				? `[${value.join(',')}]` // Массив → [1,2,3]
-				: encodeURIComponent(value); // Строка → экранируем спецсимволы
-
-			const url = `/rest/settings?${field}=${formattedValue}`;
-			console.log('Отправка запроса:', url);
-
-			const response = await fetch(url, {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic'
-				}
-			});
-
-			if (response.ok) {
-				await getSvvcSetting(); // Обновляем данные после успеха
-			} else {
-				throw new Error(`HTTP error: ${response.status}`);
-			}
-		} catch (error) {
-			console.error('Ошибка сохранения:', error);
-			alert('Не удалось сохранить изменения');
+		let result = await updateSetting(field, value);
+		if (result) {
+			notifications.success('Настройка сохранена', 5000);
+			await loadSsvcSettings();
+		} else {
+			notifications.error('Ошибка сохранения настроек', 5000);
 		}
 	}
 
-	function handleArrayUpdate(field: string, newValues: number[]) {
-		saveChanges(field, newValues);
-		editingArray = '';
-	}
-
-	$effect(() => {
-		getSvvcSetting();
-	});
-
+	// Определяем тип для вкладки
 	interface Tab {
 		id: string;
 		title: string;
-		component: any; // Можно уточнить тип компонента
+		component: any; // Можно уточнить тип компонента при необходимости
 		props: Record<string, unknown>;
 	}
 
-	let activeTab = $state(0);
-	let availableTabs = $state<Tab[]>([]);
+	// Реактивное вычисление вкладок
+	const availableTabs = $derived(computeTabs(ssvcSettings));
+
+	// Функция для вычисления вкладок
+	function computeTabs(settings: SsvcSettings | null | undefined): Tab[] {
+		if (!settings) return [];
+
+		const tabs: Tab[] = [
+			{
+				id: 'general',
+				title: 'Общие',
+				component: GeneralSettings,
+				props: { settings, onSave: saveChanges }
+			},
+			{
+				id: 'valve-bandwidth',
+				title: 'Клапаны',
+				component: ValveBandwidth,
+				props: { settings, onSave: saveChanges }
+			},
+			{
+				id: 'speed',
+				title: 'Параметры отбора',
+				component: SpeedSettings,
+				props: { settings, onSave: saveChanges }
+			},
+			{
+				id: 'parallel',
+				title: 'Параллельный отбор',
+				component: ParallelValve,
+				props: { settings, onSave: saveChanges }
+			}
+		];
+
+		return tabs;
+	}
 
 	$effect(() => {
-		if (ssvcSetting) {
-			// Формируем динамический список вкладок на основе доступных данных
-			const tabs = [
-				{
-					id: 'general',
-					title: 'Общие',
-					component: GeneralSettings,
-					props: { settings: ssvcSetting, onSave: saveChanges }
-				},
-				{
-					id: 'valve-bandwidth',
-					title: 'Клапаны',
-					component: ValveBandwidth,
-					props: { settings: ssvcSetting, onSave: saveChanges }
-				},
-				{
-					id: 'speed',
-					title: 'Скорость',
-					component: SpeedSettings,
-					props: { settings: ssvcSetting, onSave: handleArrayUpdate }
-				}
-			];
+		loadSsvcSettings();
+	});
 
-			// Добавляем условные вкладки
-			if (ssvcSetting.parallel) {
-				tabs.push({
-					id: 'parallel',
-					title: 'Подголовники',
-					component: ParallelValve,
-					props: { settings: ssvcSetting, onSave: saveChanges }
-				});
-			}
-
-			// Добавляем условные вкладки
-			if (ssvcSetting.parallel_v1) {
-				tabs.push({
-					id: 'parallel-v1',
-					title: 'Параллельный 1',
-					component: ParallelValve,
-					props: { settings: ssvcSetting, onSave: saveChanges }
-				});
-			}
-
-			if (ssvcSetting.parallel_v3) {
-				tabs.push({
-					id: 'parallel-v3',
-					title: 'Параллельный 3',
-					component: ParallelValveLateHeads,
-					props: { settings: ssvcSetting, onSave: saveChanges }
-				});
-			}
-
-			availableTabs = tabs;
-
-			// Сбрасываем активную вкладку если текущая больше не доступна
-			if (activeTab >= tabs.length) {
-				activeTab = 0;
-			}
+	$effect(() => {
+		if (activeTab >= availableTabs.length && availableTabs.length > 0) {
+			activeTab = 0;
 		}
 	});
 </script>
 
-{#if ssvcSetting}
-	<div class="p-2">
-		<!-- Навигация по вкладкам -->
-		<div class="flex flex-nowrap overflow-x-auto pb-1 -mb-px hide-scrollbar">
+<div class="container">
+	<div class="tabs-container">
+		<!-- Мобильное меню -->
+		<div class="mobile-tabs-header" class:menu-open={isMobileMenuOpen}>
+			<button class="mobile-menu-toggle" onclick={() => isMobileMenuOpen = !isMobileMenuOpen}>
+				<span class="mobile-menu-header">{availableTabs[activeTab]?.title || 'Меню'}</span>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+					<path d="M7 10l5 5 5-5z"/>
+				</svg>
+			</button>
+
+			<div class="mobile-tabs-dropdown">
+				{#each availableTabs as tab, index}
+					<button
+						class="mobile-tab {activeTab === index ? 'mobile-tab-active' : ''}"
+						onclick={() => {
+															activeTab = index;
+															isMobileMenuOpen = false;
+													}}
+					>
+						{tab.title}
+					</button>
+				{/each}
+			</div>
+		</div>
+
+		<nav class="tabs-nav desktop-only">
 			{#each availableTabs as tab, index}
 				<button
-					class={`shrink-0 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors
-                    sm:text-sm sm:px-4 sm:py-2
-                    ${
-											activeTab === index
-												? 'border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-												: 'border-transparent hover:text-gray-600 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400'
-										}`}
+					class="tab {activeTab === index ? 'tab-active text-active' : ''}"
 					onclick={() => (activeTab = index)}
 				>
 					{tab.title}
 				</button>
 			{/each}
-		</div>
-
-		<!-- Контент вкладок -->
-		<div
-			class="min-h-[500px] bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700"
-		>
-			{#each availableTabs as tab, index}
-				{#if activeTab === index}
-					{@const Component = tab.component}
-					<Component {...tab.props} />
-				{/if}
-			{/each}
-		</div>
+		</nav>
+		{#each availableTabs as tab, index}
+			{#if activeTab === index}
+				{@const Component = tab.component}
+				<Component {...tab.props} />
+			{/if}
+		{/each}
 	</div>
-{/if}
+</div>
 
-<style>
-	/* Скрываем scrollbar для Webkit-браузеров */
-	.hide-scrollbar::-webkit-scrollbar {
-		display: none;
-	}
-
-	/* Скрываем scrollbar для Firefox */
-	.hide-scrollbar {
-		scrollbar-width: none;
-	}
-</style>

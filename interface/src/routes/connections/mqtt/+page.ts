@@ -1,7 +1,7 @@
 import type { PageLoad } from './$types';
 
 export const load = (async () => {
-	return {
-		title: 'MQTT'
-	};
+    return {
+        title: "MQTT"
+    };
 }) satisfies PageLoad;

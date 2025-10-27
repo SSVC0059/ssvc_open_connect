@@ -73,10 +73,8 @@ def bin_copy(source, target, env):
     md5_file = os.path.join(target_dir, f"{app_name}_{build_target}_{app_version.replace('.', '-')}.md5")
     bootloader_file = os.path.join(target_dir, "bootloader.bin")
     partition_file = os.path.join(target_dir, "partitions.bin")
-    merged_frm_file = os.path.join(target_dir, "firmware_merged.bin")
     bootloader_md5 = os.path.join(target_dir, "bootloader.md5")
     partition_md5 = os.path.join(target_dir, "partitions.md5")
-    merged_frm_md5 = os.path.join(target_dir, "firmware_merged.md5")
     
     # Remove existing firmware files
     if os.path.isfile(bin_file):
@@ -115,16 +113,6 @@ def bin_copy(source, target, env):
     else:
         print("Partition table unchanged. Skipping copy.")
 
-    merged_frm_src = os.path.join(env.subst("$BUILD_DIR"), "firmware_merged.bin")
-    if should_copy_file(merged_frm_src, merged_frm_md5):
-        print("Copying partition table to " + merged_frm_file)
-        shutil.copy(merged_frm_src, merged_frm_file)
-        merged_frm_hash = calculate_md5(merged_frm_file)
-        print("Partition Table MD5: " + merged_frm_hash)
-        with open(merged_frm_md5, "w") as f:
-            f.write(merged_frm_hash)
-    else:
-        print("Partition table unchanged. Skipping copy.")
 
 # Attach actions to build process
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", [bin_copy])

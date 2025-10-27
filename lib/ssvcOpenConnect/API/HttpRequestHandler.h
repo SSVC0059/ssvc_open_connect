@@ -1,73 +1,47 @@
-//
-// Created by demoncat on 03.12.2024.
-//
-
 #ifndef SSVC_OPEN_CONNECT_HTTPREQUESTHANDLER_H
 #define SSVC_OPEN_CONNECT_HTTPREQUESTHANDLER_H
 
-#include "ArduinoJson.h"
+/**
+*   SSVC Open Connect
+ *
+ *   A firmware for ESP32 to interface with SSVC 0059 distillation controller
+ *   via UART protocol. Features a responsive SvelteKit web interface for
+ *   monitoring and controlling the distillation process.
+ *   https://github.com/SSVC0059/ssvc_open_connect
+ *
+ *   Copyright (C) 2024 SSVC Open Connect Contributors
+ *
+ *   This software is independent and not affiliated with SSVC0059 company.
+ *   All Rights Reserved. This software may be modified and distributed under
+ *   the terms of the LGPL v3 license. See the LICENSE file for details.
+ *
+ *   Disclaimer: Use at your own risk. High voltage safety precautions required.
+ **/
+
+#include "HandlerRegistrator.h"
 #include "PsychicHttp.h"
 #include "SecurityManager.h"
-#include "SettingsHandlers.h"
-#include "core/SsvcCommandsQueue.h"
-#include "rectification/RectificationProcess.h"
-#include <Arduino.h>
-#include <esp_http_server.h>
-
-#define GET_TELEMETRY_ROUTE "/rest/telemetry"
-#define GET_SETTINGS_ROUTE "/rest/settings"
-#define SEND_COMMAND_ROUTE "/rest/commands"
-#define TEMP_METRICS_DATA_ROUTE "/rest/metrics"
-
-#include <atomic>
+#include "handlers/OpenConnectHandler/OpenConnectHandler.h"
 
 class HttpRequestHandler {
 public:
-  HttpRequestHandler(PsychicHttpServer &server,
-                     SecurityManager *securityManager,
-                     RectificationProcess &rProcess);
-
-  void begin();
+  HttpRequestHandler(PsychicHttpServer& server,
+                    SecurityManager* securityManager);
+  void begin() const;
 
 private:
-  PsychicHttpServer &_server;
-  SecurityManager *_securityManager;
-  RectificationProcess &_rProcess;
+    PsychicHttpServer& _server;
+    SecurityManager* _securityManager;
 
-  esp_err_t telemetry(PsychicRequest *request);
+    // Обработчики
+    SettingsHandler _settingsHandler;
+    CommandHandler _commandHandler;
+    SensorHandler _sensorHandler;
+    TelegramBotHandler _telegramBotHandler;
+    SubsystemHandler _subsystemHandler;
+    OpenConnectHandler _openConnectHandler;
 
-  esp_err_t getSsvcSettings(PsychicRequest *request);
-
-  esp_err_t UpdateSsvcSettings(PsychicRequest *request);
-
-  esp_err_t postCommandStatusStatus(PsychicRequest *request);
-
-  esp_err_t tMetrixResponse(PsychicRequest *request);
-
-  void parseQueryParams(const String &query,
-                        std::vector<std::pair<String, String>> &output) {
-    unsigned int start = 0;
-    while (start < query.length()) {
-      // Ищем конец пары
-      unsigned int end = query.indexOf('&', start);
-      if (end == -1)
-        end = query.length();
-
-      // Вырезаем отдельную пару
-      String pair = query.substring(start, end);
-
-      // Разделяем на ключ и значение
-      int eqPos = pair.indexOf('=');
-      String name = (eqPos != -1) ? pair.substring(0, eqPos) : pair;
-      String value = (eqPos != -1) ? pair.substring(eqPos + 1) : "";
-
-      // Добавляем в результат
-      output.emplace_back(name, value);
-
-      // Переходим к следующей паре
-      start = end + 1;
-    }
-  }
+    HandlerRegistrator _handlerRegistrar;
 };
 
-#endif // SSVC_OPEN_CONNECT_HTTPREQUESTHANDLER_H
+#endif
