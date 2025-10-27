@@ -3,7 +3,8 @@ import re
 Import("env")
 
 APP_BIN = "$BUILD_DIR/${PROGNAME}.bin"
-OUTPUT_DIR = "build{}merged{}".format(os.path.sep, os.path.sep)
+build_target = env.get('PIOENV')
+OUTPUT_DIR = "build{}{}{}".format(os.path.sep, build_target, os.path.sep)
 
 BOARD_CONFIG = env.BoardConfig()
 
@@ -53,14 +54,14 @@ def merge_bin(source, target, env):
                 "$OBJCOPY",
                 "--chip",
                 BOARD_CONFIG.get("build.mcu", "esp32"),
-                "merge-bin",
+                "merge_bin",
                 "-o",
                 MERGED_BIN,
-                "--flash-mode",
+                "--flash_mode",
                 flash_mode,
-                "--flash-freq",
+                "--flash_freq",
                 flash_freq,
-                "--flash-size",
+                "--flash_size",
                 flash_size    
             ]
             + flash_images
