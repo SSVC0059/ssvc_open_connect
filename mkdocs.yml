@@ -12,6 +12,7 @@ nav:
   - "Подключение" : 
       - usage/connect/power.md
       - usage/connect/uart.md
+      - usage/connect/ds18b20.md
   - "Прочее" :
       - info/changelog.md
 
