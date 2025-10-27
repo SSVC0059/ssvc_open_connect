@@ -1,6 +1,6 @@
 # Подключение к SSVC по UART
 
-Для реализации подключения необходим версия модуля [SSVC0059V2](https://smartmodule.ru/portfolio/0059_v2/) от компании SmartModule? с выведенными наружу пинами для подключения UART 
+Для реализации подключения необходим версия модуля [SSVC0059V2](https://smartmodule.ru/portfolio/0059_v2/) от компании SmartModule с выведенными наружу пинами для подключения UART 
 
 <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
 <img src="/ssvc_open_connect/usage/connect/media/ssvc_uart.jpg" style="height:450px"> 
@@ -44,7 +44,7 @@
 т.е для правильной работы нужно подключить так:
 
 !!! warning "Питание от SSVC"
-    Ни в коем случае не используйте питание от контроллера. Даже наличие дополнительного модуля внутри заводского SSVC0059V2 будет не лучшем решением.
+    Ни в коем случае не используйте питание от контроллера. Даже наличие дополнительного модуля внутри заводского SSVC0059_V2 будет не лучшим решением.
     Запитывайте ESP32 самостоятельно    
 
 <div style="display: flex; justify-content: center;">
