@@ -9,6 +9,9 @@ nav:
       - preparation/firmware.md
       - preparation/flasher.md
       - preparation/adafruit_webserial_esptool.md
+  - "Подключение" : 
+      - usage/connect/power.md
+      - usage/connect/uart.md
   - "Прочее" :
       - info/changelog.md
 
