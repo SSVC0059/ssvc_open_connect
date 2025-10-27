@@ -1,8 +1,8 @@
 # Список изменений
-
-Все заметные изменения в этом проекте документируются в этом файле.  
+ 
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),  
 и этот проект придерживается [Semantic Versioning](https://semver.org/lang/ru/).
+
 
 ## 0.2.4.0
 

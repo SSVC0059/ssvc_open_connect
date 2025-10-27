@@ -9,6 +9,8 @@ nav:
       - preparation/firmware.md
       - preparation/flasher.md
       - preparation/adafruit_webserial_esptool.md
+  - "Прочее" :
+      - info/changelog.md
 
 
 site_author: thedemoncat
