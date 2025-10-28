@@ -13,7 +13,7 @@
 При подключении контроллера через пины питания микроконтроллера нужно в обязательном порядке запаять перемычку.
 
 <div style="display: flex; justify-content: center;">
-    <img src="/ssvc_open_connect/usage/connect/media/power_jumper.png" style="height:auto"> 
+    <img src="/ssvc_open_connect/usage/interfaces/media/power_jumper.png" style="height:auto"> 
 </div>
 
 тогда пин 5V можно будет использовать для подачи питания.
