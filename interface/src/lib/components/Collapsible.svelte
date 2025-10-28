@@ -43,20 +43,22 @@
     {/if}
     <div class="min-h-16 flex w-full items-center justify-between space-x-3 p-4 text-xl font-medium">
 		<span class="inline-flex items-center">
-			{@render icon?.()}
-            <button
-                    class="flex"
-                    onclick={() => openCollapsible()}
-            >
-                <span class="duration-200 hover:bg-base-200">
+			<span class="inline-flex items-center">
+                {@render icon?.()}
                     {@render title?.()}
-                </span>
+                    {#if isDirty}
+                    <div data-tip="There are unsaved changes." class="tooltip tooltip-right tooltip-error">
+                        <Alert class="text-error lex-shrink-0 ml-2 h-6 w-6 self-end cursor-help" />
+                    </div>
+                {/if}
+            </span>
+            <button class="btn btn-ghost btn-sm" onclick={() => openCollapsible()}>
+                <Down
+                        class="text-base-content h-auto w-6 transition-transform duration-300 ease-in-out {open
+                        ? 'rotate-180'
+                        : ''}"
+                />
             </button>
-            {#if isDirty}
-				<div data-tip="There are unsaved changes." class="tooltip tooltip-right tooltip-error">
-					<Alert class="text-error lex-shrink-0 ml-2 h-6 w-6 self-end cursor-help" />
-				</div>
-			{/if}
 		</span>
 
     </div>

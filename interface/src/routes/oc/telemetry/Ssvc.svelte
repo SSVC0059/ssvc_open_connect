@@ -102,7 +102,6 @@
 			};
 		});
 
-
 </script>
 
 <div class="telemetry-container">
@@ -120,9 +119,11 @@
 			<span class="status-item">
 				<span class="label">T2:</span> {telemetry?.common.tp2}°C
 			</span>
-			<span class="status-item">
-				<span class="label">Давление:</span> {telemetry?.tank_mmhg} ммРс
-			</span>
+            {#if telemetry?.tank_mmhg}
+                <span class="status-item">
+                    <span class="label">Давление:</span> {telemetry?.tank_mmhg} ммРс
+                </span>
+            {/if}
 		</div>
 	</div>
 
@@ -221,7 +222,7 @@
 								{/if}
 								{#if telemetry && telemetry.alc}
 									<span class="reading-item">
-										<span class="reading-label">Количество спирта:</span> <span class="reading-value">{telemetry.alc}</span>
+										<span class="reading-label">Количество спирта в кубе:</span> <span class="reading-value">{telemetry.alc}%</span>
 									</span>
 								{/if}
 							</div>
