@@ -64,7 +64,7 @@
 				{#if settings.tails}
 					<div id="tails-row" class="settings-item">
 						<span class="settings-label">Хвосты</span>
-						<span class="settings-value">2500 мл/ч</span>
+						<span class="settings-value">{settings.valve_bw[2]} мл/ч</span>
 					</div>
 				{/if}
 			</div>
