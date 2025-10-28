@@ -14,6 +14,8 @@ nav:
       - usage/interfaces/uart.md
       - usage/interfaces/ds18b20.md
       - usage/interfaces/rgb_led.md
+  - "Начало работы":
+      - usage/get_started.md
   - "Прочее" :
       - info/changelog.md
 
