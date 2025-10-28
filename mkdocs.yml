@@ -16,6 +16,7 @@ nav:
       - usage/interfaces/rgb_led.md
   - "Начало работы":
       - usage/get_started.md
+  - "FAQ" : faq/faq.md
   - "Прочее" :
       - info/changelog.md
 
