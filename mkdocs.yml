@@ -16,6 +16,10 @@ nav:
       - usage/interfaces/rgb_led.md
   - "Начало работы":
       - usage/get_started.md
+  - "Готовые модули":
+      - ready_made/connect.md
+      - ready_made/din_version.md
+      - ready_made/inside_version.md
   - "FAQ" : faq/faq.md
   - "Прочее" :
       - info/changelog.md
