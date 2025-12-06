@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { SsvcSettings } from '$lib/types/models';
-	import { getSamplingRate, handleInputChange, secondsToTimeString } from '$lib/components/StartWizard/wizardLogic';
+	import type { SsvcSettings } from '$lib/types/ssvc';
+	import { getSamplingRate, } from '$lib/components/StartWizard/wizardLogic';
 
 	let { settings = $bindable() } = $props<{
 		settings: SsvcSettings;
@@ -14,11 +14,10 @@
 	<h2 class="settings-title">Настройка отбора хвостов</h2>
 
 	<div class="valve-card">
-
+		<label class="valve-table-title" for="heads">
+			Настройки клапана (время открытия / период)
+		</label>
 		<div class="settings-item">
-			<label class="settings-label settings-label-center" for="heads">
-				Настройки клапана (время открытия / период)
-			</label>
 			<table class="valve-table">
 				<thead>
 				<tr>
@@ -63,12 +62,12 @@
 	</div>
 
 	<div class="settings-item">
-		<label class="settings-label" for="tails_temp">
+		<label class="input-label" for="tails_temp">
 			Стоп при температуре, °С
 		</label>
 		<input
 			bind:value={settings.tails_temp}
-			class="settings-input"
+			class="input-field"
 			id="tails_temp"
 			max="50"
 			min="0"
@@ -78,11 +77,4 @@
 	</div>
 
 </div>
-
-<style>
-    .settings-label-center {
-        text-align: center;
-        display: block;
-    }
-</style>
 

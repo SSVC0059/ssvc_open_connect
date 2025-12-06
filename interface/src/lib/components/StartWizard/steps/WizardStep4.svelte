@@ -1,19 +1,5 @@
-<!--{-->
-<!--	id: 92,-->
-<!--	title: 'Расчеты',-->
-<!--	component: WizardStep4,-->
-<!--	requiresInitialData: true,-->
-<!--	get initialData() {-->
-<!--	return {-->
-<!--	headDischargeSpeed: settings-->
-<!--	? calculateSamplingRate(settings.heads[0], settings.heads[1], settings.valve_bw[0])-->
-<!--	: 0 // или другое значение по умолчанию-->
-<!--};-->
-<!--}-->
-<!--}-->
-
 <script lang="ts">
-	import type { SsvcSettings } from '$lib/types/models';
+	import type { SsvcSettings } from '$lib/types/ssvc';
 	import { handleInputChange, secondsToTimeString } from '$lib/components/StartWizard/wizardLogic';
 
 	let { settings = $bindable() } = $props<{
@@ -27,11 +13,11 @@
 	<h2 class="settings-title">Настройка отбора подголовников</h2>
 
 	<div>
-		<label class="block text-lg font-medium text-gray-700 mb-2" for="late_heads">
+		<label class="input-label" for="late_heads">
 			Настройки клапана подголовников (время открытия / период)
 		</label>
 
-		<div class="flex flex-row gap-4">
+		<div class="settings-item">
 			<input
 				bind:value={settings.late_heads[0]}
 				class="w-full px-4 py-3 text-lg border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -47,8 +33,8 @@
 		</div>
 
 	</div>
-	<div class="flex flex-row gap-4">
-		<label class="block text-lg font-medium text-gray-700 mb-2" for="late_heads_timer">
+	<div class="settings-item">
+		<label class="input-label" for="late_heads_timer">
 			Время отбора подголовников, с.
 		</label>
 		<input

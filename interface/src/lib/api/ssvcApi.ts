@@ -1,12 +1,12 @@
 import { page } from '$app/state';
 import { user } from '$lib/stores/user';
 import { get } from 'svelte/store';
-import type { AlarmThresholdsState, TemperatureResponse, ZoneName } from '$lib/types/Sensors';
+import type { AlarmThresholdsState, TemperatureResponse } from '$lib/types/Sensors';
 import type {
 	SendCommandResponse,
+	SsvcOpenConnectInfo,
 	SsvcOpenConnectMessage,
 	SsvcSettings,
-	SsvcTelemetryMessage,
 	SubsystemsState,
 	TelegramConfig
 } from '$lib/types/ssvc';
@@ -17,9 +17,35 @@ import type {
 /**
  * Получение настроек SSVC
  */
-export async function fetchSettings(): Promise<SsvcSettings | null> {
+export async function fetchSettings(): Promise<SsvcSettings | undefined> {
 	const response = await apiFetch<{ ssvcSettings: SsvcSettings }>('/rest/oc_settings');
-	return response.success ? response.data.ssvcSettings : null;
+	return response.success ? response.data.ssvcSettings : undefined;
+}
+
+let infoPromise: Promise<SsvcOpenConnectInfo | undefined> | null = null;
+
+/**
+ * Получение информации о версии SSVC и OpenConnect SsvcOpenConnectInfo с кешированием.
+ */
+export function getInfo(): Promise<SsvcOpenConnectInfo | undefined> {
+	if (!infoPromise) {
+		infoPromise = (async () => {
+			try {
+				const response = await apiFetch<SsvcOpenConnectInfo>('/rest/oc/info');
+				if (response.success) {
+					return response.data;
+				}
+				// Сбрасываем промис в случае ошибки, чтобы разрешить повторную попытку
+				infoPromise = null;
+				return undefined;
+			} catch (error) {
+				// Также сбрасываем при исключении
+				infoPromise = null;
+				throw error;
+			}
+		})();
+	}
+	return infoPromise;
 }
 
 /**
@@ -28,6 +54,7 @@ export async function fetchSettings(): Promise<SsvcSettings | null> {
 export async function updateSetting(field: string, value: unknown): Promise<boolean> {
 	const url = `/rest/settings`;
 	const body = { [field]: value };
+	console.log(body)
 	const response = await apiFetch<unknown>(url, 'PUT', body);
 	return response.success;
 }
@@ -35,10 +62,21 @@ export async function updateSetting(field: string, value: unknown): Promise<bool
 /**
  * Сохранение всех настроек SSVC на сервере
  */
-export async function saveSettings(settings: SsvcSettings): Promise<boolean> {
+export async function saveSettings(settings: SsvcSettings | undefined): Promise<boolean> {
+	console.log('Attempting to save settings:', settings);
 	const url = '/rest/settings';
+	console.log(`Sending PUT request to ${url}`);
+
 	const response = await apiFetch<unknown>(url, 'PUT', settings);
+
 	console.log('saveSettings response:', response);
+
+	if (response.success) {
+		console.log('Settings saved successfully.');
+	} else {
+		console.error('Failed to save settings:', response.error);
+	}
+
 	return response.success;
 }
 
@@ -118,7 +156,7 @@ export async function setSubsystemState(states: Record<string, boolean>): Promis
 		'PUT',
 		states
 	);
-	return true;
+	return response.success ? response.data : false;
 	// return response?.success ?? false;
 }
 

@@ -29,6 +29,7 @@
         --primary-600: #486581;
         --primary-700: #334e68;
         --primary-800: #243b53;
+        --blue-300: #abcafa;
         --blue-500: #3b82f6;
         --blue-600: #2563eb;
         --green-300: #80db93;
@@ -42,11 +43,16 @@
         --red-700: #b91c1c;
         --white: #ffffff;
         --black: #000000;
+        --gray-50: #f9fafb;
+        --gray-300: #919191;
+        --gray-500: #636363;
+        --gray-600: #4c4c4c;
 
         /* Тени и эффекты */
         --glass-shadow: 0 8px 32px 0 rgba(36, 59, 83, 0.37);
         --glass-border: 1px solid rgba(255, 255, 255, 1);
         --glass-background: rgba(255, 255, 255, 0.25);
+        --bg-overlay: rgba(0, 0, 0, 0.5);
 
         /* Размеры */
         --border-radius: 0.75rem;

@@ -1,0 +1,65 @@
+// file: layout/_settings-grid.scss
+@use "$lib/styles/base/mixins" as m;
+
+/* ===== КОМПОНЕНТ НАСТРОЕК (СЕТКА) ===== */
+.settings-container {
+  @include m.glassmorphism;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  width: 100%;
+  max-height: 80vh;
+  overflow: auto;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+}
+
+.settings-panel {
+  background: var(--glass-background);
+  border: var(--glass-border);
+  border-radius: var(--border-radius);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+  box-shadow: var(--glass-shadow);
+}
+
+.settings-section {
+  padding: 1.5rem;
+  border-bottom: 2px solid var(--primary-200);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.settings-grid {
+  @include m.glassmorphism;
+  position: relative;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .settings-panel {
+
+    .settings-section {
+      padding: 1rem;
+      @include m.compact-points;
+
+      .settings-section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--primary-800);
+        margin-bottom: 1rem;
+        @include m.dark-theme-color;
+      }
+
+    }
+  }
+}

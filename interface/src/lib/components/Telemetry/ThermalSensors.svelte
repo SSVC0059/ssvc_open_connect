@@ -100,7 +100,7 @@
     </div>
 {/if}
 <style lang="scss">
-  @use "$lib/styles/mixins.scss" as *;
+  @use "$lib/styles/base/mixins" as *;
 
   .title {
     font-size: 1.25rem;

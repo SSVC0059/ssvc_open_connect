@@ -393,14 +393,24 @@ void TelegramBotClient::updateMessage(const std::string& message, uint32_t messa
     _bot.editText(et);
 }
 
-
 void TelegramBotClient::sendHello() {
     static const String version = "v" + String(APP_VERSION);
 
     std::ostringstream msgText;
     msgText << "👋 <b>Привет! Это SSVC open connect</b>\n\n"
-            << "📌 <b>Версия:</b> " << version.c_str() << "\n"
-            << "🖥️ <b>Адрес:</b> http://" << WiFi.localIP().toString().c_str() << "\n";
+            << "📦 <b>Версия OpenConnect:</b> " << version.c_str() << "\n"
+            << "🤖 <b>Версия SSVC:</b> " << SsvcSettings::init().getSsvcVersion() << "\n"
+            << "🔌 <b>Версия API:</b> " << SsvcSettings::init().getSsvcApiVersion();
+
+    if (SsvcSettings::init().apiSsvcIsSupport()) {
+        msgText << " (✅ <b>Совместима</b>)\n";
+    } else {
+        msgText << " (❌ <b>Несовместима</b>)\n"
+                << "    Требуется версия: <b>" << SSVC_SUPPORT_API_VERSION << "</b> или выше.\n"
+                << "    <a href=\"https://smartmodule.ru/portfolio/0059_v2/\">Обновите прошивку на сайте производителя.</a>\n";
+    }
+
+    msgText << "🖥️ <b>Адрес:</b> http://" << WiFi.localIP().toString().c_str() << "\n";
 
     fb::Message msg;
     msg.mode = fb::Message::Mode::HTML;

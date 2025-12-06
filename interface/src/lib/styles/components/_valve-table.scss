@@ -1,0 +1,100 @@
+// file: _valve-table.scss (ДОРАБОТАННЫЙ КОД)
+@use "$lib/styles/base/mixins" as m;
+
+.valve-table-title {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--primary-500);
+  text-align: center;
+  @include m.dark-theme-color;
+}
+
+.valve-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem; // Чуть меньше для компактности
+
+  th,
+  td {
+    padding: 0.5rem 0.25rem;
+    text-align: center;
+    border: 1px solid var(--primary-100); // Легкая граница для всех ячеек
+    transition: var(--transition);
+    @include m.dark-theme-color;
+  }
+
+  thead {
+    th {
+      font-weight: 600;
+      color: var(--primary-800);
+      background-color: var(--primary-50);
+      @include m.dark-theme-color;
+
+      &:first-child {
+        border-top-left-radius: var(--border-radius);
+      }
+      &:last-child {
+        border-top-right-radius: var(--border-radius);
+      }
+    }
+  }
+
+  tbody {
+    td {
+      border-top: none;
+    }
+  }
+
+  .input-cell {
+    @extend .input-field !optional;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--primary-300);
+    text-align: center;
+    // Важно: чтобы инпут не выходил за границы td, ему нужно убрать ширину 100%
+    width: auto;
+    // Можно задать фиксированную ширину, чтобы ячейки были ровными
+    min-width: 50px;
+    max-width: 80px;
+
+    // Переопределение для Svelte компонента .input-cell из WizardStep3.svelte
+    &[type="number"],
+    &[type="text"] {
+      width: 100%; // Занимает всю ширину td
+      box-sizing: border-box;
+    }
+  }
+
+  .input-readonly {
+    @extend .input-cell; // Наследуем стили
+    background-color: var(--primary-100);
+    color: var(--primary-600);
+    cursor: default;
+    box-shadow: none;
+    pointer-events: none;
+    &:focus {
+      border-color: var(--primary-300);
+      box-shadow: none;
+    }
+  }
+}
+
+.valve-info {
+  //background-color: var(--blue-500);
+  border: 1px solid var(--blue-300);
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  margin-top: 0.5rem;
+
+  p:first-child {
+    font-size: 0.875rem;
+    color: var(--primary-600);
+    margin: 0;
+  }
+
+  p:last-child {
+    font-size: 0.75rem;
+    color: var(--primary-500);
+    margin-top: 0.25rem;
+  }
+}
