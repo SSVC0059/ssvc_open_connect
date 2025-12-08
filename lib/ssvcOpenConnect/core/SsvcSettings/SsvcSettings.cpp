@@ -479,9 +479,19 @@ bool SsvcSettings::apiSsvcIsSupport() const {
   return isSupportApi;
 }
 
+bool SsvcSettings::isSupportTails() const {
+  return supportTails;
+}
+
 bool SsvcSettings::setSsvcVersion(std::string _ssvcVersion)
 {
   this->ssvcVersion = std::move(_ssvcVersion);
+
+  if (this->ssvcVersion.rfind("2.2", 0) == 0) {
+    supportTails = true;
+  } else {
+    supportTails = false;
+  }
 
   return true;
 }

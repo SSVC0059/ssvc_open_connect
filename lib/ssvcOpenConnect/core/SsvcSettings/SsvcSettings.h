@@ -158,6 +158,7 @@ public:
 
     float getSsvcApiVersion() const;
     bool apiSsvcIsSupport() const;
+    bool isSupportTails() const;
 
     // SETTERS
 
@@ -172,6 +173,7 @@ private:
     std::string ssvcVersion = "";
     float ssvcApiVersion = 0.0;
     bool isSupportApi = false;
+    bool supportTails = false;
 
     // signed char или unsigned char.
 

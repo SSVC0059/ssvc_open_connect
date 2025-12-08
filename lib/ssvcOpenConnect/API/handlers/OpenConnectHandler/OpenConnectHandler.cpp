@@ -32,6 +32,11 @@ esp_err_t OpenConnectHandler::getInfo(PsychicRequest* request)
     const auto ssvc = root["ssvc"].to<JsonObject>();
     ssvc["version"] = settings.getSsvcVersion();
     ssvc["api"] = settings.getSsvcApiVersion();
+    if (SsvcSettings::init().isSupportTails()) {
+        ssvc["mode"] = "tails";
+    } else {
+        ssvc["mode"] = "late_heads";
+    }
 
     const auto oc = root["oc"].to<JsonObject>();
     oc["version"] = APP_VERSION;
