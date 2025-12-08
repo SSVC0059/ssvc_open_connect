@@ -15,5 +15,5 @@
      sm:mx-8 sm:my-8"
 >
 	<MQTT />
-	<MqttConfig />
+<!--	<MqttConfig />-->
 </div>

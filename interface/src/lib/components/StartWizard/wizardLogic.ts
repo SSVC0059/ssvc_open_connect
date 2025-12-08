@@ -1,6 +1,6 @@
 // WizardSettings/logic.ts
 import { fetchSettings } from '$lib/api/ssvcApi';
-import type { SsvcSettings } from '$lib/types/models';
+import type { SsvcSettings } from '$lib/types/ssvc';
 
 export async function loadSettings(): Promise<SsvcSettings | null> {
 	return await fetchSettings();
@@ -53,18 +53,6 @@ export function calculateSamplingRate(
 	flowRate: number
 ): number {
 	console.log(openTime);
-
-	if (period <= 0) {
-		throw new Error('Период открытия должен быть больше 0');
-	}
-
-	if (openTime < 0) {
-		throw new Error('Время открытия не может быть отрицательным');
-	}
-
-	if (openTime > period) {
-		throw new Error('Время открытия не может превышать общий период');
-	}
 
 	// Рассчитываем коэффициент открытия (долю времени, когда клапан открыт)
 	const dutyCycle = openTime / period;

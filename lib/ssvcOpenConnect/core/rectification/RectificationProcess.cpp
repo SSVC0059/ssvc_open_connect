@@ -781,9 +781,13 @@ void RectificationProcess::writeTelemetryTo(const JsonVariant telemetry)
     // Пока оставлю так как есть. Затем возможно переделаю. На получение через POST
     const JsonObject volume = telemetry["volume"].to<JsonObject>();
     volume["heads"]       = flowVolumeValves[RectificationStage::HEADS];
-    volume["late_heads"]  = flowVolumeValves[RectificationStage::LATE_HEADS];
     volume["hearts"]      = flowVolumeValves[RectificationStage::HEARTS];
-    volume["tails"]       = flowVolumeValves[RectificationStage::TAILS];
+    if (SsvcSettings::init().isSupportTails()) {
+      volume["tails"]       = flowVolumeValves[RectificationStage::TAILS];
+    } else {
+      volume["late_heads"]  = flowVolumeValves[RectificationStage::LATE_HEADS];
+    }
+
 
     // Сообщение о событии и прочее уведомление
     if (metric.event != RectificationEvent::EMPTY)

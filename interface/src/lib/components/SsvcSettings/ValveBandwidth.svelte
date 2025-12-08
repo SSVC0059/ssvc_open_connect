@@ -48,23 +48,23 @@
 
 
 				<div class="settings-item">
-					<span class="settings-label">Головы</span>
+					<span class="input-label">Головы</span>
 					<span class="settings-value">{settings.valve_bw[0]} мл/ч</span>
 				</div>
 				{#if settings.late_heads}
 					<div id="late-heads-row" class="settings-item">
-						<span class="settings-label">Подголовники</span>
+						<span class="input-label">Подголовники</span>
 						<span class="settings-value">{settings.valve_bw[2]} мл/ч</span>
 					</div>
 				{/if}
 				<div class="settings-item">
-					<span class="settings-label">Тело</span>
+					<span class="input-label">Тело</span>
 					<span class="settings-value">{settings.valve_bw[1]} мл/ч</span>
 				</div>
 				{#if settings.tails}
 					<div id="tails-row" class="settings-item">
-						<span class="settings-label">Хвосты</span>
-						<span class="settings-value">2500 мл/ч</span>
+						<span class="input-label">Хвосты</span>
+						<span class="settings-value">{settings.valve_bw[2]} мл/ч</span>
 					</div>
 				{/if}
 			</div>

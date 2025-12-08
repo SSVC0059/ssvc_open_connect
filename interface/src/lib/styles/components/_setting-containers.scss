@@ -1,0 +1,121 @@
+@use "$lib/styles/base/mixins" as m;
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+// Блок с переключателем
+.settings-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--primary-800);
+  @include m.dark-theme-color;
+}
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-height: 48px;
+  border-bottom: 1px solid var(--primary-100);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  // Переопределение для поля ввода внутри двуколоночного контейнера
+  & > .input-field {
+    flex-shrink: 0;
+    width: 100px;
+    text-align: left;
+  }
+
+  // Лейбл занимает оставшееся место
+  & > .input-label,
+  & > .settings-label {
+    flex-grow: 1;
+  }
+
+  .settings-label {
+    color: var(--primary-700);
+    font-weight: 500;
+    @include m.dark-theme-color;
+  }
+
+  .settings-value {
+    color: var(--primary-800);
+    font-weight: 500;
+    @include m.dark-theme-color;
+  }
+
+  .toggle-container {
+    flex-shrink: 0;
+  }
+
+  .text-xs {
+    font-size: 0.75rem;
+  }
+
+  // Модификатор для read-only состояния
+  &.read-only {
+    // Делаем текст меток и значений более тусклым
+    .settings-label, .input-label, .settings-value {
+      color: var(--primary-500);
+    }
+
+    // Отключаем все элементы ввода и переключатели внутри
+    input,
+    .toggle-container {
+      opacity: 0.6;
+      pointer-events: none;
+      cursor: default;
+      background-color: var(--primary-100); // Используем фон для индикации неактивности
+      box-shadow: none;
+      border-color: var(--primary-200) !important; // Переопределяем цвет рамки
+    }
+  }
+}
+
+.valve-card {
+  .settings-item {
+    flex-direction: column;
+    align-items: flex-start; // Выравнивание слева
+    gap: 0.5rem; // Уменьшим или настроим отступ между заголовком и таблицей
+    padding-bottom: 0.5rem; // Добавим отступ снизу, чтобы компенсировать отсутствие border-bottom у valve-card
+    border-bottom: none; // Уберем границу, если она не нужна
+  }
+
+  .settings-title {
+
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--primary-800);
+  }
+}
+
+.settings-item input[type="checkbox"] {
+  /* Добавляем отступ справа для разделения чекбокса и текста */
+  margin-right: 0.5rem; /* 1rem = 16px. Вы можете настроить это значение. */
+}
+
+// Глобальный класс для принудительной блокировки всех вложенных элементов
+.read-only {
+  pointer-events: none;
+  opacity: 0.5;
+
+  // Рекурсивно отключаем все интерактивные дочерние элементы
+  // и меняем курсор, чтобы показать неактивность
+  &, * {
+    cursor: not-allowed !important;
+  }
+
+  button, input, textarea, select, a {
+    pointer-events: none;
+  }
+}

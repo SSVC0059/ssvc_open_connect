@@ -25,7 +25,7 @@
 ![](media/flasher_1.png)
 
 
-После выбора появится меню, в нем выбираем установку и дале следуем пункам мастера. При первоначальной установке или при не корректной работе желательно произвести очистку.
+После выбора появится меню, в нем выбираем установку и дале следуем пунктам мастера. При первоначальной установке или при не корректной работе желательно произвести очистку.
 
 !!! warning "ВНИМАНИЕ"
     При установке стабильной или тестовой версии через кнопку возможна полная очистка данных.
@@ -150,7 +150,7 @@
 
 <div id="install-buttons-container-styled">
     <div class="button-group group-test">
-        <div class="group-title">🧪 Тестовая Версия (0.2.4.0)</div>
+        <div class="group-title">🚀 Стабильная Версия (0.2.4.0)</div>
         <esp-web-install-button manifest="/ssvc_open_connect/firmware/manifest_16m_0-2-4-0.json">
             <button slot="activate">16MB Flash</button>
             <span slot="unsupported">❌ Ошибка: Ваш браузер не поддерживает Web Serial API.</span>
@@ -166,13 +166,13 @@
 
     <div class="button-group group-stable">
         <div class="group-title">🚀 Стабильная Версия (0.2.1.8)</div>
-        <esp-web-install-button manifest="/ssvc_open_connect/firmware/manifest_16m_0-2-1-8_stable.json">
+        <esp-web-install-button manifest="/ssvc_open_connect/firmware/manifest_16m_0-2-1-8.json">
             <button slot="activate">16MB Flash</button>
             <span slot="unsupported">❌ Ошибка: Ваш браузер не поддерживает Web Serial API.</span>
             <span slot="not-allowed">⚠️ Внимание: Установка требует HTTPS-соединения.</span>
         </esp-web-install-button>
 
-        <esp-web-install-button manifest="/ssvc_open_connect/firmware/manifest_8m_0-2-1-8_stable.json">
+        <esp-web-install-button manifest="/ssvc_open_connect/firmware/manifest_8m_0-2-1-8.json">
             <button slot="activate">8MB Flash</button>
             <span slot="unsupported">❌ Ошибка: Ваш браузер не поддерживает Web Serial API.</span>
             <span slot="not-allowed">⚠️ Внимание: Установка требует HTTPS-соединения.</span>

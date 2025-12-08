@@ -1,50 +1,51 @@
 <script lang="ts">
 	import { modals } from 'svelte-modals';
 	import Cancel from '~icons/tabler/x';
-	import Check from '~icons/tabler/check';
-	import Portal from 'svelte-portal';
-	import { focusTrap } from 'svelte-focus-trap';
-	import { fly } from 'svelte/transition';
-	import type { SsvcOpenConnectMessage } from '$lib/types/ssvc';
-	import type { SensorsData } from '$lib/types/Sensors';
 	import { fetchTelemetry, updateSetting } from '$lib/api/ssvcApi';
-	import { notifications } from '$lib/components/toasts/notifications';
+	import type { SsvcOpenConnectMessage } from '$lib/types/ssvc';
+	import NumberInput from '$lib/components/NumberInput.svelte';
+	import TimeInput from '$lib/components/TimeInput.svelte';
 
-	// Принимаем оба колбэка
-	const { onConfirm, onCancel } = $props<{
-		onConfirm?: () => void;
-		onCancel?: () => void;
-	}>();
+	let { isOpen }: Props = $props();
 
 	let data = $state<SsvcOpenConnectMessage | null>();
-	let telemetry = $derived(data?.telemetry)
+	let telemetry = $derived(data?.telemetry);
 
-	async function loadTelemetry(): Promise<void>{
-		data = await fetchTelemetry();
+	// Local state for bound values
+	let tp1_target = $state(0);
+	let tp2_target = $state(0);
+	let hysteresis = $state(0);
+	let open = $state(0);
+	let period = $state(0);
+	let decrement = $state(0);
+	let countdown_seconds = $state(0);
+
+	interface Props {
+		isOpen: boolean;
 	}
 
-	let isEditing = $state(false);
-	let draftTime = $state({ h: 0, m: 0, s: 0 });
-	let hourStep = $state(1);
-	let minuteStep = $state(1);
-
-	// Валидация введенных значений
-	const isInvalid = $derived({
-		h: draftTime.h < 0,
-		m: draftTime.m < 0 || draftTime.m > 59,
-		s: draftTime.s < 0 || draftTime.s > 59
+	$effect(() => {
+		loadTelemetry();
 	});
 
-	// Проверка на кратность и максимальное значение
-	const validateTime = (time: { h: number; m: number; s: number }) => {
-		const totalSeconds = time.h * 3600 + time.m * 60 + time.s;
-		return {
-			exceedsMax: totalSeconds > 86400,
-			notMultiple: totalSeconds % 1 !== 0
-		};
-	};
+	$effect(() => {
+		if (telemetry) {
+			tp1_target = telemetry.tp1_target ?? 0;
+			tp2_target = telemetry.tp2_target ?? 0;
+			hysteresis = telemetry.hysteresis ?? 0; // Corrected path
+			open = telemetry.open ?? 0;
+			period = telemetry.period ?? 0;
+			decrement = telemetry.decrement ?? 0;
+			if (telemetry.countdown) {
+				countdown_seconds = timeToSeconds(parseTimeString(telemetry.countdown));
+			}
+		}
+	});
 
-	const validation = $derived(validateTime(draftTime));
+	// Функция для преобразования объекта времени в общее количество секунд
+	function timeToSeconds(time: { h: number; m: number; s: number }): number {
+		return time.h * 3600 + time.m * 60 + time.s;
+	}
 
 	// Функция для преобразования времени из формата "4:41:21" в объект {h, m, s}
 	function parseTimeString(timeString: string): { h: number; m: number; s: number } {
@@ -61,307 +62,179 @@
 		return { h: 0, m: 0, s: 0 };
 	}
 
-	// Функция для преобразования объекта времени в общее количество секунд
-	function timeToSeconds(time: { h: number; m: number; s: number }): number {
-		return time.h * 3600 + time.m * 60 + time.s;
+	async function loadTelemetry(): Promise<void> {
+		data = await fetchTelemetry();
 	}
 
-	// Заглушка для REST API
-	async function saveChanges(field: string, value: any) {
-		console.log(field, JSON.stringify(value));
-		let result = await updateSetting(field, value);
-		if (result) {
-			notifications.success('Настройка сохранена', 5000);
-		} else {
-			notifications.error('Ошибка сохранения настроек', 5000);
+	const close = () => {
+		modals.close();
+	};
+
+	async function save() {
+		if (!telemetry) return;
+
+		const tasks = [];
+
+		if (telemetry.tp1_target !== undefined && tp1_target !== telemetry.tp1_target) {
+			tasks.push(updateSetting('s_temp', tp1_target));
 		}
+		if (telemetry.hysteresis !== undefined && hysteresis !== telemetry.hysteresis) {
+			tasks.push(updateSetting('s_hyst', hysteresis));
+		}
+		if ((telemetry.open !== undefined && telemetry.period !== undefined) && (open !== telemetry.open || period !== telemetry.period)) {
+			tasks.push(updateSetting('s_speed', [open, period]));
+		}
+		if (telemetry.decrement !== undefined && decrement !== telemetry.decrement) {
+			tasks.push(updateSetting('s_decrement', decrement));
+		}
+		const original_countdown_seconds = telemetry.countdown ? timeToSeconds(parseTimeString(telemetry.countdown)) : undefined;
+		if (original_countdown_seconds !== undefined && countdown_seconds !== original_countdown_seconds) {
+			tasks.push(updateSetting('s_timer', countdown_seconds));
+		}
+
+		if (tasks.length > 0) {
+			await Promise.all(tasks);
+		}
+		close();
 	}
 
-	// Функция для сохранения таймера
-	async function handleSaveTimer() {
-		const totalSeconds = timeToSeconds(draftTime);
-		// Проверка валидности
-		if (isInvalid.h || isInvalid.m || isInvalid.s || validation.exceedsMax) {
-			alert('Пожалуйста, исправьте ошибки ввода времени');
-			return;
-		}
-
-		if (totalSeconds > 86400) {
-			alert('Максимальное значение таймера - 86400 секунд (24 часа)');
-			return;
-		}
-		await saveChanges("s_timer", totalSeconds);
-	}
-
-	$effect(() => {
-		loadTelemetry()
-	})
-
-	$effect(() => {
-		if (telemetry?.countdown) {
-			// При получении данных преобразуем строку времени в объект
-			draftTime = parseTimeString(telemetry.countdown);
-		}
-	})
-
-	$effect(() => {
-		if (!isEditing) return;
-
-		const originalOverflow = document.body.style.overflow;
-		document.body.style.overflow = 'hidden';
-
-		return () => {
-			document.body.style.overflow = originalOverflow;
-		};
-	});
-
-	function handleSave() {
-		isEditing = false;
-		if (onConfirm) {
-			onConfirm(); // Вызываем колбэк подтверждения
-		} else {
-			modals.close(); // Fallback
-		}
-	}
-
-	// Обработчик отмены - исправлено
-	function handleCancel() {
-		isEditing = false;
-		if (onCancel) {
-			onCancel(); // Вызываем колбэк отмены
-		} else {
-			modals.close(); // Fallback
-		}
-	}
 </script>
 
-<Portal>
-	<div class="modal-overlay fade-in"></div>
+{#if isOpen}
 	<div
 		role="dialog"
-		class="modal-dialog"
-		transition:fly={{ y: 50 }}
-		use:focusTrap
+		class="wizard-overlay-override"
 	>
-		<div class="modal-content">
-			<h2 class="modal-title">
-				Настройки таймера
-			</h2>
+		<div class="wizard"	>
+			<!-- Заголовок -->
+			<div class="modal-header">
+				<h2 class="modal-title">Корректировка оперативных параметров</h2>
+			</div>
 
-			<div class="modal-body">
+			<div class="divider m-0"></div>
+			<div class="wizard-content">
 				{#if telemetry}
-					<!-- Отладочная информация -->
-					<!-- <pre>{JSON.stringify(telemetry, null, 2)}</pre> -->
+					{#if telemetry.tp1_target !== undefined}
+						<div class="settings-item">
+							<label class="input-label" for="tp1_target">Температура отбора</label>
+							<NumberInput
+								bind:value={tp1_target}
+								min={1}
+								max={100}
+								step={0.1}
+								unit="°С"
+							/>
+						</div>
+					{/if}
 
-					{#if telemetry.tp1_target}
-						<div class="input-group">
-							<span class="input-label">Целевая температура, °C</span>
-							<div class="input-wrapper">
-								<input
-									id='s_temp'
-									type="number"
-									value={telemetry.tp1_target}
-									class="input-field"
-									step=0.1
-									min="0"
-									max="110.0"
-								/>
-							</div>
+					{#if telemetry.tp2_target !== undefined}
+						<div class="settings-item">
+							<label class="input-label" for="tp1_control_temp">Целевая Температура ТД2</label>
+							<NumberInput
+								bind:value={tp2_target}
+								min={1}
+								max={100}
+								step={0.1}
+								unit="°С"
+							/>
 						</div>
 					{/if}
-					{#if telemetry.tp2_target}
-						<div class="input-group">
-							<span class="input-label">Целевая температура, °C</span>
-							<div class="input-wrapper">
-								<input
-									id='hysteresis'
-									type="number"
-									value={telemetry.tp2_target}
-									class="input-field"
-									step=0.1
-									min="0"
-									max="110.0"
-								/>
-							</div>
+
+					{#if telemetry.hysteresis !==0}
+						<div class="settings-item">
+							<label class="input-label" for="tp1_control_temp">Гистерезис</label>
+							<NumberInput
+								bind:value={hysteresis}
+								min={1}
+								max={100}
+								step={0.1}
+								unit="°С"
+							/>
 						</div>
 					{/if}
-					{#if telemetry.common.hysteresis}
-						<div class="input-group">
-							<span class="input-label">Гистерезис, °C</span>
-							<div class="input-wrapper">
-								<input
-									id='hysteresis'
-									type="number"
-									value={telemetry.common.hysteresis}
-									class="input-field"
-									step=0.1
-									min="0"
-									max="110.0"
-								/>
-							</div>
-						</div>
-					{/if}
-					{#if telemetry.decrement}
-						<div class="input-group">
-							<span class="input-label">Декремент, °C</span>
-							<div class="input-wrapper">
-								<input
-									id='hearts'
-									type="number"
-									value={telemetry.period}
-									class="input-field"
-									step=0.1
-									min="0"
-									max="110.0"
-								/>
-							</div>
-						</div>
-					{/if}
-					{#if telemetry.open}
-						<div class="input-group">
-							<span class="input-label">Время открытия клапана, Сек</span>
-							<div class="input-wrapper">
-								<input
-									id='hearts'
-									type="number"
-									value={telemetry.open}
-									class="input-field"
-									step=0.1
-									min="0"
-									max="110.0"
-								/>
-							</div>
-						</div>
-					{/if}
-					{#if telemetry.period}
-						<div class="input-group">
-							<span class="input-label">Период открытия клапана, Сек</span>
-							<div class="input-wrapper">
-								<input
-									id='hearts'
-									type="number"
-									value={telemetry.period}
-									class="input-field"
-									step=0.1
-									min="0"
-									max="110.0"
-								/>
-							</div>
-						</div>
-					{/if}
-					{#if telemetry.countdown}
-						<div class="input-group">
-							<span class="input-label">Таймер</span>
-							<div class="time-inputs">
-								<div class="time-input-group">
-									<label class="time-input-label">
-										Часы
-										<input
-											type="number"
-											bind:value={draftTime.h}
-											step={hourStep}
-											class="time-input {isInvalid.h || validation.exceedsMax ? 'input-error' : ''}"
-											min="0"
-											max="23"
+
+					{#if telemetry.open !== undefined && telemetry.period !== undefined}
+						<label class="valve-table-title" for="heads">
+							Скорость отбора
+						</label>
+
+						<div class="settings-item">
+							<table class="valve-table">
+								<thead>
+								<tr>
+									<th>Время включения</th>
+									<th>Период</th>
+								</tr>
+								</thead>
+								<tbody>
+								<tr>
+									<td data-label="Время включения">
+										<NumberInput
+											step={0.1}
+											min={0}
+											max={99.9}
+											bind:value={open}
+											unit="сек"
 										/>
-									</label>
-								</div>
-								<span class="time-separator">:</span>
-								<div class="time-input-group">
-									<label class="time-input-label">
-										Минуты
-										<input
-											type="number"
-											bind:value={draftTime.m}
-											step={minuteStep}
-											class="time-input {isInvalid.m || validation.exceedsMax ? 'input-error' : ''}"
-											min="0"
-											max="59"
+									</td>
+									<td data-label="Период">
+										<NumberInput
+											step={1}
+											min={0}
+											bind:value={period}
+											unit="сек"
 										/>
-									</label>
-								</div>
-								<span class="time-separator">:</span>
-								<div class="time-input-group">
-									<label class="time-input-label">
-										Секунды
-										<input
-											type="number"
-											bind:value={draftTime.s}
-											class="time-input {isInvalid.s || validation.exceedsMax ? 'input-error' : ''}"
-											min="0"
-											max="59"
-										/>
-									</label>
-								</div>
-								<button
-									class="btn btn-primary save-timer-btn"
-									onclick={handleSaveTimer}
-									disabled={isInvalid.h || isInvalid.m || isInvalid.s || validation.exceedsMax}
-								>
-									<Check class="btn-icon" />
-									<span>Сохранить</span>
-								</button>
-							</div>
-							<div class="time-info">
-								<span>Текущее значение: {telemetry.countdown}</span>
-								<span>Всего секунд: {timeToSeconds(draftTime)}</span>
-								{#if validation.exceedsMax}
-									<span class="error-text">Превышено максимальное значение (86400 секунд)</span>
-								{/if}
-							</div>
+									</td>
+								</tr>
+								</tbody>
+							</table>
+						</div>
+					{/if}
+
+					{#if telemetry.decrement !== undefined}
+						<div class="settings-item">
+							<label class="input-label" for="tp1_control_temp">Декремент</label>
+							<NumberInput
+								bind:value={decrement}
+								min={1}
+								max={100}
+								step={0.1}
+								unit="°С"
+							/>
+						</div>
+					{/if}
+
+					{#if telemetry.countdown !== undefined}
+						<div class="settings-item">
+							<label class="input-label" for="headsTimer">
+								Таймер
+							</label>
+							<TimeInput
+								bind:value={countdown_seconds}
+								step={300}
+								min={0}
+								max={86399}
+							/>
 						</div>
 					{/if}
 				{/if}
 			</div>
-			<div class="modal-divider"></div>
-			<div class="modal-actions">
+
+			<div class="wizard-nav">
 				<button
-					class="btn btn-primary"
-					onclick={handleSave}
-				>
-					<Check class="btn-icon" />
-					<span>Сохранить все</span>
+					type="button"
+					onclick={close}
+					class="btn btn-back">
+					<Cancel class="modal-icon" />
+					Отмена
 				</button>
 				<button
-					class="btn btn-warning"
-					onclick={handleCancel}
-				>
-					<Cancel class="btn-icon" />
-					<span>Отменить</span>
+					type="button"
+					onclick={save}
+					class="btn btn-success">
+					Сохранить
 				</button>
 			</div>
 		</div>
 	</div>
-</Portal>
-
-<style lang="scss">
-  .time-info {
-    margin-top: 10px;
-    display: flex;
-    flex-direction: row;
-		justify-content: space-between;
-    gap: 5px;
-    font-size: 0.9em;
-    color: #666;
-  }
-
-  .error-text {
-    color: #dc2626;
-    font-weight: 500;
-  }
-
-  .save-timer-btn {
-    margin-top: 10px;
-    width: 20%;
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-  }
-
-  .input-error {
-    border-color: #dc2626 !important;
-    background-color: #fef2f2;
-  }
-</style>
+{/if}

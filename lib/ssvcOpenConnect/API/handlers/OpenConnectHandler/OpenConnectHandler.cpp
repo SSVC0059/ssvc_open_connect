@@ -27,12 +27,20 @@ esp_err_t OpenConnectHandler::getInfo(PsychicRequest* request)
     auto response = PsychicJsonResponse(request, false);
     const auto root = response.getRoot();
 
+    const SsvcSettings& settings = SsvcSettings::init();
+
     const auto ssvc = root["ssvc"].to<JsonObject>();
-    ssvc["version"] = SsvcSettings::init().getSsvcVersion();
-    ssvc["api"] = SsvcSettings::init().getSsvcApiVersion();
+    ssvc["version"] = settings.getSsvcVersion();
+    ssvc["api"] = settings.getSsvcApiVersion();
+    if (SsvcSettings::init().isSupportTails()) {
+        ssvc["mode"] = "tails";
+    } else {
+        ssvc["mode"] = "late_heads";
+    }
 
     const auto oc = root["oc"].to<JsonObject>();
     oc["version"] = APP_VERSION;
+    oc["is_support_api"] = settings.apiSsvcIsSupport();
 
     response.setCode(200);
     return response.send();

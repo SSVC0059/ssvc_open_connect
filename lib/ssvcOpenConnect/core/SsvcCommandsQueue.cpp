@@ -17,6 +17,8 @@
 
 #include "SsvcCommandsQueue.h"
 
+#define TAG "SsvcCommandsQueue"
+
 // Инициализация статической карты команд
 const std::map<std::string, std::function<void()>> SsvcCommandsQueue::COMMAND_MAP = {
       {"at",           []() { getQueue().at(); }},
@@ -35,9 +37,9 @@ const std::map<std::string, std::function<void()>> SsvcCommandsQueue::COMMAND_MA
 SsvcCommandsQueue::SsvcCommandsQueue() {
   command_queue = xQueueCreate(COMMAND_QUEUE_LENGTH, COMMAND_QUEUE_ITEM_SIZE);
   if (command_queue == nullptr) {
-    ESP_LOGE("SsvcQueue", "Failed to create command queue!");
+    ESP_LOGE(TAG, "Failed to create command queue!");
   } else {
-    ESP_LOGI("SsvcQueue", "Command queue created successfully");
+    ESP_LOGI(TAG, "Command queue created successfully");
   }
 
   xTaskCreatePinnedToCore(
@@ -88,7 +90,7 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
 
   while (true) {
     if (xQueueReceive(self->command_queue, &cmd, portMAX_DELAY) == pdPASS) {
-      ESP_LOGI("CommandProcessor", "Processing command of type: %d", cmd->type);
+      ESP_LOGI(TAG, "Processing command of type: %d", cmd->type);
       bool command_success = false;
 
       while (cmd->attempt_count != 0) {
@@ -129,10 +131,10 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
           command_success = SsvcConnector::sendCommand("AT\n");
           break;
         }
-        ESP_LOGI("CommandProcessor", "Send result: %d", command_success);
+        ESP_LOGI(TAG, "Send result: %d", command_success);
 
         if (!command_success) {
-          ESP_LOGE("CommandProcessor", "Failed to send command %d",
+          ESP_LOGE(TAG, "Failed to send command %d",
                    static_cast<int>(cmd->type));
           vTaskDelay(pdMS_TO_TICKS(2000));
           continue;
@@ -140,7 +142,7 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
 
         // Ожидание ответа с определенным битом
         EventBits_t expectedBit = self->commandToExpectedBit[cmd->type];
-        ESP_LOGV("CommandProcessor", "Waiting for response with bit: %d",
+        ESP_LOGV(TAG, "Waiting for response with bit: %d",
                  expectedBit);
         const EventBits_t responseMask = expectedBit | BIT1;
 
@@ -152,20 +154,20 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
 
           // Обработка ответа через зарегистрированные callback'и
           auto it = self->bitCallbacks.find(expectedBit);
-          ESP_LOGV("CommandProcessor", "Callback found: %d",
+          ESP_LOGV(TAG, "Callback found: %d",
                    it != self->bitCallbacks.end());
           if (it != self->bitCallbacks.end()) {
             command_success = it->second(cmd);
-            ESP_LOGV("CommandProcessor", "Command %d processed with result: %d",
+            ESP_LOGV(TAG, "Command %d processed with result: %d",
                      cmd->type, command_success);
           } else {
-            ESP_LOGW("CommandProcessor", "No callback handler for bit %d",
+            ESP_LOGW(TAG, "No callback handler for bit %d",
                      expectedBit);
           }
         }
 
         if (command_success) {
-          ESP_LOGV("CommandProcessor", "Command %d executed successfully",
+          ESP_LOGV(TAG, "Command %d executed successfully",
                    static_cast<int>(cmd->type));
           break;
         }
@@ -177,6 +179,9 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
 
       delete cmd;
     }
+    // Логирование использования стека задачи
+    UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
+    ESP_LOGD(TAG, "CmdProcessor Task: Stack High Water Mark: %u bytes", stackHighWaterMark);
   }
 }
 
@@ -214,7 +219,7 @@ void SsvcCommandsQueue::registerCallbackCommands() {
       result = true;
     }
     if (response["api"].is<String>()) {
-      const std::string ssvcApiVersion = response["api"].as<std::string>();
+      const float ssvcApiVersion = response["api"].as<float>();
       SsvcSettings::init().setSsvcApiVersion(ssvcApiVersion);
       xSemaphoreGive(mutex);
       result = true;
@@ -285,6 +290,7 @@ void SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
                                            const int attempt_count,
                                            const TickType_t timeout) const
 {
+  ESP_LOGD(TAG, "Attempting to enqueue command type: %d", static_cast<int>(type));
   auto *cmd = new SsvcCommand();
   cmd->type = type;
   cmd->parameters = parameters;
@@ -292,8 +298,10 @@ void SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
   cmd->timeout = pdMS_TO_TICKS(timeout);
 
   if (xQueueSend(command_queue, &cmd, pdMS_TO_TICKS(1000)) != pdPASS) {
-    ESP_LOGE("SsvcCommandsQueue", "Failed to send command to queue");
+    ESP_LOGE(TAG, "Failed to send command to queue! Queue might be full.");
     delete cmd;
+  } else {
+    ESP_LOGI(TAG, "Command type %d enqueued successfully.", static_cast<int>(type));
   }
 }
 

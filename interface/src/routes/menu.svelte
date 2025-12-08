@@ -23,16 +23,17 @@
     import Bug from '~icons/tabler/bug';
     import { page } from '$app/state';
     import { user } from '$lib/stores/user';
+    import type { Component } from 'svelte';
 
     let { closeMenu } = $props();
 
     const github = { href: 'https://github.com/' + page.data.github, active: true };
 
-	const discord = { href: '.', active: false };
+    const discord = { href: '.', active: false };
 
     type menuItem = {
         title: string;
-        icon: ConstructorOfATypedSvelteComponent;
+        icon: Component;
         href?: string;
         feature: boolean;
         active?: boolean;
@@ -41,10 +42,10 @@
 
     type subMenuItem = {
         title: string;
-        icon: ConstructorOfATypedSvelteComponent;
+        icon: Component;
         href: string;
         feature: boolean;
-        active: boolean;
+        active?: boolean;
     };
 
     let menuItems = $state([
@@ -75,7 +76,7 @@
             ]
         },
         {
-			title: 'Соединения',
+            title: 'Соединения',
             icon: Remote,
             feature: page.data.features.mqtt || page.data.features.ntp,
             submenu: [
@@ -99,13 +100,13 @@
             feature: true,
             submenu: [
                 {
-					title: 'WiFi Статус',
+                    title: 'WiFi Статус',
                     icon: Router,
                     href: '/wifi/sta',
                     feature: true
                 },
                 {
-					title: 'Точка доступа',
+                    title: 'Точка доступа',
                     icon: AP,
                     href: '/wifi/ap',
                     feature: true
@@ -113,24 +114,24 @@
             ]
         },
         {
-			title: 'Пользователи',
+            title: 'Пользователи',
             icon: Users,
             href: '/user',
             feature: page.data.features.security && $user.admin
         },
         {
-			title: 'Система',
+            title: 'Система',
             icon: Settings,
             feature: true,
             submenu: [
                 {
-					title: 'Статус системы',
+                    title: 'Статус системы',
                     icon: Health,
                     href: '/system/status',
                     feature: true
                 },
                 {
-					title: 'Системный монитор',
+                    title: 'Системный монитор',
                     icon: Metrics,
                     href: '/system/metrics',
                     feature: page.data.features.analytics

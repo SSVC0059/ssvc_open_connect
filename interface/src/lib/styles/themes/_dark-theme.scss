@@ -1,0 +1,93 @@
+/* ===== ДОБАВЛЕНИЕ СТИЛЕЙ WIZARD В ТЕМНУЮ ТЕМУ ===== */
+@media (prefers-color-scheme: dark) {
+
+  /* Переменные для примера (если они не определены глобально) */
+  /*
+   */
+  :root {
+    --dark-bg-overlay: rgba(0, 0, 0, 0.75);
+    --dark-surface-color: #2d3748;
+    --dark-footer-bg: #4a5568;
+    --dark-step-inactive-bg: #5a6575;
+    --dark-text-muted: #a0aec0;
+    --dark-border-color: #4a5568;
+  }
+  // Контейнер и Оверлей
+  .wizard-overlay-override {
+    background-color: var(--dark-bg-overlay); // Новый оверлей
+  }
+
+  .wizard {
+    background-color: var(--dark-surface-color); // Темный фон окна
+  }
+
+  // Заголовок
+  .modal-header {
+    .modal-title, .modal-close {
+      color: var(--white); // Светлый текст
+    }
+  }
+
+  // Навигация (Подвал)
+  .wizard-nav {
+    background-color: var(--dark-footer-bg); // Темный фон навигации
+  }
+
+  // Шаги
+  .steps-container .step {
+    .step-circle:not(.active) {
+      background-color: var(--dark-step-inactive-bg); // Темный фон неактивного круга
+      color: var(--white);
+    }
+    .step-title {
+      color: var(--dark-text-muted); // Светло-серый текст
+    }
+
+  }
+
+  .settings-title, .valve-card .settings-title {
+    color: var(--white);
+  }
+
+  .input-label {
+    color: var(--primary-200); // Или любая другая переменная светлого текста, например, var(--primary-200)
+  }
+
+  .input-field,
+  .input-cell {
+    background-color: var(--dark-surface-color);
+    border-color: var(--dark-footer-bg);
+    color: var(--primary-200);
+  }
+
+  .valve-table-title {
+    color: var(--primary-200);
+  }
+
+  .valve-table {
+    th,
+    td {
+      border-color: var(--dark-border-color);
+    }
+
+    thead th {
+      background-color: var(--dark-footer-bg);
+      color: var(--white);
+    }
+
+    .input-readonly {
+      background-color: var(--dark-step-inactive-bg);
+      color: var(--dark-text-muted);
+      border-color: var(--dark-border-color);
+    }
+  }
+
+  .valve-info {
+    background-color: var(--dark-surface-color);
+    border-color: var(--blue-500);
+    p {
+      color: var(--primary-200);
+    }
+  }
+
+}

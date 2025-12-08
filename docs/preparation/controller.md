@@ -5,7 +5,7 @@
 Open Connect разрабатывается и тестируется на контроллере ESP32-S3
 
 <div style="flex">
-<img src="/preparation/media/esp32.png" style="height:680px"> 
+<img src="/ssvc_open_connect/preparation/media/esp32.png" style="height:680px"> 
 </div>
 
 Такие контроллеры могут выпускаться в различных вариантах. В проекте рекомендуется использовать контроллер маркировкой <span style="color: red;">N16R8</span> в или <span style="color: red;">N8R8</span>

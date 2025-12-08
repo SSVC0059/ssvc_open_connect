@@ -45,11 +45,11 @@
 					</div>
 
 					<div class="settings-item">
-						<span class="settings-label">Время открытия клапана</span>
+						<span class="input-label">Время открытия клапана</span>
 						<span class="settings-value">{settings.parallel_v1[0]} Сек</span>
 					</div>
 					<div class="settings-item">
-						<span class="settings-label">Периодичность</span>
+						<span class="input-label">Периодичность</span>
 						<span class="settings-value">{settings.parallel_v1[1]} Сек</span>
 					</div>
 				</div>
@@ -112,11 +112,11 @@
 					</div>
 
 					<div class="settings-item">
-						<span class="settings-label">Время открытия клапана</span>
+						<span class="input-label">Время открытия клапана</span>
 						<span class="settings-value">{settings.parallel_v1[0]} Сек</span>
 					</div>
 					<div class="settings-item">
-						<span class="settings-label">Периодичность</span>
+						<span class="input-label">Периодичность</span>
 						<span class="settings-value">{settings.parallel_v1[1]} Сек</span>
 					</div>
 				</div>
@@ -129,5 +129,4 @@
   .settings-grid {
     grid-template-columns: 1fr
   }
-
 </style>

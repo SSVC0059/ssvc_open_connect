@@ -35,6 +35,8 @@ private:
     static void parseQueryParams(const String& query,
                                std::vector<std::pair<String, String>>& output);
     static bool tryParseValue(const String& valueStr, JsonVariant& out);
+
+    static constexpr auto TAG = "SettingsHandler";
 };
 
 #endif

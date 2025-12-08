@@ -1,4 +1,13 @@
-import type { SensorData } from '$lib/types/Sensors';
+import { getInfo } from '$lib/api/ssvcApi';
+
+/**
+ * Проверяет, что версия API SSVC равна 1.6.
+ * @returns {Promise<boolean>} - Возвращает true, если версия API равна 1.6, иначе false.
+ */
+export async function isApiVersion(apiVersion: number): Promise<boolean> {
+	const info = await getInfo();
+	return info?.ssvc?.api === apiVersion;
+}
 
 export function formatSecondsToHHMMSS(seconds: number): string {
 	const hours = Math.floor(seconds / 3600);
@@ -79,15 +88,3 @@ export function getDescriptionStage(stage: string) {
 			return 'Хвосты';
 	}
 }
-
-export const groupByZone = (data: SensorData[]): Record<string, SensorData[]> => {
-	return data.reduce(
-		(acc, sensor) => {
-			const zone = sensor.zone || 'unknown';
-			if (!acc[zone]) acc[zone] = [];
-			acc[zone].push(sensor);
-			return acc;
-		},
-		{} as Record<string, SensorData[]>
-	);
-};

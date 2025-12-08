@@ -1,6 +1,6 @@
 <script lang="ts">
 		import RectImg from '$lib/components/Telemetry/RectImg.svelte';
-		import type { RectStatus, SsvcOpenConnectMessage } from '$lib/types/ssvc.ts';
+		import type { SsvcOpenConnectMessage } from '$lib/types/ssvc.ts';
         import {
             fetchAlarmThresholds,
             fetchSensorsTemperatureByZone,
@@ -11,6 +11,7 @@
 		import { getDescriptionStage, getStageDescription } from '$lib/utils/ssvcHelper';
 		import ThermalSensors from '$lib/components/Telemetry/ThermalSensors.svelte';
         import type {AlarmThresholdsState, TemperatureResponse} from '$lib/types/Sensors';
+		import ApiVersionGuard from '$lib/components/ApiVersionGuard.svelte';
 
 		let data = $state<SsvcOpenConnectMessage | null>();
 		let temperatureResponse = $state<TemperatureResponse | null>();
@@ -102,7 +103,6 @@
 			};
 		});
 
-
 </script>
 
 <div class="telemetry-container">
@@ -111,8 +111,9 @@
 			<span class="status-item">
 				<span class="label">Этап:</span> {getStageDescription(telemetry? telemetry.type : "")}
 			</span>
-
 		</div>
+		<ApiVersionGuard requiredVersion={1.6}
+										 message="Версия API SSVC не поддерживается. Обновите прошивку SSVC на актуальную"></ApiVersionGuard>
 		<div class="status-right">
 			<span class="status-item">
 				<span class="label">T1:</span> {telemetry?.common.tp1}°C
@@ -120,9 +121,11 @@
 			<span class="status-item">
 				<span class="label">T2:</span> {telemetry?.common.tp2}°C
 			</span>
-			<span class="status-item">
-				<span class="label">Давление:</span> {telemetry?.tank_mmhg} ммРс
-			</span>
+            {#if telemetry?.tank_mmhg}
+                <span class="status-item">
+                    <span class="label">Давление:</span> {telemetry?.tank_mmhg} ммРс
+                </span>
+            {/if}
 		</div>
 	</div>
 
@@ -221,7 +224,7 @@
 								{/if}
 								{#if telemetry && telemetry.alc}
 									<span class="reading-item">
-										<span class="reading-label">Количество спирта:</span> <span class="reading-value">{telemetry.alc}</span>
+										<span class="reading-label">Количество спирта в кубе:</span> <span class="reading-value">{telemetry.alc}%</span>
 									</span>
 								{/if}
 							</div>
@@ -234,7 +237,7 @@
 </div>
 
 <style lang="scss">
-	@use "$lib/styles/mixins.scss" as *;
+	@use "$lib/styles/base/mixins" as *;
 
   // Base Styles
   .telemetry-container {
@@ -244,12 +247,23 @@
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
+      gap: 1rem; // Add gap for spacing
+      padding: 0.5rem;
 
       .status-left,
       .status-right {
         display: flex;
         align-items: center;
         gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      // Make ApiVersionGuard more subtle
+      :global(.version-guard .unsupported-banner) {
+        padding: 0.25rem 0.5rem;
+        margin-bottom: 0;
+        font-size: 0.8rem;
+        border-radius: var(--border-radius);
       }
 
       .status-item {
@@ -260,6 +274,17 @@
         }
         .time-value {
           font-weight: 700;
+        }
+      }
+
+      // On mobile, stack everything and center it
+      @media (max-width: 768px) {
+        flex-direction: column;
+        justify-content: center;
+        gap: 0.5rem;
+
+        .status-left, .status-right {
+          justify-content: center;
         }
       }
     }

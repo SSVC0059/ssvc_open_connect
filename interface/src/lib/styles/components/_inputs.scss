@@ -1,0 +1,60 @@
+// file: components/_inputs.scss (ИТОГОВЫЙ КОД)
+@use "../base/mixins" as m;
+
+/* ===== 1. БАЗОВЫЕ СТИЛИ ПОЛЕЙ ВВОДА И ЛЕЙБЛОВ (Унифицированные) ===== */
+
+.input-label {
+  color: var(--primary-800);
+  font-size: 0.95rem;
+  cursor: pointer;
+  @include m.dark-theme-color;
+}
+
+.input-field,
+.input-cell,
+.time-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--primary-300);
+  border-radius: var(--border-radius);
+  outline: none;
+  transition: var(--transition);
+  background-color: var(--white);
+  color: var(--primary-800);
+
+  &:focus {
+    border-color: var(--blue-500);
+    box-shadow: 0 0 0 3px rgba(var(--blue-500), 0.2);
+  }
+
+  @include m.dark-theme-color;
+}
+
+// 2.3. Обертка для поля ввода + кнопки (например, Eye)
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .btn {
+    padding: 0.5rem;
+    font-size: 1.125rem;
+  }
+}
+
+// 2.4. Блок действий (кнопки внизу формы)
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.info-text {
+  font-size: 0.8rem;
+  color: var(--red-300);
+  margin-top: 0.25rem;
+  text-align: center;
+  @include m.dark-theme-color;
+}
