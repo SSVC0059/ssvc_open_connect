@@ -24,7 +24,7 @@
 				<h3 class="settings-section-title">Параметры отбора</h3>
 
 				<div class="settings-item">
-					<span class="settings-label">Гистерезис при отборе тела</span>
+					<span class="input-label">Гистерезис при отборе тела</span>
 					<EditNumbersModal
 						onSave={(newValues) => {
 								onSave('hyst', newValues[0].value);
@@ -44,7 +44,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Декремент при отборе тела</span>
+					<span class="input-label">Декремент при отборе тела</span>
 					<EditNumbersModal
 						onSave={(newValues) => {
 								onSave('decrement', newValues[0].value);
@@ -62,7 +62,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Время отбора голов</span>
+					<span class="input-label">Время отбора голов</span>
 					<EditTimeModal
 						max={36000}
 						onSave={(v) => onSave('heads_timer', v)}
@@ -72,7 +72,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Таймер фиксации температуры отбора тела</span>
+					<span class="input-label">Таймер фиксации температуры отбора тела</span>
 					<EditNumbersModal
 						onSave={(newValues) => {
 								onSave('hearts_timer', newValues[0].value);
@@ -93,7 +93,7 @@
 			<div class="settings-section">
 				<h3 class="settings-section-title">Настройки реле и Signal</h3>
 				<div class="settings-item">
-					<span class="settings-label">Реле инвертировано</span>
+					<span class="input-label">Реле инвертировано</span>
 					<label class="toggle-container">
 						<input type="checkbox" class="toggle-input" checked="{settings.relay_inverted}" disabled>
 						<div class="toggle-slider"></div>
@@ -101,7 +101,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Автовключение реле</span>
+					<span class="input-label">Автовключение реле</span>
 					<label class="toggle-container">
 						<input type="checkbox" class="toggle-input" checked="{settings.relay_autostart}" disabled>
 						<div class="toggle-slider"></div>
@@ -109,7 +109,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Контроль ТД1 для выхода SIGNAL</span>
+					<span class="input-label">Контроль ТД1 для выхода SIGNAL</span>
 					<label class="toggle-container">
 						<input type="checkbox" class="toggle-input" checked="{settings.signal_tp1_control}" disabled>
 						<div class="toggle-slider"></div>
@@ -117,7 +117,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Инвертировать SIGNAL</span>
+					<span class="input-label">Инвертировать SIGNAL</span>
 					<label class="toggle-container">
 						<input type="checkbox" class="toggle-input" checked="{settings.signal_inverted}" disabled>
 						<div class="toggle-slider"></div>
@@ -125,12 +125,12 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Целевая температура на ТД1 при контроле ТД1 для выхода SIGNAL</span>
+					<span class="input-label">Целевая температура на ТД1 при контроле ТД1 для выхода SIGNAL</span>
 					<span class="settings-value">{settings.tp1_control_temp} °С</span>
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Старт по ТД1 при контроле ТД1 для выхода SIGNAL.</span>
+					<span class="input-label">Старт по ТД1 при контроле ТД1 для выхода SIGNAL.</span>
 					<label class="toggle-container">
 						<input type="checkbox" class="toggle-input" checked="{settings.tp1_control_start}" disabled>
 						<div class="toggle-slider"></div>
@@ -143,7 +143,7 @@
 				<h3 class="settings-section-title">Системные настройки</h3>
 
 				<div class="settings-item">
-					<span class="settings-label">Звук</span>
+					<span class="input-label">Звук</span>
 					<label class="toggle-container">
 						<input type="checkbox" class="toggle-input" checked="{settings.sound}" disabled>
 						<div class="toggle-slider"></div>
@@ -151,7 +151,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Барометр</span>
+					<span class="input-label">Барометр</span>
 					<label class="toggle-container">
 						<input type="checkbox" class="toggle-input" checked="{settings.pressure}" disabled>
 						<div class="toggle-slider"></div>
@@ -159,7 +159,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Отложенный пуск</span>
+					<span class="input-label">Отложенный пуск</span>
 					<button class="settings-action">
 						<span>00:00</span>
 						<i data-feather="edit-2" class="text-xs"></i>
@@ -167,7 +167,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Поправка давления в кубе</span>
+					<span class="input-label">Поправка давления в кубе</span>
 					<EditNumbersModal
 						onSave={(newValues) => {
 								// Используйте полный тип объекта как в компоненте
@@ -186,12 +186,12 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Поправка ТД2</span>
+					<span class="input-label">Поправка ТД2</span>
 					<span class="settings-value">{settings.tp2_shift} °С</span>
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Фильтр ТД</span>
+					<span class="input-label">Фильтр ТД</span>
 					<span class="settings-value">0</span>
 				</div>
 			</div>
@@ -202,7 +202,7 @@
 				<h3 class="settings-section-title">Температурные настройки</h3>
 
 				<div class="settings-item">
-					<span class="settings-label">Температура ТД2 завершения отбора тела</span>
+					<span class="input-label">Температура ТД2 завершения отбора тела</span>
 					<EditNumbersModal
 						values={[
 									{
@@ -222,7 +222,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Сдвиг температуры отбора тела на 0.07°С</span>
+					<span class="input-label">Сдвиг температуры отбора тела на 0.07°С</span>
 					<label class="toggle-container">
 						<input type="checkbox" class="toggle-input" checked="{settings.hearts_temp_shift}" disabled>
 						<div class="toggle-slider"></div>
@@ -230,7 +230,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Пауза "на себя"</span>
+					<span class="input-label">Пауза "на себя"</span>
 					<label class="toggle-container">
 						<input type="checkbox" class="toggle-input" checked="{settings.hearts_pause}" disabled>
 						<div class="toggle-slider"></div>
@@ -238,7 +238,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Формула</span>
+					<span class="input-label">Формула</span>
 					<label class="toggle-container">
 						<input type="checkbox" class="toggle-input"
 									 bind:checked={settings.formula}
@@ -251,7 +251,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Температура начала формулы</span>
+					<span class="input-label">Температура начала формулы</span>
 					<EditNumbersModal
 						onSave={(newValues) => {
 								// Используйте полный тип объекта как в компоненте
@@ -271,7 +271,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Лимит стабилизации</span>
+					<span class="input-label">Лимит стабилизации</span>
 					<label class="toggle-container">
 						<input type="checkbox" class="toggle-input" checked="{settings.tp1_control_start}" disabled>
 						<div class="toggle-slider"></div>
@@ -279,7 +279,7 @@
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Завершить этап при превышении лимита стабилизации</span>
+					<span class="input-label">Завершить этап при превышении лимита стабилизации</span>
 					<label class="toggle-container">
 						<input type="checkbox" class="toggle-input" checked="{settings.stab_limit_finish}" disabled>
 						<div class="toggle-slider"></div>
@@ -292,7 +292,7 @@
 					<h3 class="settings-section-title">Сброс и снижение</h3>
 
 					<div class="settings-item">
-						<span class="settings-label">Время сброса</span>
+						<span class="input-label">Время сброса</span>
 						<EditNumbersModal
 							onSave={(newValues) => {
 								// Используйте полный тип объекта как в компоненте
@@ -310,7 +310,7 @@
 						/>
 					</div>
 					<div class="settings-item">
-						<span class="settings-label">Скорость сброса</span>
+						<span class="input-label">Скорость сброса</span>
 						<EditNumbersModal
 							onSave={(newValues) => {
 								// Используйте полный тип объекта как в компоненте
@@ -328,7 +328,7 @@
 					</div>
 
 					<div class="settings-item">
-						<span class="settings-label">Скорость отбора к окончанию голов</span>
+						<span class="input-label">Скорость отбора к окончанию голов</span>
 						<EditNumbersModal
 							onSave={(newValues) => {
 								// Используйте полный тип объекта как в компоненте

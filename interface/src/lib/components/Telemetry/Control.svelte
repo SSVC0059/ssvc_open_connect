@@ -93,7 +93,6 @@
 		modals.open(ChangeStageModal, {
 			onConfirm: () => {
 				modals.close();
-				sendRequest('start');
 			},
 			onCancel: () => {
 				modals.close();
@@ -111,7 +110,7 @@
 			throw new Error(`HTTP error! status: ${response.message}`);
 		} else {
 			await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 секунда
-			await onStatusUpdate();
+
 		}
 
 		return response; // Предполагается, что ответ в формате JSON

@@ -1,23 +1,13 @@
 site_name: SSVC Open Connect
 site_url: https://SSVC0059.github.io/ssvc_open_connect/
 
-nav:
-  - "Главная": index.md
-  - "Подготовка":
-      - preparation/controller.md
-      - preparation/driver.md
-      - preparation/firmware.md
-      - preparation/flasher.md
-      - preparation/adafruit_webserial_esptool.md
-
-
 site_author: thedemoncat
 site_description: >-
  Модуль расширения функционала автоматики отбора для ректификации  SSVC0059V2,
 
-# Repository
 repo_name: SSVC0059/ssvc_open_connect
 repo_url: https://github.com/SSVC0059/ssvc_open_connect
+
 
 theme:
   name: material
@@ -46,15 +36,44 @@ theme:
 
   features:
     - navigation.instant
+    - navigation.instant.prefetch
     - navigation.tracking
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.sections
     - navigation.expand
+    - navigation.top
     - toc.follow
     - toc.integrate
     - navigation.top
     - content.code.copy
+
+
+nav:
+  - Главная: index.md
+  - "Подготовка":
+      - preparation/controller.md
+      - preparation/driver.md
+      - preparation/firmware.md
+      - preparation/flasher.md
+      - preparation/adafruit_webserial_esptool.md
+  - "Интерфейсы и Периферия" : 
+      - usage/interfaces/power.md
+      - usage/interfaces/uart.md
+      - usage/interfaces/ds18b20.md
+      - usage/interfaces/rgb_led.md
+  - "Начало работы":
+      - usage/get_started.md
+  - "Готовые модули":
+      - ready_made/connect.md
+      - ready_made/din_version.md
+      - ready_made/inside_version.md
+  - Для разработчиков: develop/
+      
+  - "FAQ" : faq/faq.md
+  - "Прочее" :
+      - info/changelog.md
+
 
 markdown_extensions:
   - attr_list
@@ -70,6 +89,8 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+      
 extra:
   social:
     - icon: fontawesome/brands/github
@@ -86,6 +107,19 @@ extra:
 plugins:
   - search:
       separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
+  - autorefs
+  - literate-nav:
+      nav_file: README.md
+      implicit_index: true
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_section_style: list
+            members_order: source
+            show_root_heading: true
+            show_source: false
+            show_signature_annotations: true
 
 copyright: |
   Copyright &copy; 2025 by <a href="https://github.com/thedemoncat"  target="_blank" rel="noopener">elims</a> -

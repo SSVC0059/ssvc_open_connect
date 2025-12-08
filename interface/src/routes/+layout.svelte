@@ -8,7 +8,7 @@
 	import { socket } from '$lib/stores/socket';
 	import type { userProfile } from '$lib/stores/user';
 	import { page } from '$app/state';
-	import { Modals, modals } from 'svelte-modals';
+	import { Modals } from 'svelte-modals';
 	import Toast from '$lib/components/toasts/Toast.svelte';
 	import { notifications } from '$lib/components/toasts/notifications';
 	import { fade } from 'svelte/transition';
@@ -23,7 +23,6 @@
 	import type { DownloadOTA } from '$lib/types/models';
 
 	import '$lib/styles/open-connect-main.scss';
-
 
 	interface Props {
 		data: LayoutData;

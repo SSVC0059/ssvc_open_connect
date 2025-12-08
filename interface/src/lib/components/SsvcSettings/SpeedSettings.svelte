@@ -1,5 +1,4 @@
 <script lang="ts">
-import EditTimeModal from '$lib/components/SsvcSettings/EditTimeModal.svelte';
 import EditNumbersModal from '$lib/components/SsvcSettings/EditNumbersModal.svelte';
 
 import type { SsvcSettings } from '$lib/types/ssvc';
@@ -45,11 +44,11 @@ const { settings, onSave } = $props<{
 				</div>
 
 				<div class="settings-item">
-					<span class="settings-label">Время открытия клапана</span>
+					<span class="input-label">Время открытия клапана</span>
 					<span class="settings-value">{settings.heads[0]} Сек</span>
 				</div>
 				<div class="settings-item">
-					<span class="settings-label">Периодичность</span>
+					<span class="input-label">Периодичность</span>
 					<span class="settings-value">{settings.heads[1]} Сек</span>
 				</div>
 			</div>
@@ -84,11 +83,11 @@ const { settings, onSave } = $props<{
 						</EditNumbersModal>
 					</div>
 					<div class="settings-item">
-						<span class="settings-label">Время открытия клапана</span>
+						<span class="input-label">Время открытия клапана</span>
 						<span class="settings-value">{settings.late_heads[0]} Сек</span>
 					</div>
 					<div class="settings-item">
-						<span class="settings-label">Периодичность</span>
+						<span class="input-label">Периодичность</span>
 						<span class="settings-value">{settings.late_heads[1]} Сек</span>
 					</div>
 				</div>
@@ -122,11 +121,11 @@ const { settings, onSave } = $props<{
 					</EditNumbersModal>
 				</div>
 				<div class="settings-item">
-					<span class="settings-label">Время открытия клапана</span>
+					<span class="input-label">Время открытия клапана</span>
 					<span class="settings-value">{settings.hearts[0]} Сек</span>
 				</div>
 				<div class="settings-item">
-					<span class="settings-label">Периодичность</span>
+					<span class="input-label">Периодичность</span>
 					<span class="settings-value">{settings.hearts[1]} Сек</span>
 				</div>
 			</div>
@@ -160,11 +159,11 @@ const { settings, onSave } = $props<{
 						</EditNumbersModal>
 					</div>
 					<div class="settings-item">
-						<span class="settings-label">Время открытия клапана</span>
+						<span class="input-label">Время открытия клапана</span>
 						<span class="settings-value">{settings.tails[0]} Сек</span>
 					</div>
 					<div class="settings-item">
-						<span class="settings-label">Периодичность</span>
+						<span class="input-label">Периодичность</span>
 						<span class="settings-value">{settings.tails[1]} Сек</span>
 					</div>
 				</div>

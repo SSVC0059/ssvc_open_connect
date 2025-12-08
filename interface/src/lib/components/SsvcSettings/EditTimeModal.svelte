@@ -127,7 +127,6 @@
 									/>
 								</label>
 							</div>
-							<span class="time-separator">:</span>
 							<div class="time-input-group">
 								<label class="time-input-label">
 									Минуты
@@ -141,7 +140,6 @@
 									/>
 								</label>
 							</div>
-							<span class="time-separator">:</span>
 							<div class="time-input-group">
 								<label class="time-input-label">
 									Секунды

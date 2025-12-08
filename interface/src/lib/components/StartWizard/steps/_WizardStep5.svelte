@@ -12,7 +12,7 @@
 <!--},-->
 
 <script lang="ts">
-	import type { SsvcSettings } from '$lib/types/models';
+	import type { SsvcSettings } from '$lib/types/ssvc';
 
 	// 1. Объявляем пропсы (опциональные, с fallback-значениями через $state)
 	// Объявляем пропсы с типами

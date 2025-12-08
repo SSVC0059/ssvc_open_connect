@@ -8,11 +8,10 @@
 	import ValveBandwidth from '$lib/components/SsvcSettings/ValveBandwidth.svelte';
 	import SpeedSettings from '$lib/components/SsvcSettings/SpeedSettings.svelte';
 	import ParallelValve from '$lib/components/SsvcSettings/ParallelValve.svelte';
+	import Reload from '~icons/tabler/reload';
 
 	let ssvcSettings = $state<SsvcSettings | null>();
 	let activeTab = $state(0);
-
-
 	let isMobileMenuOpen = $state(false);
 	function closeMobileMenu() {
 		isMobileMenuOpen = false;
@@ -41,18 +40,17 @@
 	interface Tab {
 		id: string;
 		title: string;
-		component: any; // Можно уточнить тип компонента при необходимости
+		component: any;
+		// Можно уточнить тип компонента при необходимости
 		props: Record<string, unknown>;
 	}
 
 	// Реактивное вычисление вкладок
 	const availableTabs = $derived(computeTabs(ssvcSettings));
-
 	// Функция для вычисления вкладок
 	function computeTabs(settings: SsvcSettings | null | undefined): Tab[] {
 		if (!settings) return [];
-
-		const tabs: Tab[] = [
+		return [
 			{
 				id: 'general',
 				title: 'Общие',
@@ -78,8 +76,6 @@
 				props: { settings, onSave: saveChanges }
 			}
 		];
-
-		return tabs;
 	}
 
 	$effect(() => {
@@ -95,16 +91,16 @@
 
 <div class="container">
 	<div class="tabs-container">
-		<!-- Мобильное меню -->
 		<div class="mobile-tabs-header" class:menu-open={isMobileMenuOpen}>
 			<button class="mobile-menu-toggle" onclick={() => isMobileMenuOpen = !isMobileMenuOpen}>
-				<span class="mobile-menu-header">{availableTabs[activeTab]?.title || 'Меню'}</span>
+				<span class="mobile-menu-header">{availableTabs[activeTab]?.title ||
+				'Меню'}</span>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
 					<path d="M7 10l5 5 5-5z"/>
 				</svg>
 			</button>
 
-			<div class="mobile-tabs-dropdown">
+			<div class="tabs-nav-wrapper mobile-tabs-dropdown">
 				{#each availableTabs as tab, index}
 					<button
 						class="mobile-tab {activeTab === index ? 'mobile-tab-active' : ''}"
@@ -116,19 +112,36 @@
 						{tab.title}
 					</button>
 				{/each}
+				<button
+					class="refresh-button mobile-menu-item"
+					onclick={() => {
+						loadSsvcSettings();
+						isMobileMenuOpen = false;
+					}}
+				>
+					<Reload />
+					<span>Перезагрузить настройки</span>
+				</button>
 			</div>
 		</div>
 
 		<nav class="tabs-nav desktop-only">
-			{#each availableTabs as tab, index}
-				<button
-					class="tab {activeTab === index ? 'tab-active text-active' : ''}"
-					onclick={() => (activeTab = index)}
-				>
-					{tab.title}
-				</button>
-			{/each}
+			<div class="tabs-nav-content">
+				{#each availableTabs as tab, index}
+					<button
+						class="tab {activeTab === index ? 'tab-active text-active' : ''}"
+						onclick={() => (activeTab = index)}
+					>
+						{tab.title}
+					</button>
+				{/each}
+			</div>
+
+			<button class="refresh-button" onclick={loadSsvcSettings} title="Перезагрузить настройки">
+				<Reload />
+			</button>
 		</nav>
+
 		{#each availableTabs as tab, index}
 			{#if activeTab === index}
 				{@const Component = tab.component}
@@ -137,4 +150,3 @@
 		{/each}
 	</div>
 </div>
-

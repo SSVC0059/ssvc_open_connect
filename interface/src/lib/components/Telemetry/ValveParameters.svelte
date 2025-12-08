@@ -70,7 +70,7 @@
 
 <style lang="scss">
 
-  @use "$lib/styles/mixins.scss" as *;
+  @use "$lib/styles/base/mixins" as *;
 
   .valve-content {
       display: flex;

@@ -45,7 +45,7 @@
 			isSaving = true;
 			await saveTelegramSettings({ token, chat_id });
 		} catch (err) {
-			const message = err instanceof Error ? err.message : 'Ошибка сохранения';
+			err instanceof Error ? err.message : 'Ошибка сохранения';
 		} finally {
 			isSaving = false;
 		}
@@ -65,7 +65,7 @@
 		try {
 			isSaving = true;
 			await onToggle();
-			const response = await fetch('/rest/restart', {
+			await fetch('/rest/restart', {
 				method: 'POST',
 				headers: {
 					Authorization: page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic'
@@ -96,8 +96,8 @@
 
 <div class="settings-container" class:disabled>
 	<div class="settings-item">
-		<div class="settings-label-container">
-			<span class="settings-label">Состояние подсистемы</span>
+		<div class="input-label-container">
+			<span class="input-label">Состояние подсистемы</span>
 			<span class="settings-description">{disabled ? 'Отключена' : 'Активна'}</span>
 		</div>
 		<label class="toggle-container">
