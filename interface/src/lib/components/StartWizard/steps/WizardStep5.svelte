@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { SsvcSettings } from '$lib/types/ssvc';
 	import { getSamplingRate, handleInputChange, secondsToTimeString } from '$lib/components/StartWizard/wizardLogic';
+	import NumberInput from '$lib/components/NumberInput.svelte';
+	import TimeInput from '$lib/components/TimeInput.svelte';
 
 	let { settings = $bindable() } = $props<{
 		settings: SsvcSettings;
@@ -15,15 +17,11 @@
 		<label class="input-label" for="heads">
 			Время отбора подголовников, с.
 		</label>
-		<input
-			class="input-field"
-			id="headsTimer"
-			max="23:55"
-			min="00:00"
-			onchange={(event) => handleInputChange(settings, event)}
-			step="300"
-			type="time"
-			value={secondsToTimeString(settings.late_heads_timer)}
+		<TimeInput
+			bind:value={settings.late_heads_timer}
+			step={300}
+			min={0}
+			max={86399}
 		/>
 	</div>
 
@@ -31,14 +29,11 @@
 		<label class="input-label" for="tp2Correction">
 			Гистерезис, °С
 		</label>
-		<input
+		<NumberInput
 			bind:value={settings.hyst}
-			class="input-field"
-			id="tp2Correction"
-			max="50"
-			min="0"
-			step="0.01"
-			type="number"
+			max={50}
+			min={0}
+			step={0.01}
 		/>
 	</div>
 
@@ -46,13 +41,11 @@
 		<label class="input-label" for="decrement">
 			Декремент
 		</label>
-		<input
+		<NumberInput
 			bind:value={settings.decrement}
-			class="input-field"
-			id="decrement"
-			max="100"
-			min="0"
-			type="number"
+			max={100}
+			min={0}
+			unit="°С"
 		/>
 	</div>
 
@@ -60,15 +53,11 @@
 		<label class="input-label" for="start_delay">
 			Отложенный пуск, с.
 		</label>
-		<input
-			class="input-field time-input-wide"
-			id="start_delay"
-			max="05:00"
-			min="00:00"
-			onchange={(event) => handleInputChange(settings, event)}
-			step="1"
-			type="time"
-			value={secondsToTimeString(settings.start_delay)}
+		<TimeInput
+			bind:value={settings.start_delay}
+			step={1}
+			min={0}
+			max={18000}
 		/>
 	</div>
 
@@ -76,14 +65,12 @@
 		<label class="input-label" for="hearts_finish_temp">
 			Стоп при, °С
 		</label>
-		<input
+		<NumberInput
 			bind:value={settings.hearts_finish_temp}
-			class="input-field"
-			id="hearts_finish_temp"
-			max="110"
-			min="0"
-			step="0.1"
-			type="number"
+			max={110}
+			min={0}
+			step={0.1}
+			unit="°С"
 		/>
 	</div>
 
@@ -102,25 +89,23 @@
 				</thead>
 				<tbody>
 				<tr>
-					<td>
-						<input
-							type="number"
-							step="0.1"
-							min="0"
-							class="input-cell"
+					<td data-label="Открытие">
+						<NumberInput
+							step={0.1}
+							min={0}
 							bind:value={settings.hearts[0]}
+							unit="сек"
 						/>
 					</td>
-					<td>
-						<input
-							type="number"
-							step="1"
-							min="1"
-							class="input-cell"
+					<td data-label="Период">
+						<NumberInput
 							bind:value={settings.hearts[1]}
+							step={1}
+							min={1}
+							unit="сек"
 						/>
 					</td>
-					<td>
+					<td data-label="Скорость">
 						<input
 							type="text"
 							readonly
@@ -136,11 +121,4 @@
 			<p><strong>Пропускная способность клапана:</strong> {settings.valve_bw?.[1]} мл/час</p>
 		</div>
 	</div>
-
 </div>
-
-<style>
-    .time-input-wide {
-        width: 130px; /* Увеличиваем ширину с 100px до 130px, чтобы вместить время с секундами (ЧЧ:ММ:СС) */
-    }
-</style>

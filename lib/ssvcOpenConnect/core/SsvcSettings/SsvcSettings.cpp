@@ -967,8 +967,8 @@ SsvcSettings::Builder &
 SsvcSettings::Builder::setStepTimer(const unsigned int _timer) {
   char buffer[50];
   std::snprintf(buffer, sizeof(buffer), "s_timer=%d",
-                settings.release_timer);
-  ESP_LOGD("SsvcSettings", "s_timer: %s", buffer);
+                _timer);
+  ESP_LOGI("SsvcSettings", "s_timer: %s", buffer);
   SsvcCommandsQueue::getQueue().set(buffer);
   return *this;
 }

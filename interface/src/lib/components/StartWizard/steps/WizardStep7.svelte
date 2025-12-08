@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { SsvcSettings } from '$lib/types/ssvc';
 	import { getSamplingRate, } from '$lib/components/StartWizard/wizardLogic';
+	import NumberInput from '$lib/components/NumberInput.svelte';
 
 	let { settings = $bindable() } = $props<{
 		settings: SsvcSettings;
@@ -28,25 +29,23 @@
 				</thead>
 				<tbody>
 				<tr>
-					<td>
-						<input
-							type="number"
-							step="0.1"
-							min="0"
-							class="input-cell"
+					<td data-label="Открытие">
+						<NumberInput
+							step={0.1}
+							min={0}
 							bind:value={settings.tails[0]}
+							unit="Сек"
 						/>
 					</td>
-					<td>
-						<input
-							type="number"
-							step="1"
-							min="1"
-							class="input-cell"
+					<td data-label="Период">
+						<NumberInput
+							step={1}
+							min={1}
 							bind:value={settings.tails[1]}
+							unit="Сек"
 						/>
 					</td>
-					<td>
+					<td data-label="Скорость">
 						<input
 							type="text"
 							readonly
@@ -65,14 +64,12 @@
 		<label class="input-label" for="tails_temp">
 			Стоп при температуре, °С
 		</label>
-		<input
+		<NumberInput
 			bind:value={settings.tails_temp}
-			class="input-field"
-			id="tails_temp"
-			max="50"
-			min="0"
-			step="0.01"
-			type="number"
+			max={50}
+			min={0}
+			step={0.01}
+			unit="°С"
 		/>
 	</div>
 

@@ -169,8 +169,8 @@ private:
     explicit SsvcSettings();
 
     // Версии подисистем модуля ssvc
-    std::string ssvcVersion;
-    float ssvcApiVersion;
+    std::string ssvcVersion = "";
+    float ssvcApiVersion = 0.0;
     bool isSupportApi = false;
 
     // signed char или unsigned char.

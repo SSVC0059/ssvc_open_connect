@@ -175,8 +175,8 @@ std::map<String, std::unique_ptr<ParamHandler>> createHandlers() {
 
     handlers.emplace(
         "s_timer",
-                 std::unique_ptr<UnsignedCharHandler>(new UnsignedCharHandler(
-                     [](SsvcSettings::Builder &b,const unsigned char v) {
+                 std::unique_ptr<UnsignedIntHandler>(new UnsignedIntHandler(
+                     [](SsvcSettings::Builder &b,const unsigned int v) {
                        b.setStepTimer(v);
                      })));
 

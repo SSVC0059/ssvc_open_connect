@@ -98,3 +98,31 @@
     margin-top: 0.25rem;
   }
 }
+
+@media (max-width: 768px) {
+  .valve-table {
+    thead {
+      display: none;
+    }
+
+    tr {
+      display: block;
+      margin-bottom: 0.625em;
+      border-bottom: 1px solid var(--primary-200);
+      padding-bottom: 0.625em;
+    }
+
+    td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: none;
+      padding: 0.5em 0;
+
+      &::before {
+        content: attr(data-label);
+        font-weight: bold;
+      }
+    }
+  }
+}

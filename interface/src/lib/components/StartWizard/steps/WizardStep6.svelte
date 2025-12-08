@@ -3,6 +3,7 @@
 	import { getSamplingRate } from '$lib/components/StartWizard/wizardLogic';
 	import ApiVersionGuard from '$lib/components/ApiVersionGuard.svelte';
 	import { requireVersion } from '$lib/actions/versioning';
+	import NumberInput from '$lib/components/NumberInput.svelte';
 
 	let { settings = $bindable() } = $props<{
 		settings: SsvcSettings;
@@ -24,21 +25,19 @@
 				<tbody>
 				<tr>
 					<td data-label="Открытие">
-						<input
-							type="number"
-							step="0.1"
-							min="0"
-							class="input-cell"
+						<NumberInput
+							step={0.1}
+							min={0}
 							bind:value={settings.parallel_v1[0]}
+							unit="Сек"
 						/>
 					</td>
 					<td data-label="Период">
-						<input
-							type="number"
-							step="1"
-							min="1"
-							class="input-cell"
+						<NumberInput
+							step= {1}
+							min={1}
 							bind:value={settings.parallel_v1[1]}
+							unit="Сек"
 						/>
 					</td>
 					<td data-label="Скорость">
@@ -74,31 +73,28 @@
 					{#each settings.parallel_v3 as [temp, openTime, period], i}
 						<tr>
 							<td data-label="Температура">
-								<input
-									type="number"
-									step="0.1"
-									min="0"
-									max="100"
-									class="input-cell"
+								<NumberInput
+									step={0.1}
+									min={0}
+									max={100}
 									bind:value={settings.parallel_v3[i][0]}
+									unit="°С"
 								/>
 							</td>
 							<td data-label="Открытие">
-								<input
-									type="number"
-									step="0.1"
-									min="0"
-									class="input-cell"
+								<NumberInput
+									step={0.1}
+									min={0}
 									bind:value={settings.parallel_v3[i][1]}
+									unit="Сек"
 								/>
 							</td>
 							<td data-label="Период">
-								<input
-									type="number"
-									step="1"
-									min="1"
-									class="input-cell"
+								<NumberInput
+									step={1}
+									min={1}
 									bind:value={settings.parallel_v3[i][2]}
+									unit="Сек"
 								/>
 							</td>
 							<td data-label="Скорость">

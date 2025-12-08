@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { SsvcSettings } from '$lib/types/ssvc';
-	import { handleInputChange, secondsToTimeString, getSamplingRate } from '$lib/components/StartWizard/wizardLogic';
+	import { getSamplingRate } from '$lib/components/StartWizard/wizardLogic';
+	import NumberInput from '$lib/components/NumberInput.svelte';
+	import TimeInput from '$lib/components/TimeInput.svelte';
 
 	let { settings = $bindable() } = $props<{
 		settings: SsvcSettings;
@@ -16,13 +18,11 @@
 			<label class="input-label" for="startDelay">
 				Отсрочка, сек
 			</label>
-			<input
+			<NumberInput
 				bind:value={settings.start_delay}
-				class="input-field"
-				id="startDelay"
-				max="18000"
-				min="0"
-				type="number"
+				min={0}
+				max={18000}
+				unit="сек"
 			/>
 		</div>
 
@@ -31,16 +31,11 @@
 			<label class="input-label" for="headsTimer">
 				Таймер голов
 			</label>
-
-			<input
-				class="input-field"
-				id="headsTimer"
-				max="23:55"
-				min="00:00"
-				onchange={(event) => handleInputChange(settings, event)}
-				step="300"
-				type="time"
-				value={secondsToTimeString(settings.heads_timer)}
+			<TimeInput
+				bind:value={settings.heads_timer}
+				step={300}
+				min={0}
+				max={86399}
 			/>
 		</div>
 
@@ -53,30 +48,28 @@
 				<tr>
 					<th>Открытие</th>
 					<th>Период</th>
-					<th>Скорость</th>
+					<th>Скорость мл/ч</th>
 				</tr>
 				</thead>
 				<tbody>
 				<tr>
-					<td>
-						<input
-							type="number"
-							step="0.1"
-							min="0"
-							class="input-cell"
+					<td data-label="Открытие">
+						<NumberInput
+							step={0.1}
+							min={0}
 							bind:value={settings.heads[0]}
+							unit="сек"
 						/>
 					</td>
-					<td>
-						<input
-							type="number"
-							step="1"
-							min="1"
-							class="input-cell"
+					<td data-label="Период">
+						<NumberInput
+							step={1}
+							min={0}
 							bind:value={settings.heads[1]}
+							unit="сек"
 						/>
 					</td>
-					<td>
+					<td data-label="Скорость мл/ч">
 						<input
 							type="text"
 							readonly
@@ -96,36 +89,48 @@
 			<label class="input-label" for="heads_final">
 				Снижение, сек
 			</label>
-			<input
+			<NumberInput
 				bind:value={settings.heads_final}
-				class="input-field"
-				id="heads_final"
 				max={settings.heads[0]}
-				min="0"
-				step="0.1"
-				type="number"
+				min={0}
+				step={0.1}
+				unit="сек"
 			/>
 		</div>
 
+		<label class="valve-table-title" for="heads">
+			Сброс
+		</label>
 		<div class="settings-item">
-			<label class="input-label" for="release_speed">
-				Сброс (время открытия / период)
-			</label>
-
-			<div class="flex flex-row gap-4">
-				<input
-					bind:value={settings.release_speed}
-					class="input-field"
-					id="release_speed"
-					type="number"
-				/>
-				<input
-					bind:value={settings.release_timer}
-					class="input-field"
-					id="release_speed"
-					type="number"
-				/>
-			</div>
+			<table class="valve-table">
+				<thead>
+				<tr>
+					<th>Скорость сброса</th>
+					<th>Время сброса</th>
+				</tr>
+				</thead>
+				<tbody>
+				<tr>
+					<td data-label="Скорость сброса">
+						<NumberInput
+							step={0.1}
+							min={0}
+							max={99.9}
+							bind:value={settings.release_speed}
+							unit="сек"
+						/>
+					</td>
+					<td data-label="Время сброса">
+						<NumberInput
+							step={1}
+							min={0}
+							bind:value={settings.release_timer}
+							unit="сек"
+						/>
+					</td>
+				</tr>
+				</tbody>
+			</table>
 		</div>
 	</div>
 </div>

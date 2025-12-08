@@ -63,7 +63,7 @@ export type SsvcTelemetryMessage = {
 	countdown?: string;
 	release?: string;
 	time?: string;
-	open?: number;
+	 open?: number;
 	period?: number;
 	hysteresis?: number;
 	valveOpen?: number;

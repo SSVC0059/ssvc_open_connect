@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SsvcSettings } from '$lib/types/ssvc';
+	import NumberInput from '$lib/components/NumberInput.svelte';
 
 	let { settings = $bindable() } = $props<{
 		settings: SsvcSettings;
@@ -11,21 +12,17 @@
 	<div class="settings-group">
 		<div class="settings-item">
 			<label class="input-label" for="valve_bw_head">Головы</label>
-			<input
+			<NumberInput
 				bind:value={settings.valve_bw[0]}
-				class="input-field"
-				id="valve_bw_head"
-				type="number"
+				unit="мл/ч"
 			/>
 		</div>
 
 		<div class="settings-item">
 			<label class="input-label" for="valve_bw_hearts">Тело</label>
-			<input
+			<NumberInput
 				bind:value={settings.valve_bw[1]}
-				class="input-field"
-				id="valve_bw_hearts"
-				type="number"
+				unit="мл/ч"
 			/>
 		</div>
 
@@ -33,11 +30,9 @@
 			<label class="input-label" for="valve_bw_tails"
 			>Подголовники/Хвосты</label
 			>
-			<input
+			<NumberInput
 				bind:value={settings.valve_bw[2]}
-				class="input-field"
-				id="valve_bw_tails"
-				type="number"
+				unit="мл/ч"
 			/>
 		</div>
 	</div>

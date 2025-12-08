@@ -112,7 +112,7 @@
 				<span class="label">Этап:</span> {getStageDescription(telemetry? telemetry.type : "")}
 			</span>
 		</div>
-		<ApiVersionGuard requiredVersion={1.7}
+		<ApiVersionGuard requiredVersion={1.6}
 										 message="Версия API SSVC не поддерживается. Обновите прошивку SSVC на актуальную"></ApiVersionGuard>
 		<div class="status-right">
 			<span class="status-item">
