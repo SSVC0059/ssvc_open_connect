@@ -43,8 +43,13 @@ esp_err_t CommandHandler::handleCommand(PsychicRequest* request)
     }
 
     try {
-        // Выполняем команду
-        it->second();
+        std::string params;
+        if (jsonBuffer["parameters"].is<std::string>()) {
+            params = jsonBuffer["parameters"].as<std::string>();
+        }
+
+        // Выполняем команду, передавая параметры
+        it->second(params);
         ESP_LOGI("CommandHandler", "Command executed: %s", commandName.c_str());
         return request->reply(200, "text/plain", "Command accepted");
     } catch (const std::exception& e) {

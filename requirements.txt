@@ -6,3 +6,4 @@ mkdocstrings-python
 platformio
 pyOpenSSL
 cryptography
+intelhex
