@@ -15,7 +15,7 @@
   transition: var(--transition);
 }
 
-@mixin dark-theme-color {
+%dark-theme-base {
   @media (prefers-color-scheme: dark) {
     color: var(--primary-200);
 
@@ -30,8 +30,12 @@
   }
 }
 
+@mixin dark-theme-color {
+  @extend %dark-theme-base;
+}
+
 @mixin parameter-container {
-  .section-title {
+  .settings-section-title {
     font-size: 1.25rem;
     font-weight: 600;
     text-align: center;

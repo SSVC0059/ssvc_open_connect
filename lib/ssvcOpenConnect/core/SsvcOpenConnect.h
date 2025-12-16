@@ -74,6 +74,8 @@ public:
 
   bool isOnline() const;
 
+  static void sendHello();
+
 private:
   SsvcOpenConnect() = default;
 
@@ -81,7 +83,7 @@ private:
   ESP32SvelteKit* _esp32sveltekit = nullptr;
   EventSocket* _socket = nullptr;
   SecurityManager* _securityManager = nullptr;
-  PsychicMqttClient *_mqttClient;
+  PsychicMqttClient *_mqttClient  = nullptr;;
 
   SsvcConnector& _ssvcConnector = SsvcConnector::getConnector();
 

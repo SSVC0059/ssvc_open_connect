@@ -18,6 +18,21 @@ export type SsvcOpenConnectMessage = {
 	status?: RectStatus;
 };
 
+export type SsvcOpenConnectInfo = {
+	ssvc: ssvc_info;
+	os: os_info;
+}
+
+export type ssvc_info = {
+	version: string;
+	api: number;
+}
+
+export type os_info = {
+	version: string;
+	is_support_api: boolean;
+}
+
 // ======================== Статус ректификации ======================== //
 
 export type RectStatus = {
@@ -48,7 +63,7 @@ export type SsvcTelemetryMessage = {
 	countdown?: string;
 	release?: string;
 	time?: string;
-	open?: number;
+	 open?: number;
 	period?: number;
 	hysteresis?: number;
 	valveOpen?: number;
@@ -147,3 +162,5 @@ export type SendCommandResponse = {
 	success: boolean;
 	message: string;
 }
+
+

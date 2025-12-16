@@ -18,6 +18,7 @@
 #include "SsvcSettings.h"
 
 #include "core/StatefulServices/SensorDataService/SensorDataService.h"
+#include <cstdlib>
 
 SsvcSettings *SsvcSettings::_ssvcSettings = nullptr;
 
@@ -469,24 +470,39 @@ std::string SsvcSettings::getSsvcVersion() const
   return ssvcVersion;
 }
 
-std::string SsvcSettings::getSsvcApiVersion() const
+float SsvcSettings::getSsvcApiVersion() const
 {
-  if (ssvcApiVersion.empty()) {
-    return "";
-  }
   return ssvcApiVersion;
+}
+
+bool SsvcSettings::apiSsvcIsSupport() const {
+  return isSupportApi;
+}
+
+bool SsvcSettings::isSupportTails() const {
+  return supportTails;
 }
 
 bool SsvcSettings::setSsvcVersion(std::string _ssvcVersion)
 {
   this->ssvcVersion = std::move(_ssvcVersion);
+  if (this->ssvcVersion.rfind("2.2", 0) == 0) {
+    supportTails = true;
+  } else {
+    supportTails = false;
+  }
+
   return true;
 }
 
-bool SsvcSettings::setSsvcApiVersion(std::string _ssvcApiVersion)
+bool SsvcSettings::setSsvcApiVersion(const float _ssvcApiVersion)
 {
-  ESP_LOGD("SsvcSettings", "setSsvcApiVersion: %s", _ssvcApiVersion.c_str());
-  this->ssvcApiVersion = std::move(_ssvcApiVersion);
+  ESP_LOGD("SsvcSettings", "setSsvcApiVersion: %f", _ssvcApiVersion);
+  this->ssvcApiVersion = _ssvcApiVersion;
+#ifdef SSVC_SUPPORT_API_VERSION
+  constexpr float supportVersion = SSVC_SUPPORT_API_VERSION;
+  isSupportApi = this->ssvcApiVersion >= supportVersion;
+#endif
   return true;
 }
 
@@ -519,6 +535,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeads(float timeTurnOn,
                                               &std::get<1>(settings.heads));
   if (std::get<0>(settings.heads) != prevTime ||
        std::get<1>(settings.heads) != prevPeriod) {
+
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "heads=[%.1f,%d]",
                   std::get<0>(settings.heads), std::get<1>(settings.heads));
@@ -679,7 +696,7 @@ SsvcSettings::Builder::setTank_mmhg(unsigned char _tank_mmhg) {
 //- Пример:
 //"heads_timer=36000"
 SsvcSettings::Builder &
-SsvcSettings::Builder::setHeadsTimer(unsigned int _headsTimer) {
+SsvcSettings::Builder::setHeadsTimer(const unsigned int _headsTimer) {
   const unsigned int prevHeadsTimer = settings.heads_timer;
   ESP_LOGD("SsvcSettings", "_headsTimer: %d", _headsTimer);
   const unsigned int headsTimer =
@@ -959,8 +976,8 @@ SsvcSettings::Builder &
 SsvcSettings::Builder::setStepTimer(const unsigned int _timer) {
   char buffer[50];
   std::snprintf(buffer, sizeof(buffer), "s_timer=%d",
-                settings.release_timer);
-  ESP_LOGD("SsvcSettings", "s_timer: %s", buffer);
+                _timer);
+  ESP_LOGI("SsvcSettings", "s_timer: %s", buffer);
   SsvcCommandsQueue::getQueue().set(buffer);
   return *this;
 }

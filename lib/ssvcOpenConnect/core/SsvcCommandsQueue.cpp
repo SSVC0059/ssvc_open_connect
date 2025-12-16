@@ -17,27 +17,63 @@
 
 #include "SsvcCommandsQueue.h"
 
-// Инициализация статической карты команд
-const std::map<std::string, std::function<void()>> SsvcCommandsQueue::COMMAND_MAP = {
-      {"at",           []() { getQueue().at(); }},
-      {"next",         []() { getQueue().next(); }},
-      {"pause",        []() { getQueue().pause(); }},
-      {"stop",         []() { getQueue().stop(); }},
-      {"start",        []() { getQueue().start(); }},
-      {"resume",       []() { getQueue().resume(); }},
-      {"version",      []() { getQueue().version(); }},
-      {"get_settings", []() { getQueue().getSettings(); }},
-      {"settings",     []() { getQueue().getSettings(); }},
-      {"emergency_stop",     []() { getQueue().stop(); }},
+#include "SsvcOpenConnect.h"
 
+#define TAG "SsvcCommandsQueue"
+
+// Helper function to convert UTF-8 string to Windows-1251
+static std::string utf8_to_win1251(const std::string& utf8) {
+    std::string win1251;
+    win1251.reserve(utf8.length());
+    for (size_t i = 0; i < utf8.length(); ++i) {
+        const unsigned char c1 = utf8[i];
+        if (c1 < 0x80) {
+            win1251 += static_cast<char>(c1);
+        } else if (c1 == 0xD0) {
+            if (i + 1 < utf8.length()) {
+                const unsigned char c2 = utf8[++i];
+                if (c2 == 0x81) { // Ё
+                    win1251 += static_cast<char>(0xA8);
+                } else if (c2 >= 0x90 && c2 <= 0xBF) { // А-п
+                    win1251 += static_cast<char>(c2 - 0x90 + 0xC0);
+                }
+            }
+        } else if (c1 == 0xD1) {
+            if (i + 1 < utf8.length()) {
+                const unsigned char c2 = utf8[++i];
+                if (c2 >= 0x80 && c2 <= 0x8F) { // р-я
+                    win1251 += static_cast<char>(c2 - 0x80 + 0xF0);
+                } else if (c2 == 0x91) { // ё
+                    win1251 += static_cast<char>(0xB8);
+                }
+            }
+        }
+    }
+    return win1251;
+}
+
+// Инициализация статической карты команд
+const std::map<std::string, std::function<void(const std::string&)>> SsvcCommandsQueue::COMMAND_MAP = {
+    {"at",           [](const std::string&){ getQueue().at(); }},
+    {"next",         [](const std::string&){ getQueue().next(); }},
+    {"pause",        [](const std::string&){ getQueue().pause(); }},
+    {"stop",         [](const std::string&){ getQueue().stop(); }},
+    {"start",        [](const std::string&){ getQueue().start(); }},
+    {"resume",       [](const std::string&){ getQueue().resume(); }},
+    {"version",      [](const std::string&){ getQueue().version(); }},
+    {"get_settings", [](const std::string&){ getQueue().getSettings(); }},
+    {"settings",     [](const std::string&){ getQueue().getSettings(); }},
+    {"emergency_stop", [](const std::string&){ getQueue().stop(); }},
+    {"status",       [](const std::string& params){ getQueue().status(params); }},
+    {"set",          [](const std::string& params){ getQueue().set(params); }}
 };
 
 SsvcCommandsQueue::SsvcCommandsQueue() {
   command_queue = xQueueCreate(COMMAND_QUEUE_LENGTH, COMMAND_QUEUE_ITEM_SIZE);
   if (command_queue == nullptr) {
-    ESP_LOGE("SsvcQueue", "Failed to create command queue!");
+    ESP_LOGE(TAG, "Failed to create command queue!");
   } else {
-    ESP_LOGI("SsvcQueue", "Command queue created successfully");
+    ESP_LOGI(TAG, "Command queue created successfully");
   }
 
   xTaskCreatePinnedToCore(
@@ -88,7 +124,7 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
 
   while (true) {
     if (xQueueReceive(self->command_queue, &cmd, portMAX_DELAY) == pdPASS) {
-      ESP_LOGI("CommandProcessor", "Processing command of type: %d", cmd->type);
+      ESP_LOGI(TAG, "Processing command of type: %d", cmd->type);
       bool command_success = false;
 
       while (cmd->attempt_count != 0) {
@@ -128,11 +164,17 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
         case SsvcCommandType::AT:
           command_success = SsvcConnector::sendCommand("AT\n");
           break;
+        case SsvcCommandType::STATUS:
+          std::ostringstream oss;
+          oss << "STATUS " << cmd->parameters << "\n";
+          command_success =
+              SsvcConnector::sendCommand(oss.str().c_str());
+          break;
         }
-        ESP_LOGI("CommandProcessor", "Send result: %d", command_success);
+        ESP_LOGI(TAG, "Send result: %d", command_success);
 
         if (!command_success) {
-          ESP_LOGE("CommandProcessor", "Failed to send command %d",
+          ESP_LOGE(TAG, "Failed to send command %d",
                    static_cast<int>(cmd->type));
           vTaskDelay(pdMS_TO_TICKS(2000));
           continue;
@@ -140,7 +182,7 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
 
         // Ожидание ответа с определенным битом
         EventBits_t expectedBit = self->commandToExpectedBit[cmd->type];
-        ESP_LOGV("CommandProcessor", "Waiting for response with bit: %d",
+        ESP_LOGV(TAG, "Waiting for response with bit: %d",
                  expectedBit);
         const EventBits_t responseMask = expectedBit | BIT1;
 
@@ -152,20 +194,20 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
 
           // Обработка ответа через зарегистрированные callback'и
           auto it = self->bitCallbacks.find(expectedBit);
-          ESP_LOGV("CommandProcessor", "Callback found: %d",
+          ESP_LOGV(TAG, "Callback found: %d",
                    it != self->bitCallbacks.end());
           if (it != self->bitCallbacks.end()) {
             command_success = it->second(cmd);
-            ESP_LOGV("CommandProcessor", "Command %d processed with result: %d",
+            ESP_LOGV(TAG, "Command %d processed with result: %d",
                      cmd->type, command_success);
           } else {
-            ESP_LOGW("CommandProcessor", "No callback handler for bit %d",
+            ESP_LOGW(TAG, "No callback handler for bit %d",
                      expectedBit);
           }
         }
 
         if (command_success) {
-          ESP_LOGV("CommandProcessor", "Command %d executed successfully",
+          ESP_LOGV(TAG, "Command %d executed successfully",
                    static_cast<int>(cmd->type));
           break;
         }
@@ -177,6 +219,9 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
 
       delete cmd;
     }
+    // Логирование использования стека задачи
+    const UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(nullptr);
+    ESP_LOGD(TAG, "CmdProcessor Task: Stack High Water Mark: %u bytes", stackHighWaterMark);
   }
 }
 
@@ -214,10 +259,13 @@ void SsvcCommandsQueue::registerCallbackCommands() {
       result = true;
     }
     if (response["api"].is<String>()) {
-      const std::string ssvcApiVersion = response["api"].as<std::string>();
+      const auto ssvcApiVersion = response["api"].as<float>();
       SsvcSettings::init().setSsvcApiVersion(ssvcApiVersion);
       xSemaphoreGive(mutex);
       result = true;
+    }
+    if (result) {
+      SsvcOpenConnect::sendHello();
     }
     return result;
   });
@@ -266,7 +314,6 @@ void SsvcCommandsQueue::registerCallbackCommands() {
 
   // Обработка ошибок выполнения команд
   registerBitHandler(BIT1, [this](SsvcCommand *cmd) {
-    ESP_LOGI("BIT1 Handler", "Ошибка выполнения команды");
     _cmdSetResult = true;
     return false;
   });
@@ -278,13 +325,14 @@ void SsvcCommandsQueue::registerCallbackCommands() {
  * @param type Тип команды (например, SET, GET_SETTINGS и т.д.)
  * @param parameters Параметры команды (строка).
  * @param attempt_count Количество попыток при неудаче.
- * @param timeout Таймаут ожидания ответа (в тиках).
+ * @param timeout Тайм-аут ожидания ответа (в тиках).
  */
 void SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
                                            const std::string& parameters,
                                            const int attempt_count,
                                            const TickType_t timeout) const
 {
+  ESP_LOGD(TAG, "Attempting to enqueue command type: %d", static_cast<int>(type));
   auto *cmd = new SsvcCommand();
   cmd->type = type;
   cmd->parameters = parameters;
@@ -292,8 +340,10 @@ void SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
   cmd->timeout = pdMS_TO_TICKS(timeout);
 
   if (xQueueSend(command_queue, &cmd, pdMS_TO_TICKS(1000)) != pdPASS) {
-    ESP_LOGE("SsvcCommandsQueue", "Failed to send command to queue");
+    ESP_LOGE(TAG, "Failed to send command to queue! Queue might be full.");
     delete cmd;
+  } else {
+    ESP_LOGI(TAG, "Command type %d enqueued successfully.", static_cast<int>(type));
   }
 }
 
@@ -301,7 +351,7 @@ void SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
  * @brief Добавляет в очередь команду получения настроек SSVC.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::getSettings(const int attempt_count, const TickType_t timeout) const
 {
@@ -312,7 +362,7 @@ void SsvcCommandsQueue::getSettings(const int attempt_count, const TickType_t ti
  * @brief Добавляет в очередь команду NEXT.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::next(const int attempt_count, const TickType_t timeout) const
 {
@@ -323,7 +373,7 @@ void SsvcCommandsQueue::next(const int attempt_count, const TickType_t timeout) 
  * @brief Добавляет в очередь команду PAUSE.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::pause(const int attempt_count, const TickType_t timeout) const
 {
@@ -334,7 +384,7 @@ void SsvcCommandsQueue::pause(const int attempt_count, const TickType_t timeout)
  * @brief Добавляет в очередь команду STOP.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::stop(const int attempt_count, const TickType_t timeout) const
 {
@@ -345,7 +395,7 @@ void SsvcCommandsQueue::stop(const int attempt_count, const TickType_t timeout) 
  * @brief Добавляет в очередь команду START.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::start(const int attempt_count, const TickType_t timeout) const
 {
@@ -356,7 +406,7 @@ void SsvcCommandsQueue::start(const int attempt_count, const TickType_t timeout)
  * @brief Добавляет в очередь команду RESUME.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::resume(const int attempt_count,const TickType_t timeout) const
 {
@@ -367,7 +417,7 @@ void SsvcCommandsQueue::resume(const int attempt_count,const TickType_t timeout)
  * @brief Добавляет в очередь команду VERSION.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::version(const int attempt_count, const TickType_t timeout) const
 {
@@ -378,7 +428,7 @@ void SsvcCommandsQueue::version(const int attempt_count, const TickType_t timeou
  * @brief Добавляет в очередь AT-команду.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::at(const int attempt_count, const TickType_t timeout) const
 {
@@ -390,12 +440,24 @@ void SsvcCommandsQueue::at(const int attempt_count, const TickType_t timeout) co
  *
  * @param parameters Параметры команды.
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::set(const std::string& parameters, const int attempt_count,
                             const TickType_t timeout) const
 {
   pushCommandInQueue(SsvcCommandType::SET, parameters, attempt_count, timeout);
+}
+
+/**
+ * @brief Публикует информацию в количестве 15 символов на дисплей ssvc.
+ *
+ * @param parameters Информационное сообщение.
+ * @param attempt_count Количество попыток.
+ * @param timeout Тайм-аут ожидания (в тиках).
+ */
+void SsvcCommandsQueue::status(const std::string& parameters, const int attempt_count,
+                               const TickType_t timeout) const {
+  pushCommandInQueue(SsvcCommandType::STATUS, utf8_to_win1251(parameters), attempt_count, timeout);
 }
 
 /**

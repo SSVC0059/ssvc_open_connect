@@ -21,28 +21,34 @@ SettingsHandler::SettingsHandler() = default;
 
 esp_err_t SettingsHandler::updateSettings(PsychicRequest* request)
 {
+    ESP_LOGD(TAG, "Received updateSettings request.");
     JsonDocument jsonBuffer;
     bool hasErrors = false;
     auto errors = jsonBuffer.to<JsonObject>();
-    SsvcSettings::Builder builder;
 
     // Проверяем, есть ли данные в теле запроса (JSON)
     if (request->contentLength() > 0) {
+        SsvcSettings::Builder builder;
         // Парсим JSON из тела запроса
+        ESP_LOGD(TAG, "Request has body. Length: %d", request->contentLength());
+        ESP_LOGV(TAG, "Request body: %s", request->body().c_str());
+
         JsonDocument bodyDoc;
         DeserializationError err = deserializeJson(bodyDoc, request->body());
 
         if (err) {
+            ESP_LOGE(TAG, "Failed to parse JSON body: %s", err.c_str());
             return request->reply(400, "application/json", R"({"error": "Invalid JSON in request body"})");
         }
 
         // Обрабатываем JSON объект из тела
+        ESP_LOGD(TAG, "Successfully parsed JSON body.");
         auto bodyObj = bodyDoc.as<JsonObject>();
         for (JsonPair kv : bodyObj) {
             const String& key = kv.key().c_str();
             JsonVariant value = kv.value();
-
             ESP_LOGV("HTTP", "Processing body parameter: %s", key.c_str());
+            ESP_LOGV(TAG, "Processing parameter: '%s'", key.c_str());
 
             auto it = PARAM_HANDLERS.find(key);
             if (it == PARAM_HANDLERS.end()) {
@@ -52,47 +58,7 @@ esp_err_t SettingsHandler::updateSettings(PsychicRequest* request)
             }
 
             if (!it->second->handle(builder, value)) {
-                errors[key] = "Invalid value type";
-                hasErrors = true;
-            }
-        }
-    }
-    // Если нет тела, проверяем query-параметры (старый подход)
-    else {
-        std::vector<std::pair<String, String>> params;
-        String query = request->query();
-        if (query.isEmpty()) {
-            ESP_LOGV("", "No parameters received");
-            return request->reply(400, "application/json", R"({"error": "No parameters received"})");
-        }
-
-        parseQueryParams(query, params);
-
-        // Обрабатываем каждый параметр (старая логика)
-        for (const auto& param : params) {
-            const String& key = param.first;
-            const String& valueStr = param.second;
-
-            ESP_LOGV("HTTP", "Processing query parameter: %s=%s", key.c_str(),
-                     valueStr.c_str());
-
-            JsonDocument valueDoc;
-            DeserializationError err = deserializeJson(valueDoc, valueStr);
-            if (err) {
-                errors[key] = "Invalid JSON format";
-                hasErrors = true;
-                continue;
-            }
-
-            auto it = PARAM_HANDLERS.find(key);
-            if (it == PARAM_HANDLERS.end()) {
-                errors[key] = "Unknown parameter";
-                hasErrors = true;
-                continue;
-            }
-
-            if (!it->second->handle(builder, valueDoc.as<JsonVariant>())) {
-                errors[key] = "Invalid value type";
+                ESP_LOGE(TAG, "Invalid value for parameter: '%s'", key.c_str());
                 hasErrors = true;
             }
         }
@@ -102,30 +68,6 @@ esp_err_t SettingsHandler::updateSettings(PsychicRequest* request)
         String errorMsg;
         serializeJson(errors, errorMsg);
         return request->reply(400, "application/json", errorMsg.c_str());
-    }
-
-    // Ожидание с проверкой флага
-    ESP_LOGI("HTTP", "Waiting for _cmdSetResult...");
-    TickType_t timeoutAbsolute = xTaskGetTickCount() + pdMS_TO_TICKS(10000);
-    bool cmdResult = false;
-
-    while (xTaskGetTickCount() < timeoutAbsolute) {
-        cmdResult = SsvcCommandsQueue::getQueue()._cmdSetResult;
-        ESP_LOGI("HTTP", "cmdResult: %d", cmdResult);
-        if (cmdResult) {
-            break;
-        }
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
-
-    ESP_LOGV("HTTP", "Finished waiting for _cmdSetResult.");
-
-    if (!cmdResult) {
-        JsonDocument timeoutResponse;
-        timeoutResponse["error"] = "Timeout";
-        String timeoutMsg;
-        serializeJson(timeoutResponse, timeoutMsg);
-        return request->reply(408, "application/json", timeoutMsg.c_str());
     }
 
     SsvcCommandsQueue::getQueue().getSettings();

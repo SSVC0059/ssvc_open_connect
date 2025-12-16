@@ -1,4 +1,9 @@
 mkdocs-material
+mkdocs-redirects
+mkdocs-autorefs
+mkdocs-literate-nav
+mkdocstrings-python
 platformio
 pyOpenSSL
 cryptography
+intelhex

@@ -12,7 +12,7 @@
 	import Step5 from '$lib/components/StartWizard/steps/WizardStep5.svelte';
 	import Step6 from '$lib/components/StartWizard/steps/WizardStep6.svelte';
 	import Step7 from '$lib/components/StartWizard/steps/WizardStep7.svelte';
-	import type { SsvcSettings } from '$lib/types/models';
+	import type { SsvcSettings } from '$lib/types/ssvc';
 	import { fetchSettings, saveSettings, sendCommand } from '$lib/api/ssvcApi';
 
 	interface Props {
@@ -23,14 +23,14 @@
 		id: number;
 		title: string;
 		component: any;
-		condition?: (s: SsvcSettings | null) => boolean;
+		condition?: (s: SsvcSettings | undefined) => boolean;
 		requiresInitialData?: boolean;
 		initialData?: Record<string, unknown>; // Гарантирует, что это объект
 	}
 
 	let { isOpen }: Props = $props();
 	let isLoading = $state(false);
-	let settings = $state<SsvcSettings | null>(null); // Добавляем реактивное состояние
+	let settings = $state<SsvcSettings | undefined>(undefined);
 	let stepData = $state<Record<number, any>>({}); // Новое состояние для данных шагов
 	let cachedVisibleSteps = $state<Step[]>([]); // Кэшированные видимые шаги
 	let currentIndex = $state(0);
@@ -153,6 +153,7 @@
 		isLoading = true;
 		try {
 			const success = await saveSettings(settings);
+			console.log("success:" + success);
 
 			if (success) {
 				await sendCommand("start")
@@ -173,7 +174,7 @@
 {#if isOpen}
 	<div
 		role="dialog"
-		class="modal-overlay"
+		class="wizard-overlay-override"
 	>
 		<div class="wizard"	>
 			<!-- Заголовок -->
@@ -194,21 +195,29 @@
 
 			<!-- Индикатор шагов -->
 			<div class="steps-container">
-				{#each cachedVisibleSteps as step, i}
-					<div class="step">
-						<div class={`step-circle ${i <= currentIndex ? 'active' : ''}`}>
-							{step.id}
+				<div
+					class="steps-wrapper"
+					style:transform={`translateX(calc(-${currentIndex} * var(--step-width)))`}
+				>
+					{#each cachedVisibleSteps as step, i}
+						<div
+							class="step"
+							class:current={i === currentIndex}
+						>
+							<div class="step-circle">
+								{i + 1}
+							</div>
+							<span class="step-title">
+                {step.title}
+              </span>
 						</div>
-						<span class={`step-title ${i === currentIndex ? 'current' : ''}`}>
-              {step.title}
-            </span>
-					</div>
-				{/each}
+					{/each}
+				</div>
 			</div>
 
 			{#if settings && currentStep && cachedVisibleSteps.length > 0}
 				{@const Component = currentStep.component}
-				<div class="flex-1 overflow-y-auto p-6 max-h-[70vh]">
+				<div class="wizard-content">
 					<Component
 						bind:settings
 						{...stepData[currentStep.id]}
@@ -216,10 +225,12 @@
 				</div>
 			{/if}
 
-			<!--			 Навигация-->
 			<div class="wizard-nav">
 				{#if cachedVisibleSteps.length > 1}
-					<button type="button" onclick={prevStep} class="wizard-button back" disabled={isLoading}>
+					<button 
+						type="button" 
+						onclick={prevStep} 
+						class="btn btn-back" disabled={isLoading}>
 						<ChevronLeft />
 						Назад
 					</button>
@@ -228,18 +239,24 @@
 				{/if}
 
 				{#if currentIndex < cachedVisibleSteps.length - 1}
-					<button type="button" onclick={nextStep} class="wizard-button next" disabled={isLoading}>
+					<button 
+						type="button" 
+						onclick={nextStep} 
+						class="btn btn-primary" disabled={isLoading}>
 						Дальше
 						<ChevronRight />
 					</button>
 				{:else}
-					<button type="button" onclick={submitSettings} class="wizard-button submit" disabled={isLoading}>
+					<button 
+						type="button" 
+						onclick={submitSettings} 
+						class="btn btn-success" disabled={isLoading}>
 						{#if isLoading}
 							<span class="loading-spinner"></span>
 						{:else}
 							<Check class="h-5 w-5" />
 						{/if}
-						Запустить процесс
+						Запустить
 					</button>
 				{/if}
 			</div>
@@ -247,7 +264,3 @@
 
 	</div>
 {/if}
-
-<style lang="scss">
-  @use '$lib/styles/Wizard.scss';
-</style>

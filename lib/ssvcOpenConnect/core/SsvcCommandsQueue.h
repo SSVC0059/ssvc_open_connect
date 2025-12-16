@@ -42,7 +42,8 @@ enum class SsvcCommandType
   RESUME,
   NEXT,
   AT,
-  SET
+  SET,
+  STATUS
 };
 
 struct SsvcCommand
@@ -97,6 +98,8 @@ public:
   void set(const std::string& parameters, int attempt_count = ATTEMPT_COUNT,
            TickType_t timeout = TIMEOUT) const;
 
+  void status(const std::string& parameters, int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+
   UBaseType_t availableCommands() const
   {
     return command_queue ? uxQueueMessagesWaiting(command_queue) : 0;
@@ -112,7 +115,7 @@ public:
     }
   }
 
-  static const std::map<std::string, std::function<void()>> COMMAND_MAP;
+  static const std::map<std::string, std::function<void(const std::string&)>> COMMAND_MAP;
 
 private:
   QueueHandle_t command_queue;
@@ -124,11 +127,15 @@ private:
    * @brief Соответствие типов команд и битов событий
    */
   std::unordered_map<SsvcCommandType, EventBits_t> commandToExpectedBit = {
-    {SsvcCommandType::GET_SETTINGS, BIT10}, // BIT10 для GET_SETTINGS
-    {SsvcCommandType::VERSION, BIT11}, {SsvcCommandType::STOP, BIT9},
-    {SsvcCommandType::PAUSE, BIT9}, {SsvcCommandType::RESUME, BIT9},
-    {SsvcCommandType::NEXT, BIT9}, {SsvcCommandType::AT, BIT9},
-    {SsvcCommandType::SET, BIT9},
+      {SsvcCommandType::GET_SETTINGS, BIT10}, // BIT10 для GET_SETTINGS
+      {SsvcCommandType::VERSION, BIT11},
+      {SsvcCommandType::STOP, BIT9},
+      {SsvcCommandType::PAUSE, BIT9},
+      {SsvcCommandType::RESUME, BIT9},
+      {SsvcCommandType::NEXT, BIT9},
+      {SsvcCommandType::AT, BIT9},
+      {SsvcCommandType::SET, BIT9},
+      {SsvcCommandType::START, BIT9}
   };
 
   /// Тип callback-функции для обработки ответов

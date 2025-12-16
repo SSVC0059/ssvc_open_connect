@@ -156,20 +156,24 @@ public:
 
     std::string getSsvcVersion() const;
 
-    std::string getSsvcApiVersion() const;
+    float getSsvcApiVersion() const;
+    bool apiSsvcIsSupport() const;
+    bool isSupportTails() const;
 
     // SETTERS
 
     bool setSsvcVersion(std::string _ssvcVersion);
 
-    bool setSsvcApiVersion(std::string _ssvcApiVersion);
+    bool setSsvcApiVersion(float _ssvcApiVersion);
 
 private:
     explicit SsvcSettings();
 
     // Версии подисистем модуля ssvc
-    std::string ssvcVersion;
-    std::string ssvcApiVersion;
+    std::string ssvcVersion = "";
+    float ssvcApiVersion = 0.0;
+    bool isSupportApi = false;
+    bool supportTails = false;
 
     // signed char или unsigned char.
 
@@ -254,6 +258,7 @@ public:
     private:
         SsvcSettings& settings; // Ссылка на существующий экземпляр
     public:
+        bool hasChanges = false;
         explicit Builder() : settings(SsvcSettings::init())
         {
         }

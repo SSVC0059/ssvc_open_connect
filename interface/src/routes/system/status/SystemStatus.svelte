@@ -63,8 +63,8 @@
 
 	function confirmRestart() {
 		modals.open(ConfirmDialog, {
-			title: 'Confirm Restart',
-			message: 'Are you sure you want to restart the device?',
+			title: 'Подтверждение перезагрузки',
+			message: 'Вы действительно хотите перезагрузить устройство?',
 			labels: {
 				cancel: { label: 'Отмена', icon: Cancel },
 				confirm: { label: 'Перезапуск', icon: Power }
@@ -87,11 +87,11 @@
 
 	function confirmReset() {
 		modals.open(ConfirmDialog, {
-			title: 'Confirm Factory Reset',
-			message: 'Are you sure you want to reset the device to its factory defaults?',
+			title: 'Подтверждение полного сброса',
+			message: 'Вы действительно хотите выполнить полный сброс?',
 			labels: {
-				cancel: { label: 'Abort', icon: Cancel },
-				confirm: { label: 'Factory Reset', icon: FactoryReset }
+				cancel: { label: 'Отмена', icon: Cancel },
+				confirm: { label: 'Полный сброс', icon: FactoryReset }
 			},
 			onConfirm: () => {
 				modals.close();
@@ -368,10 +368,10 @@
 		{/if}
 		{#if !page.data.features.security || $user.admin}
 			<button class="btn btn-primary inline-flex items-center" onclick={confirmRestart}
-				><Power class="mr-2 h-5 w-5" /><span>Restart</span></button
+				><Power class="mr-2 h-5 w-5" /><span>Перезагрузка</span></button
 			>
-			<button class="btn btn-secondary inline-flex items-center" onclick={confirmReset}
-				><FactoryReset class="mr-2 h-5 w-5" /><span>Factory Reset</span></button
+			<button class="btn btn-primary inline-flex items-center" onclick={confirmReset}
+				><FactoryReset class="mr-2 h-5 w-5" /><span>Полный сброс</span></button
 			>
 		{/if}
 	</div>

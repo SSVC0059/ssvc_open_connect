@@ -1,20 +1,8 @@
-<!--{-->
-<!--	id: 92,-->
-<!--	title: 'Расчеты',-->
-<!--	component: WizardStep4,-->
-<!--	requiresInitialData: true,-->
-<!--	get initialData() {-->
-<!--	return {-->
-<!--	headDischargeSpeed: settings-->
-<!--	? calculateSamplingRate(settings.heads[0], settings.heads[1], settings.valve_bw[0])-->
-<!--	: 0 // или другое значение по умолчанию-->
-<!--};-->
-<!--}-->
-<!--}-->
-
 <script lang="ts">
-	import type { SsvcSettings } from '$lib/types/models';
+	import type { SsvcSettings } from '$lib/types/ssvc';
 	import { getSamplingRate, handleInputChange, secondsToTimeString } from '$lib/components/StartWizard/wizardLogic';
+	import NumberInput from '$lib/components/NumberInput.svelte';
+	import TimeInput from '$lib/components/TimeInput.svelte';
 
 	let { settings = $bindable() } = $props<{
 		settings: SsvcSettings;
@@ -25,14 +13,72 @@
 
 <div class="settings-block">
 	<h2 class="settings-title">Настройка отбора тела</h2>
+	<div class="settings-item">
+		<label class="input-label" for="heads">
+			Время отбора подголовников, с.
+		</label>
+		<TimeInput
+			bind:value={settings.late_heads_timer}
+			step={300}
+			min={0}
+			max={86399}
+		/>
+	</div>
+
+	<div class="settings-item">
+		<label class="input-label" for="tp2Correction">
+			Гистерезис, °С
+		</label>
+		<NumberInput
+			bind:value={settings.hyst}
+			max={50}
+			min={0}
+			step={0.01}
+		/>
+	</div>
+
+	<div class="settings-item">
+		<label class="input-label" for="decrement">
+			Декремент
+		</label>
+		<NumberInput
+			bind:value={settings.decrement}
+			max={100}
+			min={0}
+			unit="°С"
+		/>
+	</div>
+
+	<div class="settings-item">
+		<label class="input-label" for="start_delay">
+			Отложенный пуск, с.
+		</label>
+		<TimeInput
+			bind:value={settings.start_delay}
+			step={1}
+			min={0}
+			max={18000}
+		/>
+	</div>
+
+	<div class="settings-item">
+		<label class="input-label" for="hearts_finish_temp">
+			Стоп при, °С
+		</label>
+		<NumberInput
+			bind:value={settings.hearts_finish_temp}
+			max={110}
+			min={0}
+			step={0.1}
+			unit="°С"
+		/>
+	</div>
 
 	<div class="valve-card">
-
+		<label class="valve-table-title" for="hearts">
+			Настройки клапана тела
+		</label>
 		<div class="settings-item">
-			<label class="settings-label settings-label-center" for="heads">
-				Настройки клапана тела
-			</label>
-
 			<table class="valve-table">
 				<thead>
 				<tr>
@@ -43,121 +89,36 @@
 				</thead>
 				<tbody>
 				<tr>
-					<td>
-						<input
-							type="number"
-							step="0.1"
-							min="0"
-							class="input-cell"
+					<td data-label="Открытие">
+						<NumberInput
+							step={0.1}
+							min={0}
 							bind:value={settings.hearts[0]}
+							unit="сек"
 						/>
 					</td>
-					<td>
-						<input
-							type="number"
-							step="1"
-							min="1"
-							class="input-cell"
+					<td data-label="Период">
+						<NumberInput
 							bind:value={settings.hearts[1]}
+							step={1}
+							min={1}
+							unit="сек"
 						/>
 					</td>
-					<td>
+					<td data-label="Скорость">
 						<input
 							type="text"
 							readonly
-							class="w-full px-2 py-1 text-sm bg-gray-100 border border-gray-300 rounded"
+							class="input-readonly"
 							value={getSamplingRate(settings.hearts[0], settings.hearts[1], settings).toFixed(1)}
 						/>
 					</td>
 				</tr>
 				</tbody>
 			</table>
-
+		</div>
+		<div class="valve-info">
+			<p><strong>Пропускная способность клапана:</strong> {settings.valve_bw?.[1]} мл/час</p>
 		</div>
 	</div>
-
-
-	<div class="settings-item">
-		<label class="settings-label" for="heads">
-			Время отбора подголовников, с.
-		</label>
-		<input
-			class="settings-input"
-			id="headsTimer"
-			max="23:55"
-			min="00:00"
-			onchange={(event) => handleInputChange(settings, event)}
-			step="300"
-			type="time"
-			value={secondsToTimeString(settings.late_heads_timer)}
-		/>
-	</div>
-
-	<div class="settings-item">
-		<label class="settings-label" for="tp2Correction">
-			Гистерезис, °С
-		</label>
-		<input
-			bind:value={settings.hyst}
-			class="settings-input"
-			id="tp2Correction"
-			max="50"
-			min="0"
-			step="0.01"
-			type="number"
-		/>
-	</div>
-
-	<div class="settings-item">
-		<label class="settings-label" for="decrement">
-			Декремент
-		</label>
-		<input
-			bind:value={settings.decrement}
-			class="settings-input"
-			id="decrement"
-			max="100"
-			min="0"
-			type="number"
-		/>
-	</div>
-
-	<div class="flex flex-row gap-4">
-		<label class="settings-label" for="start_delay">
-			Отложенный пуск, с.
-		</label>
-		<input
-			class="settings-input"
-			id="start_delay"
-			max="05:00"
-			min="00:00"
-			onchange={(event) => handleInputChange(settings, event)}
-			step="1"
-			type="time"
-			value={secondsToTimeString(settings.start_delay)}
-		/>
-	</div>
-
-	<div>
-		<label class="settings-label" for="hearts_finish_temp">
-			Стоп при, °С
-		</label>
-		<input
-			bind:value={settings.hearts_finish_temp}
-			class="settings-input"
-			id="hearts_finish_temp"
-			max="110"
-			min="0"
-			step="0.1"
-			type="number"
-		/>
-	</div>
-
 </div>
-
-<style>
-    .settings-label-center {
-        text-align: center;
-        display: block;
-    }
-</style>

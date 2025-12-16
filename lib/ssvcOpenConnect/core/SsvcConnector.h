@@ -30,9 +30,6 @@
 #include <utility>
 #include <vector>
 
-// Определение минимальной поддерживаемой версии
-#define SSVC_MIN_SUPPORT_VERSION "2.2.38"
-
 // UART CONFIGS
 
 #define SSVC_OPEN_CONNECT_UART_NUM UART_NUM_1
