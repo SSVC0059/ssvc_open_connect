@@ -124,8 +124,7 @@ void SensorConfigState::applyZonesToSensors() const {
     ESP_LOGI(TAG, "[ZONE_APPLY] Applied %d saved zones to sensors.", applied_count);
 }
 
-bool SensorConfigService::setZoneForSensor(const std::string& addressStr, SensorZone newZone) {
-
+bool SensorConfigService::setZoneForSensor(const std::string& addressStr, const SensorZone newZone) {
     const String originId = "HTTP_ZONE_UPDATE";
 
     // Немедленно обновляем состояние живого объекта датчика (SensorManager)
@@ -134,28 +133,17 @@ bool SensorConfigService::setZoneForSensor(const std::string& addressStr, Sensor
         (void)SensorManager::getInstance().assignZone(addrBytes, newZone);
     }
 
-    const StateUpdateResult result = this->update([&](SensorConfigState& state) {
-
-        // 1. Проверяем, изменилась ли зона
+    const StateUpdateResult result = this->update([=](SensorConfigState& state) { // CAPTURE BY VALUE [=]
         if (state.sensor_zones.count(addressStr) &&
             state.sensor_zones.at(addressStr) == newZone)
         {
-            // Успешно, но без изменений
-            ESP_LOGI("SET_ZONE", "[SET_ZONE] Zone %d already set for %s. Skipping save.",
-                     static_cast<int>(newZone), addressStr.c_str());
+
             return StateUpdateResult::UNCHANGED;
         }
-
-        // 2. Обновляем карту в состоянии сервиса
         state.sensor_zones[addressStr] = newZone;
-
-        ESP_LOGI("SET_ZONE", "[SET_ZONE] Zone %d set for %s. Triggering persistence.",
-                 static_cast<int>(newZone), addressStr.c_str());
-
-        // 3. Возвращаем CHANGED, чтобы уведомить FSPersistence и WebSocket
         return StateUpdateResult::CHANGED;
 
-    }, originId); // <-- Обязательный второй аргумент originId
+    }, originId);
 
     // Возвращаем результат операции
     return result != StateUpdateResult::UNCHANGED;
