@@ -22,6 +22,7 @@
 #include "ESP32SvelteKit.h"
 #include "StatefulService.h"
 #include "core/SsvcSettings/SsvcSettings.h"
+// #include "core/profiles/IProfileObserver.h" // Remove this include
 
 #define OPEN_CONNECT_SETTINGS_PUB_TOPIC "openconnect/settings"
 #define OPEN_CONNECT_SETTINGS_ENDPOINT_PATH "/rest/oc_settings"
@@ -35,7 +36,7 @@ public:
     }
 };
 
-class OpenConnectSettingsService : public StatefulService<OpenConnectSettings>
+class OpenConnectSettingsService : public StatefulService<OpenConnectSettings> // Remove inheritance from IProfileObserver
 {
 public:
 
@@ -47,6 +48,11 @@ public:
     static OpenConnectSettingsService* getInstance() {return _instance;}
 
     void begin();
+
+    // IProfileObserver implementation - Remove these declarations
+    // const char* getProfileKey() const override;
+    // void onProfileApply(const JsonObject& profile) override;
+    // void onProfileSave(JsonObject& profile) override;
 
 private:
     static OpenConnectSettingsService* _instance;

@@ -1,0 +1,149 @@
+<script lang="ts">
+
+	import { Fa } from 'svelte-fa';
+	import { faPlus, faPen, faTrash, faClone, faCheck, faTimes, faPlay, faDownload, faUpload } from '@fortawesome/free-solid-svg-icons';
+	import Spinner from '../Spinner.svelte';
+	import type { Profile, Profiles } from '$lib/types/ssvc';
+	import { getProfiles } from '$lib/api/Profiles';
+	import { fetchAlarmThresholds, fetchSensorsTemperatureByZone } from '$lib/api/ssvcApi';
+
+	let profiles: Profiles | undefined = $state(undefined);
+	let isLoading: boolean = $state(true);
+	let error: string | null = $state(null);
+	let activeProfileId: number | null = $state(null); // Добавляем состояние для активного профиля
+
+	// Replaced onMount with $effect
+	$effect(() => {
+		loadProfiles();
+	});
+
+	async function loadProfiles() {
+		try {
+			isLoading = true;
+			profiles = await getProfiles();
+		} catch (err) {
+			console.error('Ошибка загрузки данных:', err);
+			error = 'Ошибка при загрузке данных о профилях.';
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	// Функция для установки активного профиля
+	function selectProfile(profileId: number) {
+		activeProfileId = profileId;
+	}
+
+	function startEditing(profile: Profile) {
+		// Логика редактирования профиля
+		console.log('Редактировать профиль:', profile.name);
+	}
+
+	async function saveEdit() {
+		// Логика сохранения изменений
+	}
+
+	function cancelEdit() {
+		// Логика отмены редактирования
+	}
+
+	function startCreating() {
+		// Логика начала создания нового профиля
+		console.log('Создать новый профиль');
+	}
+
+	async function handleCreate() {
+		// Логика создания профиля
+	}
+
+	function cancelCreating() {
+		// Логика отмены создания
+	}
+
+	async function handleClone(id: number) {
+		// Логика клонирования профиля
+		console.log('Клонировать профиль с ID:', id);
+	}
+
+	async function handleApply(id: number) {
+		// Логика применения профиля
+		console.log('Применить профиль с ID:', id);
+	}
+
+	function confirmDelete(profile: Profile) {
+		// Логика подтверждения удаления
+		console.log('Удалить профиль:', profile.name);
+	}
+
+	// Вычисляемое свойство для получения активного профиля
+	let activeProfile = $derived(profiles?.find(p => p.id === activeProfileId));
+
+</script>
+
+
+<div class="profile-manager-layout">
+	<!-- Left Column: Profile List -->
+	<div class="profile-list-panel">
+		<div class="profile-list-header">
+			<h3>Профили</h3>
+			<div class="profile-actions">
+				<button class="btn-icon" onclick={startCreating} title="Создать новый профиль">
+					<Fa icon={faPlus} />
+				</button>
+				<button class="btn-icon"  title="Загрузить из файла">
+					<Fa icon={faUpload} />
+				</button>
+				<input type="file" accept=".json" class="hidden" />
+			</div>
+		</div>
+
+		{#if isLoading}
+			<div class="profile-loading-state">
+				<Spinner />
+			</div>
+		{:else if error}
+			<div class="error-message">{error}</div>
+		{:else if profiles}
+				<ul class="profile-list">
+					{#each profiles as profile (profile.id)}
+						<li
+							class="profile-item"
+							class:active-profile={profile.id === activeProfileId}
+						>
+							<button class="profile-name-button" onclick={() => selectProfile(profile.id)}>
+								<span class="profile-name">{profile.name}</span>
+							</button>
+							<div class="profile-item-actions">
+								<button class="btn-icon" onclick={(event) => { event.stopPropagation(); startEditing(profile); }} title="Редактировать профиль">
+									<Fa icon={faPen} />
+								</button>
+								<button class="btn-icon" onclick={(event) => { event.stopPropagation(); confirmDelete(profile); }} title="Удалить профиль">
+									<Fa icon={faTrash} />
+								</button>
+								<button class="btn-icon" onclick={(event) => { event.stopPropagation(); handleClone(profile.id); }} title="Клонировать профиль">
+									<Fa icon={faClone} />
+								</button>
+								<button class="btn-icon" onclick={(event) => { event.stopPropagation(); handleApply(profile.id); }} title="Применить профиль">
+									<Fa icon={faPlay} />
+								</button>
+							</div>
+						</li>
+					{/each}
+				</ul>
+			{:else}
+				<p>Профили не найдены.</p>
+		{/if}
+	</div>
+
+	<!-- Right Column: Settings Placeholder -->
+	<div class="profile-settings-placeholder">
+		<h3>Редактор настроек</h3>
+		{#if activeProfile}
+			<p><strong>Выбран профиль:</strong> {activeProfile.name}</p>
+			<p><strong>ID:</strong> {activeProfile.id}</p>
+			<!-- Здесь будут отображаться настройки активного профиля -->
+		{:else}
+			<p>Выберите профиль для редактирования его параметров.</p>
+		{/if}
+	</div>
+</div>

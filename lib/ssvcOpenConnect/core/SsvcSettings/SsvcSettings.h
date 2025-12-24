@@ -25,9 +25,10 @@
 #include <core/SsvcConnector.h>
 #include <core/SsvcCommandsQueue.h>
 #include "core/StatefulServices/OpenConnectSettingsService/OpenConnectSettings.h"
+#include "core/profiles/IProfileObserver.h"
 
 // Класс настроек SsvcSettings
-class SsvcSettings
+class SsvcSettings : public IProfileObserver
 {
 public:
     static SsvcSettings& init();
@@ -35,6 +36,11 @@ public:
     void fillSettings(JsonVariant json) const;
 
     bool load(const std::string& json);
+
+    // --- Реализация контракта IProfileObserver ---
+    const char* getProfileKey() const override { return "ssvcSettings"; }
+    void onProfileSave(JsonObject& dest) override;
+    void onProfileApply(const JsonObject& src) override;
 
     // GETTERS
 

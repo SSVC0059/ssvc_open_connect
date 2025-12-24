@@ -13,6 +13,7 @@
 	import StartWizard from '$lib/components/StartWizard/StartWizard.svelte';
 	import ChangeStageModal from '$lib/components/Telemetry/ChangeStageModal.svelte'
 	import { sendCommand } from '$lib/api/ssvcApi'
+	import ProfileSelector from '$lib/components/profiles/ProfileSelector.svelte';
 
 	const { status } = $props<{
 		status: RectStatus | undefined;
@@ -135,6 +136,10 @@
 	<span>АВАРИЙНАЯ ОСТАНОВКА</span>
 </button>
 
+<div class="profile-selector-container">
+	<ProfileSelector />
+</div>
+
 <!-- Power Controls -->
 <div class="power-controls">
 
@@ -192,6 +197,10 @@
 
   @mixin transition-all {
     transition: var(--transition);
+  }
+
+  .profile-selector-container {
+	margin-bottom: 1rem;
   }
 
   .emergency-stop {

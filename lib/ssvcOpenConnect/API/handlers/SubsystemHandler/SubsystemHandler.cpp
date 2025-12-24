@@ -22,7 +22,7 @@ SubsystemHandler::SubsystemHandler() = default;
 esp_err_t SubsystemHandler::getStatus(PsychicRequest* request)
 {
     PsychicJsonResponse response(request, false);
-    JsonObject root = response.getRoot();
+    const JsonObject root = response.getRoot();
     // JsonArray _subsystems = root["subsystem"].to<JsonArray>();
     const std::unordered_map<std::string, bool> subsystems = SubsystemManager::instance().getSubsystemsStatus();
 

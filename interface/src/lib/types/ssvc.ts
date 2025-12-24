@@ -21,17 +21,17 @@ export type SsvcOpenConnectMessage = {
 export type SsvcOpenConnectInfo = {
 	ssvc: ssvc_info;
 	os: os_info;
-}
+};
 
 export type ssvc_info = {
 	version: string;
 	api: number;
-}
+};
 
 export type os_info = {
 	version: string;
 	is_support_api: boolean;
-}
+};
 
 // ======================== Статус ректификации ======================== //
 
@@ -43,12 +43,10 @@ export type RectStatus = {
 	stages: Stages;
 };
 
-
 // Этапы ректификации
 type Stages = {
 	[key: string]: string; // или другой тип данных
 };
-
 
 // ======================== Телеметрия SSVC ======================== //
 
@@ -63,7 +61,7 @@ export type SsvcTelemetryMessage = {
 	countdown?: string;
 	release?: string;
 	time?: string;
-	 open?: number;
+	open?: number;
 	period?: number;
 	hysteresis?: number;
 	valveOpen?: number;
@@ -79,7 +77,7 @@ export type SsvcTelemetryMessage = {
 	event?: string;
 	info?: string;
 	decrement?: number; // Декремент
-}
+};
 
 export type commonType = {
 	mmhg: string;
@@ -95,7 +93,6 @@ export type commonType = {
 export type valveFlowVolumeType = {
 	[key: string]: number; // или другой тип данных
 };
-
 
 // ======================== Настройки SSVC  ======================== //
 
@@ -141,26 +138,56 @@ export type SsvcSettings = {
 	heads_final: number;
 };
 
-
 // ======================== Настройки Telegram ======================== //
-
 
 export type TelegramConfig = {
 	token: string;
 	chat_id: string;
-}
+};
 
 // ==================== Настройки подсистем OpenConnect  ===================== //
-
 
 export type SubsystemsState = {
 	telegram_bot: boolean;
 	thermal: boolean;
-}
+};
 
 export type SendCommandResponse = {
 	success: boolean;
 	message: string;
+};
+
+// ==================== Профили ректификации  ===================== //
+
+export type Profile = {
+	id: string;
+	name: string;
+	createdAt: string;
+	isApplied: boolean;
+};
+
+export type Profiles = Profile[];
+
+// ==================== Файлы  ===================== //
+export type FSItemType = 'directory' | 'file';
+
+export interface BaseFSItem {
+	name: string;
+	type: FSItemType;
 }
 
+export interface FileItem extends BaseFSItem {
+	type: 'file';
+	size: number;
+}
 
+export interface DirectoryItem extends BaseFSItem {
+	type: 'directory';
+	children: FSItem[]; // Рекурсия: массив может содержать файлы или папки
+}
+
+// Итоговый тип элемента
+export type FSItem = FileItem | DirectoryItem;
+
+// Тип для корня (массив элементов)
+export type FileSystemTree = FSItem[];

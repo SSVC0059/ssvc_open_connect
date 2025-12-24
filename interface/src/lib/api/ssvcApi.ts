@@ -259,7 +259,7 @@ function getAuthHeaders(): HeadersInit {
 /**
  * Универсальный fetch-запрос с обработкой ошибок
  */
-async function apiFetch<T>(url: string, method: string = 'GET', body?: unknown): Promise<any> {
+export async function apiFetch<T>(url: string, method: string = 'GET', body?: unknown): Promise<any> {
 	try {
 		const response = await fetch(url, {
 			method,
