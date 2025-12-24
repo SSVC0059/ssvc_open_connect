@@ -1,24 +1,36 @@
-
 .profile-manager-layout {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
   flex-grow: 1;
+  height: 100%;
+  transition: grid-template-columns 0.3s ease-in-out;
+  box-shadow: var(--glass-shadow);
+  border: var(--glass-border);
+  border-radius: var(--border-radius);
 
   @media (min-width: 768px) {
-    grid-template-columns: 300px 1fr; /* Левая колонка уже, правая шире */
+    grid-template-columns: 300px 1fr;
+  }
+
+  &.editing {
+    @media (min-width: 768px) {
+      grid-template-columns: 0 1fr;
+    }
+
+    .profile-list-panel {
+      opacity: 0;
+      width: 0;
+      pointer-events: none;
+    }
   }
 }
 
 .profile-list-panel {
   display: flex;
   flex-direction: column;
-  background: var(--glass-background);
-  border: var(--glass-border);
-  border-radius: var(--border-radius);
-  backdrop-filter: blur(8px);
   overflow: hidden;
-  box-shadow: var(--glass-shadow);
+  transition: opacity 0.3s ease-in-out, width 0.3s ease-in-out;
 }
 
 .profile-list-header {
@@ -53,23 +65,28 @@
   align-items: center;
   padding: 0.75rem 0.5rem;
   border-radius: var(--border-radius-sm);
-  margin-bottom: 0.5rem; /* Увеличенный отступ */
-  transition: background-color 0.2s ease, color 0.2s ease, border-left 0.2s ease, box-shadow 0.2s ease; /* Добавлен box-shadow в transition */
-  border-left: 4px solid transparent; /* Прозрачная граница по умолчанию */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Легкая тень для отделения */
+  margin-bottom: 0.5rem;
+  transition: background-color 0.2s ease, color 0.2s ease, border-left 0.2s ease, box-shadow 0.2s ease;
+  border-left: 4px solid transparent;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
   &:hover {
     background-color: var(--primary-100);
     color: var(--primary-800);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Более выраженная тень при наведении */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   }
 
   &.active {
     background-color: var(--primary-100);
     color: var(--primary-800);
-    border-left: 4px solid var(--accent-color); /* Акцентная полоса */
+    border-left: 4px solid var(--accent-color);
     font-weight: 600;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Сохраняем легкую тень */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  &.disabled {
+    opacity: 0.5;
+    pointer-events: none;
   }
 
   .profile-name-button {
@@ -115,6 +132,12 @@
   &.active .profile-item-actions {
     visibility: visible;
   }
+}
+
+.profile-settings-panel {
+  padding: 1rem;
+  background: #fff;
+  border-radius: var(--border-radius);
 }
 
 .profile-settings-placeholder {

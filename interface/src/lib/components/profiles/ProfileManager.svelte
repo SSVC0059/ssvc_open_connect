@@ -10,11 +10,14 @@
 		getProfiles, renameProfiles,
 		setActiveAndApplyProfile
 	} from '$lib/api/Profiles';
+	import ProfileViewer from './ProfileViewer.svelte';
+	import ProfileEditor from './ProfileEditor.svelte';
 
 	let profiles: Profiles | undefined = $state(undefined);
 	let isLoading: boolean = $state(true);
 	let error: string | null = $state(null);
 	let selectedProfile: Profile | null = $state(null); // Profile selected for viewing/editing
+	let editingProfile: Profile | null = $state(null); // Profile currently being edited
 	let appliedProfileId: string = $state(""); // ID of the profile active on the controller
 
 	$effect(() => {
@@ -38,6 +41,7 @@
 	}
 
 	function selectProfile(profileId: string) {
+		if (editingProfile) return; // Don't change selection while editing
 		selectedProfile = profiles?.find(p => p.id === profileId) || null;
 	}
 
@@ -59,13 +63,23 @@
 		}
 	}
 
-	async function startEditing(profile: Profile) {
-		const newName = prompt('Введите новое имя профиля:', profile.name);
-		if (newName && newName !== profile.name) {
+	function startEditing(profile: Profile) {
+		editingProfile = { ...profile }; // Create a copy for editing
+		selectedProfile = null; // Hide viewer
+	}
+
+	async function handleSaveEditing() {
+		if (!editingProfile) return;
+
+		const newName = editingProfile.name;
+		const originalProfile = profiles?.find(p => p.id === editingProfile!.id);
+
+		if (newName && originalProfile && newName !== originalProfile.name) {
 			try {
-				const success = await renameProfiles(profile.id, newName);
+				const success = await renameProfiles(editingProfile.id, newName);
 				if (success) {
 					await loadData();
+					editingProfile = null;
 				} else {
 					alert('Не удалось переименовать профиль.');
 				}
@@ -73,7 +87,14 @@
 				console.error('Ошибка при переименовании профиля:', err);
 				alert('Ошибка при переименовании профиля.');
 			}
+		} else {
+			// If only other fields were changed, just exit editing mode
+			editingProfile = null;
 		}
+	}
+
+	function cancelEditing() {
+		editingProfile = null;
 	}
 
 	async function startCreating() {
@@ -83,6 +104,11 @@
 				const newProfile = await createProfiles(newName);
 				if (newProfile) {
 					await loadData();
+					// Optionally, start editing the new profile right away
+					const created = profiles?.find(p => p.name === newName);
+					if (created) {
+						startEditing(created);
+					}
 				} else {
 					alert('Не удалось создать профиль.');
 				}
@@ -115,6 +141,9 @@
 					if (selectedProfile?.id === profile.id) {
 						selectedProfile = null;
 					}
+					if (editingProfile?.id === profile.id) {
+						editingProfile = null;
+					}
 					await loadData();
 				} else {
 					alert('Не удалось удалить профиль.');
@@ -128,16 +157,16 @@
 
 </script>
 
-<div class="profile-manager-layout">
+<div class="profile-manager-layout" class:editing={editingProfile !== null}>
 	<!-- Left Column: Profile List -->
 	<div class="profile-list-panel">
 		<div class="profile-list-header">
 			<h3>Профили</h3>
 			<div class="profile-actions">
-				<button class="btn-icon" onclick={startCreating} title="Создать новый профиль">
+				<button class="icon-button" onclick={startCreating} title="Создать новый профиль" disabled={editingProfile !== null}>
 					<Fa icon={faPlus} />
 				</button>
-				<button class="btn-icon" title="Загрузить из файла">
+				<button class="icon-button" title="Загрузить из файла" disabled={editingProfile !== null}>
 					<Fa icon={faUpload} />
 				</button>
 				<input type="file" accept=".json" class="hidden" />
@@ -153,24 +182,24 @@
 		{:else if profiles}
 			<ul class="profile-list">
 				{#each profiles as profile (profile.id)}
-					<li class="profile-list-item {selectedProfile?.id === profile.id ? 'active' : ''}">
-						<button class="profile-name-button" onclick={() => selectProfile(profile.id)}>
+					<li class="profile-list-item {selectedProfile?.id === profile.id ? 'active' : ''} {editingProfile ? 'disabled' : ''}">
+						<button class="profile-name-button" onclick={() => selectProfile(profile.id)} disabled={editingProfile !== null}>
 							{#if profile.isApplied}
 								<Fa icon={faCheck} class="applied-icon" />
 							{/if}
 							<span class="profile-name">{profile.name}</span>
 						</button>
 						<div class="profile-item-actions">
-							<button class="btn-icon" onclick={() => startEditing(profile)} title="Редактировать профиль">
+							<button class="icon-button" onclick={() => startEditing(profile)} title="Редактировать профиль" disabled={editingProfile !== null}>
 								<Fa icon={faPen} />
 							</button>
-							<button class="btn-icon" onclick={() => confirmDelete(profile)} title="Удалить профиль">
+							<button class="icon-button" onclick={() => confirmDelete(profile)} title="Удалить профиль" disabled={editingProfile !== null}>
 								<Fa icon={faTrash} />
 							</button>
-							<button class="btn-icon" onclick={() => handleClone(profile.id)} title="Клонировать профиль">
+							<button class="icon-button" onclick={() => handleClone(profile.id)} title="Клонировать профиль" disabled={editingProfile !== null}>
 								<Fa icon={faClone} />
 							</button>
-							<button class="btn-icon" onclick={() => handleApply(profile.id)} title="Применить профиль" disabled={profile.isApplied}>
+							<button class="icon-button" onclick={() => handleApply(profile.id)} title="Применить профиль" disabled={profile.isApplied || editingProfile !== null}>
 								<Fa icon={faPlay} />
 							</button>
 						</div>
@@ -181,14 +210,19 @@
 	</div>
 
 	<!-- Right Column: Settings Placeholder or Selected Profile Details -->
-	<div class="profile-settings-placeholder">
-		{#if selectedProfile}
-			<h3>Настройки профиля: {selectedProfile.name}</h3>
-			<p>ID: {selectedProfile.id}</p>
-			<p>This is where the detailed settings for "{selectedProfile.name}" would be displayed.</p>
+	<div class="profile-settings-panel">
+		{#if editingProfile}
+			<ProfileEditor profile={editingProfile} onSave={handleSaveEditing} onCancel={cancelEditing} />
+		{:else if selectedProfile}
+			<ProfileViewer profile={selectedProfile} />
 		{:else}
-			<h3>Редактор настроек</h3>
-			<p>Выберите профиль для редактирования его параметров.</p>
+			<div class="profile-settings-placeholder">
+				<h3>Редактор настроек</h3>
+				<p>Выберите профиль для просмотра или редактирования его параметров.</p>
+			</div>
 		{/if}
 	</div>
+</div>
+<div class="hidden">
+	<input type="file" accept=".json" class="hidden" />
 </div>
