@@ -37,7 +37,7 @@
     
     <span style="color: #004400;"> ЗЕЛЕНЫЙ </span> - к TX SSVC
 
-    <span style="color: #ff0000;"> ЧЕРНЫЙ </span> - к RX SSVC
+    <span style="color: #ff0000;"> КРАСНЫЙ </span> - к RX SSVC
 
 <div class="isplay: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
 <img src="/ssvc_open_connect/ready_made/media/uart.jpg"> 
@@ -53,7 +53,7 @@
     
     <span style="color: #004400;"> ЗЕЛЕНЫЙ </span> - DATA
 
-    <span style="color: #ff0000;"> ЧЕРНЫЙ </span> - к +5v датчика
+    <span style="color: #ff0000;"> КРАСНЫЙ </span> - к +5v датчика
 
 <div class="isplay: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
 <img src="/ssvc_open_connect/ready_made/media/ds18b20.jpg"> 
