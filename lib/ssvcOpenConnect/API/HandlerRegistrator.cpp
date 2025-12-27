@@ -136,7 +136,7 @@ void HandlerRegistrator::registerProfileHandler() const
                     return ProfileHandler::handleGetActiveProfile(request);
         }, AuthenticationPredicates::IS_AUTHENTICATED));
 
-    // GET /rest/profiles/content - Get full content of a specific profile (ID in body)
+    // GET /rest/profiles/content - Get full content of a specific profile (ID in query param)
     _server.on("/rest/profiles/content", HTTP_GET,
                 _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
                     return ProfileHandler::handleGetProfileContent(request);
@@ -157,7 +157,7 @@ void HandlerRegistrator::registerProfileHandler() const
     // PUT /rest/profiles/meta - Update profile metadata (e.g., name) (ID and new name in body)
     _server.on("/rest/profiles/meta", HTTP_PUT,
         _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
-            return ProfileHandler::handleUpdateProfile(request);
+            return ProfileHandler::handleUpdateProfileMeta(request);
         }, AuthenticationPredicates::IS_AUTHENTICATED));
 
     // POST /rest/profiles/set-active - Set a profile as active and apply it (ID in body)
@@ -176,6 +176,12 @@ void HandlerRegistrator::registerProfileHandler() const
     _server.on("/rest/profiles/delete", HTTP_DELETE,
             _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
                 return ProfileHandler::handleDeleteProfile(request);
+            }, AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // POST /rest/profiles/content - Update profile content
+    _server.on("/rest/profiles/content", HTTP_POST,
+            _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
+                return ProfileHandler::handleUpdateProfileContent(request);
             }, AuthenticationPredicates::IS_AUTHENTICATED));
 }
 

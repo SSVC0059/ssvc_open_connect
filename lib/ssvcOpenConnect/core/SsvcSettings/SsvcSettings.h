@@ -187,7 +187,7 @@ private:
     std::tuple<float, int> heads = {0.0, 0}; // головы
     std::tuple<float, int> hearts = {0.0, 0.0}; // тело
 
-    float heads_final = 0.0;
+    float heads_final = -1.0;
     float hyst = 0.0;
     unsigned char decrement = 0;
     bool formula = false;
@@ -242,8 +242,8 @@ private:
     //    Актуально в firmware 2.3.*
     std::tuple<float, int> late_heads = {-1.0, -1};
     unsigned int late_heads_timer = 0;
-    float release_speed = 0.0;
-    unsigned int release_timer = 0;
+    float release_speed = -1.0;
+    int release_timer = -1;
 
     std::string lastSettingsSrc;
 

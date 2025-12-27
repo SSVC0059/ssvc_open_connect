@@ -1,17 +1,18 @@
 <script lang="ts">
 	import {Fa} from 'svelte-fa';
 	import {faCheck, faClone, faPen, faPlay, faPlus, faTrash, faUpload} from '@fortawesome/free-solid-svg-icons';
-	import Spinner from '../Spinner.svelte';
+	import Spinner from '$lib/components/Spinner.svelte';
 	import type {Profile, Profiles} from '$lib/types/ssvc';
+	import ProfileViewer from '$lib/components/profiles/ProfileViewer.svelte';
+	import ProfileEditor from '$lib/components/profiles/ProfileEditor.svelte';
 	import {
 		copyProfiles,
 		createProfiles,
 		deleteProfiles,
-		getProfiles, renameProfiles,
+		getProfiles, updateProfileMeta,
 		setActiveAndApplyProfile
 	} from '$lib/api/Profiles';
-	import ProfileViewer from './ProfileViewer.svelte';
-	import ProfileEditor from './ProfileEditor.svelte';
+
 
 	let profiles: Profiles | undefined = $state(undefined);
 	let isLoading: boolean = $state(true);
@@ -76,7 +77,7 @@
 
 		if (newName && originalProfile && newName !== originalProfile.name) {
 			try {
-				const success = await renameProfiles(editingProfile.id, newName);
+				const success = await updateProfileMeta(editingProfile.id, newName);
 				if (success) {
 					await loadData();
 					editingProfile = null;
@@ -212,7 +213,11 @@
 	<!-- Right Column: Settings Placeholder or Selected Profile Details -->
 	<div class="profile-settings-panel">
 		{#if editingProfile}
-			<ProfileEditor profile={editingProfile} onSave={handleSaveEditing} onCancel={cancelEditing} />
+			<ProfileEditor
+				profile={editingProfile}
+				onSave={handleSaveEditing}
+				onCancel={cancelEditing}
+			/>
 		{:else if selectedProfile}
 			<ProfileViewer profile={selectedProfile} />
 		{:else}

@@ -65,33 +65,31 @@ curl -X GET http://DEVICE_IP/rest/profiles/active \
 **Метод:** `GET`
 **Аутентификация:** Требуется
 
-### Тело запроса
-```json
-{
-  "id": "идентификатор_профиля"
-}
-```
+### Параметры запроса (Query)
+*   `id` (string, required): Идентификатор профиля.
 
 ### Пример запроса (curl)
 
 ```bash
-curl -X GET http://DEVICE_IP/rest/profiles/content \
-     -H "Authorization: Bearer YOUR_AUTH_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{"id": "0"}'
+curl -X GET "http://DEVICE_IP/rest/profiles/content?id=0" \
+     -H "Authorization: Bearer YOUR_AUTH_TOKEN"
 ```
 
 ### Ответы
 *   **`200 OK`**:
     ```json
     {
-      "setting_key_1": "значение",
-      "another_setting": 456
+      "id": "0",
+      "name": "Default Profile",
+      "createdAt": "2024-01-01T12:00:00Z",
+      "ssvc": {
+        "setting_key_1": "value"
+      }
     }
     ```
-*   **`400 Bad Request`**: Неверный JSON или отсутствует поле `id`.
+*   **`400 Bad Request`**: Отсутствует параметр `id`.
     ```json
-    {"error": "Missing or invalid 'id' field in request body"}
+    {"error": "Missing 'id' parameter in request"}
     ```
 *   **`404 Not Found`**: Профиль не найден или не удалось получить содержимое.
     ```json
@@ -136,6 +134,52 @@ curl -X POST http://DEVICE_IP/rest/profiles \
 *   **`500 Internal Server Error`**: Не удалось сохранить профиль.
     ```json
     {"error": "Failed to save profile"}
+    ```
+
+---
+
+## Обновление или удаление содержимого профиля
+
+Обновляет или удаляет ключи в содержимом указанного профиля. Позволяет сохранять произвольную структуру данных или удалять ее части.
+
+**Эндпоинт:** `POST /rest/profiles/content`
+**Метод:** `POST`
+**Аутентификация:** Требуется
+
+### Тело запроса
+```json
+{
+  "id": "идентификатор_профиля",
+  "content": {
+    "ключ_для_обновления": "новое_значение",
+    "ключ_для_удаления": null
+  }
+}
+```
+*   Для **обновления** или **добавления** ключа, передайте его с новым значением.
+*   Для **удаления** ключа, передайте его со значением `null`.
+
+### Пример запроса (обновление и удаление)
+
+```bash
+curl -X POST http://DEVICE_IP/rest/profiles/content \
+     -H "Authorization: Bearer YOUR_AUTH_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"id": "1", "content": {"ssvc": {"power": 95}, "old_module": null}}'
+```
+
+### Ответы
+*   **`200 OK`**: Содержимое профиля успешно обновлено.
+    ```json
+    {"success": "Profile content updated"}
+    ```
+*   **`400 Bad Request`**: Неверный JSON или отсутствуют поля `id` или `content`.
+    ```json
+    {"error": "Missing or invalid 'content' field"}
+    ```
+*   **`404 Not Found`**: Профиль не найден или не удалось обновить.
+    ```json
+    {"error": "Profile not found or failed to update content"}
     ```
 
 ---
@@ -221,9 +265,9 @@ curl -X POST http://DEVICE_IP/rest/profiles/copy \
 
 ---
 
-## Обновление метаданных профиля
+## Обновление имени профиля
 
-Обновляет метаданные профиля, например, его имя.
+Обновляет метаданные профиля, а именно его имя.
 
 **Эндпоинт:** `PUT /rest/profiles/meta`
 **Метод:** `PUT`

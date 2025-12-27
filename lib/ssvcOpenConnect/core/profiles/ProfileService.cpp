@@ -633,3 +633,49 @@ bool ProfileService::saveCurrentSettingsToProfile(const String& profileId) const
     ESP_LOGI(TAG, "Saving current settings to profile ID '%s' (Name: %s)", profileId.c_str(), currentName.c_str());
     return _createOrUpdateProfile(profileId, currentName);
 }
+
+bool ProfileService::updateProfileContent(const String& profileId, const JsonObject& content) const {
+    const String filePath = String(_profilesDir) + "/" + profileId + ".json";
+    if (!_fs->exists(filePath)) {
+        ESP_LOGE(TAG, "Profile file not found for content update: %s", filePath.c_str());
+        return false;
+    }
+
+    JsonDocument doc;
+    File profileFileRead = _fs->open(filePath, "r");
+    if (!profileFileRead) {
+        ESP_LOGE(TAG, "Failed to open profile data file for reading during content update: %s", filePath.c_str());
+        return false;
+    }
+
+    DeserializationError error = deserializeJson(doc, profileFileRead);
+    profileFileRead.close();
+    if (error) {
+        ESP_LOGE(TAG, "Failed to deserialize profile %s for content update: %s", profileId.c_str(), error.c_str());
+        return false;
+    }
+
+    JsonObject root = doc.as<JsonObject>();
+    for (JsonPair kv : content) {
+        if (kv.value().isNull()) {
+            root.remove(kv.key());
+        } else {
+            root[kv.key()] = kv.value();
+        }
+    }
+
+    File profileFileWrite = _fs->open(filePath, "w");
+    if (!profileFileWrite) {
+        ESP_LOGE(TAG, "Failed to open profile data file for writing during content update: %s", filePath.c_str());
+        return false;
+    }
+
+    if (serializeJson(doc, profileFileWrite) == 0) {
+        ESP_LOGE(TAG, "Failed to update content in profile data file: %s", filePath.c_str());
+        profileFileWrite.close();
+        return false;
+    }
+
+    profileFileWrite.close();
+    return true;
+}

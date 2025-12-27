@@ -32,6 +32,7 @@ public:
     bool getProfileContent(const String& profileId, String& dest) const;
     void getProfileListAsJson(String& dest) const;
     bool saveCurrentSettingsToProfile(const String& profileId) const;
+    bool updateProfileContent(const String& profileId, const JsonObject& content) const;
 
 private:
     ProfileService();

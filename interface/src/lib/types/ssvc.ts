@@ -26,6 +26,7 @@ export type SsvcOpenConnectInfo = {
 export type ssvc_info = {
 	version: string;
 	api: number;
+	mode: 'late_heads';
 };
 
 export type os_info = {
@@ -163,10 +164,44 @@ export type Profile = {
 	id: string;
 	name: string;
 	createdAt: string;
-	isApplied: boolean;
-};
+	isApplied?: boolean;
 
+	// --- Параметры сырца ---
+	/** Объем спирта-сырца в кубе (литры, точность 0.1) */
+	rawVolumeLiters: number;
+	/** Спиртуозность сырца по показаниям ареометра (%) */
+	rawStrength: number;
+	/** Температура сырца при замере спиртуозности (°C) */
+	rawTemperature: number;
+	/** Желаемая крепость продукта на выходе (например, 96.6) */
+	targetStrength: number;
+
+	/** Объем узла отбора, мл */
+	collectionNodeVolumeMl: number;
+
+	// --- Целевые объемы фракций (в % от абсолютного спирта) ---
+	/** Суммарный объем головных фракций (%) */
+	headsTotalPercent: number;
+	/** Объем подголовников (оборотного спирта) (%) */
+	lateHeadsPercent: number;
+	/** Объем основного тела (%) */
+	heartsPercent: number;
+	/** Объем хвостовых фракций (%). Тело рассчитывается как остаток. */
+	tailsPercent: number;
+
+	/** Настройки SSVC **/
+	ssvcSettings: SsvcSettings;
+};
 export type Profiles = Profile[];
+
+// === Типы для работы с калькулятором ректификации (редактор профилей)  === //
+
+export type FractionCalcResult = {
+	/** Рассчитанный объем фракции в миллилитрах */
+	ml: number;
+	/** Рассчитанная длительность этапа в минутах */
+	durationMin: number;
+};
 
 // ==================== Файлы  ===================== //
 export type FSItemType = 'directory' | 'file';

@@ -14,10 +14,11 @@ public:
     static esp_err_t handleCreateProfile(PsychicRequest* request);
     static esp_err_t handleDeleteProfile(PsychicRequest* request);
     static esp_err_t handleCopyProfile(PsychicRequest* request);
-    static esp_err_t handleUpdateProfile(PsychicRequest* request);
+    static esp_err_t handleUpdateProfileMeta(PsychicRequest* request);
     static esp_err_t handleSetActiveAndApplyProfile(PsychicRequest* request); // New combined handler
     static esp_err_t handleGetProfileContent(PsychicRequest* request);
     static esp_err_t handleSaveSettingsToProfile(PsychicRequest* request);
+    static esp_err_t handleUpdateProfileContent(PsychicRequest* request);
 
 private:
     ProfileService* _profileService;
