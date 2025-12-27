@@ -4,6 +4,15 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),  
 и этот проект придерживается [Semantic Versioning](https://semver.org/lang/ru/).
 
+
+## 0.2.5.0
+
+
+### Исправлено
+
+  - [#109](https://github.com/theelims/ESP32-sveltekit/issues/109)
+
+
 ## 0.2.4.1
 
   - Вывод приветственного сообщения на дисплей SSVC0059_v. Требуется версия API не ниже 1.6 #45
