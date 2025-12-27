@@ -1,0 +1,16 @@
+{
+    "name": "SSVC Open Connect",
+    "version": "v0.2.1.8",
+    "home_assistant_domain": "ssvc_open_connect",
+    "builds": [
+         {
+            "chipFamily": "ESP32-S3",
+            "parts": [
+                {
+                    "path": "firmware_merged.bin",
+                    "offset": 0
+                }
+            ]
+        }
+    ]
+}
