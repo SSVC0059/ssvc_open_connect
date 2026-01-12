@@ -10,8 +10,12 @@
 		createProfiles,
 		deleteProfiles,
 		getProfiles, updateProfileMeta,
-		setActiveAndApplyProfile
+		setActiveAndApplyProfile, updateProfileContent, saveCurrentSettingsToProfile
 	} from '$lib/api/Profiles';
+	import { notifications } from '$lib/components/toasts/notifications';
+	import { modals } from 'svelte-modals';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import InputDialog from '$lib/components/InputDialog.svelte';
 
 
 	let profiles: Profiles | undefined = $state(undefined);
@@ -55,12 +59,13 @@
 				if (profiles) {
 					profiles = profiles.map(p => ({ ...p, isApplied: p.id === id }));
 				}
+				notifications.success('Профиль успешно применен', 5000);
 			} else {
-				// Handle error applying profile
-				console.error('Failed to apply profile');
+				notifications.error('Не удалось применить профиль', 5000);
 			}
 		} catch (err) {
 			console.error('Error applying profile:', err);
+			notifications.error('Ошибка при применении профиля', 5000);
 		}
 	}
 
@@ -69,28 +74,28 @@
 		selectedProfile = null; // Hide viewer
 	}
 
-	async function handleSaveEditing() {
-		if (!editingProfile) return;
+	async function handleSaveEditing(updatedProfile: Profile) {
+		if (!updatedProfile || !updatedProfile.id) return;
 
-		const newName = editingProfile.name;
-		const originalProfile = profiles?.find(p => p.id === editingProfile!.id);
+		console.log('Профиль для сохранения:', updatedProfile);
+		try {
+			isLoading = true;
 
-		if (newName && originalProfile && newName !== originalProfile.name) {
-			try {
-				const success = await updateProfileMeta(editingProfile.id, newName);
-				if (success) {
-					await loadData();
-					editingProfile = null;
-				} else {
-					alert('Не удалось переименовать профиль.');
-				}
-			} catch (err) {
-				console.error('Ошибка при переименовании профиля:', err);
-				alert('Ошибка при переименовании профиля.');
+			const updateSuccess = await updateProfileContent(updatedProfile.id, updatedProfile);
+
+			if (updateSuccess) {
+				editingProfile = null;
+				await loadData();
+				notifications.success('Профиль успешно сохранен', 5000);
+
+			} else {
+				notifications.error('Ошибка при сохранении содержимого профиля', 5000);
 			}
-		} else {
-			// If only other fields were changed, just exit editing mode
-			editingProfile = null;
+		} catch (err) {
+			console.error('Ошибка в handleSaveEditing:', err);
+			notifications.error('Произошла ошибка при сохранении профиля', 5000);
+		} finally {
+			isLoading = false;
 		}
 	}
 
@@ -98,26 +103,31 @@
 		editingProfile = null;
 	}
 
-	async function startCreating() {
-		const newName = prompt('Введите имя нового профиля:');
-		if (newName) {
-			try {
-				const newProfile = await createProfiles(newName);
-				if (newProfile) {
-					await loadData();
-					// Optionally, start editing the new profile right away
-					const created = profiles?.find(p => p.name === newName);
-					if (created) {
-						startEditing(created);
+	function startCreating() {
+		modals.open(InputDialog, {
+			title: 'Создать профиль',
+			message: 'Введите имя нового профиля:',
+			onSave: async (newName: string) => {
+				if (newName) {
+					try {
+						const newProfile = await createProfiles(newName);
+						if (newProfile) {
+							await loadData();
+							notifications.success(`Профиль "${newName}" создан`, 5000);
+							const created = profiles?.find(p => p.name === newName);
+							if (created) {
+								startEditing(created);
+							}
+						} else {
+							notifications.error('Не удалось создать профиль', 5000);
+						}
+					} catch (err) {
+						console.error('Ошибка при создании профиля:', err);
+						notifications.error('Ошибка при создании профиля', 5000);
 					}
-				} else {
-					alert('Не удалось создать профиль.');
 				}
-			} catch (err) {
-				console.error('Ошибка при создании профиля:', err);
-				alert('Ошибка при создании профиля.');
 			}
-		}
+		});
 	}
 
 	async function handleClone(id: string) {
@@ -125,35 +135,43 @@
 			const clonedProfile = await copyProfiles(id, "");
 			if (clonedProfile) {
 				await loadData();
+				notifications.success('Профиль успешно клонирован', 5000);
 			} else {
-				alert('Не удалось клонировать профиль.');
+				notifications.error('Не удалось клонировать профиль', 5000);
 			}
 		} catch (err) {
 			console.error('Ошибка при клонировании профиля:', err);
-			alert('Ошибка при клонировании профиля.');
+			notifications.error('Ошибка при клонировании профиля', 5000);
 		}
 	}
 
-	async function confirmDelete(profile: Profile) {
-		if (confirm(`Вы уверены, что хотите удалить профиль "${profile.name}"?`)) {
-			try {
-				const success = await deleteProfiles(profile.id);
-				if (success) {
-					if (selectedProfile?.id === profile.id) {
-						selectedProfile = null;
+	function confirmDelete(profile: Profile) {
+		modals.open(ConfirmDialog, {
+			title: 'Подтверждение удаления',
+			message: `Вы уверены, что хотите удалить профиль "${profile.name}"?`,
+			onConfirm: async () => {
+				try {
+					const success = await deleteProfiles(profile.id);
+					if (success) {
+						if (selectedProfile?.id === profile.id) {
+							selectedProfile = null;
+						}
+						if (editingProfile?.id === profile.id) {
+							editingProfile = null;
+						}
+						await loadData();
+						notifications.success(`Профиль "${profile.name}" удален`, 5000);
+					} else {
+						notifications.error('Не удалось удалить профиль', 5000);
 					}
-					if (editingProfile?.id === profile.id) {
-						editingProfile = null;
-					}
-					await loadData();
-				} else {
-					alert('Не удалось удалить профиль.');
+				} catch (err) {
+					console.error('Ошибка при удалении профиля:', err);
+					notifications.error('Ошибка при удалении профиля', 5000);
+				} finally {
+					modals.close();
 				}
-			} catch (err) {
-				console.error('Ошибка при удалении профиля:', err);
-				alert('Ошибка при удалении профиля.');
 			}
-		}
+		});
 	}
 
 </script>
@@ -214,12 +232,12 @@
 	<div class="profile-settings-panel">
 		{#if editingProfile}
 			<ProfileEditor
-				profile={editingProfile}
+				profileInfo={editingProfile}
 				onSave={handleSaveEditing}
 				onCancel={cancelEditing}
 			/>
 		{:else if selectedProfile}
-			<ProfileViewer profile={selectedProfile} />
+			<ProfileViewer profileInfo={selectedProfile} />
 		{:else}
 			<div class="profile-settings-placeholder">
 				<h3>Редактор настроек</h3>

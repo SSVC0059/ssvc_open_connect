@@ -97,11 +97,18 @@ export type valveFlowVolumeType = {
 
 // ======================== Настройки SSVC  ======================== //
 
+/**
+ * Настройки фракций для SSVC в формате [openTime, period].
+ * openTime: время открытия клапана в мс.
+ * period: период ШИМ в мс.
+ */
+export type SsvcTuple = [number, number];
+
 export type SsvcSettings = {
-	heads: [number, number]; // Параметры для Голов: давление и период
-	late_heads: [number, number]; // Параметры для подголовников: давление и период
-	hearts: [number, number]; // Параметры для Тела: давление и период
-	tails: [number, number]; // Параметры для Хвостов: давление и период
+	heads: SsvcTuple; // Параметры для Голов: [openTime, period]
+	late_heads: SsvcTuple; // Параметры для подголовников: [openTime, period]
+	hearts: SsvcTuple; // Параметры для Тела: [openTime, period]
+	tails: SsvcTuple; // Параметры для Хвостов: [openTime, period]
 	hyst: number; // Гистерезис
 	decrement: number; // Декремент
 	sound: number; // Звук (0 или 1)
@@ -117,8 +124,8 @@ export type SsvcSettings = {
 	start_delay: number; // Задержка старта (в секундах)
 	hearts_finish_temp: number; // Температура окончания Hearts
 	parallel_v3: [number, number, number][]; // Параметры Parallel V3, массив массивов из трех значений
-	parallel_v1: [number, number]; // Параметры Parallel V1
-	parallel: [number, number]; // Параметры Parallel V3 - подголовники
+	parallel_v1: SsvcTuple; // Параметры Parallel V1
+	parallel: SsvcTuple; // Параметры Parallel V3 - подголовники
 	hearts_temp_shift: boolean; // Смещение температуры для Hearts
 	hearts_pause: boolean; // Пауза для Hearts
 	formula: boolean; // Формула
@@ -160,6 +167,14 @@ export type SendCommandResponse = {
 
 // ==================== Профили ректификации  ===================== //
 
+interface FractionSettings {
+	percent: number; // % от АС
+	enabled: boolean; // Включен ли отбор
+	targetFlowMlh: number; // Желаемая скорость отбора (мл/ч)
+	targetCycles?: number; // Целевое количество циклов переиспарения (только для голов)
+	decrementPercent?: number;
+}
+
 export type Profile = {
 	id: string;
 	name: string;
@@ -167,30 +182,68 @@ export type Profile = {
 	isApplied?: boolean;
 
 	// --- Параметры сырца ---
+	/** Реальная мощность колонны */
+	powerKw: number;
 	/** Объем спирта-сырца в кубе (литры, точность 0.1) */
-	rawVolumeLiters: number;
+	volumeL: number;
 	/** Спиртуозность сырца по показаниям ареометра (%) */
-	rawStrength: number;
-	/** Температура сырца при замере спиртуозности (°C) */
-	rawTemperature: number;
-	/** Желаемая крепость продукта на выходе (например, 96.6) */
-	targetStrength: number;
+	strengthVol: number;
 
-	/** Объем узла отбора, мл */
-	collectionNodeVolumeMl: number;
+	stabilizationMin: number;
 
-	// --- Целевые объемы фракций (в % от абсолютного спирта) ---
-	/** Суммарный объем головных фракций (%) */
-	headsTotalPercent: number;
-	/** Объем подголовников (оборотного спирта) (%) */
-	lateHeadsPercent: number;
-	/** Объем основного тела (%) */
-	heartsPercent: number;
-	/** Объем хвостовых фракций (%). Тело рассчитывается как остаток. */
-	tailsPercent: number;
+	heads: FractionSettings;
+	late_heads: FractionSettings;
+	hearts: FractionSettings;
+	tails: FractionSettings;
 
 	/** Настройки SSVC **/
 	ssvcSettings: SsvcSettings;
+
+	analytics: Analytics;
+};
+
+export type Analytics = {
+	totalAS: number;
+	boilingTemp: number;
+	oneCycleTime: number;
+	flows: {
+		heads: number;
+		heads_release: number;
+		heads_final: number;
+		late_heads: number;
+		hearts: number;
+		hearts_avg?: number;
+		hearts_final?: number;
+		tails: number;
+	};
+	fractions: {
+		releaseMl: number;
+		headsMl: number;
+		lateHeadsMl: number;
+		heartsMl: number;
+		tailsMl: number;
+	};
+	timers: {
+		heads: number;
+		late_heads: number;
+		hearts: number;
+		tails: number;
+		total_process: number;
+	};
+	refluxRatio: {
+		heads: number;
+		late_heads: number;
+		hearts: number;
+		tails: number;
+	};
+	phlegmatic: {
+		heads: number;
+		late_heads: number;
+		hearts: number;
+		tails: number;
+	};
+	residueMl: number;
+	residualFortress: number;
 };
 export type Profiles = Profile[];
 

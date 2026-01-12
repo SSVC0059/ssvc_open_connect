@@ -63,7 +63,6 @@
 		if (page.data.features.analytics) socket.on('analytics', handleAnalytics);
 		if (page.data.features.battery) socket.on('battery', handleBattery);
 		if (page.data.features.download_firmware) socket.on('otastatus', handleOTA);
-		if (page.data.features.ethernet) socket.on('ethernet', handleEthernet);
 	};
 
 	const removeEventListeners = () => {

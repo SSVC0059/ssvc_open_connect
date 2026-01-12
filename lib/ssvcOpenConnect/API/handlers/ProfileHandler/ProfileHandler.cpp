@@ -205,7 +205,7 @@ esp_err_t ProfileHandler::handleSetActiveAndApplyProfile(PsychicRequest *request
 
 esp_err_t ProfileHandler::handleSaveSettingsToProfile(PsychicRequest *request) {
     JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, request->body());
+    const DeserializationError error = deserializeJson(doc, request->body());
 
     if (error) {
         return request->reply(400, "application/json", R"({"error": "Invalid JSON in request body"})");

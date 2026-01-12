@@ -648,14 +648,19 @@ bool ProfileService::updateProfileContent(const String& profileId, const JsonObj
         return false;
     }
 
-    DeserializationError error = deserializeJson(doc, profileFileRead);
+    const DeserializationError error = deserializeJson(doc, profileFileRead);
     profileFileRead.close();
     if (error) {
         ESP_LOGE(TAG, "Failed to deserialize profile %s for content update: %s", profileId.c_str(), error.c_str());
         return false;
     }
 
-    JsonObject root = doc.as<JsonObject>();
+    // Создаем временный документ с исходным содержимым для проверки изменений.
+    JsonDocument originalDoc;
+    originalDoc.set(doc);
+
+    // Применяем изменения из объекта 'content'.
+    auto root = doc.as<JsonObject>();
     for (JsonPair kv : content) {
         if (kv.value().isNull()) {
             root.remove(kv.key());
@@ -664,6 +669,13 @@ bool ProfileService::updateProfileContent(const String& profileId, const JsonObj
         }
     }
 
+    // Если изменений нет, не записываем в файл.
+    if (originalDoc.as<JsonObject>() == root) {
+        ESP_LOGI(TAG, "Profile content has not changed for profile %s. Skipping write.", profileId.c_str());
+        return true;
+    }
+
+    // Записываем обновленное содержимое обратно в файл.
     File profileFileWrite = _fs->open(filePath, "w");
     if (!profileFileWrite) {
         ESP_LOGE(TAG, "Failed to open profile data file for writing during content update: %s", filePath.c_str());
@@ -675,7 +687,16 @@ bool ProfileService::updateProfileContent(const String& profileId, const JsonObj
         profileFileWrite.close();
         return false;
     }
-
     profileFileWrite.close();
+
+    // Если профиль активен, применяем его заново.
+    if (getActiveProfileId() == profileId) {
+        ESP_LOGI(TAG, "Profile %s is active. Re-applying settings.", profileId.c_str());
+        if (!_applyProfileInternal(profileId)) {
+            ESP_LOGE(TAG, "Failed to re-apply active profile %s after update.", profileId.c_str());
+            return false;
+        }
+    }
+
     return true;
 }
