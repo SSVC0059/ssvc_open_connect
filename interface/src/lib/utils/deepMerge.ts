@@ -81,3 +81,30 @@ function mergeWithDefaults(data: any, defaults: any) {
 
 	return result;
 }
+
+export function deepClone<T>(obj: T): T {
+    if (obj === null || typeof obj !== 'object') {
+        return obj;
+    }
+
+    if (obj instanceof Date) {
+        return new Date(obj.getTime()) as any;
+    }
+
+    if (Array.isArray(obj)) {
+        const arrCopy = [] as any[];
+        for (const item of obj) {
+            arrCopy.push(deepClone(item));
+        }
+        return arrCopy as any;
+    }
+
+    const objCopy = {} as { [key: string]: any };
+    for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            objCopy[key] = deepClone((obj as any)[key]);
+        }
+    }
+
+    return objCopy as T;
+}

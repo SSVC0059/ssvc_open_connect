@@ -437,7 +437,7 @@
 									<input class="input-field" type="number" bind:value={sourceProfile.ssvcSettings.valve_bw[1]} />
 								</div>
 								<div class="input-group">
-									<span class="input-label">Начальная, мл/ч</span>
+									<span class="input-label">Начальная скорость отбора, мл/ч</span>
 									<input class="input-field" type="number" bind:value={sourceProfile.hearts.targetFlowMlh} placeholder="Авто" />
 								</div>
 							</div>
@@ -557,7 +557,7 @@
 			<div class="final-analytics-grid">
 				<AnalyticsValue label="Общий АС" value={`${profile.analytics.totalAS.toFixed(0)} мл`} />
 				<AnalyticsValue label="T° кипения" value={`${profile.analytics.boilingTemp.toFixed(2)} °C`} />
-				<AnalyticsValue label="Время цикла" value={formatTime(profile.analytics.oneCycleTime)} />
+				<AnalyticsValue label="Время переиспарения" value={formatTime(profile.analytics.oneCycleTime)} />
 				<AnalyticsValue label="Остаток в кубе" value={`${(profile.analytics.residueMl / 1000).toFixed(2)} л`} />
 				<AnalyticsValue label="Остаточная крепость" value={`${profile.analytics.residualFortress} %`} />
 				<AnalyticsValue label="Общее время" value={formatTime(profile.analytics.timers.total_process)} isLarge={true} />

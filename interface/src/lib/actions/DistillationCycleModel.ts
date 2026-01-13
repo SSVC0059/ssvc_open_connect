@@ -210,16 +210,32 @@ export class DistillationCycleModel {
 		let totalAS_ml = currentVolumeL * 1000 * (currentStrengthVol / 100);
 		const initialTotalAS = totalAS_ml;
 
-		// Извлекаем пропускную способность и базовые настройки
-		const bw_late = profile.ssvcSettings?.valve_bw?.[1] || 0;
-		const bw_valve3 = profile.ssvcSettings?.valve_bw?.[2] || 0;
+		// 1. Клапан голов (индекс 0)
+		const bw_heads = profile.ssvcSettings?.valve_bw?.[0] || 0;
+
+		/** * 2. Клапан подголовников (BW_LATE).
+		 * Если калькулятор передал виртуальное поле 'virtual_bw_late', используем его.
+		 * Иначе берем стандартный индекс [1] из настроек контроллера.
+		 */
+		const bw_late = (profile as any).virtual_bw_late || profile.ssvcSettings?.valve_bw?.[2] || 0;
+
+		/** * 3. Клапан хвостов (BW_TAILS).
+		 * Если калькулятор передал 'virtual_bw_tails', используем его.
+		 * Иначе: проверяем наличие 3-го клапана [2], если его нет — берем 2-й [1].
+		 */
+		const bw_tails =
+			(profile as any).virtual_bw_tails ||
+			profile.ssvcSettings?.valve_bw?.[2] ||
+			profile.ssvcSettings?.valve_bw?.[1] ||
+			0;
+
+		// 4. Основной клапан (Тело) — обычно индекс 2
+		const bw_valve3 = profile.ssvcSettings?.valve_bw?.[1] || 0;
+		// ===========================================================================
 
 		// --- 1. РАСЧЕТ ГОЛОВ (С учетом опции "Сброс и снижение") ------
 		const physicsHeads = this.getVaporPhysics(currentStrengthVol, netPowerWatts);
 		const totalHeadsVolMl = (initialTotalAS * profile.heads.percent) / 100;
-
-		const bw_heads = profile.ssvcSettings.valve_bw?.[0] || 0;
-		// Приводим значения из настроек SSVC к рабочим числам (исключаем -1 и 0)
 
 		const rTimer = Number(
 			profile.ssvcSettings.release_timer < 0 ? 0 : profile.ssvcSettings.release_timer
@@ -383,9 +399,9 @@ export class DistillationCycleModel {
 		// --- 4. РАСЧЕТ ХВОСТОВ ---
 		const physicsTails = this.getVaporPhysics(currentStrengthVol, netPowerWatts);
 		const tailsVol = tailsEnabled ? initialTotalAS * (profile.tails.percent / 100) : 0;
-		let tailsFlow = profile.tails.targetFlowMlh || bw_valve3;
+		let tailsFlow = profile.tails.targetFlowMlh || bw_tails;
 		const tailsTimerSec = tailsFlow > 0 ? (tailsVol / tailsFlow) * 3600 : 0;
-		const tailsOpenTime = (tailsFlow / bw_valve3) * profile.ssvcSettings.tails[1];
+		const tailsOpenTime = (tailsFlow / bw_tails) * profile.ssvcSettings.tails[1];
 		const tailsRefluxRatio = this.calculateRefluxRatio(physicsTails.volVaporPerHour, tailsFlow);
 
 		const totalProcessSec =
@@ -417,7 +433,7 @@ export class DistillationCycleModel {
 				boilingTemp: Number(this.calculateBoilingTemp(profile.strengthVol).toFixed(2)),
 				residueMl: Math.round(currentVolumeL * 1000),
 				residualFortress: Number(currentStrengthVol.toFixed(1)),
-				oneCycleTime: Math.round(oneCycleSec_heads), // Добавлено для отображения переиспарения
+				oneCycleTime: Math.round(oneCycleSec_heads),
 				flows: {
 					heads: Math.round(headsStartFlowMlh),
 					heads_release: Math.round(releaseFlowMlh),
