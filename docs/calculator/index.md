@@ -447,7 +447,7 @@ hide:
                     </div>
                     <div class="analytics-item" id="an-boilingTemp">
                         <span class="analytics-label">T° кипения</span>
-                        <span class="analytics-value data-result="analytics.boilingTemp">0 °C</span>
+                        <span class="analytics-value" data-result="analytics.boilingTemp">0 °C</span>
                     </div>
                     <div class="analytics-item" id="an-residueMl">
                         <span class="analytics-label">Остаток в кубе</span>
