@@ -48,7 +48,6 @@ hide:
                 --border-radius-lg: 0.5rem;
                 --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             }
-      
             .editor-layout { display: flex; flex-direction: column; gap: 1rem; }
             .card { background-color: var(--surface-color); border-radius: var(--border-radius-lg); padding: 1.25rem; border: 1px solid var(--border-color); }
             .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
@@ -209,7 +208,7 @@ hide:
                                 <span class="analytics-label">Скорость отбора</span>
                                 <span class="analytics-value" data-result="analytics.flows.heads">0 мл/ч</span>
                             </div>
-    
+
                             <div class="analytics-item highlight">
                                 <span class="analytics-label">Скорость сброса</span>
                                 <span class="analytics-value" data-result="analytics.flows.heads_release">0 мл/ч</span>
@@ -222,7 +221,7 @@ hide:
                                 <span class="analytics-label">Флегмовое число</span>
                                 <span class="analytics-value" data-result="analytics.phlegmatic.heads"></span>
                             </div>
-        
+
                             <div class="analytics-item">
                                 <span class="analytics-label">Время этапа</span>
                                 <span class="analytics-value" data-result="analytics.timers.heads">00:00:00</span>
@@ -282,7 +281,7 @@ hide:
                                 <span class="analytics-value" data-result="analytics.flows.late_heads">0 мл/ч</span>
                             </div>
                             <div class="analytics-item"><span class="analytics-label">Флегмовое число</span>
-                                <span class="analytics-value" data-result="analytics.refluxRatio.late_heads">0</span>
+                                <span class="analytics-value" data-result="analytics.phlegmatic.late_heads">0</span>
                             </div>
                             <div class="analytics-item"><span class="analytics-label">Время этапа</span>
                                 <span class="analytics-value" data-result="analytics.timers.late_heads">00:00:00</span>
@@ -337,8 +336,8 @@ hide:
                                 <input data-path="ssvcSettings.hearts[1]" class="input-field" type="number" value="10">
                             </div>
                         </div>
-        
-        
+
+
                         <div class="results-col">
                             <div class="analytics-item">
                                 <span class="analytics-label">Объем</span>
@@ -350,7 +349,7 @@ hide:
                             </div>
                             <div class="analytics-item">
                                 <span class="analytics-label">Флегмовое число</span>
-                                <span class="analytics-value" data-result="analytics.refluxRatio.hearts">0</span>
+                                <span class="analytics-value" data-result="analytics.phlegmatic.hearts">0</span>
                             </div>
                             <div class="analytics-item">
                                 <span class="analytics-label">Время этапа</span>
@@ -370,7 +369,7 @@ hide:
                         </div>
                     </div>
                 </details>
-        
+
                 <!--    Хвосты -->
                 <details class="fraction-details" id="details-tails" open>
                     <summary>
@@ -419,7 +418,7 @@ hide:
                                 <span class="analytics-value" data-result="analytics.flows.tails">0 мл/ч</span>
                             </div>
                             <div class="analytics-item"><span class="analytics-label">Флегмовое число</span>
-                                <span class="analytics-value" data-result="analytics.refluxRatio.tails">0</span>
+                                <span class="analytics-value" data-result="analytics.phlegmatic.tails">0</span>
                             </div>
                             <div class="analytics-item"><span class="analytics-label">Время этапа</span>
                                 <span class="analytics-value" data-result="analytics.timers.tails">00:00:00</span>
