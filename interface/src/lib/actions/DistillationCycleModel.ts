@@ -1,4 +1,54 @@
+/**
+ * DistillationCycleModel.ts
+ * * ============================================================================
+ * [RU] ОПИСАНИЕ, ЛИЦЕНЗИЯ И ОТКАЗ ОТ ОТВЕТСТВЕННОСТИ
+ * ============================================================================
+ * Данный файл является частью проекта "SSVC Open Connect" и содержит модель
+ * расчета технологического процесса дистилляции и ректификации.
+ * * ВАЖНО: Исходный код данного проекта является открытым.
+ * Оригинальные и изменённые части этого проекта лицензированы на условиях
+ * Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0).
+ * * ВЫ МОЖЕТЕ СВОБОДНО:
+ * - Копировать и распространять материал на любом носителе и в любом формате.
+ * - Адаптировать материал для создания производных произведений, даже в
+ * коммерческих целях.
+ * * ПРИ СОБЛЮДЕНИИ СЛЕДУЮЩИХ УСЛОВИЙ:
+ * - Указание авторства: Необходимо указать автора и ссылку на лицензию.
+ * - Сохранение открытости кода: Производные работы ДОЛЖНЫ распространяться
+ * на тех же условиях и оставаться открытыми (CC BY-SA 4.0).
+ * * СНЯТИЕ ОТВЕТСТВЕННОСТИ:
+ * Этот проект предоставляется "как есть", без каких-либо гарантий. Использование
+ * осуществляется на ваш собственный риск.
+ * Авторы не несут ответственности за любые убытки или ущерб, возникшие
+ * в результате использования данного ПО.
+ * Работа с оборудованием и высоким напряжением требует специальных навыков
+ * и соблюдения мер безопасности.
+ * * Полный текст лицензии: https://creativecommons.org/licenses/by-sa/4.0/deed.ru
+ * * ============================================================================
+ * [EN] DESCRIPTION, LICENSE AND DISCLAIMER
+ * ============================================================================
+ * This file is part of the "SSVC Open Connect" project and contains the
+ * distillation and rectification process calculation model.
+ * * IMPORTANT: The source code of this project must remain open.
+ * Original and modified parts are licensed under CC BY-SA 4.0.
+ * * YOU ARE FREE TO:
+ * - Share: copy and redistribute the material in any medium or format.
+ * - Adapt: remix, transform, and build upon the material for any purpose,
+ * even commercially.
+ * * UNDER THE FOLLOWING TERMS:
+ * - Attribution: You must give appropriate credit and provide a link to the license.
+ * - ShareAlike: If you remix, transform, or build upon the material, you must
+ * distribute your contributions under the same license and keep the source code open.
+ * * DISCLAIMER:
+ * This project is provided "as is" without any warranties. Use at your own risk.
+ * The authors and participants are not liable for any losses or damages
+ * arising from the use of this software.
+ * * Full license text: https://creativecommons.org/licenses/by-sa/4.0/
+ * ============================================================================
+ */
+
 import type { Profile } from '$lib/types/ssvc';
+
 
 /**
  * Создает конфигурацию UI со значениями по умолчанию.
