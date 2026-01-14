@@ -201,12 +201,12 @@ bool SsvcConnector::sendCommand(const char *command) {
     ESP_LOGE("SsvcConnector", "Ошибка копирования команды");
     return false;
   }
-  ESP_LOGV("SsvcConnector", "Отправка команды SSVC: %s", commandCopy);
-  ESP_LOGV("SsvcConnector", "strlen: %d", strlen(commandCopy));
+  ESP_LOGD("SsvcConnector", "Отправка команды SSVC: %s", commandCopy);
+  ESP_LOGD("SsvcConnector", "strlen: %d", strlen(commandCopy));
   const ssize_t bytes_written = uart_write_bytes(
       UART_NUM_1, (const char *)commandCopy, strlen(commandCopy));
   const bool result = (bytes_written == strlen(commandCopy));
-  ESP_LOGV("sendCommand", "result: %s", result ? "true" : "false");
+  ESP_LOGD("sendCommand", "result: %s", result ? "true" : "false");
   uart_wait_tx_done(UART_NUM_1, pdMS_TO_TICKS(1000));
   free(commandCopy);
   return result;

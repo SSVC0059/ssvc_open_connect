@@ -35,16 +35,11 @@ export function normalizeProfile(savedData: Partial<Profile>): Profile {
 		late_heads: mergeWithDefaults(savedData.late_heads, base.late_heads),
 		hearts: mergeWithDefaults(savedData.hearts, base.hearts),
 		tails: mergeWithDefaults(savedData.tails, base.tails),
-
-		// ИСПРАВЛЕНИЕ: Глубокое слияние для ssvcSettings
-		ssvcSettings: {
-			...base.ssvcSettings,
-			...(savedData.ssvcSettings || {})
-		}
+		
+		ssvcSettings: mergeWithDefaults(savedData.ssvcSettings, base.ssvcSettings)
 	};
 
 	// Обработка отключенных фракций для математической модели
-	// Используем опциональную цепочку ?. для безопасности
 	if (!merged.late_heads?.enabled) {
 		if (merged.late_heads) {
 			merged.late_heads.percent = 0;

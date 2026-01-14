@@ -21,8 +21,8 @@
 		message,
 		onSave,
 		onCancel = () => {},
-		save = { label: 'Save', icon: Check },
-		cancel = { label: 'Cancel', icon: Cancel }
+		save = { label: 'Сохранить', icon: Check },
+		cancel = { label: 'Отмена', icon: Cancel }
 	}: Props = $props();
 
 	let value = $state('');

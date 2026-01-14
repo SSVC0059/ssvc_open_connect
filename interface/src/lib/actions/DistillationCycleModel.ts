@@ -90,7 +90,8 @@ export function createDefaultProfile(): any {
 			late_heads: [0, 60],
 			hearts: [0, 10],
 			tails: [0, 2],
-			valve_bw_tails: 15000
+			valve_bw_tails: 15000,
+			hyst: 0.06
 		}
 	};
 }
@@ -415,7 +416,7 @@ export class DistillationCycleModel {
 		const startTemp = this.calculateBoilingTemp(currentStrengthVol);
 		const endTemp = profile.ssvcSettings.hearts_finish_temp || 90;
 		const isFormulaEnabled = profile.ssvcSettings.formula;
-		const hyst = profile.ssvcSettings.hyst || 0.1;
+		const hyst = profile.ssvcSettings.hyst || 0.25;
 		const decFactor = (profile.ssvcSettings.decrement || 0) / 100;
 
 		let heartsInitialSpeed = profile.hearts.targetFlowMlh || physicsHearts.volVaporPerHour * 1000;
@@ -476,7 +477,9 @@ export class DistillationCycleModel {
 				heads: [Number(headsOpenTime.toFixed(1)), headsCyclePeriod],
 				late_heads: [Number(lateHeadsOpenTime.toFixed(1)), profile.ssvcSettings.late_heads[1]],
 				hearts: [Number(heartsOpenTime.toFixed(1)), profile.ssvcSettings.hearts[1]],
-				tails: [Number(tailsOpenTime.toFixed(1)), profile.ssvcSettings.tails[1]]
+				tails: [Number(tailsOpenTime.toFixed(1)), profile.ssvcSettings.tails[1]],
+				heads_timer: Math.round(headsTimerSec),
+				late_heads_timer: Math.round(lateHeadsTimerSec)
 			},
 			analytics: {
 				totalAS: Math.round(initialTotalAS),

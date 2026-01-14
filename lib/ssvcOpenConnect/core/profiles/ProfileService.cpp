@@ -289,7 +289,7 @@ bool ProfileService::_applyProfileInternal(const String& profileId) const {
     return true;
 }
 
-String ProfileService::createProfile(const String& displayName) {
+String ProfileService::createProfile(const String& displayName) const {
     String newProfileId = _generateNewProfileId();
     if (_createOrUpdateProfile(newProfileId, displayName)) {
         return newProfileId;

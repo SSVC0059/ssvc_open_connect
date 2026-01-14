@@ -175,6 +175,10 @@ public:
 private:
     explicit SsvcSettings();
 
+    void updateStateFromJson(const JsonObject& src);
+
+    void applySettingsToController(JsonVariant json) const;
+
     // Версии подисистем модуля ssvc
     std::string ssvcVersion = "";
     float ssvcApiVersion = 0.0;
@@ -263,6 +267,9 @@ public:
     {
     private:
         SsvcSettings& settings; // Ссылка на существующий экземпляр
+        // Режим отправки. Либо накапливаем или шлем сразу.
+        std::vector<String> _pendingCommands;
+        bool _isBatchMode = false;            // Флаг: копим или шлем сразу
     public:
         bool hasChanges = false;
         explicit Builder() : settings(SsvcSettings::init())
@@ -321,7 +328,7 @@ public:
 
         Builder& setReleaseSpeed(float _release_speed);
 
-        Builder& setReleaseTimer(unsigned int _release_timer);
+        Builder& setReleaseTimer(int _release_timer);
 
         Builder& setHeadsFinal(float _heartsFinishTemp);
 
@@ -340,9 +347,16 @@ public:
         // Другие методы установки параметров...
         SsvcSettings build() const;
 
+        void beginBatch() {
+            _isBatchMode = true;
+            _pendingCommands.clear();
+        }
+
         static void validateAndSetValues(float& timeTurnOn, int& period,
                                          float* targetTimeTurnOn,
                                          int* targetPeriod);
+
+        void applySettings();
     };
 };
 

@@ -24,7 +24,7 @@ public:
     // Profile management methods
     std::vector<ProfileMetadata> getProfileList() const;
     String getActiveProfileId() const;
-    String createProfile(const String& displayName);
+    String createProfile(const String& displayName) const;
     bool deleteProfile(const String& profileId) const;
     String copyProfile(const String& sourceProfileId, const String& newDisplayName) const;
     bool updateProfile(const String& profileId, const String& newDisplayName) const;

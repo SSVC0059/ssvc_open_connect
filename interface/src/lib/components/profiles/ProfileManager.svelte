@@ -131,18 +131,26 @@
 	}
 
 	async function handleClone(id: string) {
-		try {
-			const clonedProfile = await copyProfiles(id, "");
-			if (clonedProfile) {
-				await loadData();
-				notifications.success('Профиль успешно клонирован', 5000);
-			} else {
-				notifications.error('Не удалось клонировать профиль', 5000);
+		modals.open(InputDialog, {
+			title: 'Клонировать профиль',
+			message: 'Введите имя нового профиля:',
+			onSave: async (newName: string) => {
+				if (newName) {
+					try {
+						const clonedProfile = await copyProfiles(id, newName);
+						if (clonedProfile) {
+							await loadData();
+							notifications.success(`Профиль успешно клонирован как "${newName}"`, 5000);
+						} else {
+							notifications.error('Не удалось клонировать профиль', 5000);
+						}
+					} catch (err) {
+						console.error('Ошибка при клонировании профиля:', err);
+						notifications.error('Ошибка при клонировании профиля', 5000);
+					}
+				}
 			}
-		} catch (err) {
-			console.error('Ошибка при клонировании профиля:', err);
-			notifications.error('Ошибка при клонировании профиля', 5000);
-		}
+		});
 	}
 
 	function confirmDelete(profile: Profile) {
