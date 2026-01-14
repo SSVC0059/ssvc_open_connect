@@ -75,7 +75,7 @@ void ProfileService::begin(FS* fs) {
     if (profiles.size() == 0) {
         const String defaultProfileId = "0";
         const String defaultProfileName = "Default Profile";
-        if (_createOrUpdateProfile(defaultProfileId, defaultProfileName)) {
+        if (_createOrUpdateProfile(defaultProfileId, defaultProfileName, JsonObject())) {
             // After creating the default profile, we need to re-read the metadata
             // and set the new profile as active.
             _readMetadata(metadataDoc); // Re-read into the main doc
@@ -289,17 +289,26 @@ bool ProfileService::_applyProfileInternal(const String& profileId) const {
     return true;
 }
 
-String ProfileService::createProfile(const String& displayName) const {
+String ProfileService::createProfile(const String& displayName, const JsonObject& content) const {
     String newProfileId = _generateNewProfileId();
-    if (_createOrUpdateProfile(newProfileId, displayName)) {
+    if (_createOrUpdateProfile(newProfileId, displayName, content)) {
         return newProfileId;
     }
     return "";
 }
 
-bool ProfileService::_createOrUpdateProfile(const String& profileId, const String& displayName) const {
+bool ProfileService::_createOrUpdateProfile(const String& profileId, const String& displayName, const JsonObject& content) const {
     JsonDocument profileDoc;
-    auto profileRoot = profileDoc.to<JsonObject>();
+    JsonObject profileRoot;
+
+    if (!content.isNull()) {
+        profileRoot = profileDoc.to<JsonObject>();
+        for (JsonPair kv : content) {
+            profileRoot[kv.key()] = kv.value();
+        }
+    } else {
+        profileRoot = profileDoc.to<JsonObject>();
+    }
 
     profileRoot["id"] = profileId;
     profileRoot["name"] = displayName;
@@ -307,8 +316,10 @@ bool ProfileService::_createOrUpdateProfile(const String& profileId, const Strin
 
     for (auto* observer : _observers) {
         const char* key = observer->getProfileKey();
-        auto nestedObj = profileRoot[key].to<JsonObject>();
-        observer->onProfileSave(nestedObj);
+        if (!profileRoot[key].is<JsonObject>()) {
+            auto nestedObj = profileRoot[key].to<JsonObject>();
+            observer->onProfileSave(nestedObj);
+        }
     }
 
     const String filePath = String(_profilesDir) + "/" + profileId + ".json";
@@ -631,7 +642,7 @@ bool ProfileService::saveCurrentSettingsToProfile(const String& profileId) const
     // 3. Вызовем существующий метод, который перезапишет файл профиля текущими настройками
     // Он также обновит 'createdAt', что логично для операции "сохранить".
     ESP_LOGI(TAG, "Saving current settings to profile ID '%s' (Name: %s)", profileId.c_str(), currentName.c_str());
-    return _createOrUpdateProfile(profileId, currentName);
+    return _createOrUpdateProfile(profileId, currentName, JsonObject());
 }
 
 bool ProfileService::updateProfileContent(const String& profileId, const JsonObject& content) const {
@@ -693,7 +704,6 @@ bool ProfileService::updateProfileContent(const String& profileId, const JsonObj
     if (getActiveProfileId() == profileId) {
         ESP_LOGI(TAG, "Profile %s is active. Re-applying settings.", profileId.c_str());
         if (!_applyProfileInternal(profileId)) {
-            ESP_LOGE(TAG, "Failed to re-apply active profile %s after update.", profileId.c_str());
             return false;
         }
     }

@@ -61,7 +61,16 @@ esp_err_t ProfileHandler::handleCreateProfile(PsychicRequest *request) {
         return request->reply(400, "application/json", R"({"error": "Field 'name' cannot be empty"})");
     }
 
-    String newProfileId = ProfileService::getInstance()->createProfile(name);
+    JsonObject content;
+    if (!doc["content"].isNull()) { // Check if "content" key exists and is not null
+        if (doc["content"].is<JsonObject>()) {
+            content = doc["content"].as<JsonObject>();
+        } else {
+            return request->reply(400, "application/json", R"({"error": "Invalid 'content' field, must be a JSON object"})");
+        }
+    }
+
+    String newProfileId = ProfileService::getInstance()->createProfile(name, content);
     if (!newProfileId.isEmpty()) {
         JsonDocument responseDoc;
         responseDoc["success"] = true;
@@ -76,7 +85,7 @@ esp_err_t ProfileHandler::handleCreateProfile(PsychicRequest *request) {
 
 esp_err_t ProfileHandler::handleDeleteProfile(PsychicRequest *request) {
     JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, request->body());
+    const DeserializationError error = deserializeJson(doc, request->body());
 
     if (error) {
         return request->reply(400, "application/json", R"({"error": "Invalid JSON in request body"})");
@@ -232,7 +241,7 @@ esp_err_t ProfileHandler::handleSaveSettingsToProfile(PsychicRequest *request) {
 
 esp_err_t ProfileHandler::handleUpdateProfileContent(PsychicRequest *request) {
     JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, request->body());
+    const DeserializationError error = deserializeJson(doc, request->body());
 
     if (error) {
         return request->reply(400, "application/json", R"({"error": "Invalid JSON in request body"})");

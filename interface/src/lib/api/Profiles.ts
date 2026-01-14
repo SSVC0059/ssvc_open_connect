@@ -17,7 +17,11 @@ export async function setActiveAndApplyProfile(id: string): Promise<boolean> {
 	return response.success;
 }
 
-export async function createProfiles(name: string): Promise<Profiles | null> {
+export async function createProfiles(name: string, content: any = null): Promise<Profiles | null> {
+	if (content) {
+		const response = await apiFetch<Profiles>('/rest/profiles', 'POST', { name, content });
+		return response.success ? response.data : null;
+	}
 	const response = await apiFetch<Profiles>('/rest/profiles', 'POST', { name });
 	return response.success ? response.data : null;
 }
@@ -62,4 +66,9 @@ export async function deleteProfileContent(id: string, keys: string[]): Promise<
 	}
 	const response = await apiFetch(`/rest/profiles/content`, 'POST', { id, content });
 	return response.success;
+}
+
+export async function importProfile(profile: Profile): Promise<Profile | null> {
+	const response = await apiFetch<Profile>('/rest/profiles/import', 'POST', profile);
+	return response.success ? response.data : null;
 }

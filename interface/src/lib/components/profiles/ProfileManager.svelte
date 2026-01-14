@@ -1,6 +1,15 @@
 <script lang="ts">
 	import {Fa} from 'svelte-fa';
-	import {faCheck, faClone, faPen, faPlay, faPlus, faTrash, faUpload} from '@fortawesome/free-solid-svg-icons';
+	import {
+		faCheck,
+		faClone,
+		faDownload,
+		faPen,
+		faPlay,
+		faPlus,
+		faTrash,
+		faUpload
+	} from '@fortawesome/free-solid-svg-icons';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import type {Profile, Profiles} from '$lib/types/ssvc';
 	import ProfileViewer from '$lib/components/profiles/ProfileViewer.svelte';
@@ -9,8 +18,11 @@
 		copyProfiles,
 		createProfiles,
 		deleteProfiles,
-		getProfiles, updateProfileMeta,
-		setActiveAndApplyProfile, updateProfileContent, saveCurrentSettingsToProfile
+		getProfiles,
+		updateProfileMeta,
+		setActiveAndApplyProfile,
+		updateProfileContent,
+		saveCurrentSettingsToProfile, getProfileContent
 	} from '$lib/api/Profiles';
 	import { notifications } from '$lib/components/toasts/notifications';
 	import { modals } from 'svelte-modals';
@@ -24,6 +36,8 @@
 	let selectedProfile: Profile | null = $state(null); // Profile selected for viewing/editing
 	let editingProfile: Profile | null = $state(null); // Profile currently being edited
 	let appliedProfileId: string = $state(""); // ID of the profile active on the controller
+
+	let fileInput: HTMLInputElement;
 
 	$effect(() => {
 		loadData();
@@ -110,8 +124,8 @@
 			onSave: async (newName: string) => {
 				if (newName) {
 					try {
-						const newProfile = await createProfiles(newName);
-						if (newProfile) {
+						const newProfiles = await createProfiles(newName);
+						if (newProfiles) {
 							await loadData();
 							notifications.success(`Профиль "${newName}" создан`, 5000);
 							const created = profiles?.find(p => p.name === newName);
@@ -182,6 +196,68 @@
 		});
 	}
 
+	async function handleFileUpload(event: Event) {
+		const input = event.target as HTMLInputElement;
+		if (!input.files?.length) return;
+
+		const file = input.files[0];
+		const reader = new FileReader();
+
+		reader.onload = async (e) => {
+			const text = e.target?.result;
+			if (typeof text !== 'string') return;
+			const profileContent = JSON.parse(text);
+			const profileName = file.name.replace('.json', '');
+			try {
+				// Basic validation
+				if (typeof profileContent !== 'object' || profileContent === null) {
+					throw new Error('Invalid profile format');
+				}
+
+				const newProfiles = await createProfiles(profileName, profileContent);
+				if (newProfiles) {
+					notifications.success('Профиль успешно загружен', 5000);
+					await loadData();
+				} else {
+					notifications.error('Не удалось создать профиль для загруженных данных', 5000);
+				}
+			} catch (err) {
+				console.error('Ошибка при загрузке или парсинге профиля:', err);
+				notifications.error('Ошибка при загрузке: неверный формат файла или ошибка сервера.', 5000);
+			}
+		};
+
+		reader.onerror = () => {
+			notifications.error('Не удалось прочитать файл.', 5000);
+		};
+
+		reader.readAsText(file);
+		input.value = ''; // Reset input for same-file uploads
+	}
+
+	async function handleDownload(profile: Profile) {
+		try {
+			const content = await getProfileContent(profile.id);
+			if (content) {
+				const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = `${profile.name}.json`;
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				URL.revokeObjectURL(url);
+				notifications.success(`Профиль "${profile.name}" выгружен.`, 5000);
+			} else {
+				notifications.error('Не удалось получить содержимое профиля.', 5000);
+			}
+		} catch (err) {
+			console.error('Ошибка при выгрузке профиля:', err);
+			notifications.error('Ошибка при выгрузке профиля.', 5000);
+		}
+	}
+
 </script>
 
 <div class="profile-manager-layout" class:editing={editingProfile !== null}>
@@ -193,10 +269,9 @@
 				<button class="icon-button" onclick={startCreating} title="Создать новый профиль" disabled={editingProfile !== null}>
 					<Fa icon={faPlus} />
 				</button>
-				<button class="icon-button" title="Загрузить из файла" disabled={editingProfile !== null}>
+				<button class="icon-button" onclick={() => fileInput.click()} title="Загрузить из файла" disabled={editingProfile !== null}>
 					<Fa icon={faUpload} />
 				</button>
-				<input type="file" accept=".json" class="hidden" />
 			</div>
 		</div>
 
@@ -225,6 +300,9 @@
 							</button>
 							<button class="icon-button" onclick={() => handleClone(profile.id)} title="Клонировать профиль" disabled={editingProfile !== null}>
 								<Fa icon={faClone} />
+							</button>
+							<button class="icon-button" onclick={() => handleDownload(profile)} title="Выгрузить профиль" disabled={editingProfile !== null}>
+								<Fa icon={faDownload} />
 							</button>
 							<button class="icon-button" onclick={() => handleApply(profile.id)} title="Применить профиль" disabled={profile.isApplied || editingProfile !== null}>
 								<Fa icon={faPlay} />
@@ -255,5 +333,5 @@
 	</div>
 </div>
 <div class="hidden">
-	<input type="file" accept=".json" class="hidden" />
+	<input type="file" accept=".json" bind:this={fileInput} onchange={handleFileUpload} />
 </div>

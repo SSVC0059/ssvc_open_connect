@@ -24,7 +24,7 @@ public:
     // Profile management methods
     std::vector<ProfileMetadata> getProfileList() const;
     String getActiveProfileId() const;
-    String createProfile(const String& displayName) const;
+    String createProfile(const String& displayName, const JsonObject& content = JsonObject()) const;
     bool deleteProfile(const String& profileId) const;
     String copyProfile(const String& sourceProfileId, const String& newDisplayName) const;
     bool updateProfile(const String& profileId, const String& newDisplayName) const;
@@ -37,7 +37,7 @@ public:
 private:
     ProfileService();
 
-    bool _createOrUpdateProfile(const String& profileId, const String& displayName) const;
+    bool _createOrUpdateProfile(const String& profileId, const String& displayName, const JsonObject& content) const;
     String _generateNewProfileId() const;
 
     static ProfileService* _instance;
