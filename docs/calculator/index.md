@@ -35,7 +35,7 @@ hide:
                 --blue-50: #e7f5ff;
                 --blue-300: #91c9ff;
                 --orange-50: #fff4e6;
-                --orange-100: #updateUIffe8cc;
+                --orange-100: #ffe8cc;
                 --orange-200: #ffd8a8;
                 --orange-400: #ffb366;
                 --orange-600: #f79009;
@@ -48,46 +48,307 @@ hide:
                 --border-radius-lg: 0.5rem;
                 --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             }
-            .editor-layout { display: flex; flex-direction: column; gap: 1rem; }
-            .card { background-color: var(--surface-color); border-radius: var(--border-radius-lg); padding: 1.25rem; border: 1px solid var(--border-color); }
-            .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
-            .card-title { font-size: 1.125rem; font-weight: 600; color: var(--primary-800); margin: 0; }
-            .settings-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.5rem 1.5rem; }
-            .input-group { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; }
-            .input-label { font-size: 0.9rem; color: var(--text-color); margin-right: 1rem; }
-            .input-field { width: 6rem; padding: 0.3rem 0.5rem; border: 1px solid var(--border-color); border-radius: var(--border-radius); text-align: right; }
-            .fraction-details { border-bottom: 1px solid var(--border-color); }
-            .fraction-details summary { list-style: none; cursor: pointer; padding: 0.75rem 0.25rem; font-weight: 600; }
-            .summary-content { display: flex; justify-content: space-between; align-items: center; }
-            .fraction-body { background-color: var(--gray-50); border-top: 1px solid var(--border-color); padding: 1rem; display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
-            @media (min-width: 768px) { .fraction-body { grid-template-columns: 1.5fr 1fr; } }
-            .results-col { background-color: var(--surface-color); border: 1px dashed var(--primary-300); padding: 1rem; border-radius: var(--border-radius); display: flex; flex-direction: column; gap: 0.5rem; }
-            .analytics-item { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0.6rem; background: var(--surface-alt-color); border-radius: 4px; }
-            .analytics-label { font-size: 0.8rem; color: var(--text-muted-color); }
-            .analytics-value { font-size: 0.95rem; font-weight: 600; color: var(--primary-700); }
-            .highlight .analytics-value { color: var(--orange-600); }
-            .ssvc-result-card { margin-top: 0.5rem; padding: 0.75rem; background: var(--primary-100); border: 1px solid var(--blue-300); border-radius: 6px; }
-            .sub-settings-title { font-size: 0.75rem; font-weight: 600; color: var(--primary-500); text-transform: uppercase; margin-bottom: 0.5rem; border-bottom: 1px solid var(--primary-300); }
-            .final-analytics-card { border-color: var(--blue-300) !important; background-color: var(--primary-100) !important; }
-            .final-analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
-            .chevron { width: 1.25rem; height: 1.25rem; transition: transform 0.2s; }
-            details[open] .chevron { transform: rotate(180deg); }
+            
+            body {
+                margin: 0;
+                padding: 0.5rem;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 14px;
+                line-height: 1.4;
+                background-color: var(--gray-50);
+                min-height: 100vh;
+                box-sizing: border-box;
+            }
+            
+            .editor-layout { 
+                display: flex; 
+                flex-direction: column; 
+                gap: 0.75rem; 
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            
+            .card { 
+                background-color: var(--surface-color); 
+                border-radius: var(--border-radius-lg); 
+                padding: 1rem; 
+                border: 1px solid var(--border-color);
+                box-shadow: var(--shadow-sm);
+            }
+            
+            .card-header { 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                margin-bottom: 1rem; 
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            
+            .card-title { 
+                font-size: 1rem; 
+                font-weight: 600; 
+                color: var(--primary-800); 
+                margin: 0; 
+            }
+            
+            .settings-section { 
+                display: grid; 
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+                gap: 0.5rem;
+            }
+            
+            @media (max-width: 480px) {
+                .settings-section {
+                    grid-template-columns: 1fr;
+                    gap: 0.2rem;
+                }
+                
+                .card {
+                    padding: 0.2rem;
+                }
+                
+                .editor-layout {
+                    gap: 0.2rem;
+                }
+            }
+            
+            .input-group { 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                padding: 0.4rem 0;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            
+            .input-label { 
+                font-size: 0.85rem; 
+                color: var(--text-color); 
+                margin-right: 0.5rem;
+                flex: 1;
+                min-width: 120px;
+            }
+            
+            .input-field { 
+                width: 5.5rem; 
+                min-width: 5.5rem;
+                padding: 0.35rem 0.5rem; 
+                border: 1px solid var(--border-color); 
+                border-radius: var(--border-radius); 
+                text-align: right;
+                font-size: 0.9rem;
+                box-sizing: border-box;
+            }
+            
+            @media (max-width: 360px) {
+                .input-field {
+                    width: 100%;
+                    min-width: 0;
+                }
+                
+                .input-group {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 0.25rem;
+                }
+                
+                .input-label {
+                    min-width: auto;
+                    width: 100%;
+                }
+            }
+            
+            .fraction-details { 
+                border-bottom: 1px solid var(--border-color); 
+                margin-bottom: 0.5rem;
+                position: relative;
+            }
+            
+            /* КОМПЛЕКСНОЕ РЕШЕНИЕ: полностью скрываем стандартный маркер */
+            .fraction-details summary {
+                display: block; /* Меняем display с inline-block на block */
+                list-style: none; /* Убираем стандартную точку/маркер */
+                cursor: pointer;
+                padding: 0.75rem 0.25rem;
+                font-weight: 600;
+                position: relative;
+            }
+            
+            /* Для WebKit браузеров */
+            .fraction-details summary::-webkit-details-marker {
+                display: none !important;
+            }
+            
+            /* Для Firefox и других браузеров */
+            .fraction-details summary::marker {
+                display: none !important;
+                content: '' !important;
+            }
+            
+            /* Дополнительная гарантия для всех браузеров */
+            .fraction-details > summary {
+                list-style-type: none;
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+            }
+            
+            .summary-content { 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            
+            .fraction-body { 
+                background-color: var(--gray-50); 
+                border-top: 1px solid var(--border-color); 
+                padding: 0.75rem; 
+                display: grid; 
+                grid-template-columns: 1fr; 
+                gap: 1rem;
+            }
+            
+            @media (min-width: 768px) { 
+                .fraction-body { 
+                    grid-template-columns: 1fr 1fr; 
+                    gap: 1rem;
+                } 
+            }
+            
+            @media (max-width: 480px) {
+                .fraction-body {
+                    padding: 0.5rem;
+                    gap: 0.2rem;
+                }
+                
+                .sub-settings-title {
+                    margin-top: 0.2rem !important;
+                }
+            }
+            
+            .results-col { 
+                background-color: var(--surface-color); 
+                border: 1px dashed var(--primary-300); 
+                padding: 0.75rem; 
+                border-radius: var(--border-radius); 
+                display: flex; 
+                flex-direction: column; 
+                gap: 0.4rem;
+            }
+            
+            .analytics-item { 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                padding: 0.35rem 0.5rem; 
+                background: var(--surface-alt-color); 
+                border-radius: 4px;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            
+            .analytics-label { 
+                font-size: 0.78rem; 
+                color: var(--text-muted-color);
+                flex: 1;
+                min-width: 100px;
+            }
+            
+            .analytics-value { 
+                font-size: 0.85rem; 
+                font-weight: 600; 
+                color: var(--primary-700);
+                text-align: right;
+                min-width: 80px;
+            }
+            
+            .highlight .analytics-value { 
+                color: var(--orange-600); 
+            }
+            
+            /* FIXED: ssvc-result-card без переносов */
+            .ssvc-result-card { 
+                margin-top: 0.5rem; 
+                padding: 0.5rem; 
+                background: var(--primary-100); 
+                border: 1px solid var(--blue-300); 
+                border-radius: 6px;
+                white-space: nowrap; /* Запрещаем перенос текста */
+                overflow: hidden; /* Скрываем переполнение */
+            }
+            
+            .ssvc-result-card .analytics-item {
+                white-space: nowrap; /* Запрещаем перенос в дочерних элементах */
+                flex-wrap: nowrap; /* Запрещаем перенос flex-элементов */
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .ssvc-result-card .analytics-label,
+            .ssvc-result-card .analytics-value {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                min-width: auto;
+                flex-shrink: 1;
+            }
+            
+            .sub-settings-title { 
+                font-size: 0.7rem; 
+                font-weight: 600; 
+                color: var(--primary-500); 
+                text-transform: uppercase; 
+                margin-bottom: 0.5rem; 
+                border-bottom: 1px solid var(--primary-300);
+                padding-bottom: 0.25rem;
+                white-space: nowrap; /* Запрещаем перенос заголовка */
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .final-analytics-card { 
+                border-color: var(--blue-300) !important; 
+                background-color: var(--primary-100) !important; 
+            }
+            
+            .final-analytics-grid { 
+                display: grid; 
+                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
+                gap: 0.75rem;
+            }
+            
+            @media (max-width: 480px) {
+                .final-analytics-grid {
+                    grid-template-columns: 1fr;
+                    gap: 0.5rem;
+                }
+            }
+                        
             #fraction-warning {
                 display: none;
                 width: 100%;
                 margin-top: 0.5rem;
                 color: var(--red-600);
-                font-size: 0.9rem;
+                font-size: 0.85rem;
                 font-weight: 600;
                 background-color: var(--red-100);
-                padding: 0.5rem 1rem;
+                padding: 0.4rem 0.75rem;
                 border-radius: var(--border-radius);
                 border: 1px solid var(--red-300);
                 text-align: center;
             }
-            .actions-panel { display: flex; justify-content: flex-end; padding: 1rem 0; }
+            
+            .actions-panel { 
+                display: flex; 
+                justify-content: flex-end; 
+                padding: 1rem 0; 
+            }
+            
             .btn-primary {
-                padding: 0.6rem 1.5rem;
+                padding: 0.5rem 1.25rem;
                 border-radius: var(--border-radius);
                 font-weight: 600;
                 cursor: pointer;
@@ -95,12 +356,62 @@ hide:
                 color: var(--surface-color);
                 border: 1px solid var(--primary-500);
                 transition: background-color 0.2s;
+                font-size: 0.9rem;
             }
-            .btn-primary:hover { background-color: var(--primary-600); }
+            
+            .btn-primary:hover { 
+                background-color: var(--primary-600); 
+            }
+            
             .btn-primary:disabled {
                 background-color: #6c757d;
                 border-color: #6c757d;
                 cursor: not-allowed;
+            }
+            
+            /* Добавляем отступы для контента внутри summary */
+            .summary-content > span {
+                flex: 1;
+            }
+            
+            /* Улучшаем отображение чекбоксов на мобильных */
+            input[type="checkbox"] {
+                width: 0.8rem;
+                margin: 0;
+            }
+            
+            /* Для очень маленьких экранов - специальные правки для ssvc-result-card */
+            @media (max-width: 320px) {
+                body {
+                    padding: 0.25rem;
+                    font-size: 13px;
+                }
+                
+                .card {
+                    padding: 0.5rem;
+                }
+                
+                .input-field {
+                    padding: 0.25rem 0.4rem;
+                }
+                
+                .analytics-item {
+                    padding: 0.25rem 0.4rem;
+                }
+                
+                .ssvc-result-card {
+                    padding: 0.4rem;
+                }
+                
+                .ssvc-result-card .analytics-label {
+                    font-size: 0.72rem;
+                    min-width: 50px;
+                }
+                
+                .ssvc-result-card .analytics-value {
+                    font-size: 0.78rem;
+                    min-width: 60px;
+                }
             }
         </style>
     </head>
@@ -135,7 +446,7 @@ hide:
                     <div id="fraction-warning"></div>
                 </div>
                 <!--        Головы       -->
-                <details class="fraction-details" id="details-heads" open>
+                <details class="fraction-details" id="details-heads">
                     <summary>
                         <div class="summary-content">
                             <span>Головы</span>
@@ -143,21 +454,20 @@ hide:
                                 <label>
                                     <input type="checkbox" data-path="heads.enabled" checked onclick="event.stopPropagation()">
                                 </label>
-                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M6 9l6 6 6-6"/>
-                                </svg>
                             </div>
                         </div>
                     </summary>
                     <div class="fraction-body">
                         <div class="settings-col">
-                            <div class="input-group"><span class="input-label">% от АС</span><label>
-                                <input data-path="heads.percent" class="input-field" type="number" value="3">
-                            </label>
+                            <div class="input-group"><span class="input-label">% от АС</span>
+                                <label>
+                                    <input data-path="heads.percent" class="input-field" type="number" value="3">
+                                </label>
                             </div>
-                            <div class="input-group"><span class="input-label">Клапан (мл/ч)</span><label>
-                                <input data-path="ssvcSettings.valve_bw[0]" class="input-field" type="number">
-                            </label>
+                            <div class="input-group"><span class="input-label">Клапан (мл/ч)</span>
+                                <label>
+                                    <input data-path="ssvcSettings.valve_bw[0]" class="input-field" type="number">
+                                </label>
                             </div>
                             <div class="sub-settings-title" style="margin-top:10px">Режим расчета</div>
                             <div class="input-group"><span class="input-label">Количество переиспарений</span>
@@ -165,9 +475,10 @@ hide:
                                     <input data-path="heads.targetCycles" class="input-field" type="number" step="0.1" value="2" oninput="handleHeadsCyclesInput(event)">
                                 </label>
                             </div>
-                            <div class="input-group"><span class="input-label">Желаемая скорость, мл/ч</span><label>
-                                <input data-path="heads.targetFlowMlh" class="input-field" type="number" oninput="handleHeadsFlowInput(event)">
-                            </label>
+                            <div class="input-group"><span class="input-label">Желаемая скорость, мл/ч</span>
+                                <label>
+                                    <input data-path="heads.targetFlowMlh" class="input-field" type="number" oninput="handleHeadsFlowInput(event)">
+                                </label>
                             </div>
                             <div class="input-group" style="margin-top:10px">
                                 <span class="input-label">Период SSVC (сек)</span>
@@ -194,6 +505,7 @@ hide:
                                     <input data-path="ssvcSettings.heads_final" class="input-field" type="number">
                                 </label>
                             </div>
+                            
                         </div>
                         <div class="results-col">
                             <div class="analytics-item">
@@ -304,9 +616,6 @@ hide:
                     <summary>
                         <div class="summary-content">
                             <span>Тело</span>
-                            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M6 9l6 6 6-6"/>
-                            </svg>
                         </div>
                     </summary>
                     <div class="fraction-body">
@@ -379,9 +688,6 @@ hide:
                                 <label>
                                     <input type="checkbox" data-path="tails.enabled" onclick="event.stopPropagation()">
                                 </label>
-                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M6 9l6 6 6-6"/>
-                                </svg>
                             </div>
                         </div>
                     </summary>
