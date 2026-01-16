@@ -67,7 +67,7 @@ nav:
   - "Калькулятор ректификации":
       - calculator/index.md
   - "Готовые модули":
-      - ready_made/connect.md
+      - ready_made/mini.md
       - ready_made/din_version.md
       - ready_made/inside_version.md
   - Для разработчиков: develop/
