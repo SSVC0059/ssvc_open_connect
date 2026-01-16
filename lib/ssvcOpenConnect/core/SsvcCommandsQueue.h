@@ -42,7 +42,8 @@ enum class SsvcCommandType
   RESUME,
   NEXT,
   AT,
-  SET
+  SET,
+  STATUS
 };
 
 struct SsvcCommand
@@ -97,6 +98,8 @@ public:
   void set(const std::string& parameters, int attempt_count = ATTEMPT_COUNT,
            TickType_t timeout = TIMEOUT) const;
 
+  void status(const std::string& parameters, int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+
   UBaseType_t availableCommands() const
   {
     return command_queue ? uxQueueMessagesWaiting(command_queue) : 0;
@@ -112,7 +115,7 @@ public:
     }
   }
 
-  static const std::map<std::string, std::function<void()>> COMMAND_MAP;
+  static const std::map<std::string, std::function<void(const std::string&)>> COMMAND_MAP;
 
 private:
   QueueHandle_t command_queue;

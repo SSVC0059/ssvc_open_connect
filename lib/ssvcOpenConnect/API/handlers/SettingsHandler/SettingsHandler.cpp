@@ -70,30 +70,6 @@ esp_err_t SettingsHandler::updateSettings(PsychicRequest* request)
         return request->reply(400, "application/json", errorMsg.c_str());
     }
 
-    // // Ожидание с проверкой флага
-    // ESP_LOGI("HTTP", "Waiting for _cmdSetResult...");
-    // TickType_t timeoutAbsolute = xTaskGetTickCount() + pdMS_TO_TICKS(10000);
-    // bool cmdResult = false;
-    //
-    // while (xTaskGetTickCount() < timeoutAbsolute) {
-    //     cmdResult = SsvcCommandsQueue::getQueue()._cmdSetResult;
-    //     ESP_LOGI("HTTP", "cmdResult: %d", cmdResult);
-    //     if (cmdResult) {
-    //         break;
-    //     }
-    //     vTaskDelay(pdMS_TO_TICKS(100));
-    // }
-    //
-    // ESP_LOGV("SettingsHandler", "[HTTP] Finished waiting for _cmdSetResult.");
-    //
-    // if (!cmdResult) {
-    //     JsonDocument timeoutResponse;
-    //     timeoutResponse["error"] = "Timeout";
-    //     String timeoutMsg;
-    //     serializeJson(timeoutResponse, timeoutMsg);
-    //     return request->reply(408, "application/json", timeoutMsg.c_str());
-    // }
-
     SsvcCommandsQueue::getQueue().getSettings();
 
     JsonDocument successResponse;

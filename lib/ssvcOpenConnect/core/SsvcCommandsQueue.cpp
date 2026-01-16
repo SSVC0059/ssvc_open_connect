@@ -17,21 +17,55 @@
 
 #include "SsvcCommandsQueue.h"
 
+#include "SsvcOpenConnect.h"
+
 #define TAG "SsvcCommandsQueue"
 
-// Инициализация статической карты команд
-const std::map<std::string, std::function<void()>> SsvcCommandsQueue::COMMAND_MAP = {
-      {"at",           []() { getQueue().at(); }},
-      {"next",         []() { getQueue().next(); }},
-      {"pause",        []() { getQueue().pause(); }},
-      {"stop",         []() { getQueue().stop(); }},
-      {"start",        []() { getQueue().start(); }},
-      {"resume",       []() { getQueue().resume(); }},
-      {"version",      []() { getQueue().version(); }},
-      {"get_settings", []() { getQueue().getSettings(); }},
-      {"settings",     []() { getQueue().getSettings(); }},
-      {"emergency_stop",     []() { getQueue().stop(); }},
+// Helper function to convert UTF-8 string to Windows-1251
+static std::string utf8_to_win1251(const std::string& utf8) {
+    std::string win1251;
+    win1251.reserve(utf8.length());
+    for (size_t i = 0; i < utf8.length(); ++i) {
+        const unsigned char c1 = utf8[i];
+        if (c1 < 0x80) {
+            win1251 += static_cast<char>(c1);
+        } else if (c1 == 0xD0) {
+            if (i + 1 < utf8.length()) {
+                const unsigned char c2 = utf8[++i];
+                if (c2 == 0x81) { // Ё
+                    win1251 += static_cast<char>(0xA8);
+                } else if (c2 >= 0x90 && c2 <= 0xBF) { // А-п
+                    win1251 += static_cast<char>(c2 - 0x90 + 0xC0);
+                }
+            }
+        } else if (c1 == 0xD1) {
+            if (i + 1 < utf8.length()) {
+                const unsigned char c2 = utf8[++i];
+                if (c2 >= 0x80 && c2 <= 0x8F) { // р-я
+                    win1251 += static_cast<char>(c2 - 0x80 + 0xF0);
+                } else if (c2 == 0x91) { // ё
+                    win1251 += static_cast<char>(0xB8);
+                }
+            }
+        }
+    }
+    return win1251;
+}
 
+// Инициализация статической карты команд
+const std::map<std::string, std::function<void(const std::string&)>> SsvcCommandsQueue::COMMAND_MAP = {
+    {"at",           [](const std::string&){ getQueue().at(); }},
+    {"next",         [](const std::string&){ getQueue().next(); }},
+    {"pause",        [](const std::string&){ getQueue().pause(); }},
+    {"stop",         [](const std::string&){ getQueue().stop(); }},
+    {"start",        [](const std::string&){ getQueue().start(); }},
+    {"resume",       [](const std::string&){ getQueue().resume(); }},
+    {"version",      [](const std::string&){ getQueue().version(); }},
+    {"get_settings", [](const std::string&){ getQueue().getSettings(); }},
+    {"settings",     [](const std::string&){ getQueue().getSettings(); }},
+    {"emergency_stop", [](const std::string&){ getQueue().stop(); }},
+    {"status",       [](const std::string& params){ getQueue().status(params); }},
+    {"set",          [](const std::string& params){ getQueue().set(params); }}
 };
 
 SsvcCommandsQueue::SsvcCommandsQueue() {
@@ -130,6 +164,12 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
         case SsvcCommandType::AT:
           command_success = SsvcConnector::sendCommand("AT\n");
           break;
+        case SsvcCommandType::STATUS:
+          std::ostringstream oss;
+          oss << "STATUS " << cmd->parameters << "\n";
+          command_success =
+              SsvcConnector::sendCommand(oss.str().c_str());
+          break;
         }
         ESP_LOGI(TAG, "Send result: %d", command_success);
 
@@ -180,7 +220,7 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
       delete cmd;
     }
     // Логирование использования стека задачи
-    UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
+    const UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(nullptr);
     ESP_LOGD(TAG, "CmdProcessor Task: Stack High Water Mark: %u bytes", stackHighWaterMark);
   }
 }
@@ -219,10 +259,13 @@ void SsvcCommandsQueue::registerCallbackCommands() {
       result = true;
     }
     if (response["api"].is<String>()) {
-      const float ssvcApiVersion = response["api"].as<float>();
+      const auto ssvcApiVersion = response["api"].as<float>();
       SsvcSettings::init().setSsvcApiVersion(ssvcApiVersion);
       xSemaphoreGive(mutex);
       result = true;
+    }
+    if (result) {
+      SsvcOpenConnect::sendHello();
     }
     return result;
   });
@@ -271,7 +314,6 @@ void SsvcCommandsQueue::registerCallbackCommands() {
 
   // Обработка ошибок выполнения команд
   registerBitHandler(BIT1, [this](SsvcCommand *cmd) {
-    ESP_LOGI("BIT1 Handler", "Ошибка выполнения команды");
     _cmdSetResult = true;
     return false;
   });
@@ -283,7 +325,7 @@ void SsvcCommandsQueue::registerCallbackCommands() {
  * @param type Тип команды (например, SET, GET_SETTINGS и т.д.)
  * @param parameters Параметры команды (строка).
  * @param attempt_count Количество попыток при неудаче.
- * @param timeout Таймаут ожидания ответа (в тиках).
+ * @param timeout Тайм-аут ожидания ответа (в тиках).
  */
 void SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
                                            const std::string& parameters,
@@ -309,7 +351,7 @@ void SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
  * @brief Добавляет в очередь команду получения настроек SSVC.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::getSettings(const int attempt_count, const TickType_t timeout) const
 {
@@ -320,7 +362,7 @@ void SsvcCommandsQueue::getSettings(const int attempt_count, const TickType_t ti
  * @brief Добавляет в очередь команду NEXT.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::next(const int attempt_count, const TickType_t timeout) const
 {
@@ -331,7 +373,7 @@ void SsvcCommandsQueue::next(const int attempt_count, const TickType_t timeout) 
  * @brief Добавляет в очередь команду PAUSE.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::pause(const int attempt_count, const TickType_t timeout) const
 {
@@ -342,7 +384,7 @@ void SsvcCommandsQueue::pause(const int attempt_count, const TickType_t timeout)
  * @brief Добавляет в очередь команду STOP.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::stop(const int attempt_count, const TickType_t timeout) const
 {
@@ -353,7 +395,7 @@ void SsvcCommandsQueue::stop(const int attempt_count, const TickType_t timeout) 
  * @brief Добавляет в очередь команду START.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::start(const int attempt_count, const TickType_t timeout) const
 {
@@ -364,7 +406,7 @@ void SsvcCommandsQueue::start(const int attempt_count, const TickType_t timeout)
  * @brief Добавляет в очередь команду RESUME.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::resume(const int attempt_count,const TickType_t timeout) const
 {
@@ -375,7 +417,7 @@ void SsvcCommandsQueue::resume(const int attempt_count,const TickType_t timeout)
  * @brief Добавляет в очередь команду VERSION.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::version(const int attempt_count, const TickType_t timeout) const
 {
@@ -386,7 +428,7 @@ void SsvcCommandsQueue::version(const int attempt_count, const TickType_t timeou
  * @brief Добавляет в очередь AT-команду.
  *
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::at(const int attempt_count, const TickType_t timeout) const
 {
@@ -398,12 +440,24 @@ void SsvcCommandsQueue::at(const int attempt_count, const TickType_t timeout) co
  *
  * @param parameters Параметры команды.
  * @param attempt_count Количество попыток.
- * @param timeout Таймаут ожидания (в тиках).
+ * @param timeout Тайм-аут ожидания (в тиках).
  */
 void SsvcCommandsQueue::set(const std::string& parameters, const int attempt_count,
                             const TickType_t timeout) const
 {
   pushCommandInQueue(SsvcCommandType::SET, parameters, attempt_count, timeout);
+}
+
+/**
+ * @brief Публикует информацию в количестве 15 символов на дисплей ssvc.
+ *
+ * @param parameters Информационное сообщение.
+ * @param attempt_count Количество попыток.
+ * @param timeout Тайм-аут ожидания (в тиках).
+ */
+void SsvcCommandsQueue::status(const std::string& parameters, const int attempt_count,
+                               const TickType_t timeout) const {
+  pushCommandInQueue(SsvcCommandType::STATUS, utf8_to_win1251(parameters), attempt_count, timeout);
 }
 
 /**

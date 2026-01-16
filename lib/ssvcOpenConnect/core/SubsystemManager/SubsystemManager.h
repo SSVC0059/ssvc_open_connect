@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <vector>
 #include <core/GlobalConfig/GlobalConfig.h>
+#include <EventSocket.h>
 
 
 class Subsystem {
@@ -82,16 +83,20 @@ public:
     std::unordered_map<std::string, bool> getSubsystemsStatus() const;
     bool isSubsystemEnabled(const std::string& name) const;
 
+    void setEventSocket(EventSocket* socket);
+
 
 private:
     SubsystemManager();
     void loadConfig();
     void saveConfig() const;
     bool isSubsystemRegistered(const std::string& name) const;
+    void onWiFiConnected(const JsonObject& payload);
 
     std::unordered_map<std::string, SubsystemFactory> _subsystemFactories;
     std::unordered_map<std::string, bool> _initialStates;
     std::unordered_map<std::string, SubsystemInfo> _subsystems;
+    EventSocket* _socket = nullptr;
 
 
     bool _initialized = false;

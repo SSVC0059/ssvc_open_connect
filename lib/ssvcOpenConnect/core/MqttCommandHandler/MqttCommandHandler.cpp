@@ -36,6 +36,7 @@ void MqttCommandHandler::onMqttCommandReceived(const String& topic, const String
     ESP_LOGI(TAG, "Получена команда: %s в топик %s", payload.c_str(), topic.c_str());
     handleCommand(payload);
 }
+
 void MqttCommandHandler::handleCommand(const String& commandString)
 {
     if (commandString.length() == 0) {
@@ -43,74 +44,37 @@ void MqttCommandHandler::handleCommand(const String& commandString)
         return;
     }
 
-    // 1. Преобразуем входящую String в std::string для удобной работы
-    std::string command = commandString.c_str();
+    const std::string commandInput = commandString.c_str();
 
-    // 2. Преобразуем всю команду к нижнему регистру для регистронезависимого сравнения
-    std::transform(command.begin(), command.end(), command.begin(),
-                   [](unsigned char c){ return std::tolower(c); });
+    // Преобразуем всю команду к нижнему регистру для регистронезависимого поиска имени команды
+    std::string commandLowerCase = commandInput;
+    std::transform(commandLowerCase.begin(), commandLowerCase.end(), commandLowerCase.begin(),
+                   [](const unsigned char c){ return std::tolower(c); });
 
-    // 3. Находим позицию первого пробела, чтобы отделить имя команды от параметров
-    const size_t spacePos = command.find(' ');
+    const size_t spacePos = commandLowerCase.find(' ');
+    const std::string commandName = (spacePos == std::string::npos) ? commandLowerCase : commandLowerCase.substr(0, spacePos);
 
-    // 4. Извлекаем имя команды (которое теперь в нижнем регистре)
-    const std::string commandName = (spacePos == std::string::npos)
-                                    ? command
-                                    : command.substr(0, spacePos);
+    const auto it = SsvcCommandsQueue::COMMAND_MAP.find(commandName);
 
-    // 5. Проверяем команду SET
-    if (commandName == "set") {
-
-        if (spacePos == std::string::npos) {
-            // Ошибка: команда SET без параметров
-            ESP_LOGW(TAG, "Команда SET получена без параметров.");
-            const auto payload = "SET - требует параметров.";
-            const uint16_t msgId = MqttBridge::getInstance().publish(
-                        MQTT_RSP_TOPIC,
-                            payload,
-                            1,
-                            true);
-            if (msgId == 0)
-            {
-                ESP_LOGE(TAG, "Error publishing status message");
-            } else
-            {
-                ESP_LOGI(TAG, "Published status message: %s (Message ID: %d)", MQTT_RSP_TOPIC, msgId);
-            }
-            return;
+    if (it != SsvcCommandsQueue::COMMAND_MAP.end()) {
+        std::string params;
+        if (spacePos != std::string::npos) {
+            // Извлекаем параметры из оригинальной строки, чтобы сохранить регистр
+            params = commandInput.substr(spacePos + 1);
         }
 
-        // ВАЖНО: Параметры должны быть извлечены из ОРИГИНАЛЬНОЙ строки,
-        // чтобы сохранить регистр и другие символы, если это необходимо для значений!
-        const std::string parameters = commandString.c_str();
-        const std::string parameters_payload = parameters.substr(spacePos + 1);
+        ESP_LOGI(TAG, "-> Найдена команда '%s'. Вызываем с параметрами: '%s'", commandName.c_str(), params.c_str());
 
-        ESP_LOGI(TAG, "-> [PARAM] Найдена команда 'SET'. Вызываем метод set() с параметрами: '%s'", parameters_payload.c_str());
+        // Вызываем лямбда-функцию из COMMAND_MAP, передавая параметры
+        it->second(params);
 
-        // Выполняем команду SET с параметрами
-        SsvcCommandsQueue::getQueue().set(parameters_payload);
-
-        ESP_LOGI(TAG, "<- [PARAM] Команда SET поставлена в очередь.");
-
-    // 6. Проверяем остальные команды в COMMAND_MAP (без параметров)
+        ESP_LOGI(TAG, "<- Команда '%s' поставлена в очередь.", commandName.c_str());
     } else {
-        const auto it = SsvcCommandsQueue::COMMAND_MAP.find(commandName);
+        // Неизвестная команда
+        ESP_LOGW(TAG, "Неизвестная команда: %s", commandName.c_str());
+        const std::string errorMessage = commandName + " - неизвестная команда.";
 
-        if (it != SsvcCommandsQueue::COMMAND_MAP.end()) {
-            // Найдена команда без параметров (например, AT, START, STOP, GET и т.д.)
-            ESP_LOGI(TAG, "-> Найдена команда '%s'. Вызываем соответствующий метод.", commandName.c_str());
-
-            // Вызываем лямбда-функцию из COMMAND_MAP
-            it->second();
-
-            ESP_LOGI(TAG, "<- Команда '%s' поставлена в очередь.", commandName.c_str());
-        } else {
-            // Неизвестная команда
-            ESP_LOGW(TAG, "Неизвестная команда: %s", commandName.c_str());
-            const std::string errorMessage = commandName + " - неизвестная команда.";
-
-            // Отправляем ответ об ошибке через MqttBridge
-            (void)MqttBridge::getInstance().publish(MQTT_RSP_TOPIC, errorMessage.c_str(), 1, false);
-        }
+        // Отправляем ответ об ошибке через MqttBridge
+        (void)MqttBridge::getInstance().publish(MQTT_RSP_TOPIC, errorMessage.c_str(), 1, false);
     }
 }

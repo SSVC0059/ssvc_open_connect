@@ -122,6 +122,18 @@ bool SsvcOpenConnect::isOnline() const
   return result;
 }
 
+void SsvcOpenConnect::sendHello() {
+    SsvcCommandsQueue::getQueue().status("Привет!");
+    const std::string version = SsvcSettings::init().getSsvcVersion();
+    SsvcCommandsQueue::getQueue().status(std::string("SSVC: ") + version);
+    const float versionApi = SsvcSettings::init().getSsvcApiVersion();
+    SsvcCommandsQueue::getQueue().status((String("API: ") + versionApi).c_str());
+    SsvcCommandsQueue::getQueue().status("OpenConnect");
+    const std::string versionOC = APP_VERSION;
+    SsvcCommandsQueue::getQueue().status("v:  " + versionOC);
+
+}
+
 
 void SsvcOpenConnect::subsystemManager()
 {
@@ -159,4 +171,13 @@ void SsvcOpenConnect::subsystemManager()
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] Starting subsystem manager...");
     subsystemManager.begin();
     ESP_LOGI(TAG, "[SUBSYSTEM_MANAGER] Initialization complete");
+
+    bool ipShow = false;
+    while (!ipShow) {
+        if (WiFi.isConnected()) {
+            ipShow = true;
+            SsvcCommandsQueue::getQueue().status( WiFi.localIP().toString().c_str());
+        }
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }
