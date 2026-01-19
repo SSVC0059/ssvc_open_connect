@@ -7,7 +7,7 @@
 
 class FileHandler {
 public:
-    FileHandler(FS* fs);
+    explicit FileHandler(FS* fs);
     void registerHandlers(PsychicHttpServer& server, SecurityManager* securityManager);
 
 private:

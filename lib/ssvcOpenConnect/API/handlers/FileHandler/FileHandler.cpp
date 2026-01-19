@@ -7,7 +7,7 @@ FileHandler::FileHandler(FS* fs) : _fs(fs) {}
 void FileHandler::registerHandlers(PsychicHttpServer& server, SecurityManager* securityManager) {
     auto listFilesHandler = [this](PsychicRequest* request) -> esp_err_t {
         JsonDocument doc;
-        JsonArray rootArray = doc.to<JsonArray>();
+        auto rootArray = doc.to<JsonArray>();
 
         File root = _fs->open("/");
         if (!root) {
@@ -37,7 +37,7 @@ void FileHandler::registerHandlers(PsychicHttpServer& server, SecurityManager* s
                 return request->reply(404, "text/plain", "File not found or is a directory");
             }
 
-            PsychicFileResponse* response = new PsychicFileResponse(request, file, filePath, String(), true);
+            auto* response = new PsychicFileResponse(request, file, filePath, String(), true);
             return response->send();
         }
         return request->reply(404);
@@ -45,10 +45,10 @@ void FileHandler::registerHandlers(PsychicHttpServer& server, SecurityManager* s
     server.on("/rest/files/*", HTTP_GET, securityManager->wrapRequest(downloadFileHandler, AuthenticationPredicates::IS_AUTHENTICATED));
 
     auto deleteFileHandler = [this](PsychicRequest* request) -> esp_err_t {
-        String path = request->path();
-        String prefix = "/rest/files";
+        const String path = request->path();
+        const String prefix = "/rest/files";
         if (path.startsWith(prefix)) {
-            String filePath = path.substring(prefix.length());
+            const String filePath = path.substring(prefix.length());
             if (filePath.isEmpty()) {
                 return request->reply(400, "text/plain", "File path cannot be empty");
             }
@@ -65,8 +65,8 @@ void FileHandler::registerHandlers(PsychicHttpServer& server, SecurityManager* s
     auto copyFileHandler = [this](PsychicRequest* request) -> esp_err_t {
         JsonDocument doc;
         deserializeJson(doc, request->body());
-        String sourcePath = doc["source"];
-        String destPath = doc["destination"];
+        const String sourcePath = doc["source"];
+        const String destPath = doc["destination"];
 
         if (sourcePath.isEmpty() || destPath.isEmpty()) {
             return request->reply(400, "text/plain", "Missing 'source' or 'destination' fields");
@@ -85,7 +85,7 @@ void FileHandler::registerHandlers(PsychicHttpServer& server, SecurityManager* s
 
         uint8_t buf[512];
         while (sourceFile.available()) {
-            size_t len = sourceFile.read(buf, sizeof(buf));
+            const size_t len = sourceFile.read(buf, sizeof(buf));
             destFile.write(buf, len);
         }
 
@@ -99,14 +99,14 @@ void FileHandler::registerHandlers(PsychicHttpServer& server, SecurityManager* s
 void FileHandler::buildFileTree(JsonArray& parentArray, File& dir) {
     File file = dir.openNextFile();
     while(file) {
-        JsonObject fileNode = parentArray.add<JsonObject>();
+        auto fileNode = parentArray.add<JsonObject>();
 
         String fullName(file.name());
         fileNode["name"] = fullName.substring(fullName.lastIndexOf('/') + 1);
 
         if (file.isDirectory()) {
             fileNode["type"] = "directory";
-            JsonArray children = fileNode["children"].to<JsonArray>();
+            auto children = fileNode["children"].to<JsonArray>();
             buildFileTree(children, file);
         } else {
             fileNode["type"] = "file";
