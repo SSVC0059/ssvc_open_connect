@@ -66,6 +66,7 @@ nav:
       - usage/get_started.md
   - "Калькулятор ректификации":
       - calculator/index.md
+      - calculator/manual.md
   - "Готовые модули":
       - ready_made/mini.md
       - ready_made/din_version.md
