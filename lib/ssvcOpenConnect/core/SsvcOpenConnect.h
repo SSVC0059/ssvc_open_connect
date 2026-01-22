@@ -1,6 +1,7 @@
 #ifndef SSVC_OPEN_CONNECT_SSVCOPENCONNECT_H
 #define SSVC_OPEN_CONNECT_SSVCOPENCONNECT_H
 
+#include <memory>
 #include "ESP32SvelteKit.h"
 #include "EventSocket.h"
 #include "SecurityManager.h"
@@ -19,6 +20,7 @@
 #include "StatefulServices/SensorDataService/SensorDataService.h"
 #include "StatefulServices/TelemetryService/TelemetryService.h"
 #include "StatefulServices/TelegramSettingsService/TelegramSettingsService.h"
+#include "components/Led/StatusLed.h"
 
 #define TASK_AT_COMMAND_SEND_STACK_PERIOD 60
 #define SENSOR_POLL_INTERVAL_MS 10000
@@ -56,7 +58,7 @@ private:
   NotificationSubscriber* _notificationSubscriber = nullptr;
 
   SensorDataService* _sensorDataService = nullptr;
-  OpenConnectSettingsService* _openConnectSettingsService = nullptr;
+  SsvcMqttSettingsService* _ssvcMqttSettingsService = nullptr;
   AlarmThresholdService* _alarmThresholdService = nullptr;
   SensorConfigService* _sensorConfigService = nullptr;
   TelemetryService* _telemetryService = nullptr;
@@ -71,6 +73,7 @@ private:
   SensorManager& _sensorManager = SensorManager::getInstance();
 
   std::unique_ptr<HttpRequestHandler> httpRequestHandler = nullptr;
+  std::unique_ptr<StatusLed> _statusLed;
 
   static constexpr auto TAG = "SsvcOpenConnect";
 };

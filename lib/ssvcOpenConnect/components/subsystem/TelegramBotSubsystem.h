@@ -50,15 +50,15 @@ public:
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 
-    void setSettingsService(OpenConnectSettingsService& service) {
-        _settingsService = &service;
+    void setSettingsService(SsvcMqttSettingsService& service) {
+        _ssvcMqttSettingsService = &service;
     }
 
     void setHttpServer(PsychicHttpServer& server) {
         _server = &server;
     }
 private:
-    OpenConnectSettingsService* _settingsService = nullptr;
+    SsvcMqttSettingsService* _ssvcMqttSettingsService = nullptr;
     PsychicHttpServer* _server = nullptr;
     TelegramBotClient* bot = nullptr;
     bool _initialized = false;

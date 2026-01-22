@@ -18,7 +18,7 @@ import type {
  * Получение настроек SSVC
  */
 export async function fetchSettings(): Promise<SsvcSettings | undefined> {
-	const response = await apiFetch<{ ssvcSettings: SsvcSettings }>('/rest/oc_settings');
+	const response = await apiFetch<{ ssvcSettings: SsvcSettings }>('/rest/settings');
 	return response.success ? response.data.ssvcSettings : undefined;
 }
 

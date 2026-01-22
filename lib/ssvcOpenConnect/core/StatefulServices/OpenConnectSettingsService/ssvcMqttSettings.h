@@ -25,40 +25,30 @@
 // #include "core/profiles/IProfileObserver.h" // Remove this include
 
 #define OPEN_CONNECT_SETTINGS_PUB_TOPIC "openconnect/settings"
-#define OPEN_CONNECT_SETTINGS_ENDPOINT_PATH "/rest/oc_settings"
 
-class OpenConnectSettings
+class ssvcMqttSettings
 {
 public:
-    static void read(const OpenConnectSettings& settings, const JsonObject& root);
-    static StateUpdateResult update(JsonObject& root, OpenConnectSettings& state) {
+    static void read(const ssvcMqttSettings& settings, const JsonObject& root);
+    static StateUpdateResult update(JsonObject& root, ssvcMqttSettings& state) {
         return StateUpdateResult::UNCHANGED;
     }
 };
 
-class OpenConnectSettingsService : public StatefulService<OpenConnectSettings> // Remove inheritance from IProfileObserver
+class SsvcMqttSettingsService : public StatefulService<ssvcMqttSettings>
 {
 public:
 
-    OpenConnectSettingsService(PsychicHttpServer* server,
+    SsvcMqttSettingsService(PsychicHttpServer* server,
                                ESP32SvelteKit* _esp32sveltekit);
 
-    ~OpenConnectSettingsService() = default;
+    ~SsvcMqttSettingsService() = default;
 
-    static OpenConnectSettingsService* getInstance() {return _instance;}
-
-    void begin();
-
-    // IProfileObserver implementation - Remove these declarations
-    // const char* getProfileKey() const override;
-    // void onProfileApply(const JsonObject& profile) override;
-    // void onProfileSave(JsonObject& profile) override;
+    static SsvcMqttSettingsService* getInstance() {return _instance;}
 
 private:
-    static OpenConnectSettingsService* _instance;
-    HttpEndpoint<OpenConnectSettings> _httpEndpoint;
-    MqttEndpoint<OpenConnectSettings> _mqttEndpoint;
-
+    static SsvcMqttSettingsService* _instance;
+    MqttEndpoint<ssvcMqttSettings> _mqttEndpoint;
 
 };
 

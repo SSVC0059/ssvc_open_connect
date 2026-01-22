@@ -1,5 +1,4 @@
-#ifndef SETTINGS_HANDLER_H
-#define SETTINGS_HANDLER_H
+#include "ssvcMqttSettings.h"
 
 /**
 *   SSVC Open Connect
@@ -18,24 +17,27 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
-#include "PsychicHttp.h"
-#include "core/SsvcSettings/SettingsSetterHandlers.h"
-#include "core/SsvcCommandsQueue.h"
-#include <vector>
-#include <utility>
+SsvcMqttSettingsService* SsvcMqttSettingsService::_instance = nullptr;
 
-class SettingsHandler {
-public:
-    SettingsHandler();
+void ssvcMqttSettings::read(const ssvcMqttSettings& settings, const JsonObject& root)
+{
+  const auto  _response = root["ssvcSettings"].to<JsonVariant>();
+  SsvcSettings::init().fillSettings(_response);
+}
 
-    static esp_err_t getSettings(PsychicRequest* request);
-    static esp_err_t updateSettings(PsychicRequest* request);
 
-private:
-    static void parseQueryParams(const String& query,
-                               std::vector<std::pair<String, String>>& output);
+SsvcMqttSettingsService::SsvcMqttSettingsService(
+  PsychicHttpServer *server, ESP32SvelteKit *_esp32sveltekit)
+    :_mqttEndpoint(
+          ssvcMqttSettings::read,
+          ssvcMqttSettings::update,
+          this,
+          _esp32sveltekit->getMqttClient(),
+          OPEN_CONNECT_SETTINGS_PUB_TOPIC,
+          ""
+    )
+{
+  _instance = this;
+}
 
-    static constexpr auto TAG = "SettingsHandler";
-};
 
-#endif

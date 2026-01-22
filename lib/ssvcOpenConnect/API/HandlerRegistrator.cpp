@@ -48,6 +48,13 @@ void HandlerRegistrator::registerSettingsHandlers() const
                       return SettingsHandler::updateSettings(request);
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/settings", HTTP_GET,
+      _securityManager->wrapRequest(
+          [](PsychicRequest* request) {
+              return SettingsHandler::getSettings(request);
+          },
+          AuthenticationPredicates::IS_AUTHENTICATED));
 }
 
 void HandlerRegistrator::registerCommandHandlers() const

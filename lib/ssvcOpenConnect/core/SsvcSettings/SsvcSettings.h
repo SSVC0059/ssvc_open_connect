@@ -24,8 +24,12 @@
 #include <string>
 #include <core/SsvcConnector.h>
 #include <core/SsvcCommandsQueue.h>
-#include "core/StatefulServices/OpenConnectSettingsService/OpenConnectSettings.h"
 #include "core/profiles/IProfileObserver.h"
+
+#include "core/StatefulServices/SensorDataService/SensorDataService.h"
+#include <cstdlib>
+
+#include "core/StatefulServices/OpenConnectSettingsService/ssvcMqttSettings.h"
 
 // Класс настроек SsvcSettings
 class SsvcSettings : public IProfileObserver

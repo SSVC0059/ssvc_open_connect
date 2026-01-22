@@ -15,7 +15,6 @@ EventGroupHandle_t eventGroup = xEventGroupCreate();
 PsychicHttpServer server;
 
 ESP32SvelteKit esp32sveltekit(&server, 160);
-StatusLed statusLed(&esp32sveltekit);
 
 void setup() {
   // Инициализация последовательного порта
@@ -33,10 +32,6 @@ void setup() {
 
   // Запуск ESP32-SvelteKit
   esp32sveltekit.begin();
-
-#if CONFIG_IDF_TARGET_ESP32S3
-  statusLed.begin();
-#endif
 
   // Получение экземпляра SsvcOpenConnect и его инициализация
   SsvcOpenConnect::getInstance().begin(

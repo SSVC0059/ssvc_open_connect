@@ -17,8 +17,6 @@
 
 #include "SsvcSettings.h"
 
-#include "core/StatefulServices/SensorDataService/SensorDataService.h"
-#include <cstdlib>
 
 SsvcSettings *SsvcSettings::_ssvcSettings = nullptr;
 
@@ -37,9 +35,9 @@ bool SsvcSettings::load(const std::string &json) {
 
   const DeserializationError error = deserializeJson(doc, json);
 
-  OpenConnectSettingsService* settingsService = OpenConnectSettingsService::getInstance();
+  SsvcMqttSettingsService* settingsService = SsvcMqttSettingsService::getInstance();
   auto jsonObject = doc.as<JsonObject>();
-  settingsService->update(jsonObject, OpenConnectSettings::update, "settings");
+  settingsService->update(jsonObject, ssvcMqttSettings::update, "settings");
 
   if (error) {
     ESP_LOGE("SssvcController", "ошибка десериализации настроек: %s",

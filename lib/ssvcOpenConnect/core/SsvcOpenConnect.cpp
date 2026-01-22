@@ -47,7 +47,7 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     _profileService = ProfileService::getInstance();
 
     // Инициализируем сервисы, которые являются наблюдателями, и подписываем их на ProfileService
-    _openConnectSettingsService = new OpenConnectSettingsService(_server, _esp32sveltekit);
+    _ssvcMqttSettingsService = new SsvcMqttSettingsService(_server, _esp32sveltekit);
     _telegramSettingsService = new TelegramSettingsService(_server, _esp32sveltekit);
     TelegramSettingsService::setInstance(_telegramSettingsService);
     _alarmThresholdService = new AlarmThresholdService(_server, _esp32sveltekit);
@@ -58,16 +58,15 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     // Подписываем наблюдателей до вызова _profileService->begin()
     _profileService->subscribe(&_ssvcSettings);
     _profileService->subscribe(_telegramSettingsService);
-    // Если _openConnectSettingsService и _alarmThresholdService также являются IProfileObserver,
+    // Если _ssvcMqttSettingsService и _alarmThresholdService также являются IProfileObserver,
     // их тоже нужно подписать здесь.
-    // _profileService->subscribe(_openConnectSettingsService); // Раскомментировать, если это наблюдатель
+    // _profileService->subscribe(_ssvcMqttSettingsService); // Раскомментировать, если это наблюдатель
     // _profileService->subscribe(_alarmThresholdService); // Раскомментировать, если это наблюдатель
 
     // Теперь вызываем begin() для ProfileService
     _profileService->begin(_esp32sveltekit->getFS());
 
     // Теперь вызываем begin() для остальных сервисов
-    _openConnectSettingsService->begin();
     _telegramSettingsService->begin();
     _alarmThresholdService->begin();
     _sensorDataService->begin();
@@ -86,7 +85,7 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     AlarmMonitor::getInstance().initialize(_alarmThresholdService);
 
     rProcess.begin(
-      _ssvcConnector, _ssvcSettings, *_openConnectSettingsService);
+      _ssvcConnector, _ssvcSettings, *_ssvcMqttSettingsService);
 
     _telemetryService = new TelemetryService(_server, _esp32sveltekit, rProcess);
     _telemetryService->begin();
@@ -105,8 +104,13 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     commandHandler->begin();
 
     this->subsystemManager();
-}
 
+    // Инициализация StatusLed
+    _statusLed = std::make_unique<StatusLed>(&esp32sveltekit);
+    //  uint16_t neoPixelType = _globalSettings.getNeoPixelType();
+    _statusLed->begin(NEO_GRB);
+
+}
 
 bool SsvcOpenConnect::isOnline() const
 {
