@@ -17,15 +17,24 @@
 #include "components/subsystem/SettingsSubsystem.h"
 #include "commons/commons.h"
 #include "MqttCommandHandler/MqttCommandHandler.h"
-#include "StatefulServices/SensorDataService/SensorDataService.h"
-#include "StatefulServices/TelemetryService/TelemetryService.h"
-#include "StatefulServices/TelegramSettingsService/TelegramSettingsService.h"
+#include "core/StatefulServices/SensorDataService/SensorDataService.h"
+#include "core/StatefulServices/TelemetryService/TelemetryService.h"
+#include "core/StatefulServices/TelegramSettingsService/TelegramSettingsService.h"
 #include "components/Led/StatusLed.h"
+
+
+#if FT_ENABLED(FT_TELEGRAM_BOT)
+#include <components/subsystem/TelegramBotSubsystem.h>
+#endif
+#include <ESP32Ping.h>
+
+#include "core/AlarmSubscribers/Notification//NotificationSubscriber.h"
+#include "core/AlarmSubscribers/PinOut/PinOutSubscriber.h"
+#include "components/sensors/SensorCoordinator/SensorCoordinator.h"
+#include "external/MqttBridge/MqttBridge.h"
 
 #define TASK_AT_COMMAND_SEND_STACK_PERIOD 60
 #define SENSOR_POLL_INTERVAL_MS 10000
-
-class NotificationSubscriber;
 
 class SsvcOpenConnect
 {
@@ -56,6 +65,7 @@ private:
 
   SsvcConnector& _ssvcConnector = SsvcConnector::getConnector();
   NotificationSubscriber* _notificationSubscriber = nullptr;
+  PinOutSubscriber* _pinOutSubscriber = nullptr;
 
   SensorDataService* _sensorDataService = nullptr;
   SsvcMqttSettingsService* _ssvcMqttSettingsService = nullptr;
@@ -66,7 +76,7 @@ private:
   TelegramSettingsService* _telegramSettingsService = nullptr;
 
   MqttCommandHandler* _mqttCommandHandler = nullptr;
-  AlarmMonitor* _alarmMonitor = nullptr;
+  // AlarmMonitor* _alarmMonitor = nullptr;
 
   SsvcSettings& _ssvcSettings = SsvcSettings::init();
   RectificationProcess& rProcess = RectificationProcess::rectController();

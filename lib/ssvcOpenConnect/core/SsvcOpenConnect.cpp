@@ -17,16 +17,6 @@
 
 #include "SsvcOpenConnect.h"
 
-#if FT_ENABLED(FT_TELEGRAM_BOT)
-#include <components/subsystem/TelegramBotSubsystem.h>
-#endif
-#include <ESP32Ping.h>
-
-#include "AlarmMonitor/Subscribers/NotificationSubscriber.h"
-#include "components/sensors/SensorCoordinator/SensorCoordinator.h"
-#include "external/MqttBridge/MqttBridge.h"
-#include "MqttCommandHandler/MqttCommandHandler.h"
-#include "StatefulServices/SensorDataService/SensorDataService.h"
 
 SsvcOpenConnect& SsvcOpenConnect::getInstance() {
     static SsvcOpenConnect instance;
@@ -71,18 +61,26 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     _alarmThresholdService->begin();
     _sensorDataService->begin();
     _sensorConfigService->begin();
-    _sensorConfigService->addUpdateHandler([&](const String& originId) {
-        _sensorDataService->triggerZoneDataRecalculation();
-    });
+
+    AlarmMonitor::getInstance().initialize(_alarmThresholdService);
 
     SensorCoordinator::getInstance().registerPollingSubsystem(
         &OneWireThermalSubsystem::getInstance()
     );
     SensorCoordinator::getInstance().startPolling(SENSOR_POLL_INTERVAL_MS);
 
-    _notificationSubscriber = new NotificationSubscriber(_esp32sveltekit);
+    _sensorConfigService->addUpdateHandler([&](const String& originId) {
+        _sensorDataService->triggerZoneDataRecalculation();
+        AlarmMonitor::getInstance().checkAllSensors();
+    });
 
-    AlarmMonitor::getInstance().initialize(_alarmThresholdService);
+    SensorCoordinator::getInstance().onFirstScanComplete([]() {
+        ESP_LOGI("SsvcOpenConnect", "First sensor scan complete. Running initial alarm check.");
+        AlarmMonitor::getInstance().checkAllSensors();
+    });
+
+    _notificationSubscriber = new NotificationSubscriber(_esp32sveltekit);
+    _pinOutSubscriber = new PinOutSubscriber();
 
     rProcess.begin(
       _ssvcConnector, _ssvcSettings, *_ssvcMqttSettingsService);
