@@ -25,8 +25,8 @@ PinOutSubscriber::PinOutSubscriber()
     ESP_LOGI(TAG, "AlarmLogger subscribed to AlarmMonitor events.");
     pinMode(DANGEROUS_PIN, OUTPUT);
     pinMode(CRITICAL_PIN, OUTPUT);
-    digitalWrite(DANGEROUS_PIN, LOW);
-    digitalWrite(CRITICAL_PIN, LOW);
+    digitalWrite(DANGEROUS_PIN, HIGH);
+    digitalWrite(CRITICAL_PIN, HIGH);
 }
 
 PinOutSubscriber::~PinOutSubscriber() {
@@ -37,20 +37,20 @@ PinOutSubscriber::~PinOutSubscriber() {
 
 // PinOutSubscriber.cpp
 void PinOutSubscriber::forceResetAlarm() {
-    digitalWrite(DANGEROUS_PIN, LOW);
-    digitalWrite(CRITICAL_PIN, LOW);
+    digitalWrite(DANGEROUS_PIN, HIGH);
+    digitalWrite(CRITICAL_PIN, HIGH);
 }
 
 
 void PinOutSubscriber::onAlarm(const AlarmEvent& event) {
     // Сбрасываем оба пина перед установкой нового состояния
-    digitalWrite(DANGEROUS_PIN, LOW);
-    digitalWrite(CRITICAL_PIN, LOW);
+    digitalWrite(DANGEROUS_PIN, HIGH);
+    digitalWrite(CRITICAL_PIN, HIGH);
 
     if (event.level == AlarmLevel::DANGEROUS) {
-        digitalWrite(DANGEROUS_PIN, HIGH);
+        digitalWrite(DANGEROUS_PIN, LOW);
     } else if (event.level == AlarmLevel::CRITICAL) {
-        digitalWrite(CRITICAL_PIN, HIGH);
+        digitalWrite(CRITICAL_PIN, LOW);
     }
 }
 
