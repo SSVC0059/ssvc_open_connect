@@ -50,7 +50,9 @@ theme:
 
 
 nav:
-  - Главная: index.md
+  - Главная: 
+      - index.md
+      - disclaimer.md
   - "Подготовка":
       - preparation/controller.md
       - preparation/driver.md
@@ -62,7 +64,8 @@ nav:
       - usage/interfaces/uart.md
       - usage/interfaces/ds18b20.md
       - usage/interfaces/rgb_led.md
-  - "Начало работы":
+      - usage/interfaces/pin_out.md
+  - "Руководство пользователя":
       - usage/get_started.md
   - "Калькулятор ректификации":
       - calculator/index.md
