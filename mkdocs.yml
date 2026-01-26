@@ -73,7 +73,9 @@ nav:
       - ready_made/inside_version.md
   - Для разработчиков: develop/
       
-  - "FAQ" : faq/faq.md
+  - "FAQ" : 
+      - faq/check_list.md
+      - faq/faq.md
   - "Прочее" :
       - info/changelog.md
 
