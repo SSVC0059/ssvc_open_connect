@@ -108,6 +108,9 @@ extra:
     actions:
       - accept
       - reject
+  analytics:
+    provider: google
+    property: G-TE0KVENQEE  # Ваш ID Google Analytics
 
 plugins:
   - search:
