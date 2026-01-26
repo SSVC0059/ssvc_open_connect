@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import ThermalSensorSettings from '$lib/components/OCSettings/ThermalSensorSettings.svelte';
 	import TelegramSettings from '$lib/components/OCSettings/TelegramSettings.svelte';
 	import ProfileManager from '$lib/components/profiles/ProfileManager.svelte';
@@ -93,6 +94,16 @@
 
 	let activeTab = $state(0);
 	let isMobileMenuOpen = $state(false);
+
+	$effect(() => {
+		const tabId = $page.url.searchParams.get('tab');
+		if (tabId) {
+			const index = filteredTabs.findIndex((tab) => tab.id === tabId);
+			if (index !== -1) {
+				activeTab = index;
+			}
+		}
+	});
 
 	function isSubsystemEnabled(id: string): boolean {
 		const tab = availableTabs.find(t => t.id === id);
