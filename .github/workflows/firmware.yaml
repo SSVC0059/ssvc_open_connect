@@ -126,156 +126,39 @@ jobs:
           retention-days: 90
 
   create-release:
-    needs: [build, lint]
+    needs: [ build, lint ]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
-    
-    # Загружаем артефакты для всех сборок
+    permissions:
+      contents: write # Обязательно для создания релиза
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Download zip artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: all-artifacts
 
-      - name: Debug files
+      - name: Prepare assets for release
         run: |
-          find artifacts -type f
+          mkdir -p release-assets
+          find all-artifacts -type f \( -name "*.bin" -o -name "*.md5" -o -name "*.zip" \) -exec cp {} release-assets/ \;
+          ls -R release-assets/
 
-      - name: Create Release
-        id: create_release
-        uses: elgohr/Github-Release-Action@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
         with:
-          title: Release ${{ github.ref_name || 'v0.0.0' }}
-          tag: ${{ github.ref_name || 'v0.0.0' }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
           prerelease: true
-
-
-      - name: Upload Release for ESP32S3-16m
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/firmware-esp32-s3-devkitc-1-16m/SSVC-Open-Connect_esp32-s3-devkitc-1-16m_${{ needs.build.outputs.version }}.bin
-          asset_name: SSVC-Open-Connect_esp32-s3-devkitc-1-16m_${{ needs.build.outputs.version }}.bin
-          asset_content_type: application/octet-stream
-
-
-      - name: Upload MD5 Checksum for ESP32S3-16m
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/firmware-esp32-s3-devkitc-1-16m/SSVC-Open-Connect_esp32-s3-devkitc-1-16m_${{ needs.build.outputs.version }}.md5
-          asset_name: SSVC-Open-Connect_esp32-s3-devkitc-1-16m_${{ needs.build.outputs.version }}.md5
-          asset_content_type: text/plain
-
-      - name: Upload Release for ESP32S3-16m (secure)
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/firmware-esp32-s3-devkitc-1-16m-secure/SSVC-Open-Connect_esp32-s3-devkitc-1-16m-secure_${{ needs.build.outputs.version }}.bin
-          asset_name: SSVC-Open-Connect_esp32-s3-devkitc-1-16m-secure_${{ needs.build.outputs.version }}.bin
-          asset_content_type: application/octet-stream
-
-
-      - name: Upload MD5 Checksum for ESP32S3-16m (secure)
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/firmware-esp32-s3-devkitc-1-16m-secure/SSVC-Open-Connect_esp32-s3-devkitc-1-16m-secure_${{ needs.build.outputs.version }}.md5
-          asset_name: SSVC-Open-Connect_esp32-s3-devkitc-1-16m-secure_${{ needs.build.outputs.version }}.md5
-          asset_content_type: text/plain
-
-      - name: Upload Release for ESP32S3-8m
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/firmware-esp32-s3-devkitc-1-8m/SSVC-Open-Connect_esp32-s3-devkitc-1-8m_${{ needs.build.outputs.version }}.bin
-          asset_name: SSVC-Open-Connect_esp32-s3-devkitc-1-8m_${{ needs.build.outputs.version }}.bin
-          asset_content_type: application/octet-stream
-
-      - name: Upload MD5 Checksum for ESP32S3-8m
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/firmware-esp32-s3-devkitc-1-8m/SSVC-Open-Connect_esp32-s3-devkitc-1-8m_${{ needs.build.outputs.version }}.md5
-          asset_name: SSVC-Open-Connect_esp32-s3-devkitc-1-8m_${{ needs.build.outputs.version }}.md5
-          asset_content_type: text/plain
-
-      - name: Upload Release for ESP32S3-8m (secure)
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/firmware-esp32-s3-devkitc-1-8m-secure/SSVC-Open-Connect_esp32-s3-devkitc-1-8m-secure_${{ needs.build.outputs.version }}.bin
-          asset_name: SSVC-Open-Connect_esp32-s3-devkitc-1-8m-secure_${{ needs.build.outputs.version }}.bin
-          asset_content_type: application/octet-stream
-
-      - name: Upload MD5 Checksum for ESP32S3-8m (secure)
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/firmware-esp32-s3-devkitc-1-8m-secure/SSVC-Open-Connect_esp32-s3-devkitc-1-8m-secure_${{ needs.build.outputs.version }}.md5
-          asset_name: SSVC-Open-Connect_esp32-s3-devkitc-1-8m-secure_${{ needs.build.outputs.version }}.md5
-          asset_content_type: text/plain
-
-      - name: Upload ESP32-S3-16M Zip Archive
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/esp32-s3-devkitc-1-16m/esp32-s3-devkitc-1-16m.zip
-          asset_name: esp32-s3-devkitc-1-16m_${{ needs.build.outputs.version }}.zip
-          asset_content_type: application/zip
-
-      - name: Upload ESP32-S3-16M Zip Archive (secure)
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/esp32-s3-devkitc-1-16m-secure/esp32-s3-devkitc-1-16m-secure.zip
-          asset_name: esp32-s3-devkitc-1-16m-secure_${{ needs.build.outputs.version }}.zip
-          asset_content_type: application/zip
-
-      - name: Upload ESP32-S3-8M Zip Archive
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/esp32-s3-devkitc-1-8m/esp32-s3-devkitc-1-8m.zip
-          asset_name: esp32-s3-devkitc-1-8m_${{ needs.build.outputs.version }}.zip
-          asset_content_type: application/zip
-
-      - name: Upload ESP32-S3-8M Zip Archive (secure)
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/esp32-s3-devkitc-1-8m-secure/esp32-s3-devkitc-1-8m-secure.zip
-          asset_name: esp32-s3-devkitc-1-8m-secure_${{ needs.build.outputs.version }}.zip
-          asset_content_type: application/zip
+          generate_release_notes: true
+          files: |
+            release-assets/*.bin
+            release-assets/*.md5
+            release-assets/*.zip
 
   release-elf-files:
     needs: [ build, create-release ]
