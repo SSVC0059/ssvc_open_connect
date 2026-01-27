@@ -67,7 +67,7 @@ nav:
       - usage/interfaces/pin_out.md
   - "Руководство пользователя":
       - usage/get_started.md
-      - user_management.md
+      - usage/user_management.md
   - "Калькулятор ректификации":
       - calculator/index.md
       - calculator/manual.md
