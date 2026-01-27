@@ -16,6 +16,7 @@
  **/
 
 #include "SsvcSettings.h"
+#include "SettingsSetterHandlers.h"
 
 
 SsvcSettings *SsvcSettings::_ssvcSettings = nullptr;
@@ -235,7 +236,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeads(float timeTurnOn, int per
     std::snprintf(buffer, sizeof(buffer), "heads=[%.1f,%d]", std::get<0>(settings.heads), std::get<1>(settings.heads));
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -255,7 +256,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHearts(float timeTurnOn, int pe
     std::snprintf(buffer, sizeof(buffer), "hearts=[%.1f,%d]", std::get<0>(settings.hearts), std::get<1>(settings.hearts));
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -275,7 +276,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setLateHeads(float timeTurnOn, int
     std::snprintf(buffer, sizeof(buffer), "late_heads=[%.1f,%d]", std::get<0>(settings.late_heads), std::get<1>(settings.late_heads));
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -295,7 +296,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setTails(float timeTurnOn, int per
     std::snprintf(buffer, sizeof(buffer), "tails=[%.1f,%d]", std::get<0>(settings.tails), std::get<1>(settings.tails));
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -324,7 +325,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHysteresis(float _hyst) {
     ESP_LOGD("SsvcSettings", "setHysteresis: %s", buffer);
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -354,7 +355,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setDecrement(unsigned char _decrem
     ESP_LOGD("SsvcSettings", "setDecrement: %s", buffer);
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -382,7 +383,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::formulaEnable(const bool enable) {
     ESP_LOGD("SsvcSettings", "formulaEnable: %s", buffer);
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -413,7 +414,7 @@ SsvcSettings::Builder::setTank_mmhg(unsigned char _tank_mmhg) {
     ESP_LOGD("SsvcSettings", "tank_mmhg: %s", buffer);
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -446,7 +447,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeadsTimer(const unsigned int _
     ESP_LOGD("SsvcSettings", "heads_timer: %s", buffer);
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -477,7 +478,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setLateHeadsTimer(const unsigned i
     ESP_LOGD("SsvcSettings", "late_heads_timer: %s", buffer);
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -506,7 +507,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeartsTimer(const unsigned char
     ESP_LOGD("SsvcSettings", "hearts_timer: %s", buffer);
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -535,7 +536,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setTailsTemp(const float _tailsTem
     ESP_LOGD("SsvcSettings", "tails_temp: %s", buffer);
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -564,7 +565,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setStartDelay(const unsigned int _
     ESP_LOGD("SsvcSettings", "Start_delay: %s", buffer);
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -594,7 +595,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeartsFinishTemp(const float _h
     ESP_LOGD("SsvcSettings", "Start_delay: %s", buffer);
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -614,7 +615,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setFormulaStartTemp(const float _f
     ESP_LOGD("SsvcSettings", "formula_start_temp: %s", buffer);
     if (_isBatchMode) {
       
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       
@@ -639,7 +640,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setValveBw(const int v1, const int
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "valve_bw=[%d,%d,%d]", valve_bw_0, valve_bw_1, valve_bw_2);
     if (_isBatchMode) {
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
@@ -657,7 +658,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setReleaseSpeed(const float _relea
     std::snprintf(buffer, sizeof(buffer), "release_speed=%0.1f", settings.release_speed);
     ESP_LOGD("SsvcSettings", "release_speed: %s", buffer);
     if (_isBatchMode) {
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
@@ -675,7 +676,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setReleaseTimer(const int _release
     std::snprintf(buffer, sizeof(buffer), "start_delay=%d", settings.release_timer);
     ESP_LOGD("SsvcSettings", "release_speed: %s", buffer);
     if (_isBatchMode) {
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
@@ -693,7 +694,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeadsFinal(const float _heartsF
     std::snprintf(buffer, sizeof(buffer), "heads_final=%0.1f", settings.heads_final);
     ESP_LOGD("SsvcSettings", "heads_final: %s", buffer);
     if (_isBatchMode) {
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
@@ -703,12 +704,92 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeadsFinal(const float _heartsF
   return *this;
 }
 
+SsvcSettings::Builder & SsvcSettings::Builder::setParallel(float timeTurnOn, int period) {
+  const float prevTime = std::get<0>(settings.parallel);
+  const int prevPeriod = std::get<1>(settings.parallel);
+  ESP_LOGV("SsvcSettings", "parallel: timeTurnOn=%f, period=%d", timeTurnOn, period);
+  SsvcSettings::Builder::validateAndSetValues(timeTurnOn, period, &std::get<0>(settings.parallel), &std::get<1>(settings.parallel));
+  if (std::get<0>(settings.parallel) != prevTime || std::get<1>(settings.parallel) != prevPeriod) {
+    char buffer[50];
+    std::snprintf(buffer, sizeof(buffer), "parallel=[%.1f,%d]", std::get<0>(settings.parallel), std::get<1>(settings.parallel));
+    if (_isBatchMode) {
+      
+      _pendingCommands.emplace_back(buffer);
+      ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
+    } else {
+      
+      ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
+      SsvcCommandsQueue::getQueue().set(buffer);
+    }
+  }
+  return *this;
+}
+
+SsvcSettings::Builder & SsvcSettings::Builder::setParallelV1(float timeTurnOn, int period) {
+  const float prevTime = std::get<0>(settings.parallel_v1);
+  const int prevPeriod = std::get<1>(settings.parallel_v1);
+  ESP_LOGV("SsvcSettings", "parallel_v1: timeTurnOn=%f, period=%d", timeTurnOn, period);
+  SsvcSettings::Builder::validateAndSetValues(timeTurnOn, period, &std::get<0>(settings.parallel_v1), &std::get<1>(settings.parallel_v1));
+  if (std::get<0>(settings.parallel_v1) != prevTime || std::get<1>(settings.parallel_v1) != prevPeriod) {
+    char buffer[50];
+    std::snprintf(buffer, sizeof(buffer), "parallel_v1=[%.1f,%d]", std::get<0>(settings.parallel_v1), std::get<1>(settings.parallel_v1));
+    if (_isBatchMode) {
+
+      _pendingCommands.emplace_back(buffer);
+      ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
+    } else {
+
+      ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
+      SsvcCommandsQueue::getQueue().set(buffer);
+    }
+  }
+  return *this;
+}
+
+SsvcSettings::Builder& SsvcSettings::Builder::setParallelV3(const std::vector<std::tuple<float, float, int>>& values) {
+  std::vector<std::tuple<float, float, int>> new_parallel_v3;
+  new_parallel_v3.reserve(4);
+
+  for (const auto& val : values) {
+    // Валидация значений перед добавлением
+    new_parallel_v3.emplace_back(std::get<0>(val), std::get<1>(val), std::get<2>(val));
+  }
+
+  if (settings.parallel_v3 != new_parallel_v3) {
+    settings.parallel_v3 = new_parallel_v3;
+
+    String command = "parallel_v3=[";
+    bool first_item = true;
+    for (const auto& item : settings.parallel_v3) {
+      if (!first_item) {
+        command += ",";
+      }
+      char buffer[40];
+      snprintf(buffer, sizeof(buffer), "[%.1f,%.1f,%d]", std::get<0>(item),
+               std::get<1>(item), std::get<2>(item));
+      command += buffer;
+      first_item = false;
+    }
+    command += "]";
+
+    if (_isBatchMode) {
+      _pendingCommands.emplace_back(command.c_str());
+      ESP_LOGD("SsvcSettings", "Batch queued: %s", command.c_str());
+    } else {
+      ESP_LOGD("SsvcSettings", "Single send: %s", command.c_str());
+      SsvcCommandsQueue::getQueue().set(command.c_str());
+    }
+  }
+
+  return *this;
+}
+
 SsvcSettings::Builder& SsvcSettings::Builder::setStepTemp(const float stepTemp){
   char buffer[50];
   std::snprintf(buffer, sizeof(buffer), "s_temp=%0.1f", stepTemp);
   ESP_LOGD("SsvcSettings", "s_temp: %s", buffer);
   if (_isBatchMode) {
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
@@ -722,7 +803,7 @@ SsvcSettings::Builder& SsvcSettings::Builder::setStepHysteresis(const float step
   std::snprintf(buffer, sizeof(buffer), "s_hyst=%.2f", stepHysteresis);
   ESP_LOGD("SsvcSettings", "s_hyst: %s", buffer);
   if (_isBatchMode) {
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
@@ -735,7 +816,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setStepSpeed(const float timeTurnO
   char buffer[50];
   std::snprintf(buffer, sizeof(buffer), "s_speed=[%.1f,%d]", timeTurnOn, period);
   if (_isBatchMode) {
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
@@ -749,7 +830,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setStepDecrement(const unsigned ch
   std::snprintf(buffer, sizeof(buffer), "s_decrement=%d", _decrement);
   ESP_LOGD("SsvcSettings", "s_decrement: %s", buffer);
   if (_isBatchMode) {
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
@@ -763,7 +844,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setStepTimer(const unsigned int _t
   std::snprintf(buffer, sizeof(buffer), "s_timer=%d", _timer);
   ESP_LOGI("SsvcSettings", "s_timer: %s", buffer);
   if (_isBatchMode) {
-      _pendingCommands.push_back(String(buffer));
+      _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
@@ -1001,7 +1082,7 @@ void SsvcSettings::applySettingsToController(const JsonVariant json) const {
     builder.beginBatch();
 
     if (settings["heads"].is<JsonArray>()) {
-        const float speed = settings["heads"][0].as<float>();
+        const auto speed = settings["heads"][0].as<float>();
         const int period = settings["heads"][1].as<int>();
         if (speed != std::get<0>(heads) || period != std::get<1>(heads)) {
             builder.setHeads(speed, period);
@@ -1009,7 +1090,7 @@ void SsvcSettings::applySettingsToController(const JsonVariant json) const {
     }
 
     if (settings["hearts"].is<JsonArray>()) {
-        const float speed = settings["hearts"][0].as<float>();
+        const auto speed = settings["hearts"][0].as<float>();
         const int period = settings["hearts"][1].as<int>();
         if (speed != std::get<0>(hearts) || period != std::get<1>(hearts)) {
             builder.setHearts(speed, period);
@@ -1018,7 +1099,7 @@ void SsvcSettings::applySettingsToController(const JsonVariant json) const {
 
     if (isSupportTails()) {
       if (settings["tails"].is<JsonArray>()) {
-        const float speed = settings["tails"][0].as<float>();
+        const auto speed = settings["tails"][0].as<float>();
         const int period = settings["tails"][1].as<int>();
         if (speed != std::get<0>(tails) || period != std::get<1>(tails)) {
           builder.setTails(speed, period);
@@ -1026,7 +1107,7 @@ void SsvcSettings::applySettingsToController(const JsonVariant json) const {
       }
 
       if (settings["release_speed"].is<float>()) {
-        const float val = settings["release_speed"].as<float>();
+        const auto val = settings["release_speed"].as<float>();
         if (val != release_speed) builder.setReleaseSpeed(val);
       }
 
@@ -1036,12 +1117,12 @@ void SsvcSettings::applySettingsToController(const JsonVariant json) const {
       }
 
       if (settings["heads_final"].is<float>()) {
-        const float val = settings["heads_final"].as<float>();
+        const auto val = settings["heads_final"].as<float>();
         if (val != heads_final) builder.setHeadsFinal(val);
       }
     } else {
       if (settings["late_heads"].is<JsonArray>()) {
-        const float speed = settings["late_heads"][0].as<float>();
+        const auto speed = settings["late_heads"][0].as<float>();
         const int period = settings["late_heads"][1].as<int>();
         if (speed != std::get<0>(late_heads) || period != std::get<1>(late_heads)) {
           builder.setLateHeads(speed, period);
@@ -1050,12 +1131,12 @@ void SsvcSettings::applySettingsToController(const JsonVariant json) const {
     }
 
   if (settings["heads_timer"].is<unsigned int>()) {
-    const unsigned int val = settings["heads_timer"].as<unsigned int>();
+    const auto val = settings["heads_timer"].as<unsigned int>();
     if (val != heads_timer) builder.setHeadsTimer(val);
   }
 
     if (settings["late_heads_timer"].is<unsigned int>()) {
-      const unsigned int val = settings["late_heads_timer"].as<unsigned int>();
+      const auto val = settings["late_heads_timer"].as<unsigned int>();
       if (val != late_heads_timer) builder.setLateHeadsTimer(val);
     }
 
@@ -1079,7 +1160,7 @@ void SsvcSettings::applySettingsToController(const JsonVariant json) const {
     }
 
     if (settings["hyst"].is<float>()) {
-        const float val = settings["hyst"].as<float>();
+        const auto val = settings["hyst"].as<float>();
         if (val != hyst) builder.setHysteresis(val);
     }
 
@@ -1104,16 +1185,58 @@ void SsvcSettings::applySettingsToController(const JsonVariant json) const {
     }
 
     if (settings["hearts_finish_temp"].is<float>()) {
-        const float val = settings["hearts_finish_temp"].as<float>();
+        const auto val = settings["hearts_finish_temp"].as<float>();
         if (val != hearts_finish_temp) builder.setHeartsFinishTemp(val);
     }
 
     if (settings["formula_start_temp"].is<float>()) {
-        const float val = settings["formula_start_temp"].as<float>();
+        const auto val = settings["formula_start_temp"].as<float>();
         if (val != formula_start_temp) builder.setFormulaStartTemp(val);
     }
 
+    if (settings["parallel"].is<JsonArray>()) {
+        const auto speed = settings["parallel"][0].as<float>();
+        const int period = settings["parallel"][1].as<int>();
+        if (speed != std::get<0>(parallel) || period != std::get<1>(parallel)) {
+            builder.setParallel(speed, period);
+        }
+    }
 
+    if (settings["parallel_v1"].is<JsonArray>()) {
+        const auto speed = settings["parallel_v1"][0].as<float>();
+        const int period = settings["parallel_v1"][1].as<int>();
+        if (speed != std::get<0>(parallel_v1) || period != std::get<1>(parallel_v1)) {
+            builder.setParallelV1(speed, period);
+        }
+    }
+
+    if (settings["parallel_v3"].is<JsonArray>()) {
+        const JsonArray& v3_array = settings["parallel_v3"];
+        bool changed = false;
+        if (v3_array.size() != parallel_v3.size()) {
+            changed = true;
+        }
+
+        std::vector<std::tuple<float, float, int>> new_values;
+        new_values.reserve(4);
+        for (const auto& item : v3_array) {
+            new_values.emplace_back(item[0].as<float>(), item[1].as<float>(), item[2].as<int>());
+        }
+
+        if (!changed) {
+            for (size_t i = 0; i < new_values.size(); ++i) {
+                if (std::get<0>(new_values[i]) != std::get<0>(parallel_v3[i]) ||
+                    std::get<1>(new_values[i]) != std::get<1>(parallel_v3[i]) ||
+                    std::get<2>(new_values[i]) != std::get<2>(parallel_v3[i])) {
+                    changed = true;
+                    break;
+                }
+            }
+        }
+        if (changed) {
+            builder.setParallelV3(new_values);
+        }
+    }
 
     builder.applySettings();
 }

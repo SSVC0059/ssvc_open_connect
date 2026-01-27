@@ -184,7 +184,7 @@ private:
     void applySettingsToController(JsonVariant json) const;
 
     // Версии подисистем модуля ssvc
-    std::string ssvcVersion = "";
+    std::string ssvcVersion;
     float ssvcApiVersion = 0.0;
     bool isSupportApi = false;
     bool supportTails = false;
@@ -335,6 +335,12 @@ public:
         Builder& setReleaseTimer(int _release_timer);
 
         Builder& setHeadsFinal(float _heartsFinishTemp);
+
+        Builder& setParallel(float timeTurnOn, int period);
+
+        Builder& setParallelV1(float timeTurnOn, int period);
+
+        Builder& setParallelV3(const std::vector<std::tuple<float, float, int>>& values);
 
         // Обработчики для установки оперативных параметров
 
