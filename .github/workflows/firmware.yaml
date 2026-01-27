@@ -19,7 +19,7 @@ jobs:
     continue-on-error: true  # Линтер не будет блокировать весь workflow
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - uses: actions/setup-python@v5
         with:
@@ -58,7 +58,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-python@v5
         with:
@@ -132,6 +132,9 @@ jobs:
     
     # Загружаем артефакты для всех сборок
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
       - name: Download zip artifacts
         uses: actions/download-artifact@v4
         with:
