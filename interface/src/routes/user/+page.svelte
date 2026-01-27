@@ -191,13 +191,13 @@
 										<td align="right">
 											<span class="my-auto inline-flex flex-row space-x-2">
 												<button
-													class="btn btn-ghost btn-circle btn-xs"
+													class="btn btn-ghost btn-xs"
 													onclick={() => handleEdit(index)}
 												>
 													<Edit class="h-6 w-6" /></button
 												>
 												<button
-													class="btn btn-ghost btn-circle btn-xs"
+													class="btn btn-ghost btn-xs"
 													onclick={() => confirmDelete(index)}
 												>
 													<Delete class="text-error h-6 w-6" />
