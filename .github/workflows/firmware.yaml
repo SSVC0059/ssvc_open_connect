@@ -119,7 +119,7 @@ jobs:
       - name: Upload ELF files
         uses: actions/upload-artifact@v4
         with:
-          name: elf-files
+          name: elf-files-${{ matrix.env_name }}
           path: build/elf/
           if-no-files-found: error
           retention-days: 90
@@ -239,8 +239,13 @@ jobs:
       - name: Download ELF artifacts
         uses: actions/download-artifact@v4
         with:
-          name: elf-files
-          path: elf-files
+          pattern: elf-files-*
+          path: elf-artifacts
+          merge-multiple: true
+
+      - name: Archive all ELF files into a single zip
+        run: zip -r elf-files.zip .
+        working-directory: elf-artifacts
 
       - name: Upload ELF files to Release
         uses: actions/upload-release-asset@v1
@@ -248,6 +253,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: elf-files.zip
+          asset_path: elf-artifacts/elf-files.zip
           asset_name: elf-files_${{ needs.build.outputs.version }}.zip
           asset_content_type: application/zip
