@@ -1,5 +1,5 @@
 {
-	"name": "ESP32-Sveltekit Template",
+	"name": "esp32-sveltekit-template",
 	"version": "0.2.0",
 	"private": true,
 	"scripts": {
