@@ -1,0 +1,378 @@
+:root {
+    --border-color: #334e68;
+    --text-color: #212529;
+    --text-muted-color: #6c757d;
+    --primary-color: #5d5e5f;
+    --primary-border: #a5d8ff;
+    --orange-color: #f79009;
+    --orange-light: #fff4e6;
+    --red-color: #fa5252;
+    --red-light: #fff5f5;
+    --gray-light: #f8f9fa;
+    --border-radius: 0.5rem;
+    --border-radius-lg: 0.5rem;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+body {
+    margin: 0;
+    padding: 0.5rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+.calculator-subtitle {
+    font-size: 1.1rem;
+    opacity: var(--openconnect-text-opacity-medium);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+
+.editor-layout { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 0.75rem; 
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.card { 
+    border: 1px solid var(--openconnect-card-border);
+    border-radius: 16px; 
+    padding: 1rem; 
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.card-header { 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.card-title { 
+    font-size: 1.3rem;
+    font-weight: 700;
+    background: linear-gradient(45deg, var(--openconnect-primary), var(--openconnect-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+
+.settings-section { 
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+@media (max-width: 480px) {
+    .settings-section {
+        grid-template-columns: 1fr;
+        gap: 0.2rem;
+    }
+    
+    .card {
+        padding: 0.2rem;
+    }
+    
+    .editor-layout {
+        gap: 0.2rem;
+    }
+}
+
+.input-group { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 0.4rem 0;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.input-label { 
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--openconnect-primary);
+    margin-bottom: 0.5rem;
+    opacity: var(--openconnect-text-opacity-strong);
+}
+
+.input-field { 
+    width: 5.5rem; 
+    min-width: 5.5rem;
+    padding: 0.35rem 0.5rem; 
+    border: 1px solid var(--border-color); 
+    border-radius: var(--border-radius); 
+    text-align: right;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+    .settings-section {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        /* Убеждаемся, что сама сетка не прижимает контент влево */
+        justify-items: center; 
+    }
+
+    .input-group {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        text-align: center;
+    }
+
+    .input-label {
+        width: 100%;
+        text-align: center; 
+        margin-bottom: 0.25rem;
+    }
+
+    .input-field {
+        width: 100%;
+        max-width: 200px;       
+        text-align: center; 
+        margin: 0 auto;      
+    }
+
+    .card {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+.fraction-details { 
+    border-bottom: 1px solid var(--border-color); 
+    margin-bottom: 0.5rem;
+    position: relative;
+}
+
+/* КОМПЛЕКСНОЕ РЕШЕНИЕ: полностью скрываем стандартный маркер */
+.summary {
+    padding: 0.75rem 0.25rem;
+    font-weight: 600;
+}
+        
+.summary-content { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.fraction-body { 
+    border-top: 1px solid var(--border-color); 
+    padding: 0.75rem; 
+    display: grid; 
+    grid-template-columns: 1fr; 
+    gap: 1rem;
+}
+
+@media (min-width: 768px) { 
+    .fraction-body { 
+        grid-template-columns: 1fr 1fr; 
+        gap: 1rem;
+    } 
+}
+
+@media (max-width: 480px) {
+    .fraction-body {
+        padding: 0.5rem;
+        gap: 0.2rem;
+    }
+    
+    .sub-settings-title {
+        margin-top: 0.2rem !important;
+    }
+}
+
+.results-col { 
+
+    border: 1px dashed var(--primary-border); 
+    padding: 0.75rem; 
+    border-radius: var(--border-radius); 
+    display: flex; 
+    flex-direction: column; 
+    gap: 0.4rem;
+}
+
+.analytics-item { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 0.35rem 0.5rem; 
+    border-radius: 4px;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.analytics-label { 
+    font-size: 0.78rem; 
+    color: var(--text-muted-color);
+    flex: 1;
+    min-width: 100px;
+}
+
+.analytics-value { 
+    font-size: 0.85rem; 
+    font-weight: 600; 
+    color: var(--primary-color);
+    text-align: right;
+    min-width: 80px;
+}
+
+. .analytics-value { 
+    color: var(--orange-color); 
+}
+
+.ssvc-result-card { 
+    margin-top: 0.5rem; 
+    padding: 0.5rem; 
+    border: 1px solid var(--primary-border); 
+    border-radius: 6px;
+    white-space: nowrap; /* Запрещаем перенос текста */
+    overflow: hidden; /* Скрываем переполнение */
+}
+
+.ssvc-result-card .analytics-item {
+    white-space: nowrap; /* Запрещаем перенос в дочерних элементах */
+    flex-wrap: nowrap; /* Запрещаем перенос flex-элементов */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ssvc-result-card .analytics-label,
+.ssvc-result-card .analytics-value {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: auto;
+    flex-shrink: 1;
+}
+
+.sub-settings-title { 
+    font-size: 0.7rem; 
+    font-weight: 600; 
+    color: var(--primary-color); 
+    text-transform: uppercase; 
+    margin-bottom: 0.5rem; 
+    border-bottom: 1px solid var(--primary-border);
+    padding-bottom: 0.25rem;
+    white-space: nowrap; /* Запрещаем перенос заголовка */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.final-analytics-card { 
+    border-color: var(--primary-border) !important; 
+}
+
+.final-analytics-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
+    gap: 0.75rem;
+}
+
+@media (max-width: 480px) {
+    .final-analytics-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+}
+            
+#fraction-warning {
+    display: none;
+    width: 100%;
+    margin-top: 0.5rem;
+    color: var(--red-color);
+    font-size: 0.85rem;
+    font-weight: 600;
+    background-color: var(--red-light);
+    padding: 0.4rem 0.75rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.actions-panel { 
+    display: flex; 
+    justify-content: flex-end; 
+    padding: 1rem 0; 
+}
+
+.btn-primary {
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    cursor: pointer;
+    background-color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    transition: background-color 0.2s;
+    font-size: 0.9rem;
+}
+
+.btn-primary:hover { 
+    background-color: var(--primary-color); 
+    opacity: 0.9;
+}
+
+.btn-primary:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* Добавляем отступы для контента внутри summary */
+.summary-content > span {
+    flex: 1;
+}
+
+/* Улучшаем отображение чекбоксов на мобильных */
+input[type="checkbox"] {
+    width: 0.8rem;
+    margin: 0;
+}
+
+/* Для очень маленьких экранов - специальные правки для ssvc-result-card */
+@media (max-width: 320px) {
+    body {
+        padding: 0.25rem;
+        font-size: 13px;
+    }
+    
+    .card {
+        padding: 0.5rem;
+    }
+    
+    .input-field {
+        padding: 0.25rem 0.4rem;
+    }
+    
+    .analytics-item {
+        padding: 0.25rem 0.4rem;
+    }
+    
+    .ssvc-result-card {
+        padding: 0.4rem;
+    }
+    
+    .ssvc-result-card .analytics-label {
+        font-size: 0.72rem;
+        min-width: 50px;
+    }
+    
+    .ssvc-result-card .analytics-value {
+        font-size: 0.78rem;
+        min-width: 60px;
+    }
+}

@@ -33,7 +33,6 @@ theme:
         name: Switch to light mode
       primary: indigo
       accent: indigo
-
   features:
     - navigation.instant
     - navigation.instant.prefetch
@@ -83,6 +82,13 @@ nav:
   - "Прочее" :
       - info/changelog.md
 
+# Add custom CSS for MoonLight styling
+extra_css:
+  - stylesheets/openconnect.css
+  - stylesheets/calculator.css
+
+extra_javascript:
+  - javascripts/openconnect.js
 
 markdown_extensions:
   - attr_list
@@ -98,7 +104,10 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
-
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
       
 extra:
   social:

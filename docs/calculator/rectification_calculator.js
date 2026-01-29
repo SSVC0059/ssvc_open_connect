@@ -1,12 +1,7 @@
-var __defProp = Object.defineProperty;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 class DistillationCycleModel {
-  constructor() {
-    // private readonly L_ETHANOL = 855;
-    // private readonly L_WATER = 2256;
-    __publicField(this, "RHO_ETHANOL", 0.7893);
-  }
+  // private readonly L_ETHANOL = 855;
+  // private readonly L_WATER = 2256;
+  RHO_ETHANOL = 0.7893;
   calculateVaporStrength(b) {
     if (b <= 0) return 0;
     if (b >= 97.17) return 97.17;
@@ -18,8 +13,8 @@ class DistillationCycleModel {
     return part1 - part2 + part3 + expPart1 * expPart2;
   }
   calculateBoilingTemp(b) {
-    if (b <= 0) return 0;
-    if (b >= 97.17) return 97.17;
+    if (b <= 0) return 99.97;
+    if (b >= 97.17) return 78.15;
     const term1 = 99.974;
     const term2 = 0.93136 * b;
     const term3 = 0.02395 * Math.pow(b, 2);
@@ -105,7 +100,6 @@ class DistillationCycleModel {
     return min;
   }
   calculateProcess(profile) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
     const lateHeadsEnabled = profile.late_heads.enabled;
     const tailsEnabled = profile.tails.enabled;
     const netPowerWatts = profile.powerKw * 1e3;
@@ -114,10 +108,10 @@ class DistillationCycleModel {
     let currentVolumeL = profile.volumeL;
     let totalAS_ml = currentVolumeL * 1e3 * (currentStrengthVol / 100);
     const initialTotalAS = totalAS_ml;
-    const bw_heads = ((_b = (_a = profile.ssvcSettings) == null ? void 0 : _a.valve_bw) == null ? void 0 : _b[0]) || 0;
-    const bw_late = profile.virtual_bw_late || ((_d = (_c = profile.ssvcSettings) == null ? void 0 : _c.valve_bw) == null ? void 0 : _d[2]) || 0;
-    const bw_tails = profile.virtual_bw_tails || ((_f = (_e = profile.ssvcSettings) == null ? void 0 : _e.valve_bw) == null ? void 0 : _f[2]) || ((_h = (_g = profile.ssvcSettings) == null ? void 0 : _g.valve_bw) == null ? void 0 : _h[1]) || 0;
-    const bw_valve3 = ((_j = (_i = profile.ssvcSettings) == null ? void 0 : _i.valve_bw) == null ? void 0 : _j[1]) || 0;
+    const bw_heads = profile.ssvcSettings?.valve_bw?.[0] || 0;
+    const bw_late = profile.virtual_bw_late || profile.ssvcSettings?.valve_bw?.[2] || 0;
+    const bw_tails = profile.virtual_bw_tails || profile.ssvcSettings?.valve_bw?.[2] || profile.ssvcSettings?.valve_bw?.[1] || 0;
+    const bw_valve3 = profile.ssvcSettings?.valve_bw?.[1] || 0;
     const physicsHeads = this.getVaporPhysics(currentStrengthVol, netPowerWatts);
     const totalHeadsVolMl = initialTotalAS * profile.heads.percent / 100;
     const rTimer = Number(
@@ -129,7 +123,7 @@ class DistillationCycleModel {
     const hFinal = profile.ssvcSettings.heads_final > 0 ? profile.ssvcSettings.heads_final : 0;
     const headsCyclePeriod = profile.ssvcSettings.heads[1] || 10;
     const alcoholMassG = initialTotalAS * this.RHO_ETHANOL;
-    const totalVaporMassPerSec = netPowerWatts / 1e3 / physicsHeads.lMix;
+    const totalVaporMassPerSec = netPowerWatts > 0 ? netPowerWatts / 1e3 / physicsHeads.lMix : 0;
     const alcoholVaporMassPerSecG = totalVaporMassPerSec * physicsHeads.strengthMass * 1e3;
     const oneCycleSec_heads = alcoholVaporMassPerSecG > 0 ? alcoholMassG / alcoholVaporMassPerSecG : 0;
     const releaseFlowMlh = rOpen / headsCyclePeriod * bw_heads;
@@ -139,7 +133,7 @@ class DistillationCycleModel {
       headsStartFlowMlh = Math.min(profile.heads.targetFlowMlh, bw_heads);
     } else {
       const alcoholMassG2 = initialTotalAS * this.RHO_ETHANOL;
-      const totalVaporMassPerSec2 = netPowerWatts / 1e3 / physicsHeads.lMix;
+      const totalVaporMassPerSec2 = netPowerWatts > 0 ? netPowerWatts / 1e3 / physicsHeads.lMix : 0;
       const alcoholVaporMassPerSecG2 = totalVaporMassPerSec2 * physicsHeads.strengthMass * 1e3;
       const oneCycleSec_heads2 = alcoholVaporMassPerSecG2 > 0 ? alcoholMassG2 / alcoholVaporMassPerSecG2 : 0;
       const cycles = profile.heads.targetCycles || 2;
@@ -196,7 +190,7 @@ class DistillationCycleModel {
     const startTemp = this.calculateBoilingTemp(currentStrengthVol);
     const endTemp = profile.ssvcSettings.hearts_finish_temp || 90;
     const isFormulaEnabled = profile.ssvcSettings.formula;
-    const hyst = profile.ssvcSettings.hyst || 0.1;
+    const hyst = profile.ssvcSettings.hyst || 0.25;
     const decFactor = (profile.ssvcSettings.decrement || 0) / 100;
     let heartsInitialSpeed = profile.hearts.targetFlowMlh || physicsHearts.volVaporPerHour * 1e3;
     let heartsAverageSpeed = heartsInitialSpeed;
@@ -222,6 +216,10 @@ class DistillationCycleModel {
     const tailsTimerSec = tailsFlow > 0 ? tailsVol / tailsFlow * 3600 : 0;
     const tailsOpenTime = tailsFlow / bw_tails * profile.ssvcSettings.tails[1];
     const tailsRefluxRatio = this.calculateRefluxRatio(physicsTails.volVaporPerHour, tailsFlow);
+    if (tailsEnabled) {
+      totalAS_ml -= tailsVol * 0.96;
+      currentVolumeL -= tailsVol / 1e3;
+    }
     const totalProcessSec = stabSec + headsTimerSec + lateHeadsTimerSec + heartsTimerSec + tailsTimerSec;
     const phlegmaticHeads = this.calculatePhlegmatic(netPowerWatts, headsStartFlowMlh);
     const phlegmaticLateHeads = this.calculatePhlegmatic(netPowerWatts, lateHeadsFlow);
@@ -238,7 +236,9 @@ class DistillationCycleModel {
         heads: [Number(headsOpenTime.toFixed(1)), headsCyclePeriod],
         late_heads: [Number(lateHeadsOpenTime.toFixed(1)), profile.ssvcSettings.late_heads[1]],
         hearts: [Number(heartsOpenTime.toFixed(1)), profile.ssvcSettings.hearts[1]],
-        tails: [Number(tailsOpenTime.toFixed(1)), profile.ssvcSettings.tails[1]]
+        tails: [Number(tailsOpenTime.toFixed(1)), profile.ssvcSettings.tails[1]],
+        heads_timer: Math.round(headsTimerSec),
+        late_heads_timer: Math.round(lateHeadsTimerSec)
       },
       analytics: {
         totalAS: Math.round(initialTotalAS),
@@ -268,7 +268,7 @@ class DistillationCycleModel {
           late_heads: Math.round(lateHeadsTimerSec),
           hearts: Math.round(heartsTimerSec),
           tails: profile.tails.enabled ? Math.round(tailsTimerSec) : 0,
-          total_process: Math.round(totalProcessSec)
+          total_process: netPowerWatts > 0 ? Math.round(totalProcessSec) : 0
         },
         refluxRatio: {
           heads: Math.round(headRefluxRatio * 100) / 100,
@@ -338,7 +338,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return new Date(s * 1e3).toISOString().substr(11, 8);
   };
   const getValueByPath = (obj, path) => {
-    return path.split(/[.\[\]]+/).filter(Boolean).reduce((acc, key) => acc == null ? void 0 : acc[key], obj);
+    return path.split(/[.\[\]]+/).filter(Boolean).reduce((acc, key) => acc?.[key], obj);
   };
   const setValueByPath = (obj, path, value) => {
     const keys = path.split(/[.\[\]]+/).filter(Boolean);
