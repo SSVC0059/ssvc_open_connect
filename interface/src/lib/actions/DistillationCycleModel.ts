@@ -123,8 +123,8 @@ export class DistillationCycleModel {
 	}
 
 	private calculateBoilingTemp(b: number): number {
-		if (b <= 0) return 0;
-		if (b >= 97.17) return 97.17;
+		if (b <= 0) return 99.97;
+		if (b >= 97.17) return 78.15;
 
 		const term1 = 99.974;
 		const term2 = 0.93136 * b;
@@ -299,7 +299,7 @@ export class DistillationCycleModel {
 
 		// Расчет времени одного цикла переиспарения (oneCycleTime)
 		const alcoholMassG = initialTotalAS * this.RHO_ETHANOL;
-		const totalVaporMassPerSec = netPowerWatts / 1000 / physicsHeads.lMix;
+		const totalVaporMassPerSec = netPowerWatts > 0 ? netPowerWatts / 1000 / physicsHeads.lMix : 0;
 		const alcoholVaporMassPerSecG = totalVaporMassPerSec * physicsHeads.strengthMass * 1000;
 		const oneCycleSec_heads =
 			alcoholVaporMassPerSecG > 0 ? alcoholMassG / alcoholVaporMassPerSecG : 0;
@@ -315,7 +315,7 @@ export class DistillationCycleModel {
 		} else {
 			// Если авто-расчет: используем желаемое количество циклов переиспарения
 			const alcoholMassG = initialTotalAS * this.RHO_ETHANOL;
-			const totalVaporMassPerSec = netPowerWatts / 1000 / physicsHeads.lMix;
+			const totalVaporMassPerSec = netPowerWatts > 0 ? netPowerWatts / 1000 / physicsHeads.lMix : 0;
 			const alcoholVaporMassPerSecG = totalVaporMassPerSec * physicsHeads.strengthMass * 1000;
 			const oneCycleSec_heads =
 				alcoholVaporMassPerSecG > 0 ? alcoholMassG / alcoholVaporMassPerSecG : 0;
@@ -455,6 +455,11 @@ export class DistillationCycleModel {
 		const tailsOpenTime = (tailsFlow / bw_tails) * profile.ssvcSettings.tails[1];
 		const tailsRefluxRatio = this.calculateRefluxRatio(physicsTails.volVaporPerHour, tailsFlow);
 
+		if (tailsEnabled) {
+			totalAS_ml -= tailsVol * 0.96; // Вычитаем спирт хвостов из куба
+			currentVolumeL -= tailsVol / 1e3; // Уменьшаем физический объем в кубе
+		}
+
 		const totalProcessSec =
 			stabSec + headsTimerSec + lateHeadsTimerSec + heartsTimerSec + tailsTimerSec;
 
@@ -509,7 +514,7 @@ export class DistillationCycleModel {
 					late_heads: Math.round(lateHeadsTimerSec),
 					hearts: Math.round(heartsTimerSec),
 					tails: profile.tails.enabled ? Math.round(tailsTimerSec) : 0,
-					total_process: Math.round(totalProcessSec)
+					total_process: netPowerWatts > 0 ? Math.round(totalProcessSec) : 0
 				},
 				refluxRatio: {
 					heads: Math.round(headRefluxRatio * 100) / 100,
