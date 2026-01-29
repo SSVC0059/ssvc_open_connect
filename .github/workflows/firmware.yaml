@@ -58,9 +58,19 @@ jobs:
         run: npm install
         working-directory: interface
 
+      - name: Build calculator for tests
+        run: npm run build:calculator
+        working-directory: interface
+
       - name: Run npm tests
         run: npm test
         working-directory: interface
+
+      - name: Upload calculator artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: calculator-artifact
+          path: docs/calculator/rectification_calculator.js
 
   build:
     runs-on: ubuntu-latest
@@ -98,6 +108,12 @@ jobs:
       - name: Install Python requirements
         run: |
           pip install -r requirements.txt
+          
+      - name: Download calculator artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: calculator-artifact
+          path: docs/calculator
 
       - name: Build firmware for ${{ matrix.env_name }}
         run: platformio run --environment ${{ matrix.env_name }}
@@ -106,6 +122,7 @@ jobs:
         if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_artifacts == 'true')
         run: |
           mkdir -p artifacts/firmware/${{ matrix.env_name }} artifacts/zips
+          cp docs/calculator/rectification_calculator.js artifacts/firmware/${{ matrix.env_name }}/
           cp -r build/${{ matrix.env_name }}/* artifacts/firmware/${{ matrix.env_name }}/
           (cd artifacts/firmware/${{ matrix.env_name }} && zip -r ../../zips/${{ matrix.env_name }}.zip .)
           
