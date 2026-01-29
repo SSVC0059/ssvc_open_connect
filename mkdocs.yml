@@ -74,7 +74,11 @@ nav:
       - ready_made/mini.md
       - ready_made/din_version.md
       - ready_made/inside_version.md
-  - Для разработчиков: develop/
+  - Для разработчиков: 
+      - develop/gettingstarted.md
+      - develop/build.md
+      - develop/mkdocs.md
+      - develop/ssvc_uart_api_docs.md
       
   - "FAQ" : 
       - faq/check_list.md
