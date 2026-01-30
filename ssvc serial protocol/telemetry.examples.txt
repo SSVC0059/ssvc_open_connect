@@ -1,0 +1,11 @@
+{"type": "waiting","common": {"mmhg": 750,"tp1": 30.31,"tp2": 30.81,"relay": 1,"signal": 0}}
+{"type": "settings","common": {"mmhg": 750,"tp1": 30.31,"tp2": 30.81,"relay": 1,"signal": 0}}
+{"type": "tp1_waiting","tp1_target": 60,"common": {"mmhg": 750,"tp1": 30.31,"tp2": 30.81,"relay": 1,"signal": 0}}
+{"type": "delayed_start","countdown": "0:09:59","common": {"mmhg": 750,"tp1": 30.75,"tp2": 31.44,"relay": 1,"signal": 0}}
+{"type": "heads","countdown": "5:00:00","release": "0:03:00","common": {"mmhg": 736,"tp1": 25.31,"tp2": 25.56,"relay": 1,"signal": 1},"time": "0:00:00","open": 99.90,"period": 100,"tank_mmhg": 736,"tp1_sap": 26.13,"tp2_sap": 26.38,"v1": 0,"v2": 0,"v3": 0,"alc": 0.0}
+{"type": "heads","countdown": "0:14:58","common": {"mmhg": 750,"tp1": 31.19,"tp2": 32.06,"relay": 1,"signal": 1},"time": "0:00:02","open": 30.10,"period": 359,"tank_mmhg": 756,"tp1_sap": 31.53,"tp2_sap": 33.10,"v1": 0,"v2": 0,"v3": 0,"alc": 0.0}
+{"type": "late_heads","countdown": "2:29:59","common": {"mmhg": 736,"tp1": 25.56,"tp2": 25.94,"relay": 1,"signal": 1},"time": "0:01:19","open": 2.00,"period": 4,"tank_mmhg": 736,"tp1_sap": 26.38,"tp2_sap": 26.76,"v1": 77,"v2": 0,"v3": 1,"alc": 0.0}
+{"type": "hearts","countdown": "0:06:58","common": {"mmhg": 750,"tp1": 31.38,"tp2": 32.25,"relay": 1,"signal": 1},"time": "0:01:04","tp1_target": 100.00,"open": 2.10,"period": 4,"hysteresis": 0.25,"tank_mmhg": 756,"tp1_sap": 31.72,"tp2_sap": 33.29,"v1": 0,"v2": 0,"v3": 0,"alc": 0.0,"stop": 0,"stops": 0}
+{"type": "hearts","countdown": "0:00:00","common": {"mmhg": 750,"tp1": 31.50,"tp2": 32.38,"relay": 1,"signal": 1},"time": "0:01:46","tp1_target": 31.84,"open": 2.10,"period": 4,"hysteresis": 0.25,"tank_mmhg": 756,"tp1_sap": 31.84,"tp2_sap": 33.42,"v1": 1,"v2": 4,"v3": 1,"alc": 0.0,"stop": 0,"stops": 0}
+{"type": "tails","common": {"mmhg": 750,"tp1": 31.56,"tp2": 32.50,"relay": 1,"signal": 1},"time": "0:02:01","tp2_target": 95.90,"open": 2.10,"period": 4,"tank_mmhg": 756,"tp1_sap": 31.90,"tp2_sap": 33.54,"v1": 1,"v2": 0010,"v3": 3,"alc": 0.0}
+{"type": "tails","common": {"mmhg": 761,"tp1": 33.50,"tp2": 34.56,"relay": 1,"signal": 1},"event": "ds_error","time": "0:00:42","tp2_target": 95.00,"open": 2.00,"period": 4,"tank_mmhg": 761,"tp1_sap": 33.47,"tp2_sap": 34.56,"v1": 0,"v2": 1,"v3": 0,"alc": 0.0}
