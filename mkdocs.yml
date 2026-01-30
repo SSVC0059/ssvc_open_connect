@@ -67,6 +67,7 @@ nav:
   - "Руководство пользователя":
       - usage/get_started.md
       - usage/user_management.md
+      - usage/troubleshooting.md
   - "Калькулятор ректификации":
       - calculator/index.md
       - calculator/manual.md
@@ -77,6 +78,7 @@ nav:
   - Для разработчиков: 
       - develop/gettingstarted.md
       - develop/build.md
+      - develop/codedump.md
       - develop/mkdocs.md
       - develop/ssvc_uart_api_docs.md
       
