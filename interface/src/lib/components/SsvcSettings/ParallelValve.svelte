@@ -61,7 +61,7 @@
 						<h3 class="settings-section-title">Скорость параллельного отбора клапаном №3</h3>
 						<EditParallelV3
 							points={settings.parallel_v3}
-							onSave={(newPoints: ParallelPoint[]) => onSave('parallel_v3', newPoints)}
+							onSave={(newPoints) => onSave('parallel_v3', newPoints)}
 						/>
 					</div>
 
@@ -113,11 +113,11 @@
 
 					<div class="settings-item">
 						<span class="input-label">Время открытия клапана</span>
-						<span class="settings-value">{settings.parallel_v1[0]} Сек</span>
+						<span class="settings-value">{settings.parallel[0]} Сек</span>
 					</div>
 					<div class="settings-item">
 						<span class="input-label">Периодичность</span>
-						<span class="settings-value">{settings.parallel_v1[1]} Сек</span>
+						<span class="settings-value">{settings.parallel[1]} Сек</span>
 					</div>
 				</div>
 			{/if}

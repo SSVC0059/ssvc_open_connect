@@ -24,35 +24,35 @@ std::map<String, std::unique_ptr<ParamHandler>> createHandlers() {
   handlers.emplace(
       "hyst",
       std::unique_ptr<SingleFloatHandler>(new SingleFloatHandler(
-          [](SsvcSettings::Builder &b, float v) { b.setHysteresis(v); })));
+          [](SsvcSettings::Builder &b, const float v) { b.setHysteresis(v); })));
 
   // Heads
   handlers.emplace(
       "heads",
       std::unique_ptr<TwoValueHandler>(new TwoValueHandler(
-          [](SsvcSettings::Builder &b, float t, int p) { b.setHeads(t, p); })));
+          [](SsvcSettings::Builder &b, const float t, const int p) { b.setHeads(t, p); })));
 
   handlers.emplace("late_heads",
                    std::unique_ptr<TwoValueHandler>(new TwoValueHandler(
-                       [](SsvcSettings::Builder &b, float t, int p) {
+                       [](SsvcSettings::Builder &b, const float t, const int p) {
                          b.setLateHeads(t, p);
                        })));
 
   // Hearts
   handlers.emplace("hearts",
                    std::unique_ptr<TwoValueHandler>(
-                       new TwoValueHandler([](SsvcSettings::Builder &b, float t,
-                                              int p) { b.setHearts(t, p); })));
+                       new TwoValueHandler([](SsvcSettings::Builder &b, const float t,
+                                              const int p) { b.setHearts(t, p); })));
 
   handlers.emplace(
       "tails",
       std::unique_ptr<TwoValueHandler>(new TwoValueHandler(
-          [](SsvcSettings::Builder &b, float t, int p) { b.setTails(t, p); })));
+          [](SsvcSettings::Builder &b, const float t, int p) { b.setTails(t, p); })));
 
   // Decrement
   handlers.emplace("decrement",
                    std::unique_ptr<UnsignedCharHandler>(new UnsignedCharHandler(
-                       [](SsvcSettings::Builder &b, unsigned char v) {
+                       [](SsvcSettings::Builder &b, const unsigned char v) {
                          b.setDecrement(v);
                        })));
 
@@ -65,28 +65,28 @@ std::map<String, std::unique_ptr<ParamHandler>> createHandlers() {
   // tank_mmhg
   handlers.emplace("tank_mmhg",
                    std::unique_ptr<UnsignedCharHandler>(new UnsignedCharHandler(
-                       [](SsvcSettings::Builder &b, unsigned char v) {
+                       [](SsvcSettings::Builder &b, const unsigned char v) {
                          b.setTank_mmhg(v);
                        })));
 
   // heads_timer
   handlers.emplace("heads_timer",
                    std::unique_ptr<UnsignedIntHandler>(new UnsignedIntHandler(
-                       [](SsvcSettings::Builder &b, unsigned int v) {
+                       [](SsvcSettings::Builder &b, const unsigned int v) {
                          b.setHeadsTimer(v);
                        })));
 
   // late_heads_timer
   handlers.emplace("late_heads_timer",
                    std::unique_ptr<UnsignedIntHandler>(new UnsignedIntHandler(
-                       [](SsvcSettings::Builder &b, unsigned int v) {
+                       [](SsvcSettings::Builder &b, const unsigned int v) {
                          b.setLateHeadsTimer(v);
                        })));
 
   // hearts_timer
   handlers.emplace("hearts_timer",
                    std::unique_ptr<UnsignedCharHandler>(new UnsignedCharHandler(
-                       [](SsvcSettings::Builder &b, unsigned char v) {
+                       [](SsvcSettings::Builder &b, const unsigned char v) {
                          b.setHeartsTimer(v);
                        })));
 
@@ -94,33 +94,33 @@ std::map<String, std::unique_ptr<ParamHandler>> createHandlers() {
   handlers.emplace(
       "tails_temp",
       std::unique_ptr<SingleFloatHandler>(new SingleFloatHandler(
-          [](SsvcSettings::Builder &b, float v) { b.setTailsTemp(v); })));
+          [](SsvcSettings::Builder &b, const float v) { b.setTailsTemp(v); })));
 
   // start_delay
   handlers.emplace("start_delay",
                    std::unique_ptr<UnsignedIntHandler>(new UnsignedIntHandler(
-                       [](SsvcSettings::Builder &b, unsigned int v) {
+                       [](SsvcSettings::Builder &b, const unsigned int v) {
                          b.setStartDelay(v);
                        })));
 
   // hearts_finish_temp
   handlers.emplace("hearts_finish_temp",
                    std::unique_ptr<SingleFloatHandler>(new SingleFloatHandler(
-                       [](SsvcSettings::Builder &b, float v) {
+                       [](SsvcSettings::Builder &b, const float v) {
                          b.setHeartsFinishTemp(v);
                        })));
 
   // formula_start_temp
   handlers.emplace("formula_start_temp",
                    std::unique_ptr<SingleFloatHandler>(new SingleFloatHandler(
-                       [](SsvcSettings::Builder &b, float v) {
+                       [](SsvcSettings::Builder &b, const float v) {
                          b.setFormulaStartTemp(v);
                        })));
 
   // setValveBw
   handlers.emplace("valve_bw",
                    std::unique_ptr<ThreeIntHandler>(new ThreeIntHandler(
-                       [](SsvcSettings::Builder &b, int v1, int v2, int v3) {
+                       [](SsvcSettings::Builder &b, const int v1, const int v2, const int v3) {
                          b.setValveBw(v1, v2, v3);
                        })));
 
@@ -128,7 +128,7 @@ std::map<String, std::unique_ptr<ParamHandler>> createHandlers() {
   handlers.emplace(
       "release_speed",
       std::unique_ptr<SingleFloatHandler>(new SingleFloatHandler(
-          [](SsvcSettings::Builder &b, float v) { b.setReleaseSpeed(v); })));
+          [](SsvcSettings::Builder &b, const float v) { b.setReleaseSpeed(v); })));
 
   // release_speed
   handlers.emplace("release_timer",
@@ -141,7 +141,34 @@ std::map<String, std::unique_ptr<ParamHandler>> createHandlers() {
   handlers.emplace(
       "heads_final",
       std::unique_ptr<SingleFloatHandler>(new SingleFloatHandler(
-          [](SsvcSettings::Builder &b, float v) { b.setHeadsFinal(v); })));
+          [](SsvcSettings::Builder &b, const float v) { b.setHeadsFinal(v); })));
+
+    // Heads
+  handlers.emplace(
+        "parallel",
+        std::unique_ptr<TwoValueHandler>(new TwoValueHandler(
+            [](SsvcSettings::Builder &b, const float t, const int p) { b.setParallel(t, p); })));
+
+  // parallel_v1
+  handlers.emplace(
+      "parallel_v1",
+      std::unique_ptr<TwoValueHandler>(new TwoValueHandler(
+          [](SsvcSettings::Builder &b, const float t, const int p) { b.setParallelV1(t, p); })));
+
+
+  // parallel_v3
+  handlers.emplace(
+      "parallel_v3",
+      std::unique_ptr<ArrayOfFloatFloatIntHandler>(
+          new ArrayOfFloatFloatIntHandler([](SsvcSettings::Builder &b,
+                                             const std::vector<ArrayOfFloatFloatIntHandler::Values> &v) {
+            std::vector<std::tuple<float, float, int>> values;
+            values.reserve(v.size());
+            for (const auto& item : v) {
+                values.emplace_back(item.f1, item.f2, item.i1);
+            }
+            b.setParallelV3(values);
+          })));
 
 // хеддеры для оперативных настроек
     handlers.emplace(

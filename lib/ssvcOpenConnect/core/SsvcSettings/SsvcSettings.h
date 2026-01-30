@@ -24,10 +24,15 @@
 #include <string>
 #include <core/SsvcConnector.h>
 #include <core/SsvcCommandsQueue.h>
-#include "core/StatefulServices/OpenConnectSettingsService/OpenConnectSettings.h"
+#include "core/profiles/IProfileObserver.h"
+
+#include "core/StatefulServices/SensorDataService/SensorDataService.h"
+#include <cstdlib>
+
+#include "core/StatefulServices/OpenConnectSettingsService/ssvcMqttSettings.h"
 
 // Класс настроек SsvcSettings
-class SsvcSettings
+class SsvcSettings : public IProfileObserver
 {
 public:
     static SsvcSettings& init();
@@ -35,6 +40,11 @@ public:
     void fillSettings(JsonVariant json) const;
 
     bool load(const std::string& json);
+
+    // --- Реализация контракта IProfileObserver ---
+    const char* getProfileKey() const override { return "ssvcSettings"; }
+    void onProfileSave(JsonObject& dest) override;
+    void onProfileApply(const JsonObject& src) override;
 
     // GETTERS
 
@@ -169,8 +179,12 @@ public:
 private:
     explicit SsvcSettings();
 
+    void updateStateFromJson(const JsonObject& src);
+
+    void applySettingsToController(JsonVariant json) const;
+
     // Версии подисистем модуля ssvc
-    std::string ssvcVersion = "";
+    std::string ssvcVersion;
     float ssvcApiVersion = 0.0;
     bool isSupportApi = false;
     bool supportTails = false;
@@ -181,7 +195,7 @@ private:
     std::tuple<float, int> heads = {0.0, 0}; // головы
     std::tuple<float, int> hearts = {0.0, 0.0}; // тело
 
-    float heads_final = 0.0;
+    float heads_final = -1.0;
     float hyst = 0.0;
     unsigned char decrement = 0;
     bool formula = false;
@@ -236,8 +250,8 @@ private:
     //    Актуально в firmware 2.3.*
     std::tuple<float, int> late_heads = {-1.0, -1};
     unsigned int late_heads_timer = 0;
-    float release_speed = 0.0;
-    unsigned int release_timer = 0;
+    float release_speed = -1.0;
+    int release_timer = -1;
 
     std::string lastSettingsSrc;
 
@@ -257,6 +271,9 @@ public:
     {
     private:
         SsvcSettings& settings; // Ссылка на существующий экземпляр
+        // Режим отправки. Либо накапливаем или шлем сразу.
+        std::vector<String> _pendingCommands;
+        bool _isBatchMode = false;            // Флаг: копим или шлем сразу
     public:
         bool hasChanges = false;
         explicit Builder() : settings(SsvcSettings::init())
@@ -315,9 +332,15 @@ public:
 
         Builder& setReleaseSpeed(float _release_speed);
 
-        Builder& setReleaseTimer(unsigned int _release_timer);
+        Builder& setReleaseTimer(int _release_timer);
 
         Builder& setHeadsFinal(float _heartsFinishTemp);
+
+        Builder& setParallel(float timeTurnOn, int period);
+
+        Builder& setParallelV1(float timeTurnOn, int period);
+
+        Builder& setParallelV3(const std::vector<std::tuple<float, float, int>>& values);
 
         // Обработчики для установки оперативных параметров
 
@@ -334,9 +357,16 @@ public:
         // Другие методы установки параметров...
         SsvcSettings build() const;
 
+        void beginBatch() {
+            _isBatchMode = true;
+            _pendingCommands.clear();
+        }
+
         static void validateAndSetValues(float& timeTurnOn, int& period,
                                          float* targetTimeTurnOn,
                                          int* targetPeriod);
+
+        void applySettings();
     };
 };
 

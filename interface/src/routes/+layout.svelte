@@ -8,7 +8,7 @@
 	import { socket } from '$lib/stores/socket';
 	import type { userProfile } from '$lib/stores/user';
 	import { page } from '$app/state';
-	import { Modals } from 'svelte-modals';
+	import { Modals, modals } from 'svelte-modals';
 	import Toast from '$lib/components/toasts/Toast.svelte';
 	import { notifications } from '$lib/components/toasts/notifications';
 	import { fade } from 'svelte/transition';
@@ -20,7 +20,7 @@
 	import type { Analytics } from '$lib/types/models';
 	import type { RSSI } from '$lib/types/models';
 	import type { Battery } from '$lib/types/models';
-	import type { DownloadOTA } from '$lib/types/models';
+	import type { OTAStatus } from '$lib/types/models';
 
 	import '$lib/styles/open-connect-main.scss';
 
@@ -62,7 +62,7 @@
 		socket.on('notification', handleNotification);
 		if (page.data.features.analytics) socket.on('analytics', handleAnalytics);
 		if (page.data.features.battery) socket.on('battery', handleBattery);
-		if (page.data.features.download_firmware) socket.on('otastatus', handleOAT);
+		if (page.data.features.download_firmware) socket.on('otastatus', handleOTA);
 	};
 
 	const removeEventListeners = () => {
@@ -72,7 +72,7 @@
 		socket.off('rssi', handleNetworkStatus);
 		socket.off('notification', handleNotification);
 		socket.off('battery', handleBattery);
-		socket.off('otastatus', handleOAT);
+		socket.off('otastatus', handleOTA);
 	};
 
 	async function validateUser(userdata: userProfile) {
@@ -131,7 +131,9 @@
 		batteryHistory.addData(data);
 	};
 
-	const handleOAT = (data: DownloadOTA) => telemetry.setDownloadOTA(data);
+	const handleOTA = (data: OTAStatus) => {
+		telemetry.setOTAStatus(data);
+	};
 
 	let menuOpen = $state(false);
 
@@ -142,7 +144,7 @@
 </svelte:head>
 
 {#if page.data.features.security && $user.bearer_token === ''}
-	<Login on:signIn={initSocket} />
+	<Login signIn={initSocket} />
 {:else}
 	<div class="drawer lg:drawer-open">
 		<input id="main-menu" type="checkbox" class="drawer-toggle" bind:checked={menuOpen} />

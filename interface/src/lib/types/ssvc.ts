@@ -21,17 +21,18 @@ export type SsvcOpenConnectMessage = {
 export type SsvcOpenConnectInfo = {
 	ssvc: ssvc_info;
 	os: os_info;
-}
+};
 
 export type ssvc_info = {
 	version: string;
 	api: number;
-}
+	mode: 'late_heads';
+};
 
 export type os_info = {
 	version: string;
 	is_support_api: boolean;
-}
+};
 
 // ======================== Статус ректификации ======================== //
 
@@ -43,12 +44,10 @@ export type RectStatus = {
 	stages: Stages;
 };
 
-
 // Этапы ректификации
 type Stages = {
 	[key: string]: string; // или другой тип данных
 };
-
 
 // ======================== Телеметрия SSVC ======================== //
 
@@ -63,7 +62,7 @@ export type SsvcTelemetryMessage = {
 	countdown?: string;
 	release?: string;
 	time?: string;
-	 open?: number;
+	open?: number;
 	period?: number;
 	hysteresis?: number;
 	valveOpen?: number;
@@ -79,7 +78,7 @@ export type SsvcTelemetryMessage = {
 	event?: string;
 	info?: string;
 	decrement?: number; // Декремент
-}
+};
 
 export type commonType = {
 	mmhg: string;
@@ -96,14 +95,20 @@ export type valveFlowVolumeType = {
 	[key: string]: number; // или другой тип данных
 };
 
-
 // ======================== Настройки SSVC  ======================== //
 
+/**
+ * Настройки фракций для SSVC в формате [openTime, period].
+ * openTime: время открытия клапана в мс.
+ * period: период ШИМ в мс.
+ */
+export type SsvcTuple = [number, number];
+
 export type SsvcSettings = {
-	heads: [number, number]; // Параметры для Голов: давление и период
-	late_heads: [number, number]; // Параметры для подголовников: давление и период
-	hearts: [number, number]; // Параметры для Тела: давление и период
-	tails: [number, number]; // Параметры для Хвостов: давление и период
+	heads: SsvcTuple; // Параметры для Голов: [openTime, period]
+	late_heads: SsvcTuple; // Параметры для подголовников: [openTime, period]
+	hearts: SsvcTuple; // Параметры для Тела: [openTime, period]
+	tails: SsvcTuple; // Параметры для Хвостов: [openTime, period]
 	hyst: number; // Гистерезис
 	decrement: number; // Декремент
 	sound: number; // Звук (0 или 1)
@@ -119,8 +124,8 @@ export type SsvcSettings = {
 	start_delay: number; // Задержка старта (в секундах)
 	hearts_finish_temp: number; // Температура окончания Hearts
 	parallel_v3: [number, number, number][]; // Параметры Parallel V3, массив массивов из трех значений
-	parallel_v1: [number, number]; // Параметры Parallel V1
-	parallel: [number, number]; // Параметры Parallel V3 - подголовники
+	parallel_v1: SsvcTuple; // Параметры Parallel V1
+	parallel: SsvcTuple; // Параметры Parallel V3 - подголовники
 	hearts_temp_shift: boolean; // Смещение температуры для Hearts
 	hearts_pause: boolean; // Пауза для Hearts
 	formula: boolean; // Формула
@@ -141,26 +146,136 @@ export type SsvcSettings = {
 	heads_final: number;
 };
 
-
 // ======================== Настройки Telegram ======================== //
-
 
 export type TelegramConfig = {
 	token: string;
 	chat_id: string;
-}
+};
 
 // ==================== Настройки подсистем OpenConnect  ===================== //
-
 
 export type SubsystemsState = {
 	telegram_bot: boolean;
 	thermal: boolean;
-}
+};
 
 export type SendCommandResponse = {
 	success: boolean;
 	message: string;
+};
+
+// ==================== Профили ректификации  ===================== //
+
+interface FractionSettings {
+	percent: number; // % от АС
+	enabled: boolean; // Включен ли отбор
+	targetFlowMlh: number; // Желаемая скорость отбора (мл/ч)
+	targetCycles?: number; // Целевое количество циклов переиспарения (только для голов)
+	decrementPercent?: number;
 }
 
+export type Profile = {
+	id: string;
+	name: string;
+	createdAt: string;
+	isApplied?: boolean;
 
+	// --- Параметры сырца ---
+	/** Реальная мощность колонны */
+	powerKw: number;
+	/** Объем спирта-сырца в кубе (литры, точность 0.1) */
+	volumeL: number;
+	/** Спиртуозность сырца по показаниям ареометра (%) */
+	strengthVol: number;
+
+	stabilizationMin: number;
+
+	heads: FractionSettings;
+	late_heads: FractionSettings;
+	hearts: FractionSettings;
+	tails: FractionSettings;
+
+	/** Настройки SSVC **/
+	ssvcSettings: SsvcSettings;
+
+	analytics: Analytics;
+};
+
+export type Analytics = {
+	totalAS: number;
+	boilingTemp: number;
+	oneCycleTime: number;
+	flows: {
+		heads: number;
+		heads_release: number;
+		heads_final: number;
+		late_heads: number;
+		hearts: number;
+		hearts_avg?: number;
+		hearts_final?: number;
+		tails: number;
+	};
+	fractions: {
+		releaseMl: number;
+		headsMl: number;
+		lateHeadsMl: number;
+		heartsMl: number;
+		tailsMl: number;
+	};
+	timers: {
+		heads: number;
+		late_heads: number;
+		hearts: number;
+		tails: number;
+		total_process: number;
+	};
+	refluxRatio: {
+		heads: number;
+		late_heads: number;
+		hearts: number;
+		tails: number;
+	};
+	phlegmatic: {
+		heads: number;
+		late_heads: number;
+		hearts: number;
+		tails: number;
+	};
+	residueMl: number;
+	residualFortress: number;
+};
+export type Profiles = Profile[];
+
+// === Типы для работы с калькулятором ректификации (редактор профилей)  === //
+
+export type FractionCalcResult = {
+	/** Рассчитанный объем фракции в миллилитрах */
+	ml: number;
+	/** Рассчитанная длительность этапа в минутах */
+	durationMin: number;
+};
+
+// ==================== Файлы  ===================== //
+export type FSItemType = 'directory' | 'file';
+
+export interface BaseFSItem {
+	name: string;
+	type: FSItemType;
+}
+
+export interface FileItem extends BaseFSItem {
+	type: 'file';
+	size: number;
+}
+
+export interface DirectoryItem extends BaseFSItem {
+	type: 'directory';
+	children: FSItem[]; // Рекурсия: массив может содержать файлы или папки
+}
+
+// Итоговый тип элемента
+export type FSItem = FileItem | DirectoryItem;
+
+// Тип для корня (массив элементов)
+export type FileSystemTree = FSItem[];

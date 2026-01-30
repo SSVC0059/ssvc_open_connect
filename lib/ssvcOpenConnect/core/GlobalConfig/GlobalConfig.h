@@ -22,6 +22,7 @@
 #include <climits>
 #include <mutex>
 #include <type_traits>
+#include <unordered_map>
 
 /*
 Пример структуры с сериализацией:

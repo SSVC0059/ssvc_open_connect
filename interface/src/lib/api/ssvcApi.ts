@@ -18,7 +18,7 @@ import type {
  * Получение настроек SSVC
  */
 export async function fetchSettings(): Promise<SsvcSettings | undefined> {
-	const response = await apiFetch<{ ssvcSettings: SsvcSettings }>('/rest/oc_settings');
+	const response = await apiFetch<{ ssvcSettings: SsvcSettings }>('/rest/settings');
 	return response.success ? response.data.ssvcSettings : undefined;
 }
 
@@ -259,7 +259,7 @@ function getAuthHeaders(): HeadersInit {
 /**
  * Универсальный fetch-запрос с обработкой ошибок
  */
-async function apiFetch<T>(url: string, method: string = 'GET', body?: unknown): Promise<any> {
+export async function apiFetch<T>(url: string, method: string = 'GET', body?: unknown): Promise<any> {
 	try {
 		const response = await fetch(url, {
 			method,

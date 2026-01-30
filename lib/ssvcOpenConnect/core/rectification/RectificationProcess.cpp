@@ -26,7 +26,7 @@ RectificationProcess::RectificationProcess()
     currentProcessStatus(ProcessState::IDLE),
     metric(), _ssvcConnector(nullptr),
     _ssvcSettings(nullptr),
-    _openConnectSettingsService(nullptr),
+    _ssvcMqttSettingsService(nullptr),
     eventReceived(false)
 {
   memset(startTime, 0, sizeof(startTime));
@@ -35,10 +35,10 @@ RectificationProcess::RectificationProcess()
 
 void RectificationProcess::begin(SsvcConnector& connector,
                                  SsvcSettings& settings,
-                                 OpenConnectSettingsService& openConnectSettingsService) {
+                                 SsvcMqttSettingsService& ssvcMqttSettingsService) {
   _ssvcConnector = &connector;
   _ssvcSettings = &settings;
-  _openConnectSettingsService = &openConnectSettingsService;
+  _ssvcMqttSettingsService = &ssvcMqttSettingsService;
 
   xTaskCreatePinnedToCore(
       update,
@@ -313,7 +313,7 @@ void RectificationProcess::update(void* pvParameters)
             {
               ESP_LOGV(TAG, "Проверка сохраненного PID");
               constexpr int savedPid = 0;
-              // self->_openConnectSettingsService.read(
+              // self->_ssvcMqttSettingsService.read(
               //   [&](OpenConnectSettingsManager& settings)
               //   {
               //     savedPid = settings.pid;
@@ -326,7 +326,7 @@ void RectificationProcess::update(void* pvParameters)
                 {
                   ESP_LOGV(TAG,
                            "Сохраненный PID не совпадает с новым PID");
-                  // self->_openConnectSettingsService.update(
+                  // self->_ssvcMqttSettingsService.update(
                   //   [&](OpenConnectSettingsManager& settings)
                   //   {
                   //     settings.pid = newPid; // turn on the lights

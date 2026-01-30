@@ -91,5 +91,38 @@ void SensorCoordinator::executePollCycle() const
     SensorManager::getInstance().processReadingsAndPublish();
 
     ESP_LOGV(TAG, "Sensor poll cycle finished. Data published.");
+
+    for (PollingSubsystem* subsystem : _pollingSubsystems) {
+        subsystem->poll();
+    }
+
+    // 3. Проверка порогов после каждого обновления данных
+    AlarmMonitor::getInstance().checkAllSensors();
+
+    // После того как данные собраны и опубликованы в SensorManager
+    SensorManager::getInstance().processReadingsAndPublish();
+
+    // ВАЖНО: Вызываем уведомление.
+    // Т.к. метод const, нам нужно либо убрать const, либо использовать mutable для флага.
+    // Рекомендую убрать const у executePollCycle, так как он меняет состояние системы.
+    const_cast<SensorCoordinator*>(this)->notifyFirstScanDone();
 }
-#include "SensorCoordinator.h"
+
+// Добавьте реализацию методов
+void SensorCoordinator::onFirstScanComplete(OnFirstScanCallback cb) {
+    if (_firstScanDone) {
+        cb(); // Если уже просканировали, вызываем сразу
+    } else {
+        _firstScanCallbacks.push_back(cb);
+    }
+}
+
+void SensorCoordinator::notifyFirstScanDone() {
+    if (!_firstScanDone) {
+        _firstScanDone = true;
+        for (auto& cb : _firstScanCallbacks) {
+            if (cb) cb();
+        }
+        _firstScanCallbacks.clear(); // Очищаем память, так как событие разовое
+    }
+}
