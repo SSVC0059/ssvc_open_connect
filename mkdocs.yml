@@ -33,7 +33,6 @@ theme:
         name: Switch to light mode
       primary: indigo
       accent: indigo
-
   features:
     - navigation.instant
     - navigation.instant.prefetch
@@ -50,7 +49,9 @@ theme:
 
 
 nav:
-  - Главная: index.md
+  - Главная: 
+      - index.md
+      - disclaimer.md
   - "Подготовка":
       - preparation/controller.md
       - preparation/driver.md
@@ -62,18 +63,38 @@ nav:
       - usage/interfaces/uart.md
       - usage/interfaces/ds18b20.md
       - usage/interfaces/rgb_led.md
-  - "Начало работы":
+      - usage/interfaces/pin_out.md
+  - "Руководство пользователя":
       - usage/get_started.md
+      - usage/user_management.md
+      - usage/troubleshooting.md
+  - "Калькулятор ректификации":
+      - calculator/index.md
+      - calculator/manual.md
   - "Готовые модули":
-      - ready_made/connect.md
+      - ready_made/mini.md
       - ready_made/din_version.md
       - ready_made/inside_version.md
-  - Для разработчиков: develop/
+  - Для разработчиков: 
+      - develop/gettingstarted.md
+      - develop/build.md
+      - develop/codedump.md
+      - develop/mkdocs.md
+      - develop/ssvc_uart_api_docs.md
       
-  - "FAQ" : faq/faq.md
+  - "FAQ" : 
+      - faq/check_list.md
+      - faq/faq.md
   - "Прочее" :
       - info/changelog.md
 
+# Add custom CSS for MoonLight styling
+extra_css:
+  - stylesheets/openconnect.css
+  - stylesheets/calculator.css
+
+extra_javascript:
+  - javascripts/openconnect.js
 
 markdown_extensions:
   - attr_list
@@ -89,7 +110,10 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
-
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
       
 extra:
   social:
@@ -103,6 +127,9 @@ extra:
     actions:
       - accept
       - reject
+  analytics:
+    provider: google
+    property: G-TE0KVENQEE  # Ваш ID Google Analytics
 
 plugins:
   - search:
@@ -122,5 +149,5 @@ plugins:
             show_signature_annotations: true
 
 copyright: |
-  Copyright &copy; 2025 by <a href="https://github.com/thedemoncat"  target="_blank" rel="noopener">elims</a> -
+  Copyright &copy; 2025 by <a href="https://github.com/thedemoncat"  target="_blank" rel="noopener">demoncat</a> -
   <a href="#__consent">Изменить настройки файлов cookie</a>

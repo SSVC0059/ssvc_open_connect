@@ -7,11 +7,11 @@
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "/ssvc_open_connect/firmware/SSVC-Open-Connect_esp32-s3-devkitc-1-8m_0-2-4-0_webflash.bin",
+          "path": "/ssvc_open_connect/firmware/SSVC-Open-Connect_esp32-s3-devkitc-1-8m_0-2-4-2_webflash.bin",
           "offset": 0
         }
       ]
     }
   ],
-  "version": "0.2.4.0"
+  "version": "0.2.4.1"
 }
