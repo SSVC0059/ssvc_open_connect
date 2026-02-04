@@ -17,9 +17,6 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
-#include "components/sensors/OneWireThermalSubsystem/OneWireThermalSubsystem.h"
-#include "components/sensors/SensorManager/SensorManager.h"
-
 
 // Тег для логирования в этом файле
 static const char *TAG = "DS18B20_SENSOR";
@@ -81,4 +78,19 @@ float DS18B20Sensor::getData() const {
  */
 MeasuredValueType DS18B20Sensor::getMeasurementType() const {
     return MeasuredValueType::TEMPERATURE;
+}
+
+/**
+  * @brief Возвращает имя датчика.
+  */
+const std::string& DS18B20Sensor::getName() const {
+    return AbstractSensor::getName();
+}
+
+std::string DS18B20Sensor::getUnit() const {
+    return "°C";
+}
+
+std::string DS18B20Sensor::getType() const {
+    return "thermal";
 }

@@ -21,7 +21,7 @@
 #include "core/StatefulServices/TelemetryService/TelemetryService.h"
 #include "core/StatefulServices/TelegramSettingsService/TelegramSettingsService.h"
 #include "components/Led/StatusLed.h"
-
+#include "components/subsystem/I2CBusSubsystem.h"
 
 #if FT_ENABLED(FT_TELEGRAM_BOT)
 #include <components/subsystem/TelegramBotSubsystem.h>
@@ -41,7 +41,7 @@ class SsvcOpenConnect
 public:
   static SsvcOpenConnect& getInstance();
 
-  void subsystemManager();
+  static void subsystemManager();
   void begin(PsychicHttpServer& server, ESP32SvelteKit& esp32sveltekit, EventSocket* socket, SecurityManager* securityManager);
 
   ESP32SvelteKit* getESP32SvelteKit() const { return _esp32sveltekit; }

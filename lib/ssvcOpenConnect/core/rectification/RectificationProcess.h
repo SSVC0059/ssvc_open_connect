@@ -50,11 +50,12 @@ public:
 
   struct Common
   {
-    unsigned int mmhg;
+    float mmhg;
     float tp1;
     float tp2;
     bool relay;
     bool signal;
+    float relative_pressure;
   };
 
   enum class RectificationEvent
@@ -83,7 +84,7 @@ public:
     std::string time;
     float open;
     unsigned int period;
-    unsigned int tank_mmhg;
+    float tank_mmhg;
     float tp1_sap;
     float tp2_sap;
     float hysteresis;
@@ -126,7 +127,7 @@ public:
 
 
   void writeTelemetryTo(JsonVariant telemetry);
-  bool getStatus(const JsonVariant status);
+  bool getStatus(JsonVariant status);
 
   static std::string translateRectificationStage(const std::string& stageStr);
 
@@ -138,7 +139,11 @@ private:
   // Приватный конструктор
   RectificationProcess();
 
+  float initial_pressure;
+  bool initial_pressure_set;
+
   static void update(void* pvParameters);
+  [[noreturn]] static void pressureSenderTask(void* pvParameters);
 
   int pid;
   boolean pidChecked = false; // флаг проверки PID

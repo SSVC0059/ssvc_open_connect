@@ -145,7 +145,7 @@
         }
 
         // Находим максимальную температуру в SensorMap
-        const maxTemp = Math.max(...sensorEntries.map(([, temp]) => temp));
+				const maxTemp = Math.max(...sensorEntries.map(([, details]) => details.v));
 
         return Number(maxTemp.toFixed(2));
 	}
@@ -161,7 +161,6 @@
     });
 
 </script>
-
 <svg id="Layer_2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 280 470" class="svg-column">
 	<defs>
 		<linearGradient id="linear-gradient" x1="121.01" y1="301.03" x2="121.01" y2="40.04" gradientUnits="userSpaceOnUse">
@@ -246,11 +245,11 @@
 						class="sensor-text">{tankThermalValue}</text>
 		</g>
 	</g>
-	{#if telemetry.common.mmhg}
+	{#if telemetry.tank_mmhg}
 		<g>
 			<g>
 				<text x="125.5" y="377"
-							class="sensor-text">{telemetry.common.mmhg}ммРс</text>
+							class="sensor-text">{telemetry.tank_mmhg}ммРс</text>
 			</g>
 		</g>
 	{/if}

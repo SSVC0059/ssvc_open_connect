@@ -1,3 +1,4 @@
+
 #include "OneWireThermalSubsystem.h"
 
 /**
@@ -17,6 +18,7 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
+#include "components/sensors/DS18B20Sensor/DS18B20Sensor.h"
 #include "components/sensors/SensorManager/SensorManager.h"
 #include "core/SsvcOpenConnect.h"
 
@@ -62,8 +64,8 @@ bool OneWireThermalSubsystem::initialize() {
     return true;
 }
 
-const char* OneWireThermalSubsystem::getName() const {
-    return "OW_THERMAL_SUBSYS";
+const std::string& OneWireThermalSubsystem::getName() const {
+    return _subsystemName;
 }
 
 void OneWireThermalSubsystem::discoverAndRegisterSensors(){

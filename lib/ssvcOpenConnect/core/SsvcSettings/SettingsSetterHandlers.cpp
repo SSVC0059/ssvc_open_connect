@@ -65,7 +65,7 @@ std::map<String, std::unique_ptr<ParamHandler>> createHandlers() {
   // tank_mmhg
   handlers.emplace("tank_mmhg",
                    std::unique_ptr<UnsignedCharHandler>(new UnsignedCharHandler(
-                       [](SsvcSettings::Builder &b, const unsigned char v) {
+                       [](SsvcSettings::Builder &b, const float v) {
                          b.setTank_mmhg(v);
                        })));
 

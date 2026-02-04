@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import ThermalSensorSettings from '$lib/components/OCSettings/ThermalSensorSettings.svelte';
+	import SensorsSettings from '$lib/components/OCSettings/SensorsSettings.svelte';
 	import TelegramSettings from '$lib/components/OCSettings/TelegramSettings.svelte';
 	import ProfileManager from '$lib/components/profiles/ProfileManager.svelte';
 	import { getSubsystemState, setSubsystemState } from '$lib/api/ssvcApi';
@@ -11,12 +11,16 @@
 		title: string;
 		component: any;
 		isStatic?: boolean; // Flag for tabs that don't depend on subsystem state
+		alwaysShow?: boolean; // Flag for tabs that should always be visible
+		props?: Record<string, any>;
 	}
 
 	let subsystemsState = $state<SubsystemsState>({
+		atm_sensor: false,
+		i2c_bus: false,
+		settings: false,
 		telegram_bot: false,
-		thermal: false,
-		// другие подсистемы
+		thermal: false
 	});
 
 	let error = $state('');
@@ -32,13 +36,21 @@
 		},
 		{
 			id: 'thermal',
-			title: 'Термодатчики',
-			component: ThermalSensorSettings
+			title: 'Датчики температуры',
+			component: SensorsSettings,
+			props: { sensorType: 'thermal' }
+		},
+		{
+			id: 'atm_sensor',
+			title: 'Датчики давления',
+			component: SensorsSettings,
+			props: { sensorType: 'pressure' }
 		},
 		{
 			id: 'telegram_bot',
 			title: 'Telegram',
-			component: TelegramSettings
+			component: TelegramSettings,
+			alwaysShow: true
 		}
 		// Здесь можно добавить другие вкладки
 	];
@@ -52,15 +64,20 @@
 			const state = await getSubsystemState();
 			if (state) {
 				subsystemsState = state;
-				// Фильтруем вкладки, оставляя статические и те, которые есть в ответе сервера
-				filteredTabs = availableTabs.filter(tab => tab.isStatic || tab.id in state);
+				// Фильтруем вкладки:
+				// - isStatic: всегда показываем
+				// - alwaysShow: всегда показываем (для настроек типа Telegram)
+				// - state[tab.id]: показываем, если подсистема включена (для датчиков)
+				filteredTabs = availableTabs.filter(
+					(tab) => tab.isStatic || tab.alwaysShow || state[tab.id as keyof SubsystemsState]
+				);
 			} else {
 				// Fallback if state is not returned, show only static tabs
-				filteredTabs = availableTabs.filter(tab => tab.isStatic);
+				filteredTabs = availableTabs.filter((tab) => tab.isStatic || tab.alwaysShow);
 			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Ошибка загрузки';
-			filteredTabs = availableTabs.filter(tab => tab.isStatic); // Show static tabs on error
+			filteredTabs = availableTabs.filter((tab) => tab.isStatic || tab.alwaysShow); // Show static/alwaysShow tabs on error
 		} finally {
 			isLoading = false;
 		}
@@ -106,7 +123,7 @@
 	});
 
 	function isSubsystemEnabled(id: string): boolean {
-		const tab = availableTabs.find(t => t.id === id);
+		const tab = availableTabs.find((t) => t.id === id);
 		if (tab?.isStatic) return true; // Static tabs are always "enabled"
 
 		const key = id as keyof SubsystemsState;
@@ -120,13 +137,13 @@
 		<div class="mobile-tabs-header" class:menu-open={isMobileMenuOpen}>
 			<button
 				class="mobile-menu-toggle"
-				onclick={() => isMobileMenuOpen = !isMobileMenuOpen}
+				onclick={() => (isMobileMenuOpen = !isMobileMenuOpen)}
 			>
 				<span class="mobile-menu-header">
 					{filteredTabs[activeTab]?.title || 'Меню'}
 				</span>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-					<path d="M7 10l5 5 5-5z"/>
+					<path d="M7 10l5 5 5-5z" />
 				</svg>
 			</button>
 
@@ -160,7 +177,8 @@
 
 		<!-- Контент -->
 		{#if isLoading}
-			<p>Загрузка...</p> <!-- Or a spinner component -->
+			<p>Загрузка...</p>
+			<!-- Or a spinner component -->
 		{:else if error}
 			<p style="color: red;">{error}</p>
 		{:else}
@@ -168,6 +186,7 @@
 				{#if activeTab === index}
 					{@const Component = tab.component}
 					<Component
+						{...tab.props}
 						disabled={!isSubsystemEnabled(tab.id)}
 						onToggle={tab.isStatic ? undefined : toggleSubsystemHandler(tab.id as keyof SubsystemsState)}
 					/>

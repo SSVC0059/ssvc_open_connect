@@ -19,6 +19,7 @@
 
 #include <cstring>
 #include <string>
+#include <utility>
 #include "components/Zone/SensorZone.h"
 
 enum class MeasuredValueType {
@@ -39,9 +40,9 @@ public:
 
     // Конструктор
     AbstractSensor(const Address addr,
-                    const std::string& name,
+                    std::string  name,
                     const SensorZone zone = SensorZone::UNKNOWN)
-        : name(name),
+        : name(std::move(name)),
           currentZone(zone),
         _dataValid(false),
         _isInitialized(false)
@@ -57,15 +58,39 @@ public:
     virtual bool isDataValid() const { return _dataValid; }
     virtual bool isInitialized() const { return _isInitialized; }
 
+
     // Геттеры
     const Address& getAddress() const { return address; }
-    const std::string& getName() const { return name; }
+    /**
+         * @brief Получить I2C адрес (первый байт общего массива Address)
+         */
+    uint8_t getI2CAddress() const {
+        return address[0];
+    }
+
+    virtual const std::string& getName() const { return name; }
     SensorZone getZone() const { return currentZone; }
+
+    /**
+     * @brief Возвращает строковое представление единицы измерения (например, "°C" или "mmHg")
+     */
+    virtual std::string getUnit() const = 0;
+    virtual std::string getType() const = 0;
 
     // Сеттер для зоны
     void setZone(const SensorZone newZone) { currentZone = newZone; }
     void setName(const std::string& newName) { this->name = newName; }
+    /**
 
+     * @brief Установить I2C адрес
+     * @param newAddr 7-битный адрес устройства
+     */
+    void setI2CAddress(const uint8_t newAddr) {
+        address[0] = newAddr;
+        // Остальные байты для I2C обнуляем для чистоты,
+        // чтобы SensorManager не выводил мусор
+        for(int i = 1; i < 8; i++) address[i] = 0;
+    }
     virtual MeasuredValueType getMeasurementType() const = 0;
 
 protected:

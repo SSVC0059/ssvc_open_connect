@@ -21,7 +21,8 @@
 #include "DallasTemperature.h"
 #include "components/sensors/AbstractSensor/AbstractSensor.h"
 #include "components/Zone/SensorZone.h"
-
+#include "components/sensors/OneWireThermalSubsystem/OneWireThermalSubsystem.h"
+#include "components/sensors/SensorManager/SensorManager.h"
 
 /**
  * @brief Конкретный класс для управления датчиком DS18B20.
@@ -44,6 +45,9 @@ public:
 
     void readValue() override;
     float getData() const override;
+    const std::string& getName() const override;
+    std::string getUnit() const override;
+    std::string getType() const override;
     MeasuredValueType getMeasurementType() const override;
 
 private:

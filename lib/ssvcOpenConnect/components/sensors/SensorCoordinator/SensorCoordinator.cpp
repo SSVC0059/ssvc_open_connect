@@ -81,15 +81,6 @@ void SensorCoordinator::executePollCycle() const
         ESP_LOGV(TAG, "No polling subsystems registered. Skipping poll cycle.");
         return;
     }
-    ESP_LOGV(TAG, "Starting sensor poll cycle for %zu subsystems.", _pollingSubsystems.size());
-    // 1. СБОР ДАННЫХ (Вызов poll() у каждой подсистемы) ---
-    for (PollingSubsystem* subsystem : _pollingSubsystems) {
-        subsystem->poll();
-    }
-    //  2. ПУБЛИКАЦИЯ ДАННЫХ (Централизованно через SensorManager)
-    // SensorManager собирает данные из AbstractSensor'ов и обновляет SensorDataService.
-    SensorManager::getInstance().processReadingsAndPublish();
-
     ESP_LOGV(TAG, "Sensor poll cycle finished. Data published.");
 
     for (PollingSubsystem* subsystem : _pollingSubsystems) {

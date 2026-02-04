@@ -17,6 +17,8 @@
 
 #include "SsvcOpenConnect.h"
 
+#include "components/subsystem/AtmosphericSubsystem.h"
+
 
 SsvcOpenConnect& SsvcOpenConnect::getInstance() {
     static SsvcOpenConnect instance;
@@ -67,6 +69,7 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     SensorCoordinator::getInstance().registerPollingSubsystem(
         &OneWireThermalSubsystem::getInstance()
     );
+
     SensorCoordinator::getInstance().startPolling(SENSOR_POLL_INTERVAL_MS);
 
     _sensorConfigService->addUpdateHandler([&](const String& originId) {
@@ -154,6 +157,8 @@ void SsvcOpenConnect::subsystemManager()
 
     subsystemManager.registerSubsystem<SettingsSubsystem>();
     subsystemManager.registerSubsystem<ThermalSubsystem>();
+    subsystemManager.registerSingleton<I2CBusSubsystem>();
+    subsystemManager.registerSubsystem<AtmosphericSubsystem>();
 
     #if FT_ENABLED(FT_TELEGRAM_BOT)
         subsystemManager.registerSubsystem<TelegramBotSubsystem>();
@@ -162,6 +167,8 @@ void SsvcOpenConnect::subsystemManager()
 
     subsystemManager.setInitialState("settings", true);
     subsystemManager.setInitialState("thermal", true);
+    subsystemManager.setInitialState("i2c_bus", true);
+    subsystemManager.setInitialState("atm_sensor", true);
 
     #if FT_ENABLED(FT_TELEGRAM_BOT)
         subsystemManager.setInitialState("telegram_bot", false);
