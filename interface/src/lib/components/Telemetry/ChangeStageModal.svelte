@@ -78,6 +78,9 @@
 		if (telemetry.tp1_target !== undefined && tp1_target !== telemetry.tp1_target) {
 			tasks.push(updateSetting('s_temp', tp1_target));
 		}
+		if (telemetry.tp2_target !== undefined && tp2_target !== telemetry.tp2_target) {
+			tasks.push(updateSetting('s_temp', tp2_target));
+		}
 		if (telemetry.hysteresis !== undefined && hysteresis !== telemetry.hysteresis) {
 			tasks.push(updateSetting('s_hyst', hysteresis));
 		}
