@@ -69,6 +69,7 @@ nav:
       - usage/get_started.md
       - usage/user_management.md
       - usage/troubleshooting.md
+      - usage/telegram.md
   - "Калькулятор ректификации":
       - calculator/index.md
       - calculator/manual.md
