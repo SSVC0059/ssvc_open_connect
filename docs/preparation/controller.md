@@ -4,11 +4,11 @@
 
 Open Connect разрабатывается и тестируется на контроллере ESP32-S3
 
-<div style="flex">
+<div style="display: flex; justify-content: center;">
 <img src="/ssvc_open_connect/preparation/media/esp32.png" style="height:680px"> 
 </div>
 
-Такие контроллеры могут выпускаться в различных вариантах. В проекте рекомендуется использовать контроллер маркировкой <span style="color: red;">N16R8</span> в или <span style="color: red;">N8R8</span>
+Такие контроллеры могут выпускаться в различных вариантах. В проекте рекомендуется использовать контроллер маркировкой <span style="color: red;">N16R8</span> в или <span style="color: red;">N8R8</span>. Использование других моделей на свой страх и риск в случае если вы понимаете как собрать прошивку для своей модели.
 
 Эти контроллеры отличаются между собой установленной на них размером флеш памяти - подробнее можете почитать о них в [документации](https://documentation.espressif.com/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf) на сайте производителя.
 

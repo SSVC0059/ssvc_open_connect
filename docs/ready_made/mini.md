@@ -4,7 +4,7 @@
 Приимуществом данного корпуса является то, что он не занимает места на DIN рейке и более компактный
 
 
-<div class="flex">
+<div style="display: flex; justify-content: center;">
 <img src="/ssvc_open_connect/ready_made/media/mini_box.jpg" style="height:360
 px"> 
 </div>

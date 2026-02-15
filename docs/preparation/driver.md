@@ -8,7 +8,7 @@
 При подключении контроллеа через  <span style="color: red;">USB&OTG</span> в диспечере устройств определится как USB JTAG debug unit
 
 
-<div class="flex">
+<div style="display: flex; justify-content: center;">
 <img src="/ssvc_open_connect/preparation/media/usb_otg.png" style="height:240px"> 
 </div>
 
@@ -16,8 +16,8 @@
 При подключении контроллера через  <span style="color: red;">USB to serial</span> в диспетчере устройств определится как USB-Enhanced-SERIAL CH343
 )
 
-<div style="flex">
+<div style="display: flex; justify-content: center;">
 <img src="/ssvc_open_connect/preparation/media/usb_serial.png" style="height:240px"> 
 </div>
 
-Если драйвер не обнаружен, так же можно почитьать [эту статью](https://myrobot.ru/downloads/driver-ch9102x-esp32.php) по порядку установки
+Если драйвер не обнаружен, так рекомендуется прочитать [эту статью](https://myrobot.ru/downloads/driver-ch9102x-esp32.php)
