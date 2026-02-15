@@ -6,7 +6,7 @@
 <img src="media/main_mobile_light.png" style="height:480px"> 
 </div>
 
-Модуль SSVC0059 Open Connect  предназначен для расширения возможностей автоматики отбора для ректификации [SSVC0059 V2 ](https://smartmodule.ru/portfolio/0059_v2/)
+Модуль SSVC0059 Open Connect предназначен для расширения возможностей автоматики отбора для ректификации [SSVC0059 V2 ](https://smartmodule.ru/portfolio/0059_v2/)
 
 
 ## Возможности модуля
