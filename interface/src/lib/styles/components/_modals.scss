@@ -7,7 +7,7 @@
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: rgba(var(--black), 0.5);
+  background: color-mix(in srgb, var(--black) 50%, transparent);
   backdrop-filter: blur(4px);
 
   &.fade-in {

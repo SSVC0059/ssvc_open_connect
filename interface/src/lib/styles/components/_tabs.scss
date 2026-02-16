@@ -118,7 +118,7 @@
       }
 
       &:hover {
-        background: rgba(var(--primary-100), 0.3);
+        background: color-mix(in srgb, var(--primary-100) 30%, transparent);
         color: var(--primary-700);
         box-shadow: none;
         svg {
@@ -239,12 +239,12 @@
     }
 
     &:hover {
-      background: rgba(var(--primary-100), 0.3);
+      background: color-mix(in srgb, var(--primary-100) 30%, transparent);
       color: var(--primary-700);
     }
 
     &.mobile-tab-active {
-      background: rgba(var(--primary-500), 0.1);
+      background: color-mix(in srgb, var(--primary-500) 10%, transparent);
       color: var(--primary-800);
       font-weight: 600;
     }
