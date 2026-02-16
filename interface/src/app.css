@@ -29,6 +29,15 @@
         --primary-600: #486581;
         --primary-700: #334e68;
         --primary-800: #243b53;
+
+        /* Glass color aliases */
+        --glass-primary-800: var(--primary-800);
+        --glass-primary-200: var(--primary-200);
+        --glass-secondary-600: var(--primary-600);
+        --glass-secondary-300: var(--primary-300);
+        --glass-secondary-700: var(--primary-700);
+        --glass-secondary-500: var(--primary-500);
+
         --blue-300: #abcafa;
         --blue-500: #3b82f6;
         --blue-600: #2563eb;
@@ -37,6 +46,7 @@
         --green-600: #059669;
         --yellow-500: #f59e0b;
         --yellow-600: #d97706;
+        --red-100: #fee2e2;
         --red-300: #d87c7c;
         --red-500: #cd4848;
         --red-600: #dc2626;
@@ -47,6 +57,12 @@
         --gray-300: #919191;
         --gray-500: #636363;
         --gray-600: #4c4c4c;
+
+        /* RGB значения для использования в rgba() */
+        --primary-100-rgb: 240, 244, 248;
+        --primary-500-rgb: 98, 125, 152;
+        --black-rgb: 0, 0, 0;
+        --blue-500-rgb: 59, 130, 246;
 
         /* Тени и эффекты */
         --glass-shadow: 0 8px 32px 0 rgba(36, 59, 83, 0.37);
