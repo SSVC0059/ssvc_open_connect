@@ -60,9 +60,9 @@
 		.unsupported-banner {
 			padding: 0.75rem 1rem;
 			margin-bottom: 1rem;
-			border: 1px solid #fde68a; /* yellow-300 */
-			background-color: #fef3c7; /* yellow-100 */
-			color: #92400e; /* amber-800 */
+			border: 1px solid var(--yellow-300);
+			background-color: var(--yellow-100);
+			color: var(--yellow-800);
 			border-radius: 0.5rem;
 			text-align: center;
 			font-size: 0.9rem;
