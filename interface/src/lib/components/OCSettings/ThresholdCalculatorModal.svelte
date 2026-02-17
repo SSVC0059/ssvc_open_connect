@@ -82,7 +82,7 @@
 				<h2 class="modal-title">Авторасчет порогов</h2>
 				<div class="modal-divider"></div>
 				<div class="modal-body">
-					<p class="info-text" style="text-align: center; margin-bottom: 1rem;">
+					<p class="info-text info-text--centered info-text--mb">
 						Текущее значение <strong>{currentValue.toFixed(2)} ммРс</strong> будет установлено как
 						минимальный порог.
 					</p>
@@ -120,7 +120,7 @@
 						</select>
 					</div>
 
-					<div class="calculated-thresholds info-text" style="text-align: center; margin-top: 1rem;">
+					<div class="calculated-thresholds info-text info-text--centered info-text--mt">
 						<p>Предупреждение: <strong>{thresholds.dangerous.toFixed(2)} ммРс</strong></p>
 						<p>Критический: <strong>{thresholds.critical.toFixed(2)} ммРс</strong></p>
 					</div>
@@ -134,3 +134,15 @@
 		</div>
 	</Portal>
 {/if}
+
+<style>
+	.info-text--centered {
+		text-align: center;
+	}
+	.info-text--mb {
+		margin-bottom: 1rem;
+	}
+	.info-text--mt {
+		margin-top: 1rem;
+	}
+</style>

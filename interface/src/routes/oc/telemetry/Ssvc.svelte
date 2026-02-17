@@ -235,6 +235,7 @@
 </div>
 
 <style lang="scss">
+	@use "$lib/styles/base/variables" as v;
 	@use "$lib/styles/base/mixins" as *;
 
   // Base Styles
@@ -276,7 +277,7 @@
       }
 
       // On mobile, stack everything and center it
-      @media (max-width: 768px) {
+      @media (max-width: v.$breakpoint-md) {
         flex-direction: column;
         justify-content: center;
         gap: 0.5rem;
@@ -303,7 +304,7 @@
           display: flex;
           flex-direction: column;
 
-          @media (min-width: 1024px) {
+          @media (min-width: v.$breakpoint-lg) {
             grid-column: span 3;
           }
 
@@ -334,22 +335,22 @@
           }
         }
 
-        @media (min-width: 1024px) {
+        @media (min-width: v.$breakpoint-lg) {
           flex-direction: row;
 
           .sidebar-left {
-            flex: 0 0 25%; // 25% ширины, не растягивается
-            min-width: 250px;
+            flex: 0 0 22%; // при 1024px оставляем больше места центру
+            min-width: 200px;
           }
 
           .center-panel {
-            flex: 1; // Занимает оставшееся пространство
-            min-width: 0; // Важно для корректного сжатия
+            flex: 1;
+            min-width: 320px; // гарантированный минимум для схемы
           }
 
           .sidebar-right {
-            flex: 0 0 25%; // 25% ширины
-            min-width: 250px;
+            flex: 0 0 22%;
+            min-width: 200px;
           }
         }
       }

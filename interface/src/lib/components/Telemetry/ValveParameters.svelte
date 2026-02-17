@@ -69,7 +69,7 @@
 {/if}
 
 <style lang="scss">
-
+  @use "$lib/styles/base/variables" as v;
   @use "$lib/styles/base/mixins" as *;
 
   .valve-content {
@@ -104,7 +104,7 @@
       margin-top: 0.5rem;
       font-size: 1rem;
 
-      @media (min-width: 1024px) {
+      @media (min-width: v.$breakpoint-lg) {
         font-size: 1.25rem;
       }
     }
