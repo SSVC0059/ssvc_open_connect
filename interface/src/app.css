@@ -39,9 +39,12 @@
         --glass-secondary-500: var(--primary-500);
 
         --blue-300: #abcafa;
+        --blue-400: #4c9aff;
         --blue-500: #3b82f6;
         --blue-600: #2563eb;
         --cyan-500: #00d4ef;
+        --orange-500: #ff9900;
+        --orange-500-light: rgba(255, 153, 0, 0.15);
         --green-300: #80db93;
         --green-400: #64ff00;
         --green-500: #10b981;
@@ -56,6 +59,8 @@
         --red-400: #ff6a6e;
         --red-500: #cd4848;
         --red-600: #dc2626;
+        --red-600-light: rgba(220, 38, 38, 0.25);
+        --red-600-dark: #b91c1c;
         --red-700: #b91c1c;
         --white: #ffffff;
         --black: #000000;
