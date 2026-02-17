@@ -93,7 +93,7 @@
     .status-completed {
       margin-top: 0.25rem;
       font-weight: 600;
-      color: #10b981;
+      color: var(--green-500);
       text-align: center;
     }
 

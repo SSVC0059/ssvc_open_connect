@@ -63,3 +63,22 @@
     }
   }
 }
+
+/* ===== ЗАГОЛОВКИ И ОПИСАНИЯ НАСТРОЕК ===== */
+.settings-title {
+  font-size: calc(1rem + 0.3vw);
+  font-weight: 600;
+  text-align: center;
+  color: var(--primary-500);
+  @include m.dark-theme-color;
+}
+
+.settings-description {
+  font-size: 0.875rem;
+  color: var(--primary-500);
+  margin: 0.25rem 0 0 0;
+
+  @media (prefers-color-scheme: dark) {
+    color: rgba(255, 255, 255, 0.7);
+  }
+}

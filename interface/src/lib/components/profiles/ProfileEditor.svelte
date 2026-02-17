@@ -800,6 +800,15 @@
 		align-items: flex-end;
 		transition: opacity 0.2s;
 
+		.input-group {
+			min-width: 5.5rem; /* чтобы числа вроде 0,25 не обрезались */
+		}
+
+		.input-field {
+			min-width: 4.5em; /* запас под дробную часть */
+			box-sizing: border-box;
+		}
+
 		&.disabled {
 			opacity: 0.3;
 			pointer-events: none;
