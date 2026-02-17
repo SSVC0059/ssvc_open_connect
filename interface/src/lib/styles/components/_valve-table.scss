@@ -75,7 +75,8 @@
     pointer-events: none;
     &:focus {
       border-color: var(--primary-300);
-      box-shadow: none;
+      /* Видимый индикатор фокуса для доступности (Tab-навигация) */
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue-500) 30%, transparent);
     }
   }
 }

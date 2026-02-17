@@ -18,7 +18,7 @@
   font-size: 0.875rem;
   border: 1px solid var(--primary-300);
   border-radius: var(--border-radius);
-  outline: none;
+  outline: none; /* видимый фокус задаётся в &:focus через box-shadow */
   transition: var(--transition);
   background-color: var(--white);
   color: var(--primary-800);
