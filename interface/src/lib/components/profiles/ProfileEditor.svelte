@@ -854,7 +854,7 @@
 		border-top: 1px solid var(--primary-300);
 		position: sticky;
 		bottom: 0;
-		z-index: 10;
+		z-index: var(--z-dropdown);
 	}
 
 	.btn-primary,

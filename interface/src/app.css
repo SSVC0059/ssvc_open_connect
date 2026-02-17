@@ -84,6 +84,14 @@
         /* Размеры */
         --border-radius: 0.75rem;
         --transition: all 0.3s ease;
+
+        /* Z-index шкала */
+        --z-base: 0;
+        --z-dropdown: 10;
+        --z-sticky: 40;
+        --z-modal-backdrop: 40;
+        --z-modal: 50;
+        --z-popover: 1000;
     }
 
     /* Темная тема — переменные в одном месте (единый источник) */
