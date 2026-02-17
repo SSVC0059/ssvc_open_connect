@@ -174,6 +174,22 @@
   }
 }
 
+/* Тёмная тема: панель редактора и плейсхолдер «Выберите профиль» */
+@media (prefers-color-scheme: dark) {
+  .profile-settings-panel {
+    background: var(--dark-surface-color);
+  }
+
+  .profile-settings-placeholder {
+    border-color: var(--dark-border-color);
+    color: var(--dark-text-muted);
+
+    h3 {
+      color: var(--primary-200);
+    }
+  }
+}
+
 .profile-loading-state, .profile-error-state {
   flex-grow: 1;
   display: flex;

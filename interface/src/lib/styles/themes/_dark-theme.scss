@@ -1,17 +1,8 @@
-/* ===== ДОБАВЛЕНИЕ СТИЛЕЙ WIZARD В ТЕМНУЮ ТЕМУ ===== */
+/* ===== СТИЛИ ТЕМНОЙ ТЕМЫ (WIZARD, ФОРМЫ, ТАБЛИЦЫ) =====
+   Переменные темы определены в app.css: @media (prefers-color-scheme: dark) :root
+*/
 @media (prefers-color-scheme: dark) {
 
-  /* Переменные для примера (если они не определены глобально) */
-  /*
-   */
-  :root {
-    --dark-bg-overlay: rgba(0, 0, 0, 0.75);
-    --dark-surface-color: #2d3748;
-    --dark-footer-bg: #4a5568;
-    --dark-step-inactive-bg: #5a6575;
-    --dark-text-muted: #a0aec0;
-    --dark-border-color: #4a5568;
-  }
   // Контейнер и Оверлей
   .wizard-overlay-override {
     background-color: var(--dark-bg-overlay); // Новый оверлей

@@ -312,4 +312,36 @@
 		color: var(--red-700);
 		border: 1px solid var(--red-200);
 	}
+
+	/* Тёмная тема — карточки профиля в редакторе */
+	@media (prefers-color-scheme: dark) {
+		.card {
+			background-color: var(--dark-surface-color);
+			border-color: var(--dark-border-color);
+		}
+		.card-title {
+			color: var(--primary-200);
+			border-bottom-color: var(--dark-border-color);
+		}
+		.summary-card {
+			background-color: var(--dark-footer-bg);
+			border-color: var(--dark-border-color);
+		}
+		.fraction-card {
+			background-color: var(--dark-step-inactive-bg);
+			border-color: var(--dark-border-color);
+		}
+		.fraction-title {
+			color: var(--primary-200);
+		}
+		.message-box {
+			background-color: var(--dark-step-inactive-bg);
+			color: var(--dark-text-muted);
+		}
+		.error-box {
+			background-color: rgba(185, 28, 28, 0.3);
+			color: var(--red-300);
+			border-color: var(--red-600);
+		}
+	}
 </style>

@@ -75,11 +75,18 @@
         --transition: all 0.3s ease;
     }
 
-    /* Темная тема */
+    /* Темная тема — переменные в одном месте (единый источник) */
     @media (prefers-color-scheme: dark) {
         :root {
             --glass-background: rgba(0, 0, 0, 0.25);
             --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+            /* Переменные тёмной темы (wizard, overlay, surfaces, borders) */
+            --dark-bg-overlay: rgba(0, 0, 0, 0.75);
+            --dark-surface-color: #2d3748;
+            --dark-footer-bg: #4a5568;
+            --dark-step-inactive-bg: #5a6575;
+            --dark-text-muted: #a0aec0;
+            --dark-border-color: #4a5568;
         }
     }
 }
