@@ -395,7 +395,7 @@
 					<div class="settings-col">
 						<h4 class="col-title">Параметры отбора</h4>
 
-						<div class="sub-settings-grid" style="border-top: none; padding-top: 0;">
+						<div class="sub-settings-grid sub-settings-grid--no-top">
 							<div class="sub-settings-group">
 								<h5 class="sub-settings-title">Завершение отбора</h5>
 								<div class="input-group">
@@ -735,6 +735,11 @@
 
 		@media (min-width: v.$breakpoint-md) {
 			grid-template-columns: 1fr 1fr;
+		}
+
+		&--no-top {
+			border-top: none;
+			padding-top: 0;
 		}
 	}
 
