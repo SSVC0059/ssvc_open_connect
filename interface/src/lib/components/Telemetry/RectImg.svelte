@@ -322,7 +322,8 @@
 	<circle class="cls-8" cx="217.18" cy="159.1" r="4.81"/>
 </svg>
 
-<style>
+<style lang="scss">
+    @use "$lib/styles/base/variables" as v;
 
     .sensor-text {
         font-family: Arial, sans-serif;
@@ -416,13 +417,13 @@
         filter: drop-shadow(-10px -10px 15px rgb(0 0 0 / 40%));
 
         /* Адаптивность для мобильных */
-        @media (max-width: 768px) {
+        @media (max-width: v.$breakpoint-md) {
             max-width: 90vw;
             max-height: 70vh;
         }
 
         /* Для очень маленьких экранов */
-        @media (max-width: 480px) {
+        @media (max-width: v.$breakpoint-xs) {
             max-width: 95vw;
             max-height: 60vh;
         }

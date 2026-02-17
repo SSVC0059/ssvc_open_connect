@@ -1,3 +1,5 @@
+@use "$lib/styles/base/variables" as v;
+
 .profile-manager-layout {
   display: grid;
   grid-template-columns: 1fr;
@@ -9,12 +11,12 @@
   border: var(--glass-border);
   border-radius: var(--border-radius);
 
-  @media (min-width: 768px) {
+  @media (min-width: v.$breakpoint-md) {
     grid-template-columns: 300px 1fr;
   }
 
   &.editing {
-    @media (min-width: 768px) {
+    @media (min-width: v.$breakpoint-md) {
       grid-template-columns: 0 1fr;
     }
 
@@ -145,7 +147,7 @@
     grid-template-columns: 1fr;
     gap: 1.5rem;
 
-    @media (min-width: 1024px) {
+    @media (min-width: v.$breakpoint-lg) {
         grid-template-columns: repeat(2, 1fr);
     }
 }

@@ -572,6 +572,8 @@
 {/if}
 
 <style lang="scss">
+	@use "$lib/styles/base/variables" as v;
+
 	.editor-layout {
 		display: flex;
 		flex-direction: column;
@@ -683,7 +685,7 @@
 		grid-template-columns: 1fr;
 		gap: 1.5rem;
 
-		@media (min-width: 768px) {
+		@media (min-width: v.$breakpoint-md) {
 			grid-template-columns: 2fr 1fr;
 		}
 	}
@@ -704,7 +706,7 @@
 		gap: 0.75rem;
 		align-self: start; /* Не растягиваться на всю высоту, если левая колонка выше */
 
-		@media (min-width: 1024px) {
+		@media (min-width: v.$breakpoint-lg) {
 			grid-template-columns: 1fr 1fr;
 			gap: 0.5rem 1rem;
 
@@ -731,7 +733,7 @@
 		border-top: 1px solid var(--primary-300);
 		padding-top: 1rem;
 
-		@media (min-width: 768px) {
+		@media (min-width: v.$breakpoint-md) {
 			grid-template-columns: 1fr 1fr;
 		}
 	}

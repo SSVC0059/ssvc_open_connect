@@ -114,7 +114,7 @@
 
 
 // Стили для мобильных устройств (карусель)
-@media (max-width: 480px) {
+@media (max-width: v.$breakpoint-xs) {
   .steps-container {
     position: relative;
     padding: 0.5rem 0;

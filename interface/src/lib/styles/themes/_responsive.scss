@@ -1,6 +1,8 @@
 // file: themes/_responsive.scss
+@use "$lib/styles/base/variables" as v;
+
 /* ===== АДАПТИВНОСТЬ (ГЛОБАЛЬНАЯ) ===== */
-@media (max-width: 640px) {
+@media (max-width: v.$breakpoint-sm) {
   .settings-container {
     padding: 0.5rem;
     gap: 0.5rem;
