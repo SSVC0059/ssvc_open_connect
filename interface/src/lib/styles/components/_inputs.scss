@@ -25,7 +25,7 @@
 
   &:focus {
     border-color: var(--blue-500);
-    box-shadow: 0 0 0 3px rgba(var(--blue-500), 0.2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue-500) 20%, transparent);
   }
 
   @include m.dark-theme-color;

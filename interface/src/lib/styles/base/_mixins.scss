@@ -20,7 +20,7 @@
     color: var(--primary-200);
 
     .border {
-      background-color: rgba(var(--black), 0.25);
+      background-color: color-mix(in srgb, var(--black) 25%, transparent);
     }
 
     &.active {
