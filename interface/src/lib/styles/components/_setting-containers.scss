@@ -77,7 +77,7 @@
       cursor: default;
       background-color: var(--primary-100); // Используем фон для индикации неактивности
       box-shadow: none;
-      border-color: var(--primary-200) !important; // Переопределяем цвет рамки
+      border-color: var(--primary-200);
     }
   }
 }
@@ -105,15 +105,15 @@
 }
 
 // Глобальный класс для принудительной блокировки всех вложенных элементов
+// body в селекторе даёт достаточную специфичность вместо !important (в т.ч. поверх Tailwind)
+body .read-only,
+body .read-only * {
+  cursor: not-allowed;
+}
+
 .read-only {
   pointer-events: none;
   opacity: 0.5;
-
-  // Рекурсивно отключаем все интерактивные дочерние элементы
-  // и меняем курсор, чтобы показать неактивность
-  &, * {
-    cursor: not-allowed !important;
-  }
 
   button, input, textarea, select, a {
     pointer-events: none;

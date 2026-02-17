@@ -251,16 +251,16 @@
     }
   }
 
-  /* Утилитарные классы для responsive */
-  .desktop-only {
+  /* Утилитарные классы для responsive (селектор с body для достаточной специфичности без !important) */
+  body & .desktop-only {
     @media (max-width: v.$breakpoint-md) {
-      display: none !important;
+      display: none;
     }
   }
 
-  .mobile-only {
+  body & .mobile-only {
     @media (min-width: v.$breakpoint-md) {
-      display: none !important;
+      display: none;
     }
   }
 }

@@ -16,10 +16,11 @@
   transition: var(--transition);
   text-decoration: none;
 
-  &:disabled {
+  // Специфичность усилена, чтобы отключённая кнопка не получала transform от :hover (без !important)
+  html &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    transform: none !important;
+    transform: none;
   }
 
   &:hover:not(:disabled) {
