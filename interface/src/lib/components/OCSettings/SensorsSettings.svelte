@@ -77,6 +77,7 @@
 								sensor={{ address, data: temp }}
 								{alarmThresholdsState}
 								onUpdate={reloadSensors}
+								sensorsType={sensorType}
 							/>
 						{/each}
 					</div>
@@ -89,3 +90,71 @@
 		{/each}
 	</div>
 {/if}
+
+<style lang="scss">
+	@use "$lib/styles/base/variables" as v;
+	@use "$lib/styles/base/mixins" as m;
+
+	/* ===== КОНТЕЙНЕР ДЛЯ ВСЕЙ СТРАНИЦЫ СЕНСОРОВ (.sensors-main-container) ===== */
+	.sensors-main-container {
+		margin: 0 auto;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+		width: 100%;
+	}
+
+	/* ===== ПАНЕЛЬ ЗОНЫ (.zone-panel) ===== */
+	.zone-panel {
+		@include m.glassmorphism;
+		border-radius: var(--border-radius);
+		overflow: hidden;
+		border: var(--glass-border);
+	}
+
+	.zone-title {
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: var(--primary-800);
+		padding: 0.75rem 1rem;
+		margin: 0;
+		text-align: center;
+		border-bottom: 2px solid var(--primary-200);
+		@include m.dark-theme-color;
+	}
+
+	/* ===== СЕТКА ДЛЯ КАРТОЧЕК СЕНСОРОВ (.sensors-grid) ===== */
+	.sensors-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+		gap: 1.5rem;
+		padding: 1rem;
+
+		@media (min-width: v.$breakpoint-sm) {
+			gap: 1.5rem;
+		}
+	}
+
+	/* ===== СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБКИ ===== */
+
+	.loading-container,
+	.error-container {
+		@include m.flex-center;
+		flex-direction: column;
+		padding: 2rem;
+		text-align: center;
+		min-height: 200px;
+	}
+
+	.loading-text {
+		font-size: 1.125rem;
+		color: var(--primary-700);
+		@include m.dark-theme-color;
+	}
+
+	.error-text {
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: var(--red-600);
+	}
+</style>

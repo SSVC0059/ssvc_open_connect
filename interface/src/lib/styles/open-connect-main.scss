@@ -8,10 +8,8 @@
 @use "$lib/styles/layout/settings-grid";  // .settings-container, .settings-panel, .settings-section
 
 // 3. КОМПОНЕНТЫ
-@use "$lib/styles/components/modals";  // Общие стили модальных окон
-@use "$lib/styles/components/tabs";    // Стили вкладок
+// modals, tabs, sensors-view — перенесены в компоненты (см. #94)
 // inputs, toggles, buttons, sensor-card — перенесены в компоненты (см. #93)
-@use "$lib/styles/components/sensors-view";
 @use "$lib/styles/components/setting-containers.scss";
 @use "$lib/styles/components/valve-table.scss";
 @use "$lib/styles/components/profile-manager";
