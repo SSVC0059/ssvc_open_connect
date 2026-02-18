@@ -1,4 +1,5 @@
 #include "ProfileService.h"
+#include "commons/JsonSpiRamAllocator.h"
 #include <ctime>
 #include <ArduinoJson.h>
 #include <set>
@@ -6,6 +7,7 @@
 #include "esp_log.h"
 
 static const char* TAG = "ProfileService";
+static JsonSpiRamAllocator s_profileJsonAllocator;
 
 // Initialize the static instance pointer
 ProfileService* ProfileService::_instance = nullptr;
@@ -25,7 +27,7 @@ void ProfileService::begin(FS* fs) {
     }
 
     bool metadataModified = false;
-    JsonDocument metadataDoc;
+    JsonDocument metadataDoc(&s_profileJsonAllocator);
     bool metadataExists = _readMetadata(metadataDoc);
 
     if (!metadataExists || !metadataDoc.is<JsonArray>()) {
@@ -156,7 +158,7 @@ bool ProfileService::_writeMetadata(const JsonDocument& doc) const {
 }
 
 bool ProfileService::_getProfileMetadata(const String& profileId, JsonObject& profileObj) const {
-    JsonDocument doc; // Use JsonDocument
+    JsonDocument doc(&s_profileJsonAllocator);
     if (!_readMetadata(doc)) {
         return false;
     }
@@ -180,7 +182,7 @@ bool ProfileService::_profileFileExists(const String& profileId) const {
 
 String ProfileService::_generateNewProfileId() const {
     ESP_LOGI(TAG, "_generateNewProfileId: Entry"); // Логирование входа
-    JsonDocument metadataDoc;
+    JsonDocument metadataDoc(&s_profileJsonAllocator);
     if (!_readMetadata(metadataDoc)) {
         ESP_LOGW(TAG, "_generateNewProfileId: Failed to read metadata, initializing new array."); // Логирование предупреждения
         metadataDoc.to<JsonArray>();
@@ -231,7 +233,7 @@ String ProfileService::_generateNewProfileId() const {
 // Profile management methods
 std::vector<ProfileMetadata> ProfileService::getProfileList() const {
     std::vector<ProfileMetadata> profiles;
-    JsonDocument doc; // Use JsonDocument
+    JsonDocument doc(&s_profileJsonAllocator);
     if (!_readMetadata(doc)) {
         return profiles;
     }
@@ -249,7 +251,7 @@ std::vector<ProfileMetadata> ProfileService::getProfileList() const {
 }
 
 String ProfileService::getActiveProfileId() const {
-    JsonDocument doc; // Use JsonDocument
+    JsonDocument doc(&s_profileJsonAllocator);
     if (!_readMetadata(doc)) {
         return "";
     }
@@ -270,7 +272,7 @@ bool ProfileService::_applyProfileInternal(const String& profileId) const {
         return false;
     }
 
-    JsonDocument doc; // Use JsonDocument
+    JsonDocument doc(&s_profileJsonAllocator);
     const DeserializationError error = deserializeJson(doc, profileFile);
     profileFile.close();
     if (error) {
@@ -298,7 +300,7 @@ String ProfileService::createProfile(const String& displayName, const JsonObject
 }
 
 bool ProfileService::_createOrUpdateProfile(const String& profileId, const String& displayName, const JsonObject& content) const {
-    JsonDocument profileDoc;
+    JsonDocument profileDoc(&s_profileJsonAllocator);
     JsonObject profileRoot;
 
     if (!content.isNull()) {
@@ -336,7 +338,7 @@ bool ProfileService::_createOrUpdateProfile(const String& profileId, const Strin
     profileFile.close();
 
     // 2. Update metadata
-    JsonDocument metadataDoc;
+    JsonDocument metadataDoc(&s_profileJsonAllocator);
     if (!_readMetadata(metadataDoc)) {
         metadataDoc.to<JsonArray>();
     }
@@ -375,7 +377,7 @@ bool ProfileService::deleteProfile(const String& profileId) const {
     }
 
     // 2. Remove from metadata
-    JsonDocument metadataDoc; // Use JsonDocument
+    JsonDocument metadataDoc(&s_profileJsonAllocator);
     if (!_readMetadata(metadataDoc)) {
         return false;
     }
@@ -393,7 +395,7 @@ bool ProfileService::deleteProfile(const String& profileId) const {
 
 // Новая вспомогательная функция для обновления метаданных после создания нового профиля
 bool ProfileService::_addProfileToMetadata(const String& profileId, const String& displayName) const {
-    JsonDocument metadataDoc;
+    JsonDocument metadataDoc(&s_profileJsonAllocator);
     if (!_readMetadata(metadataDoc)) {
         ESP_LOGW(TAG, "_addProfileToMetadata: Failed to read metadata, initializing new array.");
         metadataDoc.to<JsonArray>();
@@ -428,7 +430,7 @@ String ProfileService::copyProfile(const String& sourceProfileId, const String& 
     }
     ESP_LOGI(TAG, "copyProfile: Source profile content retrieved successfully.");
 
-    JsonDocument profileDoc;
+    JsonDocument profileDoc(&s_profileJsonAllocator);
     const DeserializationError error = deserializeJson(profileDoc, sourceProfileContent);
     if (error) {
         ESP_LOGE(TAG, "copyProfile: Failed to deserialize source profile content for copying: %s", error.c_str());
@@ -468,7 +470,7 @@ String ProfileService::copyProfile(const String& sourceProfileId, const String& 
 }
 
 bool ProfileService::updateProfile(const String& profileId, const String& newDisplayName) const {
-    JsonDocument metadataDoc; // Use JsonDocument
+    JsonDocument metadataDoc(&s_profileJsonAllocator);
     if (!_readMetadata(metadataDoc)) {
         return false;
     }
@@ -500,7 +502,7 @@ bool ProfileService::updateProfile(const String& profileId, const String& newDis
             return false;
         }
 
-        JsonDocument profileDoc; // Use JsonDocument
+        JsonDocument profileDoc(&s_profileJsonAllocator);
         DeserializationError error = deserializeJson(profileDoc, profileFileRead);
         profileFileRead.close();
 
@@ -524,7 +526,7 @@ bool ProfileService::updateProfile(const String& profileId, const String& newDis
 }
 
 bool ProfileService::_setActiveProfileInternal(const String& profileId) const {
-    JsonDocument metadataDoc;
+    JsonDocument metadataDoc(&s_profileJsonAllocator);
     if (!_readMetadata(metadataDoc)) {
         return false;
     }
@@ -578,7 +580,7 @@ bool ProfileService::getProfileContent(const String& profileId, String& dest) co
         return false;
     }
 
-    JsonDocument doc;
+    JsonDocument doc(&s_profileJsonAllocator);
     const DeserializationError error = deserializeJson(doc, profileFile);
     profileFile.close();
     if (error) {
@@ -593,7 +595,7 @@ bool ProfileService::getProfileContent(const String& profileId, String& dest) co
 void ProfileService::getProfileListAsJson(String& dest) const {
     const auto profileList = getProfileList();
 
-    JsonDocument doc; // Use JsonDocument
+    JsonDocument doc(&s_profileJsonAllocator);
     const auto array = doc.to<JsonArray>();
 
     for (const auto& meta : profileList) {
@@ -615,7 +617,7 @@ bool ProfileService::saveCurrentSettingsToProfile(const String& profileId) const
     }
 
     // 2. Получим текущее имя профиля из метаданных
-    JsonDocument metadataDoc; // Use JsonDocument
+    JsonDocument metadataDoc(&s_profileJsonAllocator);
     if (!_readMetadata(metadataDoc)) {
         ESP_LOGE(TAG, "Failed to read metadata to get profile name for update.");
         return false;
@@ -652,7 +654,7 @@ bool ProfileService::updateProfileContent(const String& profileId, const JsonObj
         return false;
     }
 
-    JsonDocument doc;
+    JsonDocument doc(&s_profileJsonAllocator);
     File profileFileRead = _fs->open(filePath, "r");
     if (!profileFileRead) {
         ESP_LOGE(TAG, "Failed to open profile data file for reading during content update: %s", filePath.c_str());
@@ -667,7 +669,7 @@ bool ProfileService::updateProfileContent(const String& profileId, const JsonObj
     }
 
     // Создаем временный документ с исходным содержимым для проверки изменений.
-    JsonDocument originalDoc;
+    JsonDocument originalDoc(&s_profileJsonAllocator);
     originalDoc.set(doc);
 
     // Применяем изменения из объекта 'content'.

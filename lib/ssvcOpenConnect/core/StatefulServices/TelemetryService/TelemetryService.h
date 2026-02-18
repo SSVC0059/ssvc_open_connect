@@ -27,6 +27,7 @@
 #include <ArduinoJson.h>
 
 #include "core/rectification/RectificationProcess.h" // Источник данных
+#include "commons/JsonSpiRamAllocator.h"
 #include <Ticker.h> // Для периодического обновления
 
 // Максимальный размер JSON-документа для телеметрии (подберите размер под свои данные)
@@ -41,9 +42,6 @@ class TelemetryState
         // Храним полное тело JSON-ответа как строку для эффективного сравнения
         String telemetryJson;
         unsigned long lastUpdateTime = 0;
-
-        // Контракт для чтения состояния (сериализация для REST/WebSocket)
-        static void read(const TelemetryState &state, JsonObject &root);
 
         // Контракт для обновления (телеметрия Read-Only, обновления не разрешены)
         static StateUpdateResult update(JsonObject &root, TelemetryState &state)
@@ -73,7 +71,10 @@ private:
     HttpEndpoint<TelemetryState> _httpEndpoint;
     MqttEndpoint<TelemetryState> _mqttEndpoint;
 
+    JsonSpiRamAllocator _jsonAllocator;
     TimerHandle_t _updateTimer = nullptr;
+
+    void readStateToJson(TelemetryState& state, JsonObject& root);
     static void vUpdateTimerCallback(TimerHandle_t xTimer);
 
     // Внутренний метод для получения и обновления состояния

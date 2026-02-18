@@ -16,13 +16,12 @@
 	<div class="settings-group">
 		<div class="settings-item">
 			<label class="input-label" for="startDelay">
-				Отсрочка, сек
+				Время стабилизации, сек
 			</label>
-			<NumberInput
+			<TimeInput
 				bind:value={settings.start_delay}
 				min={0}
 				max={18000}
-				unit="сек"
 			/>
 		</div>
 

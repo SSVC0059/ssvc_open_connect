@@ -63,11 +63,10 @@ std::map<String, std::unique_ptr<ParamHandler>> createHandlers() {
           [](SsvcSettings::Builder &b, bool v) { b.formulaEnable(v); })));
 
   // tank_mmhg
-  handlers.emplace("tank_mmhg",
-                   std::unique_ptr<UnsignedCharHandler>(new UnsignedCharHandler(
-                       [](SsvcSettings::Builder &b, const float v) {
-                         b.setTank_mmhg(v);
-                       })));
+  handlers.emplace(
+      "tank_mmhg",
+      std::unique_ptr<SingleFloatHandler>(new SingleFloatHandler(
+          [](SsvcSettings::Builder &b, const float v) { b.setTank_mmhg(v); })));
 
   // heads_timer
   handlers.emplace("heads_timer",

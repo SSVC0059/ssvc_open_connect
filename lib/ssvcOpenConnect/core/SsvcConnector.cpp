@@ -137,9 +137,9 @@ void SsvcConnector::initSsvcController() {
       }
     } else {
 
-      ESP_LOGI("SsvcConnector", "Начало вывода данных", data);
-      ESP_LOGI("SsvcConnector", "%s", data);
-      ESP_LOGI("SsvcConnector", "Конец вывода данных");
+      ESP_LOGV("SsvcConnector", "Начало вывода данных", data);
+      ESP_LOGV("SsvcConnector", "%s", data);
+      ESP_LOGV("SsvcConnector", "Конец вывода данных");
 
       if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
         self->lastMessage = std::string(data);
