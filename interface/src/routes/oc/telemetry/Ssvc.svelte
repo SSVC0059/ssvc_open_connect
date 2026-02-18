@@ -337,20 +337,24 @@
 
         @media (min-width: v.$breakpoint-lg) {
           flex-direction: row;
+          align-items: stretch;
+
+          .sidebar-left,
+          .center-panel,
+          .sidebar-right {
+            min-width: 0; // позволяем колонкам сжиматься, чтобы избежать горизонтального скролла
+          }
 
           .sidebar-left {
             flex: 0 0 22%; // при 1024px оставляем больше места центру
-            min-width: 200px;
           }
 
           .center-panel {
             flex: 1;
-            min-width: 320px; // гарантированный минимум для схемы
           }
 
           .sidebar-right {
             flex: 0 0 22%;
-            min-width: 200px;
           }
         }
       }
