@@ -92,6 +92,14 @@
         --z-modal-backdrop: 40;
         --z-modal: 50;
         --z-popover: 1000;
+
+        /* Алиасы для NumberInput/TimeInput (следуют теме DaisyUI) */
+        --border-color: oklch(var(--b3, 0.88 0.01 260));
+        --input-bg: oklch(var(--b2, 0.96 0.01 260));
+        --text-color: oklch(var(--bc, 0.25 0 260));
+        --secondary-bg: oklch(var(--b2, 0.94 0.01 260));
+        --hover-bg: oklch(var(--b3, 0.9 0.01 260));
+        --gray-500: oklch(var(--bc) / 0.7);
     }
 
     /* Темная тема — переменные в одном месте (единый источник) */
@@ -106,6 +114,13 @@
             --dark-step-inactive-bg: #5a6575;
             --dark-text-muted: #a0aec0;
             --dark-border-color: #4a5568;
+            /* NumberInput/TimeInput — видимые границы и фон в тёмной теме */
+            --border-color: rgba(255, 255, 255, 0.35);
+            --input-bg: #2d3748;
+            --text-color: #e2e8f0;
+            --secondary-bg: #4a5568;
+            --hover-bg: #5a6575;
+            --gray-500: rgba(255, 255, 255, 0.6);
         }
     }
 }
