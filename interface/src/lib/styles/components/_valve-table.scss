@@ -48,26 +48,33 @@
   }
 
   .input-cell {
-    @extend .input-field !optional;
     padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
     border: 1px solid var(--primary-300);
+    border-radius: var(--border-radius);
+    outline: none;
+    transition: var(--transition);
+    background-color: var(--white);
+    color: var(--primary-800);
     text-align: center;
-    // Важно: чтобы инпут не выходил за границы td, ему нужно убрать ширину 100%
     width: auto;
-    // Можно задать фиксированную ширину, чтобы ячейки были ровными
     min-width: 50px;
     max-width: 80px;
+    @include m.dark-theme-color;
+    &:focus {
+      border-color: var(--blue-500);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue-500) 20%, transparent);
+    }
 
-    // Переопределение для Svelte компонента .input-cell из WizardStep3.svelte
     &[type="number"],
     &[type="text"] {
-      width: 100%; // Занимает всю ширину td
+      width: 100%;
       box-sizing: border-box;
     }
   }
 
   .input-readonly {
-    @extend .input-cell; // Наследуем стили
+    @extend .input-cell;
     background-color: var(--primary-100);
     color: var(--primary-600);
     cursor: default;

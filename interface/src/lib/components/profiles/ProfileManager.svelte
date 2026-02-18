@@ -335,3 +335,7 @@
 <div class="hidden">
 	<input type="file" accept=".json" bind:this={fileInput} onchange={handleFileUpload} />
 </div>
+
+<style lang="scss">
+	@use '$lib/styles/components/profile-manager';
+</style>

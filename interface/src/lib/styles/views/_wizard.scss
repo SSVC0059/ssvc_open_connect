@@ -153,3 +153,37 @@
   padding: 1rem;
   background-color: var(--primary-50); /* $gray-50 */
 }
+
+/* Тёмная тема: те же селекторы, что и выше, чтобы переопределения имели ту же специфичность при загрузке в компоненте */
+@media (prefers-color-scheme: dark) {
+  .wizard-overlay-override {
+    background-color: var(--dark-bg-overlay);
+  }
+
+  .wizard {
+    background-color: var(--dark-surface-color);
+  }
+
+  .modal-header {
+    .modal-title,
+    .modal-close {
+      color: var(--white);
+    }
+  }
+
+  .wizard-nav {
+    background-color: var(--dark-footer-bg);
+  }
+
+  .steps-container .step {
+    .step-circle:not(.active) {
+      background-color: var(--dark-step-inactive-bg);
+      color: var(--white);
+    }
+    .step-title {
+      color: var(--dark-text-muted);
+    }
+  }
+
+  /* Подписи .input-label в визарде заданы в themes/_dark-theme.scss (глобально, чтобы действовали во вложенных шагах) */
+}

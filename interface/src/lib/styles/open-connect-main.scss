@@ -10,13 +10,7 @@
 // 3. КОМПОНЕНТЫ
 // modals, tabs, sensors-view — перенесены в компоненты (см. #94)
 // inputs, toggles, buttons, sensor-card — перенесены в компоненты (см. #93)
-@use "$lib/styles/components/setting-containers.scss";
-@use "$lib/styles/components/valve-table.scss";
-@use "$lib/styles/components/profile-manager";
-
-
-// 4. СПЕЦИФИЧНЫЕ ВИДЫ/СТРАНИЦЫ
-@use "$lib/styles/views/wizard"; // Импорт стилей мастера
+// setting-containers, valve-table, profile-manager, wizard — перенесены в компоненты (см. #95)
 
 // 5. ТЕМЫ
 @use "$lib/styles/themes/dark-theme"; // Общий блок @media (prefers-color-scheme: dark)

@@ -75,3 +75,7 @@
 
 </div>
 
+<style lang="scss">
+	@use '$lib/styles/components/setting-containers';
+	@use '$lib/styles/components/valve-table';
+</style>

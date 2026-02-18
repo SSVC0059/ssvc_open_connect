@@ -126,6 +126,7 @@
 {/if}
 
 <style lang="scss">
+	@use '$lib/styles/components/setting-containers';
   .settings-grid {
     grid-template-columns: 1fr
   }

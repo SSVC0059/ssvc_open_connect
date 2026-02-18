@@ -11,32 +11,49 @@
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
   }
 
-  .wizard-overlay-override {
-    background-color: var(--dark-bg-overlay);
+  /* wizard: переопределения тёмной темы в views/_wizard.scss (загружается в компоненте) */
+
+  /* Все подписи в визарде — единый цвет. body повышает специфичность выше, чем у scoped .settings-item.read-only .input-label из компонента */
+  body .wizard .wizard-content .settings-item .input-label,
+  body .wizard .wizard-content .input-label {
+    color: var(--color-gray-200, var(--primary-200));
   }
 
-  .wizard {
-    background-color: var(--dark-surface-color);
+  /* Заголовки таблиц в визарде — единый цвет. body повышает специфичность выше, чем у scoped .valve-table thead th из компонента */
+  body .wizard .wizard-content .valve-table thead th {
+    color: var(--color-gray-200, var(--primary-200));
   }
 
-  .modal-header {
-    .modal-title, .modal-close {
-      color: var(--white);
-    }
+  /* Настройки (/oc/settings): Профили — заголовок списка и элементы списка */
+  body .container .tabs-container .profile-list-header h3,
+  body .container .tabs-container .profile-list-item .profile-name {
+    color: var(--color-gray-200, var(--primary-200));
   }
 
-  .wizard-nav {
-    background-color: var(--dark-footer-bg);
+  /* Активный элемент списка профилей — выше специфичность (.active), правило после общего .profile-name */
+  body .container .tabs-container .profile-list-item.active .profile-name,
+  body .container .tabs-container .profile-list-item.active {
+    color: var(--primary-900, var(--primary-800));
   }
 
-  .steps-container .step {
-    .step-circle:not(.active) {
-      background-color: var(--dark-step-inactive-bg);
-      color: var(--white);
-    }
-    .step-title {
-      color: var(--dark-text-muted);
-    }
+  /* Настройки (/oc/settings): Telegram — подписи полей ввода */
+  body .container .tabs-container .input-label {
+    color: var(--color-gray-200, var(--primary-200));
+  }
+
+  /* Телеметрия (/oc/telemetry): полный путь в DOM — выше специфичность, чем у scoped правил компонента (7–8 классов) */
+  body .telemetry-container .status-bar .status-item .label,
+  body .telemetry-container .glassmorphism .controls-container .sensor-readings .readings-list .reading-item .reading-label,
+  body .telemetry-container .glassmorphism .controls-container .sensor-readings .readings-list .reading-item .reading-value,
+  body .telemetry-container .main-content .responsive-grid .sidebar-right .glassmorphism.panel .parameters-readings .readings-list .reading-item .reading-label,
+  body .telemetry-container .main-content .responsive-grid .sidebar-right .glassmorphism.panel .parameters-readings .readings-list .reading-item .reading-value,
+  body .telemetry-container .main-content .responsive-grid .sidebar-left .glassmorphism.panel .controls-container .sensor-readings .readings-list .reading-item .reading-label,
+  body .telemetry-container .main-content .responsive-grid .sidebar-left .glassmorphism.panel .controls-container .sensor-readings .readings-list .reading-item .reading-value,
+  body .telemetry-container .glassmorphism.panel .panel-title,
+  body .telemetry-container .main-content .responsive-grid .sidebar-right .glassmorphism.panel .panel-title,
+  body .telemetry-container .main-content .responsive-grid .sidebar-left .glassmorphism.panel .panel-title,
+  body .telemetry-container .main-content .responsive-grid .center-panel .glassmorphism.panel .panel-title {
+    color: var(--color-gray-200, var(--primary-200));
   }
 
   .settings-title, .valve-card .settings-title {
@@ -44,7 +61,7 @@
   }
 
   .input-label {
-    color: var(--primary-200);
+    color: var(--color-gray-200);
   }
 
   .input-field,
@@ -55,7 +72,7 @@
   }
 
   .valve-table-title {
-    color: var(--primary-200);
+    color: var(--color-gray-200, var(--primary-200));
   }
 
   .valve-table {
@@ -66,7 +83,7 @@
 
     thead th {
       background-color: var(--dark-footer-bg);
-      color: var(--white);
+      color: var(--color-gray-200, var(--primary-200));
     }
 
     .input-readonly {
