@@ -23,6 +23,7 @@
     import SsvcIcon from '~icons/mdi/snake';
     import Esp from '~icons/mdi/car-esp';
     import Bug from '~icons/tabler/bug';
+    import Temperature from '~icons/tabler/temperature';
     import { page } from '$app/state';
     import { user } from '$lib/stores/user';
     import type { Component } from 'svelte';
@@ -48,6 +49,7 @@
         href: string;
         feature: boolean;
         active?: boolean;
+        submenu?: subMenuItem[];
     };
 
     let menuItems = $state([
@@ -73,7 +75,27 @@
                     title: 'Open Connect',
                     icon: Esp,
                     href: '/oc/settings ',
-                    feature: true
+                    feature: true,
+                    submenu: [
+                        {
+                            title: 'Профили',
+                            icon: Control,
+                            href: '/oc/settings?tab=profiles',
+                            feature: true
+                        },
+                        {
+                            title: 'Датчики температуры',
+                            icon: Temperature,
+                            href: '/oc/settings?tab=thermal',
+                            feature: true
+                        },
+                        {
+                            title: 'Telegram',
+                            icon: Telegram,
+                            href: '/oc/settings?tab=telegram_bot',
+                            feature: true
+                        }
+                    ]
                 }
             ]
         },
@@ -93,12 +115,6 @@
                     icon: NTP,
                     href: '/connections/ntp',
                     feature: page.data.features.ntp
-                },
-                {
-                    title: 'Telegram',
-                    icon: Telegram,
-                    href: '/oc/settings?tab=telegram_bot',
-                    feature: true
                 }
             ]
         },
@@ -173,8 +189,22 @@
     function setActiveMenuItem(targetTitle: string) {
         menuItems.forEach((item) => {
             item.active = item.title === targetTitle;
+
             item.submenu?.forEach((subItem) => {
                 subItem.active = subItem.title === targetTitle;
+
+                subItem.submenu?.forEach((child) => {
+                    child.active = child.title === targetTitle;
+
+                    if (child.active) {
+                        subItem.active = true;
+                        item.active = true;
+                    }
+                });
+
+                if (subItem.active) {
+                    item.active = true;
+                }
             });
         });
         closeMenu();
@@ -209,14 +239,39 @@
                                 {#each menuItem.submenu as subMenuItem}
                                     {#if subMenuItem.feature}
                                         <li class="hover-bordered">
-                                            <a
-                                                    href={subMenuItem.href}
-                                                    class:bg-base-100={subMenuItem.active}
-                                                    class="text-ml font-bold"
-                                                    onclick={() => {
-													setActiveMenuItem(subMenuItem.title);
-												}}><subMenuItem.icon class="h-5 w-5" />{subMenuItem.title}</a
-                                            >
+                                            {#if subMenuItem.submenu}
+                                                <details open={subMenuItem.submenu.some((child) => child.active)}>
+                                                    <summary class="text-ml font-bold">
+                                                        <subMenuItem.icon class="h-5 w-5" />
+                                                        {subMenuItem.title}
+                                                    </summary>
+                                                    <ul>
+                                                        {#each subMenuItem.submenu as child}
+                                                            {#if child.feature}
+                                                                <li class="hover-bordered">
+                                                                    <a
+                                                                            href={child.href}
+                                                                            class:bg-base-100={child.active}
+                                                                            class="text-ml font-bold"
+                                                                            onclick={() => {
+																				setActiveMenuItem(child.title);
+																			}}><child.icon class="h-5 w-5" />{child.title}</a
+                                                                    >
+                                                                </li>
+                                                            {/if}
+                                                        {/each}
+                                                    </ul>
+                                                </details>
+                                            {:else}
+                                                <a
+                                                        href={subMenuItem.href}
+                                                        class:bg-base-100={subMenuItem.active}
+                                                        class="text-ml font-bold"
+                                                        onclick={() => {
+															setActiveMenuItem(subMenuItem.title);
+														}}><subMenuItem.icon class="h-5 w-5" />{subMenuItem.title}</a
+                                                >
+                                            {/if}
                                         </li>
                                     {/if}
                                 {/each}
