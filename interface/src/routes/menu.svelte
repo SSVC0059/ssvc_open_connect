@@ -95,7 +95,7 @@
                     feature: page.data.features.ntp
                 },
                 {
-                    title: 'Telegramm',
+                    title: 'Telegram',
                     icon: Telegram,
                     href: '/oc/settings?tab=telegram_bot',
                     feature: true
