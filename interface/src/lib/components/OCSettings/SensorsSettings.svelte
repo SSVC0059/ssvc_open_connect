@@ -5,6 +5,7 @@
 	import type { AlarmThresholdsState, TemperatureResponse } from '$lib/types/Sensors';
 	import { getZoneDescription } from '$lib/components/OCSettings/OSSettingsHelper';
 	import SensorCard from '$lib/components/OCSettings/SensorCard.svelte';
+	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
 	const { sensorType = 'temperature' } = $props<{ sensorType: 'temperature' | 'pressure' }>();
 
@@ -56,7 +57,7 @@
 {#if isLoading}
 	<div class="loading-container">
 		<p class="loading-text">Загрузка датчиков...</p>
-		<div class="loading-spinner"></div>
+		<LoadingSpinner />
 	</div>
 {:else if error}
 	<div class="error-container">

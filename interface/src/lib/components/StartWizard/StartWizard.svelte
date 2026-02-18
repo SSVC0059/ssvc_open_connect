@@ -12,6 +12,7 @@
 	import Step5 from '$lib/components/StartWizard/steps/WizardStep5.svelte';
 	import Step6 from '$lib/components/StartWizard/steps/WizardStep6.svelte';
 	import Step7 from '$lib/components/StartWizard/steps/WizardStep7.svelte';
+	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import type { SsvcSettings } from '$lib/types/ssvc';
 	import { fetchSettings, saveSettings, sendCommand } from '$lib/api/ssvcApi';
 
@@ -252,7 +253,7 @@
 						onclick={submitSettings} 
 						class="btn btn-success" disabled={isLoading}>
 						{#if isLoading}
-							<span class="loading-spinner"></span>
+							<LoadingSpinner />
 						{:else}
 							<Check class="h-5 w-5" />
 						{/if}

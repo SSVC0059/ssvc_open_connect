@@ -65,6 +65,18 @@
   }
 }
 
+/* Скругление и отступ секций — для светлой и тёмной темы */
+.settings-container,
+.settings-panel,
+.settings-grid {
+  border-radius: 1rem;
+}
+
+.settings-grid .settings-panel .settings-section {
+  border-radius: 1rem;
+  margin: 0.5rem;
+}
+
 /* ===== ЗАГОЛОВКИ И ОПИСАНИЯ НАСТРОЕК ===== */
 .settings-title {
   font-size: calc(1rem + 0.3vw);

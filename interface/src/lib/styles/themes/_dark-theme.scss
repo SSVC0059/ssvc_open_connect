@@ -3,6 +3,14 @@
 */
 @media (prefers-color-scheme: dark) {
 
+  /* Контур панелей настроек: скругления углов видны на тёмном фоне */
+  .settings-container,
+  .settings-panel,
+  .settings-grid {
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  }
+
   .wizard-overlay-override {
     background-color: var(--dark-bg-overlay);
   }
