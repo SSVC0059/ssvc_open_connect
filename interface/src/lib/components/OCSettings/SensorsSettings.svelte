@@ -44,9 +44,10 @@
 	const zoneEntries = $derived(
 		temperatureResponse
 			? Object.entries(temperatureResponse).map(([zone, sensors]) => {
-					const filteredSensors = Object.entries(sensors).filter(
-						([, sensorData]) => sensorData.type === sensorType
-					);
+					const filteredSensors = Object.entries(sensors).filter(([, sensorData]) => {
+						const expectedType = sensorType === 'temperature' ? 'thermal' : sensorType;
+						return sensorData.type === expectedType;
+					});
 					return [zone, Object.fromEntries(filteredSensors)];
 				})
 			: []
@@ -73,9 +74,10 @@
 					<div class="sensors-grid">
 						{#each Object.entries(sensors) as [address, temp] (address)}
 							<SensorCard
-								sensor={{ address, data: temp }}
+								sensor={{ address, data: temp, zone }}
 								{alarmThresholdsState}
 								onUpdate={reloadSensors}
+								sensorsType={sensorType}
 							/>
 						{/each}
 					</div>
