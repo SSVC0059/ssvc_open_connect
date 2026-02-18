@@ -1,36 +1,35 @@
 // file: _valve-table.scss (ДОРАБОТАННЫЙ КОД)
 @use "$lib/styles/base/variables" as v;
-@use "$lib/styles/base/mixins" as m;
 
+/* Заголовки и таблица — семантика DaisyUI */
 .valve-table-title {
   display: block;
   font-size: 1.15rem;
   font-weight: 600;
-  color: var(--primary-500);
+  color: oklch(var(--bc));
   text-align: center;
-  @include m.dark-theme-color;
 }
 
 .valve-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem; // Чуть меньше для компактности
+  font-size: 0.875rem;
 
   th,
   td {
     padding: 0.5rem 0.25rem;
     text-align: center;
-    border: 1px solid var(--primary-100); // Легкая граница для всех ячеек
+    border: 1px solid oklch(var(--bc) / 0.3);
     transition: var(--transition);
-    @include m.dark-theme-color;
+    color: oklch(var(--bc));
   }
 
   thead {
     th {
       font-weight: 600;
-      color: var(--primary-800);
-      background-color: var(--primary-50);
-      @include m.dark-theme-color;
+      color: oklch(var(--bc));
+      background-color: oklch(var(--b2));
+      border-color: oklch(var(--bc) / 0.35);
 
       &:first-child {
         border-top-left-radius: var(--border-radius);
@@ -50,20 +49,19 @@
   .input-cell {
     padding: 0.25rem 0.5rem;
     font-size: 0.875rem;
-    border: 1px solid var(--primary-300);
+    border: 1px solid oklch(var(--bc) / 0.35);
     border-radius: var(--border-radius);
     outline: none;
     transition: var(--transition);
-    background-color: var(--white);
-    color: var(--primary-800);
+    background-color: oklch(var(--b1));
+    color: oklch(var(--bc));
     text-align: center;
     width: auto;
     min-width: 50px;
     max-width: 80px;
-    @include m.dark-theme-color;
     &:focus {
-      border-color: var(--blue-500);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue-500) 20%, transparent);
+      border-color: oklch(var(--p));
+      box-shadow: 0 0 0 3px oklch(var(--p) / 0.2);
     }
 
     &[type="number"],
@@ -75,35 +73,52 @@
 
   .input-readonly {
     @extend .input-cell;
-    background-color: var(--primary-100);
-    color: var(--primary-600);
+    background-color: oklch(var(--b2));
+    color: oklch(var(--bc) / 0.8);
     cursor: default;
     box-shadow: none;
     pointer-events: none;
+    border-color: oklch(var(--bc) / 0.35);
     &:focus {
-      border-color: var(--primary-300);
-      /* Видимый индикатор фокуса для доступности (Tab-навигация) */
-      box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue-500) 30%, transparent);
+      border-color: oklch(var(--bc) / 0.5);
+      box-shadow: 0 0 0 2px oklch(var(--p) / 0.2);
+    }
+  }
+}
+
+/* Тёмная тема: усиленные границы таблицы (контраст с фоном) */
+@media (prefers-color-scheme: dark) {
+  .valve-table {
+    th,
+    td {
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+    thead th {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .input-cell,
+    .input-readonly {
+      border-color: rgba(255, 255, 255, 0.3);
+      background-color: var(--dark-surface-color, #2d3748);
     }
   }
 }
 
 .valve-info {
-  //background-color: var(--blue-500);
-  border: 1px solid var(--blue-300);
+  border: 1px solid oklch(var(--p));
   border-radius: 0.25rem;
   padding: 0.25rem 0.75rem;
   margin-top: 0.5rem;
 
   p:first-child {
     font-size: 0.875rem;
-    color: var(--primary-600);
+    color: oklch(var(--bc));
     margin: 0;
   }
 
   p:last-child {
     font-size: 0.75rem;
-    color: var(--primary-500);
+    color: oklch(var(--bc) / 0.8);
     margin-top: 0.25rem;
   }
 }
@@ -117,7 +132,7 @@
     tr {
       display: block;
       margin-bottom: 0.625em;
-      border-bottom: 1px solid var(--primary-200);
+      border-bottom: 1px solid oklch(var(--bc) / 0.3);
       padding-bottom: 0.625em;
     }
 
