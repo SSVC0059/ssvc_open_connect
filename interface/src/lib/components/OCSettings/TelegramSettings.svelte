@@ -12,6 +12,7 @@
 	import Cancel from '~icons/tabler/x';
 	import Power from '~icons/tabler/reload';
 	import { notifications } from '$lib/components/toasts/notifications';
+	import Toggle from '$lib/components/Toggle.svelte';
 
 	let token = $state('');
 	let chat_id = $state('');
@@ -101,15 +102,7 @@
 			<span class="input-label">Состояние подсистемы</span>
 			<span class="settings-description">{disabled ? 'Отключена' : 'Активна'}</span>
 		</div>
-		<label class="toggle-container">
-			<input
-				type="checkbox"
-				class="toggle-input"
-				checked={!disabled}
-				onchange={confirmToggle}
-			/>
-			<span class="toggle-slider"></span>
-		</label>
+		<Toggle checked={!disabled} onchange={confirmToggle} />
 	</div>
 
 	{#if isLoading}

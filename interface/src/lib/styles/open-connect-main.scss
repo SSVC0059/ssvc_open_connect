@@ -10,10 +10,7 @@
 // 3. КОМПОНЕНТЫ
 @use "$lib/styles/components/modals";  // Общие стили модальных окон
 @use "$lib/styles/components/tabs";    // Стили вкладок
-@use "$lib/styles/components/inputs";  // Стили полей ввода, лейблов, чекбоксов
-@use "$lib/styles/components/toggles"; // Стили тогглов
-@use "$lib/styles/components/buttons"; // Стили кнопок
-@use "$lib/styles/components/sensor-card";
+// inputs, toggles, buttons, sensor-card — перенесены в компоненты (см. #93)
 @use "$lib/styles/components/sensors-view";
 @use "$lib/styles/components/setting-containers.scss";
 @use "$lib/styles/components/valve-table.scss";

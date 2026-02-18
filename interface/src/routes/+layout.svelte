@@ -182,3 +182,169 @@
 </Modals>
 
 <Toast />
+
+<style lang="scss">
+	@use "$lib/styles/base/mixins" as m;
+
+	/* ===== Кнопки (shared) ===== */
+	:global(.btn) {
+		border: none;
+		background: none;
+		cursor: pointer;
+		font: inherit;
+		display: inline-flex;
+		align-items: center;
+		flex: none;
+		padding: 0.5rem 1rem;
+		border-radius: calc(var(--border-radius) / 2);
+		font-weight: 500;
+		transition: var(--transition);
+		text-decoration: none;
+	}
+
+	:global(html .btn:disabled) {
+		opacity: 0.5;
+		cursor: not-allowed;
+		transform: none;
+	}
+
+	:global(.btn:hover:not(:disabled)) {
+		transform: translateY(-1px);
+	}
+
+	:global(.btn.btn-primary) {
+		background: var(--blue-500);
+		color: var(--white);
+	}
+	:global(.btn.btn-primary:hover:not(:disabled)) {
+		background: var(--blue-600);
+	}
+
+	:global(.btn.btn-warning) {
+		background: var(--yellow-500);
+		color: var(--white);
+	}
+	:global(.btn.btn-warning:hover:not(:disabled)) {
+		background: var(--yellow-600);
+	}
+
+	:global(.btn.btn-success) {
+		background: var(--green-500);
+		color: var(--white);
+	}
+	:global(.btn.btn-success:hover:not(:disabled)) {
+		background: var(--green-600);
+	}
+
+	:global(.btn.btn-back) {
+		background: var(--gray-500);
+		color: var(--white);
+	}
+	:global(.btn.btn-back:hover:not(:disabled)) {
+		background: var(--gray-600);
+	}
+
+	:global(.btn-icon) {
+		width: 1.25rem;
+		height: 1.25rem;
+		margin-right: 0.5rem;
+	}
+
+	:global(.values-container) {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+		flex-wrap: wrap;
+	}
+
+	:global(.value-item) {
+		display: flex;
+		align-items: baseline;
+		gap: 0.25rem;
+	}
+
+	:global(.value-text) {
+		font: inherit;
+		@include m.dark-theme-color;
+	}
+
+	:global(.value-unit) {
+		font-size: 0.875rem;
+		opacity: 0.75;
+		@include m.dark-theme-color;
+	}
+
+	:global(.edit-button) {
+		border: none;
+		background: none;
+		cursor: pointer;
+		font: inherit;
+		flex-shrink: 0;
+		color: var(--blue-500);
+		padding: 0.25rem;
+		border-radius: calc(var(--border-radius) / 4);
+		transition: var(--transition);
+		@include m.dark-theme-color;
+	}
+	:global(.edit-button:hover) {
+		color: var(--blue-600);
+	}
+
+	/* ===== Поля ввода и лейблы (shared) ===== */
+	:global(.input-label) {
+		color: var(--primary-800);
+		font-size: 0.95rem;
+		cursor: pointer;
+		@include m.dark-theme-color;
+	}
+
+	:global(.input-field),
+	:global(.input-cell),
+	:global(.time-input) {
+		width: 100%;
+		padding: 0.5rem 0.75rem;
+		font-size: 0.875rem;
+		border: 1px solid var(--primary-300);
+		border-radius: var(--border-radius);
+		outline: none;
+		transition: var(--transition);
+		background-color: var(--white);
+		color: var(--primary-800);
+	}
+	:global(.input-field:focus),
+	:global(.input-cell:focus),
+	:global(.time-input:focus) {
+		border-color: var(--blue-500);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue-500) 20%, transparent);
+	}
+	:global(.input-field),
+	:global(.input-cell),
+	:global(.time-input) {
+		@include m.dark-theme-color;
+	}
+
+	:global(.input-wrapper) {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	:global(.input-wrapper .btn) {
+		padding: 0.5rem;
+		font-size: 1.125rem;
+	}
+
+	:global(.modal-actions) {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.75rem;
+		margin-top: 1.5rem;
+	}
+
+	:global(.info-text) {
+		font-size: 0.8rem;
+		color: var(--red-300);
+		margin-top: 0.25rem;
+		text-align: center;
+		@include m.dark-theme-color;
+	}
+</style>
