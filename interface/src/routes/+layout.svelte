@@ -290,12 +290,11 @@
 		color: var(--blue-600);
 	}
 
-	/* ===== Поля ввода и лейблы (shared) ===== */
+	/* ===== Поля ввода и лейблы (shared) — семантика DaisyUI ===== */
 	:global(.input-label) {
-		color: var(--primary-800);
+		color: oklch(var(--bc));
 		font-size: 0.95rem;
 		cursor: pointer;
-		@include m.dark-theme-color;
 	}
 
 	:global(.input-field),
@@ -304,23 +303,26 @@
 		width: 100%;
 		padding: 0.5rem 0.75rem;
 		font-size: 0.875rem;
-		border: 1px solid var(--primary-300);
+		border: 1px solid oklch(var(--b3));
 		border-radius: var(--border-radius);
 		outline: none;
 		transition: var(--transition);
-		background-color: var(--white);
-		color: var(--primary-800);
+		background-color: oklch(var(--b2));
+		color: oklch(var(--bc));
+	}
+	@media (prefers-color-scheme: dark) {
+		:global(.input-field),
+		:global(.input-cell),
+		:global(.time-input) {
+			background-color: var(--dark-surface-color, #2d3748);
+			border-color: var(--dark-border-color, #4a5568);
+		}
 	}
 	:global(.input-field:focus),
 	:global(.input-cell:focus),
 	:global(.time-input:focus) {
-		border-color: var(--blue-500);
-		box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue-500) 20%, transparent);
-	}
-	:global(.input-field),
-	:global(.input-cell),
-	:global(.time-input) {
-		@include m.dark-theme-color;
+		border-color: oklch(var(--p));
+		box-shadow: 0 0 0 3px oklch(var(--p) / 0.2);
 	}
 
 	:global(.input-wrapper) {

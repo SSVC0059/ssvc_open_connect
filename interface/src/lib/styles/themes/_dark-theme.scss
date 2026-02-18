@@ -3,27 +3,6 @@
 */
 @media (prefers-color-scheme: dark) {
 
-  /* Контур панелей настроек: скругления углов видны на тёмном фоне */
-  .settings-container,
-  .settings-panel,
-  .settings-grid {
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
-  }
-
-  /* wizard: переопределения тёмной темы в views/_wizard.scss (загружается в компоненте) */
-
-  /* Все подписи в визарде — единый цвет. body повышает специфичность выше, чем у scoped .settings-item.read-only .input-label из компонента */
-  body .wizard .wizard-content .settings-item .input-label,
-  body .wizard .wizard-content .input-label {
-    color: var(--color-gray-200, var(--primary-200));
-  }
-
-  /* Заголовки таблиц в визарде — единый цвет. body повышает специфичность выше, чем у scoped .valve-table thead th из компонента */
-  body .wizard .wizard-content .valve-table thead th {
-    color: var(--color-gray-200, var(--primary-200));
-  }
-
   /* Настройки (/oc/settings): Профили — заголовок списка и элементы списка */
   body .container .tabs-container .profile-list-header h3,
   body .container .tabs-container .profile-list-item .profile-name {
@@ -54,51 +33,6 @@
   body .telemetry-container .main-content .responsive-grid .sidebar-left .glassmorphism.panel .panel-title,
   body .telemetry-container .main-content .responsive-grid .center-panel .glassmorphism.panel .panel-title {
     color: var(--color-gray-200, var(--primary-200));
-  }
-
-  .settings-title, .valve-card .settings-title {
-    color: var(--white);
-  }
-
-  .input-label {
-    color: var(--color-gray-200);
-  }
-
-  .input-field,
-  .input-cell {
-    background-color: var(--dark-surface-color);
-    border-color: var(--dark-footer-bg);
-    color: var(--primary-200);
-  }
-
-  .valve-table-title {
-    color: var(--color-gray-200, var(--primary-200));
-  }
-
-  .valve-table {
-    th,
-    td {
-      border-color: var(--dark-border-color);
-    }
-
-    thead th {
-      background-color: var(--dark-footer-bg);
-      color: var(--color-gray-200, var(--primary-200));
-    }
-
-    .input-readonly {
-      background-color: var(--dark-step-inactive-bg);
-      color: var(--dark-text-muted);
-      border-color: var(--dark-border-color);
-    }
-  }
-
-  .valve-info {
-    background-color: var(--dark-surface-color);
-    border-color: var(--blue-500);
-    p {
-      color: var(--primary-200);
-    }
   }
 
 }
