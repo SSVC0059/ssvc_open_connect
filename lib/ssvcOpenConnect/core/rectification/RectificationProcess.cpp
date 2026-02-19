@@ -597,7 +597,7 @@ void RectificationProcess::update(void* pvParameters)
         if (telemetry["tank_mmhg"].is<float>())
         {
           self->metric.tank_mmhg = telemetry["tank_mmhg"].as<float>();
-          ESP_LOGI("SsvcSettings", "Обновлен tank_mmhg: %.2f",
+          ESP_LOGV("SsvcSettings", "Обновлен tank_mmhg: %.2f",
                    self->metric.tank_mmhg);
         }
 

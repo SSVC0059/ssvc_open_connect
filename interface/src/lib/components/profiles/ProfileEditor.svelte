@@ -395,7 +395,7 @@
 					<div class="settings-col">
 						<h4 class="col-title">Параметры отбора</h4>
 
-						<div class="sub-settings-grid" style="border-top: none; padding-top: 0;">
+						<div class="sub-settings-grid sub-settings-grid--no-top">
 							<div class="sub-settings-group">
 								<h5 class="sub-settings-title">Завершение отбора</h5>
 								<div class="input-group">
@@ -572,6 +572,8 @@
 {/if}
 
 <style lang="scss">
+	@use "$lib/styles/base/variables" as v;
+
 	.editor-layout {
 		display: flex;
 		flex-direction: column;
@@ -683,7 +685,7 @@
 		grid-template-columns: 1fr;
 		gap: 1.5rem;
 
-		@media (min-width: 768px) {
+		@media (min-width: v.$breakpoint-md) {
 			grid-template-columns: 2fr 1fr;
 		}
 	}
@@ -704,7 +706,7 @@
 		gap: 0.75rem;
 		align-self: start; /* Не растягиваться на всю высоту, если левая колонка выше */
 
-		@media (min-width: 1024px) {
+		@media (min-width: v.$breakpoint-lg) {
 			grid-template-columns: 1fr 1fr;
 			gap: 0.5rem 1rem;
 
@@ -731,8 +733,13 @@
 		border-top: 1px solid var(--primary-300);
 		padding-top: 1rem;
 
-		@media (min-width: 768px) {
+		@media (min-width: v.$breakpoint-md) {
 			grid-template-columns: 1fr 1fr;
+		}
+
+		&--no-top {
+			border-top: none;
+			padding-top: 0;
 		}
 	}
 
@@ -800,6 +807,15 @@
 		align-items: flex-end;
 		transition: opacity 0.2s;
 
+		.input-group {
+			min-width: 5.5rem; /* чтобы числа вроде 0,25 не обрезались */
+		}
+
+		.input-field {
+			min-width: 4.5em; /* запас под дробную часть */
+			box-sizing: border-box;
+		}
+
 		&.disabled {
 			opacity: 0.3;
 			pointer-events: none;
@@ -843,7 +859,7 @@
 		border-top: 1px solid var(--primary-300);
 		position: sticky;
 		bottom: 0;
-		z-index: 10;
+		z-index: var(--z-dropdown);
 	}
 
 	.btn-primary,

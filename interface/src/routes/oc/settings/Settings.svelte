@@ -180,7 +180,7 @@
 			<p>Загрузка...</p>
 			<!-- Or a spinner component -->
 		{:else if error}
-			<p style="color: red;">{error}</p>
+			<p class="error-text">{error}</p>
 		{:else}
 			{#each filteredTabs as tab, index}
 				{#if activeTab === index}
@@ -195,3 +195,9 @@
 		{/if}
 	</div>
 </div>
+
+<style lang="scss">
+	.error-text {
+		color: var(--red-600);
+	}
+</style>

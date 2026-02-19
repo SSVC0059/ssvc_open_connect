@@ -63,4 +63,21 @@
 		font-weight: 400;
 		text-decoration: line-through;
 	}
+
+	@media (prefers-color-scheme: dark) {
+		.analytics-item {
+			background-color: var(--dark-step-inactive-bg);
+			&.modified {
+				background-color: rgba(217, 119, 6, 0.25);
+				border-color: var(--yellow-600);
+			}
+		}
+		.analytics-label,
+		.initial-value {
+			color: var(--dark-text-muted);
+		}
+		.analytics-value {
+			color: var(--primary-200);
+		}
+	}
 </style>

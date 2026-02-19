@@ -1,5 +1,5 @@
 // file: components/_inputs.scss (ИТОГОВЫЙ КОД)
-@use "../base/mixins" as m;
+@use "$lib/styles/base/mixins" as m;
 
 /* ===== 1. БАЗОВЫЕ СТИЛИ ПОЛЕЙ ВВОДА И ЛЕЙБЛОВ (Унифицированные) ===== */
 
@@ -18,14 +18,14 @@
   font-size: 0.875rem;
   border: 1px solid var(--primary-300);
   border-radius: var(--border-radius);
-  outline: none;
+  outline: none; /* видимый фокус задаётся в &:focus через box-shadow */
   transition: var(--transition);
   background-color: var(--white);
   color: var(--primary-800);
 
   &:focus {
     border-color: var(--blue-500);
-    box-shadow: 0 0 0 3px rgba(var(--blue-500), 0.2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue-500) 20%, transparent);
   }
 
   @include m.dark-theme-color;

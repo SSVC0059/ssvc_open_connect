@@ -1,48 +1,34 @@
-/* ===== ДОБАВЛЕНИЕ СТИЛЕЙ WIZARD В ТЕМНУЮ ТЕМУ ===== */
+/* Переопределения тёмной темы (wizard, формы, таблицы).
+   Переменные (--dark-*) заданы в app.css в блоке @media (prefers-color-scheme: dark) :root.
+*/
 @media (prefers-color-scheme: dark) {
 
-  /* Переменные для примера (если они не определены глобально) */
-  /*
-   */
-  :root {
-    --dark-bg-overlay: rgba(0, 0, 0, 0.75);
-    --dark-surface-color: #2d3748;
-    --dark-footer-bg: #4a5568;
-    --dark-step-inactive-bg: #5a6575;
-    --dark-text-muted: #a0aec0;
-    --dark-border-color: #4a5568;
-  }
-  // Контейнер и Оверлей
   .wizard-overlay-override {
-    background-color: var(--dark-bg-overlay); // Новый оверлей
+    background-color: var(--dark-bg-overlay);
   }
 
   .wizard {
-    background-color: var(--dark-surface-color); // Темный фон окна
+    background-color: var(--dark-surface-color);
   }
 
-  // Заголовок
   .modal-header {
     .modal-title, .modal-close {
-      color: var(--white); // Светлый текст
+      color: var(--white);
     }
   }
 
-  // Навигация (Подвал)
   .wizard-nav {
-    background-color: var(--dark-footer-bg); // Темный фон навигации
+    background-color: var(--dark-footer-bg);
   }
 
-  // Шаги
   .steps-container .step {
     .step-circle:not(.active) {
-      background-color: var(--dark-step-inactive-bg); // Темный фон неактивного круга
+      background-color: var(--dark-step-inactive-bg);
       color: var(--white);
     }
     .step-title {
-      color: var(--dark-text-muted); // Светло-серый текст
+      color: var(--dark-text-muted);
     }
-
   }
 
   .settings-title, .valve-card .settings-title {
@@ -50,7 +36,7 @@
   }
 
   .input-label {
-    color: var(--primary-200); // Или любая другая переменная светлого текста, например, var(--primary-200)
+    color: var(--primary-200);
   }
 
   .input-field,

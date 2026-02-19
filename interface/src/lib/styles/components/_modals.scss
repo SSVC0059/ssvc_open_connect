@@ -6,8 +6,8 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 40;
-  background: rgba(var(--black), 0.5);
+  z-index: var(--z-modal-backdrop);
+  background: color-mix(in srgb, var(--black) 50%, transparent);
   backdrop-filter: blur(4px);
 
   &.fade-in {
@@ -18,7 +18,7 @@
 .modal-dialog {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: var(--z-modal);
   display: grid;
   place-items: center;
   pointer-events: none;

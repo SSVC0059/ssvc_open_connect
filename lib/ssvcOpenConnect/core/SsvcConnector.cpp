@@ -137,7 +137,7 @@ void SsvcConnector::initSsvcController() {
       }
     } else {
 
-      ESP_LOGV("SsvcConnector", "Начало вывода данных", data);
+      ESP_LOGV("SsvcConnector", "Начало вывода данных");
       ESP_LOGV("SsvcConnector", "%s", data);
       ESP_LOGV("SsvcConnector", "Конец вывода данных");
 
