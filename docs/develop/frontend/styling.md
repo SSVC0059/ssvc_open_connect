@@ -53,11 +53,7 @@
 
 ## 4. Flowbite-svelte
 
-Планируется **постепенный переход** на компоненты DaisyUI (или собственные компоненты поверх Tailwind/DaisyUI).
-
-- **Сейчас:** в трёх компонентах используются Flowbite-svelte (Popover, Spinner, иконки). Точный список и задачи на замену по компонентам — в [styles-cleanup-audit.md, п. 5](./styles-cleanup-audit.md#5-flowbite-svelte).
-- Новый функционал предпочтительно реализовывать без добавления зависимостей от Flowbite.
-- При доработке этих компонентов рекомендуется заменять Flowbite на DaisyUI/кастомные решения: для подсказок (Popover) — **tooltip** или кастомный popover (не dropdown: dropdown — меню действий); для загрузки — loading-состояния DaisyUI. Замены выполнять отдельными PR по одному компоненту.
+**Итог:** зависимости Flowbite **удалены**. Popover заменён на DaisyUI tooltip (ValveParameters, KpnPopover), Spinner — на DaisyUI loading во всех компонентах, иконки — на Tabler (unplugin-icons). Подробности и история задач — в [styles-cleanup-audit.md, п. 5](./styles-cleanup-audit.md#5-flowbite-svelte). Новый функционал реализовывать на DaisyUI/Tailwind/Tabler, без Flowbite.
 
 ---
 

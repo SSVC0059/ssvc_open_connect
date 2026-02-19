@@ -112,19 +112,41 @@
 
 ## 5. Flowbite-svelte
 
-**Зависимости:** `flowbite` ^3.1.2, `flowbite-svelte` ^0.48.4, `flowbite-svelte-icons` ^2.0.3 (в `interface/package.json`).
+**Итог:** зависимости `flowbite`, `flowbite-svelte`, `flowbite-svelte-icons` **удалены** из `interface/package.json`. Все использования заменены на DaisyUI (tooltip, loading) и Tabler-иконки.
 
-- [x] **Зафиксировать список компонентов, использующих Flowbite:**
-  - **ValveParameters.svelte** (`interface/src/lib/components/Telemetry/`) — `Popover` (flowbite-svelte).
-  - **SensorCard.svelte** (`interface/src/lib/components/OCSettings/`) — `Spinner` (flowbite-svelte).
-  - **KpnPopover.svelte** (`interface/src/lib/components/profiles/`) — `Popover` (flowbite-svelte) и иконка `QuestionCircleOutline` (flowbite-svelte-icons).
-- [x] **Вынести задачи на замену отдельно** (по одному компоненту или по типу виджета), без массовых изменений в одном PR — см. подзадачи ниже.
+- [x] **Зафиксировать список компонентов, использующих Flowbite:** ValveParameters (Popover), SensorCard (Spinner), KpnPopover (Popover + иконка) — см. подзадачи ниже.
+- [x] **Вынести задачи на замену отдельно** — выполнено по всем пунктам.
 
-**Задачи на замену (выполнять отдельными PR):**
+**Задачи на замену (все выполнены):**
 
-- [x] **ValveParameters:** заменить Flowbite `Popover` (всплывающая подсказка с параметрами) на DaisyUI **tooltip** (выполнено).
-- [ ] **SensorCard:** заменить Flowbite `Spinner` на DaisyUI loading / кастомный спиннер (отдельный PR).
-- [x] **KpnPopover:** заменить Flowbite `Popover` (подсказка по КПН) и иконку `QuestionCircleOutline` (flowbite-svelte-icons) на DaisyUI **tooltip** + иконка Tabler `help-circle` (выполнено).
+- [x] **ValveParameters:** заменить Flowbite `Popover` на DaisyUI **tooltip** (выполнено).
+- [x] **SensorCard:** заменить Flowbite `Spinner` на DaisyUI loading (выполнено).
+- [x] **KpnPopover:** заменить Flowbite `Popover` и иконку на DaisyUI **tooltip** + Tabler `help-circle` (выполнено).
+
+### 5.1 Единый спиннер: DaisyUI loading везде
+
+**Цель:** во всех компонентах использовать один и тот же индикатор загрузки — **DaisyUI loading** (классы `loading loading-spinner` и при необходимости обёртка), чтобы убрать зависимость от Flowbite и от локальных `Spinner.svelte` / `LoadingSpinner.svelte`.
+
+**Текущее состояние (после замены):** везде используется **DaisyUI loading** (`loading loading-spinner`). Локальные `Spinner.svelte` и `LoadingSpinner.svelte` в перечисленных компонентах заменены; при необходимости эти файлы можно удалить или пометить устаревшими.
+
+**Подзадачи (замена на DaisyUI loading по одному компоненту / PR по желанию):**
+
+- [x] **SensorCard.svelte** — заменить Flowbite `Spinner` на DaisyUI loading (2 вхождения) (выполнено).
+- [x] **TelegramSettings.svelte** — заменить `LoadingSpinner` на DaisyUI loading (выполнено).
+- [x] **StartWizard.svelte** — заменить `LoadingSpinner` на DaisyUI loading (выполнено).
+- [x] **SensorsSettings.svelte** — заменить `LoadingSpinner` на DaisyUI loading (выполнено).
+- [x] **ProfileManager.svelte** — заменить `Spinner` на DaisyUI loading (выполнено).
+- [x] **ProfileSelector.svelte** — заменить `Spinner` на DaisyUI loading (выполнено).
+- [x] **Wifi.svelte** (routes/wifi/sta) — заменить `Spinner` на DaisyUI loading (выполнено).
+- [x] **user/+page.svelte** — заменить `Spinner` на DaisyUI loading (выполнено).
+- [x] **GithubFirmwareManager.svelte** — заменить `Spinner` на DaisyUI loading (выполнено).
+- [x] **Accesspoint.svelte** (routes/wifi/ap) — заменить `Spinner` на DaisyUI loading (2 вхождения) (выполнено).
+- [x] **SystemStatus.svelte** — заменить `Spinner` на DaisyUI loading (выполнено).
+- [x] **NTP.svelte** (routes/connections/ntp) — заменить `Spinner` на DaisyUI loading (выполнено).
+- [x] **MQTTConfig.svelte** — заменить `Spinner` на DaisyUI loading (выполнено).
+- [x] **MQTT.svelte** — заменить `Spinner` на DaisyUI loading (выполнено).
+
+**Финализация (выполнено):** зависимости `flowbite`, `flowbite-svelte`, `flowbite-svelte-icons` удалены из `package.json`. При необходимости удалить или пометить устаревшими `Spinner.svelte` и `LoadingSpinner.svelte` (они больше не импортируются в перечисленных компонентах).
 
 ---
 

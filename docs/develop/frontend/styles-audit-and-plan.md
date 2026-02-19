@@ -14,7 +14,7 @@
 |--------|-------------------|------------------|
 | **Tailwind CSS** | `interface/src/app.css` (`@import "tailwindcss"`), `vite.config.ts` (`@tailwindcss/vite`) | tailwindcss ^4.1.11 |
 | **DaisyUI** | `app.css`: `@plugin "daisyui"` (themes: corporate — default, business — prefers-dark) | daisyui ^5.0.46 |
-| **Flowbite / flowbite-svelte** | Только импорты в компонентах | flowbite ^3.1.2, flowbite-svelte ^0.48.4 |
+| **Flowbite / flowbite-svelte** | Удалены (заменены на DaisyUI tooltip/loading и Tabler) | — |
 | **Глобальный SCSS** | `+layout.svelte`: `import '$lib/styles/open-connect-main.scss'` | sass-embedded ^1.93.2 |
 
 ### 1.2 Структура SCSS
@@ -44,7 +44,7 @@
   - `@use .../profile-manager` — ProfileManager
   - `@use .../views/wizard` — StartWizard, ChangeStageModal
 - **DaisyUI в коде:** `$lib/DaisyUiHelper.ts` — используется в `SystemMetrics.svelte` и `BatteryMetrics.svelte` (получение цветов темы для Chart.js).
-- **Flowbite-svelte:** только 3 компонента — `ValveParameters.svelte`, `SensorCard.svelte`, `KpnPopover.svelte` (Popover, Spinner, иконки).
+- **Flowbite-svelte:** удалён; бывшие использования (ValveParameters, SensorCard, KpnPopover) заменены на DaisyUI tooltip/loading и Tabler-иконки.
 
 ### 1.4 Дизайн-токены и общие переменные
 
