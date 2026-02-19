@@ -94,7 +94,7 @@
 
 **Этап 5 — Телеметрия (последний приоритет)**
 
-- [ ] **Ssvc.svelte:** перевести разметку и стили (`.telemetry-container`, `.status-bar`, `.status-item .label`, `.glassmorphism`, `.panel`, `.panel-title`, `.readings-list`, `.reading-label`, `.reading-value` и т.д.) на классы DaisyUI. Удалить из `_dark-theme.scss` все селекторы `body .telemetry-container ...`.
+- [x] **Ssvc.svelte:** переведены цвета на семантику DaisyUI: `.status-item .label`, `.panel-title`, `.section-title`, `.reading-label`, `.reading-value` — `color: oklch(var(--bc))`. Удалены `@include dark-theme-color` для этих элементов. Из `_dark-theme.scss` удалены все селекторы `body .telemetry-container ...`.
 
 **Финализация**
 
