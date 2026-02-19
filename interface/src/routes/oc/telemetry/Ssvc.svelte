@@ -268,8 +268,7 @@
       .status-item {
         .label {
           font-weight: 700;
-					color: var(--primary-800);
-          @include dark-theme-color;
+          color: var(--text-color);
         }
         .time-value {
           font-weight: 700;
@@ -376,10 +375,9 @@
         .panel-title {
           font-size: 2rem;
           font-weight: 700;
-          color: var(--primary-800);
+          color: var(--text-color);
           margin-bottom: 1rem;
           text-align: center;
-          @include dark-theme-color;
         }
       }
 
@@ -396,6 +394,12 @@
 					display: flex;
 					flex-direction: column;
 					@include parameter-container;
+					/* Override mixin color so theme text is readable in dark mode */
+					.section-title,
+					.readings-list .reading-item .reading-label,
+					.readings-list .reading-item .reading-value {
+						color: var(--text-color) !important;
+					}
 				}
 
 				// Сделаем скроллбар аккуратным и тонким
@@ -414,6 +418,12 @@
 			.parameters-readings {
 				@include parameter-container;
 				margin-top: auto; // Гарантированно прижимает к низу
+				/* Override mixin color so theme text is readable in dark mode */
+				.section-title,
+				.readings-list .reading-item .reading-label,
+				.readings-list .reading-item .reading-value {
+					color: var(--text-color) !important;
+				}
 			}
 
 				}

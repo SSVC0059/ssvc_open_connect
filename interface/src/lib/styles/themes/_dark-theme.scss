@@ -1,21 +1,7 @@
 /* Переопределения тёмной темы (wizard, формы, таблицы).
    Переменные (--dark-*) заданы в app.css в блоке @media (prefers-color-scheme: dark) :root.
+   Этап 5: телеметрия переведена на DaisyUI в Ssvc.svelte (oklch(var(--bc))), блок удалён.
 */
 @media (prefers-color-scheme: dark) {
-
-  /* Телеметрия (/oc/telemetry): полный путь в DOM — выше специфичность, чем у scoped правил компонента (7–8 классов) */
-  body .telemetry-container .status-bar .status-item .label,
-  body .telemetry-container .glassmorphism .controls-container .sensor-readings .readings-list .reading-item .reading-label,
-  body .telemetry-container .glassmorphism .controls-container .sensor-readings .readings-list .reading-item .reading-value,
-  body .telemetry-container .main-content .responsive-grid .sidebar-right .glassmorphism.panel .parameters-readings .readings-list .reading-item .reading-label,
-  body .telemetry-container .main-content .responsive-grid .sidebar-right .glassmorphism.panel .parameters-readings .readings-list .reading-item .reading-value,
-  body .telemetry-container .main-content .responsive-grid .sidebar-left .glassmorphism.panel .controls-container .sensor-readings .readings-list .reading-item .reading-label,
-  body .telemetry-container .main-content .responsive-grid .sidebar-left .glassmorphism.panel .controls-container .sensor-readings .readings-list .reading-item .reading-value,
-  body .telemetry-container .glassmorphism.panel .panel-title,
-  body .telemetry-container .main-content .responsive-grid .sidebar-right .glassmorphism.panel .panel-title,
-  body .telemetry-container .main-content .responsive-grid .sidebar-left .glassmorphism.panel .panel-title,
-  body .telemetry-container .main-content .responsive-grid .center-panel .glassmorphism.panel .panel-title {
-    color: var(--color-gray-200, var(--primary-200));
-  }
-
+  /* Все селекторы по этапам 1–5 перенесены в компоненты / DaisyUI. */
 }
