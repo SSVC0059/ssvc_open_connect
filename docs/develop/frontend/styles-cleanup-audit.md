@@ -89,8 +89,8 @@
 
 **Этап 4 — OC Settings (профили и вкладки)**
 
-- [ ] **Профили:** перевести **ProfileManager.svelte** (`.profile-list-header`, `.profile-list-item`, `.profile-name`, `.active`) на классы DaisyUI. Удалить из `_dark-theme.scss` селекторы `body .container .tabs-container .profile-list-header h3`, `body .container .tabs-container .profile-list-item .profile-name`, `body .container .tabs-container .profile-list-item.active`.
-- [ ] **Подписи во вкладках OC Settings:** перевести контент вкладок (**TelegramSettings.svelte**, **SensorsSettings.svelte** и др.) на семантику DaisyUI для подписей. Удалить из `_dark-theme.scss` селектор `body .container .tabs-container .input-label`.
+- [x] **Профили:** в `_profile-manager.scss` переведены `.profile-list-header`, `.profile-list-item`, `.profile-name`, `.active`, `.profile-settings-panel`, `.profile-loading-state`, `.profile-error-state`, `.icon-button` на DaisyUI (`--bc`, `--b2`, `--b3`, `--p`, `--in`, `--er`). Селекторы `body .container .tabs-container .profile-list-header h3`, `body .container .tabs-container .profile-list-item .profile-name`, `body .container .tabs-container .profile-list-item.active` удалены из `_dark-theme.scss`.
+- [x] **Подписи во вкладках OC Settings:** подписи `.input-label` во вкладках наследуют глобальные стили из `+layout.svelte` (Этап 1). Селектор `body .container .tabs-container .input-label` удалён из `_dark-theme.scss`.
 
 **Этап 5 — Телеметрия (последний приоритет)**
 
