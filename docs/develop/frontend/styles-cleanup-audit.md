@@ -124,7 +124,7 @@
 
 - [ ] **ValveParameters:** заменить Flowbite `Popover` (всплывающая подсказка с параметрами) на DaisyUI **tooltip** или кастомный popover — не dropdown (dropdown это меню действий) (отдельный PR).
 - [ ] **SensorCard:** заменить Flowbite `Spinner` на DaisyUI loading / кастомный спиннер (отдельный PR).
-- [ ] **KpnPopover:** заменить Flowbite `Popover` (подсказка по КПН) и иконку `QuestionCircleOutline` (flowbite-svelte-icons) на DaisyUI **tooltip** или кастомный popover + свою иконку (отдельный PR).
+- [x] **KpnPopover:** заменить Flowbite `Popover` (подсказка по КПН) и иконку `QuestionCircleOutline` (flowbite-svelte-icons) на DaisyUI **tooltip** + иконка Tabler `help-circle` (выполнено).
 
 ---
 
