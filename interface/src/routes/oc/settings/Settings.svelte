@@ -209,6 +209,13 @@
 		display: flex;
 		flex-direction: column;
 
+		/* Единый фон контента вкладок (как у панели профилей), чтобы Telegram не был темнее Профилей */
+		.settings-container {
+			background: oklch(var(--b1));
+			border: 1px solid oklch(var(--bc) / 0.2);
+			box-shadow: 0 4px 24px oklch(var(--bc) / 0.12);
+		}
+
 		/* Десктопная навигация */
 		.tabs-nav {
 			display: flex;

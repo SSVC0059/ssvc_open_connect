@@ -40,12 +40,12 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--primary-200);
+  border-bottom: 1px solid oklch(var(--bc) / 0.25);
 
   h3 {
     font-size: 1.125rem;
     font-weight: 600;
-    color: var(--primary-800);
+    color: oklch(var(--bc));
   }
 
   .profile-actions {
@@ -70,20 +70,20 @@
   margin-bottom: 0.5rem;
   transition: background-color 0.2s ease, color 0.2s ease, border-left 0.2s ease, box-shadow 0.2s ease;
   border-left: 4px solid transparent;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px oklch(var(--bc) / 0.08);
+  color: oklch(var(--bc));
+  background-color: oklch(var(--b2));
 
   &:hover {
-    background-color: var(--primary-100);
-    color: var(--primary-800);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    background-color: oklch(var(--b3));
+    box-shadow: 0 2px 6px oklch(var(--bc) / 0.12);
   }
 
   &.active {
-    background-color: var(--primary-100);
-    color: var(--primary-800);
-    border-left: 4px solid var(--accent-color);
+    background-color: oklch(var(--p) / 0.15);
+    border-left: 4px solid oklch(var(--p));
     font-weight: 600;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 6px oklch(var(--bc) / 0.12);
   }
 
   &.disabled {
@@ -105,8 +105,8 @@
   }
 
   .applied-icon {
-    margin-right: 0.5rem;
-    color: var(--success-color);
+    margin-right: 1rem;
+    color: oklch(var(--in)); /* DaisyUI info/success-like accent for "applied" state */
     flex-shrink: 0;
   }
 
@@ -115,11 +115,11 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--primary-700);
+    color: oklch(var(--bc));
   }
 
   &.active .profile-name {
-    color: var(--primary-900);
+    color: oklch(var(--bc));
   }
 
   .profile-item-actions {
@@ -138,7 +138,7 @@
 
 .profile-settings-panel {
   padding: 1rem;
-  background: var(--white);
+  background: oklch(var(--b1));
   border-radius: var(--border-radius);
 }
 
@@ -158,37 +158,21 @@
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  border: 2px dashed var(--primary-300);
+  border: 2px dashed oklch(var(--bc) / 0.35);
   border-radius: var(--border-radius);
   height: 100%;
   width: 100%;
   text-align: center;
-  color: var(--primary-500);
+  color: oklch(var(--bc) / 0.8);
 
   h3 {
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--primary-700);
+    color: oklch(var(--bc));
   }
 
   p {
     margin-top: 0.5rem;
-  }
-}
-
-/* Тёмная тема: панель редактора и плейсхолдер «Выберите профиль» */
-@media (prefers-color-scheme: dark) {
-  .profile-settings-panel {
-    background: var(--dark-surface-color);
-  }
-
-  .profile-settings-placeholder {
-    border-color: var(--dark-border-color);
-    color: var(--dark-text-muted);
-
-    h3 {
-      color: var(--primary-200);
-    }
   }
 }
 
@@ -198,11 +182,11 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  color: var(--primary-500);
+  color: oklch(var(--bc) / 0.7);
 }
 
 .profile-error-state {
-  color: var(--danger-color);
+  color: oklch(var(--er, 0.55 0.22 25));
 }
 
 .icon-button {
@@ -211,12 +195,11 @@
   cursor: pointer;
   padding: 0.4rem;
   border-radius: var(--border-radius-sm);
-  color: var(--primary-600);
+  color: oklch(var(--bc));
   transition: background-color 0.2s ease, color 0.2s ease;
 
   &:hover {
-    background-color: var(--primary-100);
-    color: var(--primary-800);
+    background-color: oklch(var(--b2));
   }
 
   &.btn-disabled, &:disabled {
@@ -224,7 +207,21 @@
     cursor: not-allowed;
     &:hover {
       background-color: transparent;
-      color: var(--primary-600);
+    }
+  }
+}
+
+/* Тёмная тема: контрастные фоны для пунктов списка (DaisyUI --b2/--b3 слишком близки к фону) */
+@media (prefers-color-scheme: dark) {
+  .profile-list-item {
+    background-color: var(--dark-surface-color);
+
+    &:hover {
+      background-color: var(--hover-bg);
+    }
+
+    &.active {
+      background-color: var(--secondary-bg);
     }
   }
 }

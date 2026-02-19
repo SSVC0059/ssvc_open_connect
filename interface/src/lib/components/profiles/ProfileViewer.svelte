@@ -249,23 +249,24 @@
 	}
 
 	.card {
-		background-color: var(--white);
+		background-color: oklch(var(--b2));
 		border-radius: var(--border-radius);
 		padding: 1.25rem;
-		border: 1px solid var(--primary-300);
+		border: 1px solid oklch(var(--bc) / 0.3);
+		box-shadow: 0 1px 3px oklch(var(--bc) / 0.08);
 	}
 
 	.card-title {
 		font-size: 1.125rem;
-		color: var(--primary-800);
+		color: oklch(var(--bc));
 		margin: 0 0 1rem 0;
 		padding-bottom: 0.75rem;
-		border-bottom: 1px solid var(--primary-200);
+		border-bottom: 1px solid oklch(var(--bc) / 0.25);
 	}
 
 	.summary-card {
-		background-color: var(--primary-100);
-		border-color: var(--blue-300);
+		background-color: oklch(var(--b3));
+		border-color: oklch(var(--bc) / 0.35);
 	}
 
 	.summary-grid,
@@ -282,8 +283,8 @@
 	}
 
 	.fraction-card {
-		background-color: var(--gray-50);
-		border: 1px solid var(--primary-200);
+		background-color: oklch(var(--b3));
+		border: 1px solid oklch(var(--bc) / 0.3);
 		padding: 1rem;
 		border-radius: var(--border-radius);
 		display: flex;
@@ -294,7 +295,7 @@
 	.fraction-title {
 		font-size: 1rem;
 		font-weight: 600;
-		color: var(--primary-700);
+		color: oklch(var(--bc));
 		margin: 0;
 		text-align: center;
 	}
@@ -302,46 +303,33 @@
 	.message-box {
 		padding: 2rem;
 		text-align: center;
-		background-color: var(--gray-50);
+		background-color: oklch(var(--b2));
+		border: 1px solid oklch(var(--bc) / 0.25);
 		border-radius: var(--border-radius);
-		color: var(--gray-600);
+		color: oklch(var(--bc) / 0.8);
 	}
 
 	.error-box {
-		background-color: var(--red-50);
-		color: var(--red-700);
-		border: 1px solid var(--red-200);
+		background-color: oklch(var(--er) / 0.15);
+		color: oklch(var(--er));
+		border: 1px solid oklch(var(--er) / 0.5);
 	}
 
-	/* Тёмная тема — карточки профиля в редакторе */
+	/* Тёмная тема: DaisyUI --b1/--b2/--b3 слишком близки по яркости, секции сливаются с фоном — единый фон всех секций */
 	@media (prefers-color-scheme: dark) {
-		.card {
+		.card,
+		.summary-card {
+			background-color: var(--dark-surface-color);
+			border-color: var(--dark-border-color);
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+		}
+		.fraction-card {
 			background-color: var(--dark-surface-color);
 			border-color: var(--dark-border-color);
 		}
-		.card-title {
-			color: var(--primary-200);
-			border-bottom-color: var(--dark-border-color);
-		}
-		.summary-card {
-			background-color: var(--dark-footer-bg);
-			border-color: var(--dark-border-color);
-		}
-		.fraction-card {
-			background-color: var(--dark-step-inactive-bg);
-			border-color: var(--dark-border-color);
-		}
-		.fraction-title {
-			color: var(--primary-200);
-		}
 		.message-box {
-			background-color: var(--dark-step-inactive-bg);
-			color: var(--dark-text-muted);
-		}
-		.error-box {
-			background-color: rgba(185, 28, 28, 0.3);
-			color: var(--red-300);
-			border-color: var(--red-600);
+			background-color: var(--dark-surface-color);
+			border-color: var(--dark-border-color);
 		}
 	}
 </style>

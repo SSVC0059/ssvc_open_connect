@@ -3,23 +3,6 @@
 */
 @media (prefers-color-scheme: dark) {
 
-  /* Настройки (/oc/settings): Профили — заголовок списка и элементы списка */
-  body .container .tabs-container .profile-list-header h3,
-  body .container .tabs-container .profile-list-item .profile-name {
-    color: var(--color-gray-200, var(--primary-200));
-  }
-
-  /* Активный элемент списка профилей — выше специфичность (.active), правило после общего .profile-name */
-  body .container .tabs-container .profile-list-item.active .profile-name,
-  body .container .tabs-container .profile-list-item.active {
-    color: var(--primary-900, var(--primary-800));
-  }
-
-  /* Настройки (/oc/settings): Telegram — подписи полей ввода */
-  body .container .tabs-container .input-label {
-    color: var(--color-gray-200, var(--primary-200));
-  }
-
   /* Телеметрия (/oc/telemetry): полный путь в DOM — выше специфичность, чем у scoped правил компонента (7–8 классов) */
   body .telemetry-container .status-bar .status-item .label,
   body .telemetry-container .glassmorphism .controls-container .sensor-readings .readings-list .reading-item .reading-label,
