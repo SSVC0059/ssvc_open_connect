@@ -60,7 +60,13 @@
 
 ---
 
-## 5. Документация и ссылки
+## 5. Очищенные/удалённые модули
+
+В рамках [аудита чистки стилей](./styles-cleanup-audit.md) удалены неиспользуемые SCSS-модули (`_buttons.scss`, `_modals.scss`, `_tabs.scss`, `_inputs.scss`). Актуальный перечень задач и выполненных этапов — в [styles-cleanup-audit.md](./styles-cleanup-audit.md).
+
+---
+
+## 6. Документация и ссылки
 
 - **Описание существующих SCSS-классов и миксинов:** [frontend.md](./frontend.md).
 - **Аудит текущего состояния и план:** [styles-audit-and-plan.md](./styles-audit-and-plan.md).
