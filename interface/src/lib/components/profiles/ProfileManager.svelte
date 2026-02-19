@@ -10,7 +10,6 @@
 		faTrash,
 		faUpload
 	} from '@fortawesome/free-solid-svg-icons';
-	import Spinner from '$lib/components/Spinner.svelte';
 	import type {Profile, Profiles} from '$lib/types/ssvc';
 	import ProfileViewer from '$lib/components/profiles/ProfileViewer.svelte';
 	import ProfileEditor from '$lib/components/profiles/ProfileEditor.svelte';
@@ -286,8 +285,8 @@ $effect(() => {
 		</div>
 
 		{#if isLoading}
-			<div class="profile-loading-state">
-				<Spinner />
+			<div class="profile-loading-state flex flex-col items-center justify-center gap-2">
+				<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
 			</div>
 		{:else if error}
 			<div class="profile-error-state">{error}</div>

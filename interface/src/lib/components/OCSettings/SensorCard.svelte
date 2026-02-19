@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { updateAlarmThresholds, updateSensorZone } from '$lib/api/ssvcApi';
 	import { availableZones } from '$lib/components/OCSettings/OSSettingsHelper';
-	import { Spinner } from 'flowbite-svelte';
 	import type { AlarmThresholdsState, ThresholdSettings, SensorReading } from '$lib/types/Sensors';
 	import ThresholdCalculatorModal from './ThresholdCalculatorModal.svelte';
 
@@ -286,7 +285,7 @@
 							disabled={savingThresholds}
 						>
 							{#if savingThresholds}
-								<Spinner />
+								<span class="loading loading-spinner loading-md inline-block shrink-0" aria-hidden="true"></span>
 							{:else}
 								Сохранить
 							{/if}
@@ -332,7 +331,7 @@
 							disabled={movingSensor === sensor.address || !getSelectedZone(sensor.address)}
 						>
 							{#if movingSensor === sensor.address}
-								<Spinner />
+								<span class="loading loading-spinner loading-md inline-block shrink-0" aria-hidden="true"></span>
 							{:else}
 								Переместить
 							{/if}

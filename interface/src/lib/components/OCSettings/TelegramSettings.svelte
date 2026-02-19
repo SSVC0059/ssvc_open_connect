@@ -8,7 +8,6 @@
 	import { page } from '$app/state';
 	import { modals } from 'svelte-modals';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import Cancel from '~icons/tabler/x';
 	import Power from '~icons/tabler/reload';
 	import { notifications } from '$lib/components/toasts/notifications';
@@ -111,9 +110,9 @@
 	</div>
 
 	{#if isLoading}
-		<div class="loading-container">
+		<div class="loading-container flex flex-col items-center gap-2">
 			<p class="loading-text">Загрузка настроек...</p>
-			<LoadingSpinner />
+			<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
 		</div>
 	{:else if error}
 		<div class="error-container">

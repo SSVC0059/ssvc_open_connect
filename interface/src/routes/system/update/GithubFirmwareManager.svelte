@@ -6,7 +6,6 @@
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
 	import SettingsCard from '$lib/components/SettingsCard.svelte';
 	import Github from '~icons/tabler/brand-github';
 	import CloudDown from '~icons/tabler/cloud-download';
@@ -104,7 +103,9 @@
 		<span>Менеджер обновлений Github</span>
 	{/snippet}
 	{#await getGithubAPI()}
-		<Spinner />
+		<div class="flex flex-col items-center justify-center gap-2 py-6">
+			<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+		</div>
 	{:then githubReleases}
 		<div class="alert alert-info">
 			<div>

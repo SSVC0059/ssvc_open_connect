@@ -5,7 +5,6 @@
 	import { user } from '$lib/stores/user';
 	import { page } from '$app/state';
 	import { notifications } from '$lib/components/toasts/notifications';
-	import Spinner from '$lib/components/Spinner.svelte';
 	import MQTT from '~icons/tabler/topology-star-3';
 	import Info from '~icons/tabler/info-circle';
 	import type { BrokerSettings } from '$lib/types/models';
@@ -117,7 +116,9 @@
 	{/snippet}
 	<div class="w-full">
 		{#await getBrokerSettings()}
-			<Spinner />
+			<div class="flex flex-col items-center justify-center gap-2 py-6">
+				<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+			</div>
 		{:then nothing}
 			<form
 				class="fieldset"

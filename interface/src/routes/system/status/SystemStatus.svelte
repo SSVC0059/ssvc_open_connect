@@ -5,7 +5,6 @@
 	import { page } from '$app/state';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import SettingsCard from '$lib/components/SettingsCard.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import CPU from '~icons/tabler/cpu';
@@ -162,7 +161,9 @@
 
 	<div class="w-full overflow-x-auto">
 		{#await getSystemStatus()}
-			<Spinner />
+			<div class="flex flex-col items-center justify-center gap-2 py-6">
+				<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+			</div>
 		{:then nothing}
 			<div
 				class="flex w-full flex-col space-y-1"

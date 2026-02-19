@@ -4,7 +4,6 @@
 	import { cubicOut } from 'svelte/easing';
 	import SettingsCard from '$lib/components/SettingsCard.svelte';
 	import Collapsible from '$lib/components/Collapsible.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
 	import { user } from '$lib/stores/user';
 	import { page } from '$app/state';
 	import { notifications } from '$lib/components/toasts/notifications';
@@ -161,7 +160,9 @@
 	{/snippet}
 	<div class="w-full">
 		{#await getNTPStatus()}
-			<Spinner />
+			<div class="flex flex-col items-center justify-center gap-2 py-6">
+				<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+			</div>
 		{:then nothing}
 			<div
 				class="flex w-full flex-col space-y-1"
