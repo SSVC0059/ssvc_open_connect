@@ -59,7 +59,7 @@ const { settings, onSave } = $props<{
 						<h3 class="settings-section-title">Параметры отбора подголовников</h3>
 						<EditNumbersModal
 							onSave={(newValues) =>
-							onSave('heads', [newValues[0].value, newValues[1].value])}
+							onSave('late_heads', [newValues[0].value, newValues[1].value])}
 							showValue={false}
 							values={[
 								{
@@ -97,7 +97,7 @@ const { settings, onSave } = $props<{
 					<h3 class="settings-section-title">Параметры отбора тела</h3>
 					<EditNumbersModal
 						onSave={(newValues) =>
-							onSave('heads', [newValues[0].value, newValues[1].value])}
+							onSave('hearts', [newValues[0].value, newValues[1].value])}
 						showValue={false}
 						values={[
 								{
@@ -135,7 +135,7 @@ const { settings, onSave } = $props<{
 						<h3 class="settings-section-title">Параметры отбора хвостов</h3>
 						<EditNumbersModal
 							onSave={(newValues) =>
-							onSave('heads', [newValues[0].value, newValues[1].value])}
+							onSave('tails', [newValues[0].value, newValues[1].value])}
 							showValue={false}
 							values={[
 								{

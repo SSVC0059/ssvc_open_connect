@@ -1,5 +1,7 @@
 #include "RectificationProcess.h"
+
 #include "components/sensors/SensorManager/SensorManager.h"
+
 
 /**
  *   SSVC Open Connect
@@ -42,6 +44,7 @@ void RectificationProcess::begin(SsvcConnector& connector,
   _ssvcConnector = &connector;
   _ssvcSettings = &settings;
   _ssvcMqttSettingsService = &ssvcMqttSettingsService;
+  _spiRamAllocator.setTag(TAG);
 
   xTaskCreatePinnedToCore(
       update,
@@ -108,7 +111,7 @@ RectificationProcess::stringToRectificationStage(const std::string& stageStr)
     return RectificationStage::TAILS;
   if (stageStr == "settings")
     return RectificationStage::SETTINGS;
-  return RectificationStage::ERROR;
+  return RectificationStage::PARSE_ERROR;
 }
 
 std::string RectificationProcess::stageToString(RectificationStage stage)
@@ -132,7 +135,7 @@ std::string RectificationProcess::stageToString(RectificationStage stage)
     return "hearts";
   case RectificationStage::TAILS:
     return "tails";
-  case RectificationStage::ERROR:
+  case RectificationStage::PARSE_ERROR:
     return "error";
   default:
     return "unknown";
@@ -248,7 +251,7 @@ RectificationProcess::stringToRectificationEvent(std::string& eventString)
   {
     return RectificationEvent::DS_ERROR;
   }
-  return RectificationEvent::ERROR;
+  return RectificationEvent::PARSE_ERROR;
 }
 
 std::string RectificationProcess::rectificationEventToDescription(
@@ -308,7 +311,7 @@ void RectificationProcess::update(void* pvParameters)
         message = self->_ssvcConnector->getLastMessage();
         ESP_LOGV(TAG, "Received message: %s", message.c_str());
 
-        JsonDocument telemetry;
+        JsonDocument telemetry(&self->_spiRamAllocator);
         DeserializationError error = deserializeJson(telemetry, message);
         if (error)
         {
@@ -450,7 +453,7 @@ void RectificationProcess::update(void* pvParameters)
                    stageToString(_currentStage).c_str());
         }
 
-        if (_currentStage == RectificationStage::ERROR)
+        if (_currentStage == RectificationStage::PARSE_ERROR)
         {
           ESP_LOGE(TAG, "Ошибка получения типа этапа");
           xSemaphoreGive(mutex);
@@ -704,7 +707,7 @@ void RectificationProcess::startEventHandler(const std::string& event)
   }
   else if (event == "ds_error" || event == "ds_error_stop")
   {
-    currentProcessStatus = ProcessState::ERROR;
+    currentProcessStatus = ProcessState::PROCESS_ERROR;
   }
 }
 

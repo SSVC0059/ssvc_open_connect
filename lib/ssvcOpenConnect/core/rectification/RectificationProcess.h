@@ -26,6 +26,9 @@
 #include <Arduino.h>
 
 #include "core/StatefulServices/OpenConnectSettingsService/ssvcMqttSettings.h"
+#include "commons/JsonSpiRamAllocator.h"
+#include "core/rectification/RectificationTypes.h"
+#include "core/rectification/RectificationParseUtils.h"
 
 #define TEMP_GRAPH_ARRAY_SIZE 720
 #define PERIOD_GRAPH_SEC 20
@@ -36,17 +39,9 @@ class RectificationProcess
 {
 public:
 
-
-  enum class ProcessState
-  {
-    IDLE, // Процесс еще не запускался
-    RUNNING, // Процесс запущен
-    PAUSED,
-    FINISHED, // Процесс завершен
-    SKIPPED,
-    STOPPED,
-    ERROR
-  };
+  using ProcessState = RectificationTypes::ProcessState;
+  using RectificationEvent = RectificationTypes::Event;
+  using RectificationStage = RectificationTypes::Stage;
 
   struct Common
   {
@@ -56,21 +51,6 @@ public:
     bool relay;
     bool signal;
     float relative_pressure;
-  };
-
-  enum class RectificationEvent
-  {
-    EMPTY,
-    HEADS_FINISHED, // завершен этап Головы
-    HEARTS_FINISHED, // завершен этап Тело (ректификация завершена для firmware 2.3.*)
-    TAILS_FINISHED, // завершен этап Хвосты (ректификация завершена для firmware 2.2.*)
-    DS_ERROR, // ошибка датчика температуры
-    DS_ERROR_STOP, // выключение оборудования (реле) из-за ошибки датчика
-    STABILIZATION_LIMIT, // превышен лимит времени стабилизации
-    REMOTE_STOP, // получена удаленная команда остановки, процесс остановлен
-    MANUALLY_CLOSED, // включено ручное управление клапаном текущего этапа, клапан закрыт
-    MANUALLY_OPENED, // включено ручное управление клапаном текущего этапа, клапан открыт
-    ERROR
   };
 
   struct Metrics
@@ -95,20 +75,6 @@ public:
     bool stop;
     unsigned char stops;
     RectificationEvent event;
-  };
-
-  enum class RectificationStage
-  {
-    EMPTY,
-    WAITING, // Дежурный режим
-    TP1_WAITING, // Ожидание нагрева колонны
-    DELAYED_START, // Отложенный старт
-    HEADS, // Отбор голов
-    LATE_HEADS, // Отбор подголовников
-    HEARTS, // Отбор тела
-    TAILS, // Отбор хвостов
-    SETTINGS, // Открыты настройки на контроллере SSVC
-    ERROR // Ошибка разбора этапов
   };
 
   //
@@ -167,6 +133,7 @@ private:
   SsvcSettings* _ssvcSettings;
   SsvcMqttSettingsService* _ssvcMqttSettingsService;
   static RectificationProcess* _rectificationProcess;
+  JsonSpiRamAllocator _spiRamAllocator;
 
   static RectificationStage
   stringToRectificationStage(const std::string& stageStr);

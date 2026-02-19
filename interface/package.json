@@ -12,9 +12,16 @@
 		"format": "prettier --plugin-search-dir . --write .",
 		"build:calculator": "vite build --config vite.calculator.config.ts",
 		"test": "vitest",
+		"test:run": "vitest run",
+		"test:StartWizard": "vitest run tests/unit/StartWizard",
+		"test:SsvcSettings": "vitest run tests/unit/SsvcSettings",
+		"test:coverage:SsvcSettings": "vitest run tests/unit/SsvcSettings --coverage",
 		"coverage": "vitest run --coverage"
 	},
 	"devDependencies": {
+		"@testing-library/svelte": "^5.3.1",
+		"@testing-library/jest-dom": "^6.6.3",
+		"@testing-library/user-event": "^14.5.2",
 		"@iconify-json/mdi": "^1.2.3",
 		"@iconify-json/tabler": "^1.2.19",
 		"@sveltejs/adapter-static": "^3.0.8",

@@ -6,6 +6,24 @@ import tailwindcss from '@tailwindcss/vite';
 
 
 const config: UserConfig = {
+	test: {
+		environment: 'jsdom',
+		include: ['tests/**/*.test.ts', 'src/**/*.test.ts'],
+		setupFiles: ['tests/setup.ts'],
+		coverage: {
+			provider: 'v8',
+			exclude: [
+				'**/node_modules/**',
+				'**/*.test.ts',
+				'**/*.spec.ts',
+				'**/tests/lib/*ExpectedRequests.ts'
+			]
+		}
+	},
+	// Чтобы в тестах (jsdom) подгружалась браузерная сборка Svelte, а не серверная (mount недоступен на сервере)
+	resolve: {
+		conditions: ['browser', 'import', 'module', 'svelte', 'default']
+	},
 	plugins: [
 		sveltekit(),
 		Icons({
