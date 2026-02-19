@@ -112,8 +112,19 @@
 
 ## 5. Flowbite-svelte
 
-- [ ] Зафиксировать список компонентов, использующих Flowbite: ValveParameters (Popover), SensorCard (Spinner), KpnPopover (Popover, иконки).
-- [ ] Вынести задачи на замену отдельно (по одному компоненту или по типу виджета), без массовых изменений в одном PR.
+**Зависимости:** `flowbite` ^3.1.2, `flowbite-svelte` ^0.48.4, `flowbite-svelte-icons` ^2.0.3 (в `interface/package.json`).
+
+- [x] **Зафиксировать список компонентов, использующих Flowbite:**
+  - **ValveParameters.svelte** (`interface/src/lib/components/Telemetry/`) — `Popover` (flowbite-svelte).
+  - **SensorCard.svelte** (`interface/src/lib/components/OCSettings/`) — `Spinner` (flowbite-svelte).
+  - **KpnPopover.svelte** (`interface/src/lib/components/profiles/`) — `Popover` (flowbite-svelte) и иконка `QuestionCircleOutline` (flowbite-svelte-icons).
+- [x] **Вынести задачи на замену отдельно** (по одному компоненту или по типу виджета), без массовых изменений в одном PR — см. подзадачи ниже.
+
+**Задачи на замену (выполнять отдельными PR):**
+
+- [ ] **ValveParameters:** заменить Flowbite `Popover` (всплывающая подсказка с параметрами) на DaisyUI **tooltip** или кастомный popover — не dropdown (dropdown это меню действий) (отдельный PR).
+- [ ] **SensorCard:** заменить Flowbite `Spinner` на DaisyUI loading / кастомный спиннер (отдельный PR).
+- [ ] **KpnPopover:** заменить Flowbite `Popover` (подсказка по КПН) и иконку `QuestionCircleOutline` (flowbite-svelte-icons) на DaisyUI **tooltip** или кастомный popover + свою иконку (отдельный PR).
 
 ---
 
