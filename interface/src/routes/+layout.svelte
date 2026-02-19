@@ -303,18 +303,19 @@
 		width: 100%;
 		padding: 0.5rem 0.75rem;
 		font-size: 0.875rem;
-		border: 1px solid oklch(var(--b3));
+		/* Светлая тема: делаем поля явно темнее фона карточек и с более контрастной рамкой */
+		border: 1px solid oklch(var(--bc, 0.25 0 260) / 0.25);
 		border-radius: var(--border-radius);
 		outline: none;
 		transition: var(--transition);
-		background-color: oklch(var(--b2));
+		background-color: oklch(var(--b3));
 		color: oklch(var(--bc));
 	}
 	@media (prefers-color-scheme: dark) {
 		:global(.input-field),
 		:global(.input-cell),
 		:global(.time-input) {
-			background-color: var(--dark-surface-color, #2d3748);
+			background-color: var(--dark-step-inactive-bg, #5a6575);
 			border-color: var(--dark-border-color, #4a5568);
 		}
 	}

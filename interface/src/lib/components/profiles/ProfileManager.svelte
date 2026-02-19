@@ -30,18 +30,28 @@
 	import InputDialog from '$lib/components/InputDialog.svelte';
 
 
-	let profiles: Profiles | undefined = $state(undefined);
-	let isLoading: boolean = $state(true);
-	let error: string | null = $state(null);
-	let selectedProfile: Profile | null = $state(null); // Profile selected for viewing/editing
-	let editingProfile: Profile | null = $state(null); // Profile currently being edited
-	let appliedProfileId: string = $state(""); // ID of the profile active on the controller
+let profiles: Profiles | undefined = $state(undefined);
+let isLoading: boolean = $state(true);
+let error: string | null = $state(null);
+let selectedProfile: Profile | null = $state(null); // Profile selected for viewing/editing
+let editingProfile: Profile | null = $state(null); // Profile currently being edited
+let appliedProfileId: string = $state(''); // ID of the profile active on the controller
+let hasInitializedSelection: boolean = $state(false); // Ensure auto-selection runs only on first load
 
 	let fileInput: HTMLInputElement;
 
 	$effect(() => {
 		loadData();
 	});
+
+// При первом успешном получении списка профилей автоматически выбираем первый,
+// чтобы при открытии вкладки «Профили» сразу открывался профиль (если он есть).
+$effect(() => {
+	if (!hasInitializedSelection && !editingProfile && !selectedProfile && profiles && profiles.length > 0) {
+		selectedProfile = profiles[0];
+		hasInitializedSelection = true;
+	}
+});
 
 	async function loadData() {
 		isLoading = true;

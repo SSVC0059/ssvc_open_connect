@@ -79,8 +79,13 @@
 		}
 	}
 
-	function confirmToggle() {
-		let status = disabled ? 'включить' : 'отключить'
+	function confirmToggle(event: Event) {
+		// Не даём тумблеру «зафиксировать» новое состояние до подтверждения.
+		// Возвращаем визуальное состояние назад, пока пользователь не нажмёт «Перезапуск».
+		const input = event.currentTarget as HTMLInputElement;
+		input.checked = !input.checked;
+
+		let status = disabled ? 'включить' : 'отключить';
 		modals.open(ConfirmDialog, {
 			title: 'Включение подсистемы',
 			message: 'Вы действительно хотите ' + status + ' подсистему и перезагрузить микроконтроллер?',

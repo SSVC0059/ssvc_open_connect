@@ -1,7 +1,6 @@
-/* Переопределения тёмной темы (wizard, формы, таблицы).
-   Переменные (--dark-*) заданы в app.css в блоке @media (prefers-color-scheme: dark) :root.
-   Этап 5: телеметрия переведена на DaisyUI в Ssvc.svelte (oklch(var(--bc))), блок удалён.
+/* Тёмная тема: переопределения по этапам 1–5 перенесены в компоненты и DaisyUI.
+   Файл оставлен с пустым блоком для возможных будущих глобальных правок.
+   Переменные (--dark-*, --text-color) заданы в app.css в @media (prefers-color-scheme: dark) :root.
 */
 @media (prefers-color-scheme: dark) {
-  /* Все селекторы по этапам 1–5 перенесены в компоненты / DaisyUI. */
 }

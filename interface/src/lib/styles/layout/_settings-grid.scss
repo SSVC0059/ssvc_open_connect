@@ -56,9 +56,8 @@
       .settings-section-title {
         font-size: 1.125rem;
         font-weight: 600;
-        color: var(--primary-800);
+        color: oklch(var(--bc));
         margin-bottom: 1rem;
-        @include m.dark-theme-color;
       }
 
     }
@@ -73,16 +72,17 @@
 }
 
 /* Контур панелей — семантика DaisyUI (тема corporate/business переключается по prefers-color-scheme) */
-.settings-container,
-.settings-panel,
-.settings-grid {
-  border: 1px solid oklch(var(--b3));
-  box-shadow: 0 4px 24px oklch(var(--bc) / 0.12);
-}
 
 .settings-grid .settings-panel .settings-section {
   border-radius: 1rem;
   margin: 0.5rem;
+}
+
+/* Тёмная тема: фон контейнера настроек как у карточек */
+@media (prefers-color-scheme: dark) {
+  .settings-container {
+    background-color: var(--dark-surface-color);
+  }
 }
 
 /* ===== ЗАГОЛОВКИ И ОПИСАНИЯ НАСТРОЕК ===== */
