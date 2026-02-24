@@ -403,6 +403,13 @@
 		}
 	}
 
+	@media (prefers-color-scheme: dark) {
+		.sensor-temperature,
+		.sensor-value {
+			color: oklch(var(--bc));
+		}
+	}
+
 	.temperature-bar-compact-container {
 		margin: 0.5rem 0;
 	}

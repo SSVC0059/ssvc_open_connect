@@ -106,9 +106,13 @@
 	/* ===== ПАНЕЛЬ ЗОНЫ (.zone-panel) ===== */
 	.zone-panel {
 		@include m.glassmorphism;
-		border-radius: var(--border-radius);
+		border-radius: 1rem;
 		overflow: hidden;
 		border: var(--glass-border);
+
+		@media (prefers-color-scheme: dark) {
+			background-color: var(--dark-surface-color);
+		}
 	}
 
 	.zone-title {
@@ -120,6 +124,12 @@
 		text-align: center;
 		border-bottom: 2px solid var(--primary-200);
 		@include m.dark-theme-color;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.zone-title {
+			color: oklch(var(--bc));
+		}
 	}
 
 	/* ===== СЕТКА ДЛЯ КАРТОЧЕК СЕНСОРОВ (.sensors-grid) ===== */
