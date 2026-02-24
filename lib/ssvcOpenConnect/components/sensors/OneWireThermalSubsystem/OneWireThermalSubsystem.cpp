@@ -36,6 +36,9 @@ bool OneWireThermalSubsystem::initialize() {
     
     // Начало работы DallasTemperature
     dallasTemp->begin();
+    // отключаем ожидание конвертации температуры - паузу будем выдерживать сами
+    dallasTemp->setWaitForConversion(false);
+    
     ESP_LOGV(TAG, "DallasTemperature started successfully.");
 
     // 2. Поиск и регистрация датчиков
@@ -129,7 +132,8 @@ void OneWireThermalSubsystem::poll() {
         ESP_LOGV(TAG, "Polling cycle started. Requesting temperatures for all %zu devices.", ds18b20Sensors.size());
 
         dallasTemp->requestTemperatures(); 
-        
+        // Ожидание завершения конвертации (для 12-bit = 750ms, берем с запасом 800ms)
+        vTaskDelay(pdMS_TO_TICKS(800));
         ESP_LOGV(TAG, "Temperature conversion initiated/completed.");
     }
 
