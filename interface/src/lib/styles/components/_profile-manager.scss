@@ -35,6 +35,9 @@
   transition: opacity 0.3s ease-in-out, width 0.3s ease-in-out;
   background: oklch(var(--b1)); /* Light theme: panel surface distinct from page background */
   border-radius: var(--border-radius);
+  padding: 1rem;
+  margin: 1rem;
+  border: 1px solid oklch(var(--bc, 0.25 0 260) / 0.25);
 }
 
 .profile-list-header {
@@ -58,7 +61,7 @@
 
 .profile-list {
   flex-grow: 1;
-  overflow-y: auto;
+  overflow-y: visible;
   padding: 0.5rem;
   list-style: none;
   margin: 0;
@@ -104,6 +107,13 @@
     box-shadow: 0 2px 6px oklch(var(--bc) / 0.12);
   }
 
+  /* Профиль, применённый на контроллере — заливка без галочки */
+  &.applied {
+    /* Используем success-цвет темы DaisyUI */
+    background-color: color-mix(in oklab, var(--color-success) 35%, transparent) !important;
+    border-left: 4px solid var(--color-success) !important;
+  }
+
   &.disabled {
     opacity: 0.5;
     pointer-events: none;
@@ -120,12 +130,6 @@
     margin: 0;
     cursor: pointer;
     color: inherit;
-  }
-
-  .applied-icon {
-    margin-right: 1rem;
-    color: oklch(var(--in)); /* DaisyUI info/success-like accent for "applied" state */
-    flex-shrink: 0;
   }
 
   .profile-name {
@@ -229,6 +233,11 @@
   }
 }
 
+/* Рамка для выпадающего меню действий профиля (DaisyUI dropdown) */
+.profile-list-item .dropdown-content {
+  border: 1px solid oklch(var(--bc, 0.25 0 260) / 0.25);
+}
+
 /* Тёмная тема: контрастные фоны и читаемые элементы списка */
 @media (prefers-color-scheme: dark) {
   .profile-list-panel {
@@ -258,6 +267,11 @@
       background-color: var(--secondary-bg) !important;
       border-left-color: oklch(var(--p, 0.7 0.15 250));
       font-weight: 600;
+    }
+
+    &.applied {
+      background-color: color-mix(in oklab, var(--color-success) 40%, transparent) !important;
+      border-left-color: var(--color-success) !important;
     }
   }
 

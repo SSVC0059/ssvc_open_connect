@@ -51,44 +51,70 @@
 				})
 			: []
 	);
+	const title =
+		sensorType === 'pressure' ? 'Датчики давления' : 'Датчики температуры';
+	const description =
+		sensorType === 'pressure'
+			? 'Настройки порогов и зон для датчиков давления.'
+			: '';
 </script>
 
-{#if isLoading}
-	<div class="loading-container flex flex-col items-center gap-2">
-		<p class="loading-text">Загрузка датчиков...</p>
-		<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
-	</div>
-{:else if error}
-	<div class="error-container">
-		<p class="error-text">Ошибка: {error}</p>
-	</div>
-{:else}
-	<div class="sensors-main-container">
-		{#each zoneEntries as [zone, sensors]}
-			{#if Object.keys(sensors).length > 0}
-				<div class="zone-panel">
-					<h2 class="zone-title">
-						{zone === 'unknown' ? 'Неизвестная зона' : getZoneDescription(zone)}
-					</h2>
-					<div class="sensors-grid">
-						{#each Object.entries(sensors) as [address, temp] (address)}
-							<SensorCard
-								sensor={{ address, data: temp }}
-								{alarmThresholdsState}
-								onUpdate={reloadSensors}
-								sensorsType={sensorType}
-							/>
+<div class="settings-container">
+	<div class="settings-grid">
+		<div class="settings-panel">
+			<div class="settings-section">
+				<h2 class="settings-title">{title}</h2>
+				{#if description}
+					<p class="settings-description">
+						{description}
+					</p>
+				{/if}
+
+				{#if isLoading}
+					<div class="loading-container flex flex-col items-center gap-2">
+						<p class="loading-text">Загрузка датчиков...</p>
+						<span
+							class="loading loading-spinner loading-lg text-primary"
+							aria-hidden="true"
+						></span>
+					</div>
+				{:else if error}
+					<div class="error-container">
+						<p class="error-text">Ошибка: {error}</p>
+					</div>
+				{:else}
+					<div class="sensors-main-container">
+						{#each zoneEntries as [zone, sensors]}
+							{#if Object.keys(sensors).length > 0}
+								<div class="zone-panel">
+									<h2 class="zone-title">
+										{zone === 'unknown'
+											? 'Неизвестная зона'
+											: getZoneDescription(zone)}
+									</h2>
+									<div class="sensors-grid">
+										{#each Object.entries(sensors) as [address, temp] (address)}
+											<SensorCard
+												sensor={{ address, data: temp }}
+												{alarmThresholdsState}
+												onUpdate={reloadSensors}
+												sensorsType={sensorType}
+											/>
+										{/each}
+									</div>
+								</div>
+							{/if}
+						{:else}
+							<div class="empty-state">
+								<p class="empty-text">Нет данных о датчиках</p>
+							</div>
 						{/each}
 					</div>
-				</div>
-			{/if}
-		{:else}
-			<div class="empty-state">
-				<p class="empty-text">Нет данных о датчиках</p>
+				{/if}
 			</div>
-		{/each}
+		</div>
 	</div>
-{/if}
+</div>
 
 <style lang="scss">
 	@use "$lib/styles/base/variables" as v;
@@ -165,5 +191,14 @@
 		font-size: 1.125rem;
 		font-weight: 600;
 		color: var(--red-600);
+	}
+
+	/* Одноколоночная карточка настроек датчиков, в стиле Telegram-вкладки */
+	.settings-grid {
+		grid-template-columns: 1fr;
+
+		@media (min-width: v.$breakpoint-md) {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>

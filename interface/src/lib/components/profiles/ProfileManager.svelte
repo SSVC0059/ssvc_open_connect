@@ -1,9 +1,9 @@
 <script lang="ts">
 	import {Fa} from 'svelte-fa';
-	import {
-		faCheck,
+import {
 		faClone,
 		faDownload,
+		faEllipsisV,
 		faPen,
 		faPlay,
 		faPlus,
@@ -269,76 +269,155 @@ $effect(() => {
 
 </script>
 
-<div class="profile-manager-layout" class:editing={editingProfile !== null}>
-	<!-- Left Column: Profile List -->
-	<div class="profile-list-panel">
-		<div class="profile-list-header">
-			<h3>Профили</h3>
-			<div class="profile-actions">
-				<button class="icon-button" onclick={startCreating} title="Создать новый профиль" disabled={editingProfile !== null}>
-					<Fa icon={faPlus} />
-				</button>
-				<button class="icon-button" onclick={() => fileInput.click()} title="Загрузить из файла" disabled={editingProfile !== null}>
-					<Fa icon={faUpload} />
-				</button>
+<div class="settings-container">
+	<div class="settings-grid">
+		<div class="settings-panel">
+			<div class="settings-section">
+				<h2 class="settings-title">Профили</h2>
+
+				<div class="profile-manager-layout" class:editing={editingProfile !== null}>
+					<!-- Left Column: Profile List -->
+					<div class="profile-list-panel">
+						<div class="profile-list-header">
+							<h3>Профили</h3>
+							<div class="profile-actions">
+								<button
+									class="icon-button"
+									onclick={startCreating}
+									title="Создать новый профиль"
+									disabled={editingProfile !== null}
+								>
+									<Fa icon={faPlus} />
+								</button>
+								<button
+									class="icon-button"
+									onclick={() => fileInput.click()}
+									title="Загрузить из файла"
+									disabled={editingProfile !== null}
+								>
+									<Fa icon={faUpload} />
+								</button>
+							</div>
+						</div>
+
+						{#if isLoading}
+							<div class="profile-loading-state flex flex-col items-center justify-center gap-2">
+								<span
+									class="loading loading-spinner loading-lg text-primary"
+									aria-hidden="true"
+								></span>
+							</div>
+						{:else if error}
+							<div class="profile-error-state">{error}</div>
+						{:else if profiles}
+							<ul class="profile-list">
+								{#each profiles as profile (profile.id)}
+									<li
+										class="profile-list-item {selectedProfile?.id === profile.id ? 'active' : ''} {profile.isApplied ? 'applied' : ''} {editingProfile ? 'disabled' : ''}"
+									>
+										<button
+											class="profile-name-button"
+											onclick={() => selectProfile(profile.id)}
+											disabled={editingProfile !== null}
+										>
+											<span class="profile-name">{profile.name}</span>
+										</button>
+										<div class="profile-item-actions">
+											<div class="dropdown dropdown-end">
+												<button
+													type="button"
+													class="icon-button"
+													tabindex="0"
+													title="Действия с профилем"
+													disabled={editingProfile !== null}
+												>
+													<Fa icon={faEllipsisV} />
+												</button>
+												<ul
+													tabindex="0"
+													class="menu menu-sm dropdown-content z-[100] mt-2 w-52 rounded-box bg-base-100 p-1 shadow"
+												>
+													<li>
+														<button
+															type="button"
+															onclick={() => startEditing(profile)}
+															disabled={editingProfile !== null}
+														>
+															<Fa icon={faPen} />
+															<span>Редактировать</span>
+														</button>
+													</li>
+													<li>
+														<button
+															type="button"
+															onclick={() => handleApply(profile.id)}
+															disabled={profile.isApplied || editingProfile !== null}
+														>
+															<Fa icon={faPlay} />
+															<span>Применить</span>
+														</button>
+													</li>
+													<li>
+														<button
+															type="button"
+															onclick={() => handleClone(profile.id)}
+															disabled={editingProfile !== null}
+														>
+															<Fa icon={faClone} />
+															<span>Клонировать</span>
+														</button>
+													</li>
+													<li>
+														<button
+															type="button"
+															onclick={() => handleDownload(profile)}
+															disabled={editingProfile !== null}
+														>
+															<Fa icon={faDownload} />
+															<span>Выгрузить</span>
+														</button>
+													</li>
+													<li>
+														<button
+															type="button"
+															onclick={() => confirmDelete(profile)}
+															disabled={editingProfile !== null}
+														>
+															<Fa icon={faTrash} />
+															<span>Удалить</span>
+														</button>
+													</li>
+												</ul>
+											</div>
+										</div>
+									</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+
+					<!-- Right Column: Settings Placeholder or Selected Profile Details -->
+					<div class="profile-settings-panel">
+						{#if editingProfile}
+							<ProfileEditor
+								profileInfo={editingProfile}
+								onSave={handleSaveEditing}
+								onCancel={cancelEditing}
+							/>
+						{:else if selectedProfile}
+							<ProfileViewer profileInfo={selectedProfile} />
+						{:else}
+							<div class="profile-settings-placeholder">
+								<h3>Редактор настроек</h3>
+								<p>
+									Выберите профиль для просмотра или редактирования его параметров.
+								</p>
+							</div>
+						{/if}
+					</div>
+				</div>
 			</div>
 		</div>
-
-		{#if isLoading}
-			<div class="profile-loading-state flex flex-col items-center justify-center gap-2">
-				<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
-			</div>
-		{:else if error}
-			<div class="profile-error-state">{error}</div>
-		{:else if profiles}
-			<ul class="profile-list">
-				{#each profiles as profile (profile.id)}
-					<li class="profile-list-item {selectedProfile?.id === profile.id ? 'active' : ''} {editingProfile ? 'disabled' : ''}">
-						<button class="profile-name-button" onclick={() => selectProfile(profile.id)} disabled={editingProfile !== null}>
-							{#if profile.isApplied}
-								<Fa icon={faCheck} class="applied-icon" />
-							{/if}
-							<span class="profile-name">{profile.name}</span>
-						</button>
-						<div class="profile-item-actions">
-							<button class="icon-button" onclick={() => startEditing(profile)} title="Редактировать профиль" disabled={editingProfile !== null}>
-								<Fa icon={faPen} />
-							</button>
-							<button class="icon-button" onclick={() => confirmDelete(profile)} title="Удалить профиль" disabled={editingProfile !== null}>
-								<Fa icon={faTrash} />
-							</button>
-							<button class="icon-button" onclick={() => handleClone(profile.id)} title="Клонировать профиль" disabled={editingProfile !== null}>
-								<Fa icon={faClone} />
-							</button>
-							<button class="icon-button" onclick={() => handleDownload(profile)} title="Выгрузить профиль" disabled={editingProfile !== null}>
-								<Fa icon={faDownload} />
-							</button>
-							<button class="icon-button" onclick={() => handleApply(profile.id)} title="Применить профиль" disabled={profile.isApplied || editingProfile !== null}>
-								<Fa icon={faPlay} />
-							</button>
-						</div>
-					</li>
-				{/each}
-			</ul>
-		{/if}
-	</div>
-
-	<!-- Right Column: Settings Placeholder or Selected Profile Details -->
-	<div class="profile-settings-panel">
-		{#if editingProfile}
-			<ProfileEditor
-				profileInfo={editingProfile}
-				onSave={handleSaveEditing}
-				onCancel={cancelEditing}
-			/>
-		{:else if selectedProfile}
-			<ProfileViewer profileInfo={selectedProfile} />
-		{:else}
-			<div class="profile-settings-placeholder">
-				<h3>Редактор настроек</h3>
-				<p>Выберите профиль для просмотра или редактирования его параметров.</p>
-			</div>
-		{/if}
 	</div>
 </div>
 <div class="hidden">
@@ -346,5 +425,15 @@ $effect(() => {
 </div>
 
 <style lang="scss">
+	@use '$lib/styles/base/variables' as v;
 	@use '$lib/styles/components/profile-manager';
+
+	/* Профили во вкладке настроек отображаются как одна широкая карточка */
+	.settings-grid {
+		grid-template-columns: 1fr;
+
+		@media (min-width: v.$breakpoint-md) {
+			grid-template-columns: 1fr;
+		}
+	}
 </style>
