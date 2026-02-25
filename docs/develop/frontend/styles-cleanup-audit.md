@@ -13,6 +13,10 @@
 - [x] **`_tabs.scss`** — подтверждено: нигде не подключался. Стили вкладок задаются локально в `oc/ssvc/Settings.svelte` и `oc/settings/Settings.svelte` (полная копия в `<style>` каждого). Переопределения для тёмной темы — в `_dark-theme.scss` (open-connect-main). Файл удалён.
 - [x] **`_inputs.scss`** — подтверждено: нигде не подключался. Стили полей ввода и лейблов задаются в `+layout.svelte` (`:global(.input-label)`, `.input-field`, `.input-cell`, `.time-input`, `.input-wrapper`, `.modal-actions`, `.info-text`). Класс `.settings-description` — в `_settings-grid.scss` (open-connect-main). Файл удалён.
 
+### 1.1 Модули, намеренно не подключаемые
+
+Файлы **`_sensors-view.scss`**, **`_sensor-card.scss`**, **`_toggles.scss`** нигде не импортируются (ни в open-connect-main, ни в Svelte). Стили соответствующих блоков заданы в компонентах (scoped или :global). Решение: **намеренно не подключаем** эти модули в глобальный бандл. То же зафиксировано в комментариях в `interface/src/lib/styles/open-connect-main.scss`. При необходимости файлы можно удалить отдельной задачей после проверки внешнего вида.
+
 ---
 
 ## 2. Дублирование и конфликты имён

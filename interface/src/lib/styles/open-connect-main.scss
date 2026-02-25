@@ -1,20 +1,22 @@
+// Актуальный список подключаемых файлов — см. docs/develop/frontend/styles-audit-and-plan.md п. 1.2
 
-// 1. НАСТРОЙКИ И БАЗА
-@use "$lib/styles/base/variables"; // Импорт SCSS переменных
-@use "$lib/styles/base/mixins" as m;    // Импорт миксинов
+// 1. BASE
+@use "$lib/styles/base/variables";
+@use "$lib/styles/base/mixins" as m;
 
-// 2. МАКЕТ (LAYOUT)
+// 2. LAYOUT
 @use "$lib/styles/layout/container";      // .container
 @use "$lib/styles/layout/settings-grid";  // .settings-container, .settings-panel, .settings-section
 
-// 3. КОМПОНЕНТЫ
-// modals, tabs, sensors-view — перенесены в компоненты (см. #94)
-// inputs, toggles, buttons, sensor-card — перенесены в компоненты (см. #93)
-// setting-containers, valve-table, profile-manager, wizard — перенесены в компоненты (см. #95)
-
-// 5. ТЕМЫ
-@use "$lib/styles/themes/dark-theme"; // Общий блок @media (prefers-color-scheme: dark)
+// 3. THEMES
+@use "$lib/styles/themes/dark-theme";     // пустой блок после миграции на DaisyUI; переменные в app.css
 @use "$lib/styles/themes/responsive";
 
-// 6. УТИЛИТЫ И ПРОЧЕЕ
+// 4. BASE (animations)
 @use "$lib/styles/base/animations";
+
+// --- Подключаются только в компонентах через @use (не здесь): setting-containers, valve-table, profile-manager, views/wizard ---
+
+// --- Удалены (стили в +layout.svelte и компонентах): _buttons, _inputs, _modals, _tabs ---
+
+// --- Намеренно не подключаются (стили заданы в компонентах): _sensors-view, _sensor-card, _toggles. Подробнее: docs/develop/frontend/styles-cleanup-audit.md, раздел 6 ---
