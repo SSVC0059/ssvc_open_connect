@@ -43,10 +43,7 @@ DS18B20Sensor::DS18B20Sensor(
  * @brief Запускает считывание температуры и сохраняет результат.
  */
 void DS18B20Sensor::readValue() {
-    // Получаем значение для конкретного адреса.
     const std::string addressStr = SensorManager::addressToString(address);
-    
-    // Считывание из кэша DallasTemperature
     lastReading = dallasSensors->getTempC(address);
     
     if (lastReading == DEVICE_DISCONNECTED_C) {
