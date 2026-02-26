@@ -26,6 +26,8 @@
         - `ProfileManager` (вкладка «Профили»).
         - `SensorsSettings` (датчики температуры/давления).
         - `TelegramSettings` (настройки Telegram).
+    - Навигация:
+      - В боковом меню (`routes/menu.svelte`) подпункт «Профили» для `/oc/settings?tab=profiles` использует иконку Tabler `device-tablet-star` (импортируется как `DeviceTabletStar` через unplugin-icons).
     - Локальный SCSS:
       - `.tabs-container` — колонка, плюс усиленная рамка/тень для вложенного `.settings-container`.
       - Глобальные оверрайды DaisyUI:
@@ -233,4 +235,10 @@
 - **Глобальные стили вкладок SSVC**:
   - Нижняя граница radio‑вкладок (`input[type="radio"][role="tab"]`) задаётся глобально в `app.css`, чтобы вкладки SSVC, `/oc/settings`, `/network` и `/system` выглядели единообразно.
   - Типографика и фон активной вкладки переопределяются локально через `:global(.tabs .tab)` и `:global(.tabs .tab:checked)` по тому же принципу, что и в `oc/settings/Settings.svelte` и `system/+page.svelte`.
+ - **Иконки навигации для вкладок SSVC (меню)**:
+   - В боковом меню (`routes/menu.svelte`) подпункт «Настройки SSVC» (`/oc/ssvc?tab=general`) имеет вложенное подменю с Tabler‑иконками:
+     - «Общие» → `adjustments` (компонент `Control`).
+     - «Клапаны» → `droplet-cog` (компонент `DropletCog`).
+     - «Параметры отбора» → `clock-edit` (компонент `ClockEdit`).
+     - «Параллельный отбор» → `cap-straight` (компонент `CapStraight`).
 

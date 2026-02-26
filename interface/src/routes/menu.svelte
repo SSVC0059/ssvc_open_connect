@@ -11,6 +11,10 @@
     import AP from '~icons/tabler/access-point';
     import Remote from '~icons/tabler/network';
     import Control from '~icons/tabler/adjustments';
+    import DropletCog from '~icons/tabler/droplet-cog';
+    import DeviceTabletStar from '~icons/tabler/device-tablet-star';
+    import CapStraight from '~icons/tabler/cap-straight';
+    import ClockEdit from '~icons/tabler/clock-edit';
     import Avatar from '~icons/tabler/user-circle';
     import Logout from '~icons/tabler/logout';
     import Copyright from '~icons/tabler/copyright';
@@ -79,19 +83,19 @@
                         },
                         {
                             title: 'Клапаны',
-                            icon: Control,
+                            icon: DropletCog,
                             href: '/oc/ssvc?tab=valve-bandwidth',
                             feature: true
                         },
                         {
                             title: 'Параметры отбора',
-                            icon: Control,
+                            icon: ClockEdit,
                             href: '/oc/ssvc?tab=speed',
                             feature: true
                         },
                         {
                             title: 'Параллельный отбор',
-                            icon: Control,
+                            icon: CapStraight,
                             href: '/oc/ssvc?tab=parallel',
                             feature: true
                         }
@@ -105,7 +109,7 @@
                     submenu: [
                         {
                             title: 'Профили',
-                            icon: Control,
+                            icon: DeviceTabletStar,
                             href: '/oc/settings?tab=profiles',
                             feature: true
                         },
