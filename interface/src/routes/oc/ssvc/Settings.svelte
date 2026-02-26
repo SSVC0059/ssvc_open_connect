@@ -1,9 +1,8 @@
 <script lang="ts">
-
+	import { page } from '$app/stores';
 	import type { SsvcSettings } from '$lib/types/ssvc';
 	import { fetchSettings, updateSetting } from '$lib/api/ssvcApi';
 	import { notifications } from '$lib/components/toasts/notifications';
-	// Подкомпоненты
 	import GeneralSettings from '$lib/components/SsvcSettings/GeneralSettings.svelte';
 	import ValveBandwidth from '$lib/components/SsvcSettings/ValveBandwidth.svelte';
 	import SpeedSettings from '$lib/components/SsvcSettings/SpeedSettings.svelte';
@@ -12,22 +11,19 @@
 
 	let ssvcSettings = $state<SsvcSettings | null>();
 	let activeTab = $state(0);
-	let isMobileMenuOpen = $state(false);
-	function closeMobileMenu() {
-		isMobileMenuOpen = false;
-	}
 
 	const loadSsvcSettings = async () => {
 		try {
 			ssvcSettings = await fetchSettings();
 		} catch (err) {
 			if (err instanceof Error) {
+				console.error(err);
 			}
 		}
 	};
 
-	async function saveChanges(field: string, value: any) {
-		let result = await updateSetting(field, value);
+	async function saveChanges(field: string, value: unknown) {
+		const result = await updateSetting(field, value);
 		if (result) {
 			notifications.success('Настройка сохранена', 5000);
 			await loadSsvcSettings();
@@ -36,20 +32,18 @@
 		}
 	}
 
-	// Определяем тип для вкладки
 	interface Tab {
 		id: string;
 		title: string;
 		component: any;
-		// Можно уточнить тип компонента при необходимости
 		props: Record<string, unknown>;
 	}
 
-	// Реактивное вычисление вкладок
 	const availableTabs = $derived(computeTabs(ssvcSettings));
-	// Функция для вычисления вкладок
+
 	function computeTabs(settings: SsvcSettings | null | undefined): Tab[] {
 		if (!settings) return [];
+
 		return [
 			{
 				id: 'general',
@@ -83,332 +77,94 @@
 	});
 
 	$effect(() => {
+		const tabId = $page.url.searchParams.get('tab');
+		if (tabId) {
+			const index = availableTabs.findIndex((tab) => tab.id === tabId);
+			if (index !== -1) {
+				activeTab = index;
+				return;
+			}
+		}
+
 		if (activeTab >= availableTabs.length && availableTabs.length > 0) {
 			activeTab = 0;
 		}
 	});
 </script>
 
-<div class="container">
+<div class="container oc-ssvc-settings-root">
 	<div class="tabs-container">
-		<div class="mobile-tabs-header" class:menu-open={isMobileMenuOpen}>
-			<button class="mobile-menu-toggle" onclick={() => isMobileMenuOpen = !isMobileMenuOpen}>
-				<span class="mobile-menu-header">{availableTabs[activeTab]?.title ||
-				'Меню'}</span>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-					<path d="M7 10l5 5 5-5z"/>
-				</svg>
-			</button>
-
-			<div class="tabs-nav-wrapper mobile-tabs-dropdown">
+		{#if !ssvcSettings}
+			<div class="flex flex-col items-center justify-center gap-2 py-6">
+				<p class="loading-text">Загрузка настроек SSVC...</p>
+				<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+			</div>
+		{:else}
+			<div class="tabs tabs-lift tabs-md w-full" role="tablist" aria-label="SSVC settings tabs">
 				{#each availableTabs as tab, index}
-					<button
-						class="mobile-tab {activeTab === index ? 'mobile-tab-active' : ''}"
-						onclick={() => {
-															activeTab = index;
-															isMobileMenuOpen = false;
-													}}
-					>
-						{tab.title}
-					</button>
+					<input
+						type="radio"
+						name="oc_ssvc_tabs"
+						role="tab"
+						class="tab flex-1 whitespace-nowrap"
+						aria-label={tab.title}
+						checked={activeTab === index}
+						onchange={() => (activeTab = index)}
+					/>
+					<div role="tabpanel" class="tab-content w-full mt-4">
+						{#if activeTab === index}
+							{@const Component = tab.component}
+							<div class="settings-container">
+								<Component {...tab.props} />
+							</div>
+						{/if}
+					</div>
 				{/each}
+			</div>
+		{/if}
+
+		{#if ssvcSettings}
+			<div class="ssvc-refresh-actions mt-6 flex justify-center">
 				<button
-					class="refresh-button mobile-menu-item"
-					onclick={() => {
-						loadSsvcSettings();
-						isMobileMenuOpen = false;
-					}}
+					type="button"
+					class="btn btn-ssvc-refresh"
+					title="Перезагрузить настройки"
+					onclick={loadSsvcSettings}
 				>
-					<Reload />
-					<span>Перезагрузить настройки</span>
+					<Reload class="h-5 w-5" />
+					<span>Обновить</span>
 				</button>
 			</div>
-		</div>
-
-		<nav class="tabs-nav desktop-only">
-			<div class="tabs-nav-content">
-				{#each availableTabs as tab, index}
-					<button
-						class="tab {activeTab === index ? 'tab-active text-active' : ''}"
-						onclick={() => (activeTab = index)}
-					>
-						{tab.title}
-					</button>
-				{/each}
-			</div>
-
-			<button class="refresh-button" onclick={loadSsvcSettings} title="Перезагрузить настройки">
-				<Reload />
-			</button>
-		</nav>
-
-		{#each availableTabs as tab, index}
-			{#if activeTab === index}
-				{@const Component = tab.component}
-				<Component {...tab.props} />
-			{/if}
-		{/each}
+		{/if}
 	</div>
 </div>
 
 <style lang="scss">
-	@use "$lib/styles/base/variables" as v;
-	@use "$lib/styles/base/mixins" as m;
-
-	/* ===== КОМПОНЕНТ ВКЛАДОК (TABS) ===== */
 	.tabs-container {
 		display: flex;
 		flex-direction: column;
+	}
 
-		/* Десктопная навигация */
-		.tabs-nav {
-			display: flex;
-			justify-content: flex-start;
-			align-items: flex-end;
-			padding-bottom: 0.5rem;
-			gap: 2rem;
+	:global(.oc-ssvc-settings-root .settings-container) {
+		width: 100%;
+	}
 
-			@media (max-width: v.$breakpoint-md) {
-				display: none;
-			}
+	:global(.tabs .tab) {
+		font-size: 1.125rem;
+		font-weight: 600;
+	}
 
-			.tabs-nav-content {
-				display: flex;
-				gap: 2rem;
-				overflow-x: auto;
-				padding-bottom: 0.5rem;
-				scrollbar-width: none;
-				-ms-overflow-style: none;
+	:global(.tabs .tab:checked) {
+		background-color: var(--color-primary);
+	}
 
-				&::-webkit-scrollbar {
-					display: none;
-				}
+	.btn-ssvc-refresh {
+		background-color: var(--color-info);
+		color: oklch(1 0 0);
+		border: none;
+	}
 
-				margin-bottom: -0.5rem;
-			}
-		}
-
-		.tab {
-			padding: 0.3rem 0.25rem;
-			white-space: nowrap;
-			color: var(--primary-500);
-			transition: var(--transition);
-			border: none;
-			background: none;
-			cursor: pointer;
-			font: inherit;
-
-			@include m.dark-theme-color;
-
-			&:hover {
-				color: var(--primary-700);
-			}
-
-			&.tab-active {
-				border-bottom: 2px solid var(--blue-600);
-				color: var(--blue-600);
-				border-radius: 0;
-			}
-
-			@media (min-width: v.$breakpoint-md) {
-				font-size: clamp(1.125rem, 1.5vw + 0.5rem, 1.5rem);
-			}
-		}
-
-		/* Стили для кнопки перезагрузки */
-		.refresh-button {
-			@include m.flex-center;
-			width: 2.5rem;
-			height: 2.5rem;
-			border: none;
-			border-radius: var(--border-radius);
-			background: var(--primary-100);
-			cursor: pointer;
-			transition: var(--transition);
-			flex-shrink: 0;
-			margin-left: 2rem;
-			margin-bottom: 0.5rem;
-
-			svg {
-				width: 1.25rem;
-				height: 1.25rem;
-				color: var(--primary-700);
-				transition: var(--transition);
-			}
-
-			&:hover {
-				background: var(--primary-200);
-				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-				svg {
-					transform: rotate(15deg);
-					color: var(--blue-600);
-				}
-			}
-
-			&:active {
-				background: var(--primary-300);
-				transform: scale(0.98);
-			}
-
-			&.mobile-menu-item {
-				display: flex;
-				width: 100%;
-				height: auto;
-				padding: 0.75rem 1rem;
-				margin: 0;
-				border-radius: 0;
-				background: none;
-				justify-content: flex-start;
-				gap: 1rem;
-				color: var(--primary-600);
-				border-bottom: 1px solid var(--primary-200);
-
-				&:last-child {
-					border-bottom: none;
-				}
-
-				&:hover {
-					background: color-mix(in srgb, var(--primary-100) 30%, transparent);
-					color: var(--primary-700);
-					box-shadow: none;
-					svg {
-						transform: none;
-					}
-				}
-
-				&:active {
-					transform: none;
-				}
-
-				span {
-					font-size: 0.9rem;
-				}
-			}
-		}
-
-		/* Мобильная навигация */
-		.mobile-tabs-header {
-			position: relative;
-			display: none;
-
-			@media (max-width: v.$breakpoint-md) {
-				display: block;
-				margin-bottom: 1rem;
-			}
-
-			.mobile-menu-header {
-				@include m.dark-theme-color;
-			}
-
-			&.menu-open {
-				.mobile-tabs-dropdown {
-					opacity: 1;
-					visibility: visible;
-					transform: translateY(0);
-				}
-
-				.mobile-menu-toggle svg {
-					transform: rotate(180deg);
-				}
-			}
-		}
-
-		.mobile-menu-toggle {
-			@include m.glassmorphism;
-			@include m.flex-center;
-			gap: 0.5rem;
-			width: 100%;
-			padding: 0.75rem 1rem;
-			font-size: 1rem;
-			font-weight: 500;
-			color: var(--primary-700);
-			border: none;
-			border-radius: var(--border-radius);
-			cursor: pointer;
-			transition: var(--transition);
-
-			svg {
-				transition: transform 0.2s ease;
-			}
-
-			&:hover {
-				background: rgba(255, 255, 255, 0.9);
-			}
-		}
-
-		.mobile-tabs-dropdown {
-			@include m.glassmorphism;
-			background: var(--white);
-			position: absolute;
-			top: 100%;
-			left: 0;
-			right: 0;
-			z-index: var(--z-popover);
-			margin-top: 0.25rem;
-			border-radius: var(--border-radius);
-			opacity: 0;
-			visibility: hidden;
-			transform: translateY(-10px);
-			transition: all 0.2s ease;
-			max-height: 60vh;
-			overflow-y: auto;
-
-			scrollbar-width: thin;
-			scrollbar-color: var(--primary-300) transparent;
-
-			&::-webkit-scrollbar {
-				width: 4px;
-			}
-
-			&::-webkit-scrollbar-track {
-				background: transparent;
-			}
-
-			&::-webkit-scrollbar-thumb {
-				background: var(--primary-300);
-				border-radius: 2px;
-			}
-		}
-
-		.mobile-tab {
-			display: block;
-			width: 100%;
-			padding: 0.75rem 1rem;
-			text-align: left;
-			font-size: 0.9rem;
-			color: var(--primary-600);
-			background: none;
-			border: none;
-			border-bottom: 1px solid var(--primary-200);
-			cursor: pointer;
-			transition: var(--transition);
-
-			&:last-child {
-				border-bottom: none;
-			}
-
-			&:hover {
-				background: color-mix(in srgb, var(--primary-100) 30%, transparent);
-				color: var(--primary-700);
-			}
-
-			&.mobile-tab-active {
-				background: color-mix(in srgb, var(--primary-500) 10%, transparent);
-				color: var(--primary-800);
-				font-weight: 600;
-			}
-		}
-
-		body & .desktop-only {
-			@media (max-width: v.$breakpoint-md) {
-				display: none;
-			}
-		}
-
-		body & .mobile-only {
-			@media (min-width: v.$breakpoint-md) {
-				display: none;
-			}
-		}
+	.btn-ssvc-refresh:hover {
+		opacity: 0.9;
 	}
 </style>

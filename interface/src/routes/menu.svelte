@@ -68,8 +68,34 @@
                 {
                     title: 'Настройки SSVC',
                     icon: Control,
-                    href: '/oc/ssvc ',
-                    feature: true
+                    href: '/oc/ssvc?tab=general',
+                    feature: true,
+                    submenu: [
+                        {
+                            title: 'Общие',
+                            icon: Control,
+                            href: '/oc/ssvc?tab=general',
+                            feature: true
+                        },
+                        {
+                            title: 'Клапаны',
+                            icon: Control,
+                            href: '/oc/ssvc?tab=valve-bandwidth',
+                            feature: true
+                        },
+                        {
+                            title: 'Параметры отбора',
+                            icon: Control,
+                            href: '/oc/ssvc?tab=speed',
+                            feature: true
+                        },
+                        {
+                            title: 'Параллельный отбор',
+                            icon: Control,
+                            href: '/oc/ssvc?tab=parallel',
+                            feature: true
+                        }
+                    ]
                 },
                 {
                     title: 'Open Connect',

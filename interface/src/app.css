@@ -123,4 +123,10 @@
             --gray-500: rgba(255, 255, 255, 0.6);
         }
     }
+
+    /* Radio tab inputs (DaisyUI tabs-lift): единая нижняя граница */
+    input[type="radio"][role="tab"] {
+        border-bottom-width: 1px;
+        border-bottom-color: oklch(0.86 0 0);
+    }
 }
