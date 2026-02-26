@@ -104,8 +104,6 @@
 	<div class="settings-grid">
 		<div class="settings-panel">
 			<div class="settings-section">
-				<h2 class="settings-title">Telegram</h2>
-
 				<div class="settings-group">
 					<!-- Строка: состояние подсистемы -->
 					<div class="settings-item">

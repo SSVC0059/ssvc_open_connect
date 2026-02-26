@@ -18,17 +18,21 @@
     - Логика вкладок: `availableTabs`, `filteredTabs`, `activeTab`, фильтрация по `SubsystemsState`.
     - Разметка:
       - Корневой блок вкладок: `.tabs-container` внутри `.container`.
-      - Десктопное меню: `.tabs-nav.desktop-only`, элементы `.tab`, активная `.tab-active`.
-      - Мобильное меню: `.mobile-tabs-header`, `.mobile-menu-toggle`, `.mobile-menu-header`, `.mobile-tabs-dropdown`, `.mobile-tab`, `.mobile-tab-active`.
+      - Вкладки реализованы через **DaisyUI radio tabs-lift + tab content** (`tabs tabs-lift`):
+        - Для каждой вкладки: `input type="radio" name="oc_settings_tabs" role="tab" class="tab ..."`.
+        - Контент рядом: `div role="tabpanel" class="tab-content ..."` с соответствующим компонентом.
+        - Активный таб получает фон `background-color: var(--color-primary)` (см. локальный SCSS).
       - Контент вкладок рендерит:
         - `ProfileManager` (вкладка «Профили»).
         - `SensorsSettings` (датчики температуры/давления).
         - `TelegramSettings` (настройки Telegram).
     - Локальный SCSS:
-      - `.tabs-container` (общая колонка, специфичные стили для `.settings-container` внутри).
-      - Навигация вкладок: `.tabs-nav`, `.tab`, `.tab-active`.
-      - Мобильная навигация: `.mobile-tabs-header.menu-open`, `.mobile-menu-toggle`, `.mobile-tabs-dropdown`, `.mobile-tab`, `.mobile-tab-active`.
-      - Вспомогательные классы: `.error-text`, `.desktop-only`, `.mobile-only`.
+      - `.tabs-container` — колонка, плюс усиленная рамка/тень для вложенного `.settings-container`.
+      - Глобальные оверрайды DaisyUI:
+        - `:global(.tabs .tab)` — размер и жирность шрифта (как `h3`).
+        - `:global(.tabs .tab:checked)` — фон активного таба (`--color-primary`).
+        - `:global(.tabs.tabs-lift)` и `:global(.tabs.tabs-lift .tab)` — нижняя граница под всеми табами.
+      - Вспомогательные классы: `.error-text`.
 
 ### 2. Вкладки и соответствующие компоненты
 
@@ -37,7 +41,7 @@
   - Стили: `@use '$lib/styles/components/profile-manager';` → `_profile-manager.scss`.
   - Основные блоки:
     - Лейаут: `.profile-manager-layout` (+ модификатор `.editing`).
-    - Левая колонка (список профилей): `.profile-list-panel`, `.profile-list-header`, `.profile-actions`, `.profile-list`, `.profile-list-item`, `.profile-name-button`, `.profile-name`, `.applied-icon`, `.profile-item-actions`.
+    - Левая колонка (список профилей): `.profile-list-panel`, `.profile-list-header`, `.profile-actions`, `.applied-profile-summary`, `.profile-list`, `.profile-list-item`, `.profile-name-button`, `.profile-name`, `.profile-item-actions` (DaisyUI `dropdown` c кнопкой `...`).
     - Правая колонка (просмотр/редактор): `.profile-settings-panel`, `.profile-editor-grid`, `.profile-settings-placeholder`, `.profile-loading-state`, `.profile-error-state`.
     - Кнопки-иконки: `.icon-button`.
 
@@ -66,7 +70,8 @@
     - Корневой контейнер: `.settings-container` (карточка настроек).
     - Строка состояния подсистемы: `.settings-item`, `.input-label-container`, `.input-label`, `.settings-description`, `Toggle`.
     - Секция настроек: `.settings-section`.
-    - Группы полей: `.input-group`, `.input-wrapper`, `.input-field`, `.edit-button`, `.settings-description`.
+    - Группа полей: `.settings-group` (карточка с glassmorphism).
+    - Поля ввода: `.settings-item` (в т.ч. модификатор `.settings-item--stacked` для вертикального стека `label → input-wrapper → description`), `.input-wrapper` (ширина 50% на десктопе), `.input-field`, `.edit-button`, `.settings-description`.
     - Нижняя панель действий: `.modal-actions` + `btn btn-primary`.
 
 ### 3. Глобальные и общие SCSS, влияющие на `/oc/settings`
@@ -79,13 +84,13 @@
 - `layout/_settings-grid.scss`:
   - Карточки/панели настроек: `.settings-container`, `.settings-panel`, `.settings-section`.
   - Сетка: `.settings-grid` (1 или 2 колонки в зависимости от брейкпоинта).
-  - Заголовки/описания: `.settings-title`, `.settings-description`.
+  - Заголовки/описания: `.settings-title` (общий паттерн, **на вкладках `/oc/settings` сейчас используются обычные `h2` без класса**), `.settings-description`.
 - `components/_setting-containers.scss`:
-  - Строки настроек: `.settings-group`, `.settings-toggle`, `.settings-item`, `.settings-label`, `.settings-value`, `.toggle-container`.
+  - Строки настроек: `.settings-group` (карточка с glassmorphism, padding, border), `.settings-toggle`, `.settings-item`, модификатор `.settings-item--stacked`, `.settings-label`, `.settings-value`, `.toggle-container`.
   - Спец-кейс для карточек клапанов: `.valve-card`.
   - Read-only: `.read-only` и глобальный `body .read-only, body .read-only *`.
 - `components/_profile-manager.scss`:
-  - Паттерн двухколоночного редактора профилей и плиток в списке.
+  - Паттерн двухколоночного редактора профилей и плиток в списке, плюс контейнер `applied-profile-summary` и стили для состояний `.active` и `.applied`.
 
 ### 4. Таблица элементов интерфейса и стилей
 
@@ -95,8 +100,7 @@
 |-------------------------------------|--------------------------------------------|----------------------------------------------------------|---------|
 | Внешний контейнер страницы          | `+page.svelte`                             | `mx-0 my-1 flex flex-col space-y-4 sm:mx-8 sm:my-8`      | Tailwind |
 | Корневой контейнер вкладок          | `Settings.svelte`                          | `container`, `.tabs-container`                           | Локальный SCSS |
-| Десктопная навигация вкладок        | `Settings.svelte`                          | `.tabs-nav.desktop-only`, `.tab`, `.tab-active`          | Локальный SCSS |
-| Мобильная навигация вкладок         | `Settings.svelte`                          | `.mobile-tabs-header`, `.mobile-menu-toggle`, `.mobile-tabs-dropdown`, `.mobile-tab`, `.mobile-tab-active` | Локальный SCSS |
+| DaisyUI-вкладки                     | `Settings.svelte`                          | `tabs tabs-lift`, `tab`, `tab-content`, `tab:checked`    | DaisyUI + локальный SCSS |
 | Общий контур контента вкладок       | `Settings.svelte` + `_settings-grid.scss`  | `.tabs-container .settings-container`                    | Локальный + layout |
 
 #### 4.2 Карточки настроек и сетка
@@ -106,7 +110,7 @@
 | Карточка настроек              | `TelegramSettings` и др.          | `.settings-container`                   | `_settings-grid.scss` |
 | Панель внутри сетки            | Общие настройки                   | `.settings-panel`                       | `_settings-grid.scss` |
 | Секция настроек                | `TelegramSettings`                | `.settings-section`                     | `_settings-grid.scss` |
-| Заголовок секции               | Разные настройки                  | `.settings-title`                       | `_settings-grid.scss` |
+| Заголовок секции               | Разные настройки                  | `h2` (без `settings-title`)             | Локальный SCSS / браузер по умолчанию |
 | Описание настройки             | Разные настройки                  | `.settings-description`                 | `_settings-grid.scss` |
 | Двуколоночная сетка панелей    | Общий layout                      | `.settings-grid`                        | `_settings-grid.scss` |
 
@@ -115,7 +119,7 @@
 | Элемент / блок               | Компонент / файл            | Классы / стили                                             | Источник |
 |------------------------------|-----------------------------|------------------------------------------------------------|---------|
 | Группа настроек             | `TelegramSettings`          | `.settings-group`                                          | `_setting-containers.scss` |
-| Строка настройки            | `TelegramSettings`          | `.settings-item`                                           | `_setting-containers.scss` |
+| Строка настройки            | `TelegramSettings`          | `.settings-item`, модификатор `.settings-item--stacked`    | `_setting-containers.scss` |
 | Подписи/значения            | `TelegramSettings`          | `.settings-label`, `.settings-value`                       | `_setting-containers.scss` |
 | Описание под строкой        | `TelegramSettings`          | `.settings-description`                                    | `_settings-grid.scss` |
 | Тумблер подсистемы          | `TelegramSettings`          | `.toggle-container` + `Toggle`                             | `_setting-containers.scss` + DaisyUI |
@@ -131,8 +135,8 @@
 | Элемент / блок                 | Компонент / файл      | Классы / стили                            | Источник |
 |--------------------------------|-----------------------|-------------------------------------------|---------|
 | Общий лейаут вкладки          | `ProfileManager`      | `.profile-manager-layout`, `.editing`     | `_profile-manager.scss` |
-| Левая панель со списком       | `ProfileManager`      | `.profile-list-panel`, `.profile-list-header`, `.profile-actions`, `.profile-list` | `_profile-manager.scss` |
-| Элемент списка профилей       | `ProfileManager`      | `.profile-list-item`, `.profile-name-button`, `.profile-name`, `.applied-icon`, `.profile-item-actions` | `_profile-manager.scss` |
+| Левая панель со списком       | `ProfileManager`      | `.profile-list-panel`, `.profile-list-header`, `.profile-actions`, `.applied-profile-summary`, `.profile-list` | `_profile-manager.scss` |
+| Элемент списка профилей       | `ProfileManager`      | `.profile-list-item`, `.profile-name-button`, `.profile-name`, `.profile-item-actions`, состояния `.active` / `.applied` | `_profile-manager.scss` |
 | Правая панель (контент)       | `ProfileManager`      | `.profile-settings-panel`, `.profile-editor-grid`, `.profile-settings-placeholder` | `_profile-manager.scss` |
 | Состояния загрузки/ошибки     | `ProfileManager`      | `.profile-loading-state`, `.profile-error-state`          | `_profile-manager.scss` |
 | Кнопки-иконки                 | `ProfileManager`      | `.icon-button`                                            | `_profile-manager.scss` |
@@ -155,8 +159,8 @@
 ### 5. Паттерны организации элементов
 
 - **Карточки и панели**:
-  - Общая карточка настроек: `.settings-container` / `.settings-panel` / `.settings-section` / `.settings-title` / `.settings-description`.
-  - Плитки в списке профилей: `.profile-list-item` с бордером, тенью и состояниями `.active` / `.disabled`.
+  - Общая карточка настроек: `.settings-container` / `.settings-panel` / `.settings-section` / `h2` / `.settings-description`.
+  - Плитки в списке профилей: `.profile-list-item` с бордером, тенью и состояниями `.active` / `.applied` / `.disabled`; активный профиль подсвечивается `--color-primary`, имя текущего применённого профиля дополнительно выводится в `.applied-profile-summary`.
   - Карточки датчиков: `.sensor-card` с header-блоком и визуальным баром значений.
 
 - **Сетки и лейауты**:

@@ -110,7 +110,6 @@
 	};
 
 	let activeTab = $state(0);
-	let isMobileMenuOpen = $state(false);
 
 	$effect(() => {
 		const tabId = $page.url.searchParams.get('tab');
@@ -133,65 +132,43 @@
 
 <div class="container">
 	<div class="tabs-container">
-		<!-- Мобильное меню -->
-		<div class="mobile-tabs-header" class:menu-open={isMobileMenuOpen}>
-			<button
-				class="mobile-menu-toggle"
-				onclick={() => (isMobileMenuOpen = !isMobileMenuOpen)}
-			>
-				<span class="mobile-menu-header">
-					{filteredTabs[activeTab]?.title || 'Меню'}
-				</span>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-					<path d="M7 10l5 5 5-5z" />
-				</svg>
-			</button>
-
-			<div class="mobile-tabs-dropdown">
-				{#each filteredTabs as tab, index}
-					<button
-						class="mobile-tab {activeTab === index ? 'mobile-tab-active' : ''}"
-						onclick={() => {
-							activeTab = index;
-							isMobileMenuOpen = false;
-						}}
-					>
-						{tab.title}
-					</button>
-				{/each}
-			</div>
-		</div>
-
-		<!-- Десктопное меню -->
-		<div class="tabs-nav desktop-only">
-			{#each filteredTabs as tab, index}
-				<button
-					class="tab"
-					class:tab-active={activeTab === index}
-					onclick={() => (activeTab = index)}
-				>
-					{tab.title}
-				</button>
-			{/each}
-		</div>
-
-		<!-- Контент -->
 		{#if isLoading}
-			<p>Загрузка...</p>
-			<!-- Or a spinner component -->
+			<div class="loading-container flex flex-col items-center gap-2">
+				<p class="loading-text">Загрузка...</p>
+				<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+			</div>
 		{:else if error}
 			<p class="error-text">{error}</p>
 		{:else}
-			{#each filteredTabs as tab, index}
-				{#if activeTab === index}
-					{@const Component = tab.component}
-					<Component
-						{...tab.props}
-						disabled={!isSubsystemEnabled(tab.id)}
-						onToggle={tab.isStatic ? undefined : toggleSubsystemHandler(tab.id as keyof SubsystemsState)}
+			<!-- DaisyUI radio tabs-lift + tab content -->
+			<div class="tabs tabs-lift tabs-md w-full" role="tablist">
+				{#each filteredTabs as tab, index}
+					<!-- Вкладка -->
+					<input
+						type="radio"
+						name="oc_settings_tabs"
+						role="tab"
+						class="tab flex-1 whitespace-nowrap"
+						aria-label={tab.title}
+						checked={activeTab === index}
+						on:change={() => (activeTab = index)}
 					/>
-				{/if}
-			{/each}
+					<!-- Контент вкладки -->
+					<div
+						role="tabpanel"
+						class="tab-content w-full mt-4"
+					>
+						{#if activeTab === index}
+							{@const Component = tab.component}
+							<Component
+								{...tab.props}
+								disabled={!isSubsystemEnabled(tab.id)}
+								onToggle={tab.isStatic ? undefined : toggleSubsystemHandler(tab.id as keyof SubsystemsState)}
+							/>
+						{/if}
+					</div>
+				{/each}
+			</div>
 		{/if}
 	</div>
 </div>
@@ -204,180 +181,33 @@
 		color: var(--red-600);
 	}
 
-	/* ===== КОМПОНЕНТ ВКЛАДОК (TABS) ===== */
 	.tabs-container {
 		display: flex;
 		flex-direction: column;
-
-		/* Единый контур и тень контента вкладок (фон задаём глобально в _settings-grid.scss) */
 		.settings-container {
 			border: 1px solid oklch(var(--bc) / 0.2);
 			box-shadow: 0 4px 24px oklch(var(--bc) / 0.12);
 		}
+	}
 
-		/* Десктопная навигация */
-		.tabs-nav {
-			display: flex;
-			justify-content: flex-start;
-			align-items: flex-end;
-			padding-bottom: 0.5rem;
-			gap: 2rem;
+	/* Общая нижняя граница под всеми табами, чтобы не было "дыры" у первого */
+	:global(.tabs.tabs-lift) {
+		border-bottom: 1px solid oklch(var(--bc, 0.25 0 260) / 0.25);
+	}
 
-			@media (max-width: v.$breakpoint-md) {
-				display: none;
-			}
-		}
+	/* Явно задаём цвет нижней границы для всех табов */
+	:global(.tabs.tabs-lift .tab) {
+		border-bottom-color: oklch(var(--bc, 0.25 0 260) / 0.25) !important;
+	}
 
-		.tab {
-			padding: 0.3rem 0.25rem;
-			white-space: nowrap;
-			color: var(--primary-500);
-			transition: var(--transition);
-			border: none;
-			background: none;
-			cursor: pointer;
-			font: inherit;
+	/* Tabs font similar to h3 in profile header */
+	:global(.tabs .tab) {
+		font-size: 1.125rem;
+		font-weight: 600;
+	}
 
-			@include m.dark-theme-color;
-
-			&:hover {
-				color: var(--primary-700);
-			}
-
-			&.tab-active {
-				border-bottom: 2px solid var(--blue-600);
-				color: var(--blue-600);
-				border-radius: 0;
-			}
-
-			@media (min-width: v.$breakpoint-md) {
-				font-size: clamp(1.125rem, 1.5vw + 0.5rem, 1.5rem);
-			}
-		}
-
-		/* Мобильная навигация */
-		.mobile-tabs-header {
-			position: relative;
-			display: none;
-
-			@media (max-width: v.$breakpoint-md) {
-				display: block;
-				margin-bottom: 1rem;
-			}
-
-			.mobile-menu-header {
-				@include m.dark-theme-color;
-			}
-
-			&.menu-open {
-				.mobile-tabs-dropdown {
-					opacity: 1;
-					visibility: visible;
-					transform: translateY(0);
-				}
-
-				.mobile-menu-toggle svg {
-					transform: rotate(180deg);
-				}
-			}
-		}
-
-		.mobile-menu-toggle {
-			@include m.glassmorphism;
-			@include m.flex-center;
-			gap: 0.5rem;
-			width: 100%;
-			padding: 0.75rem 1rem;
-			font-size: 1rem;
-			font-weight: 500;
-			color: var(--primary-700);
-			border: none;
-			border-radius: var(--border-radius);
-			cursor: pointer;
-			transition: var(--transition);
-
-			svg {
-				transition: transform 0.2s ease;
-			}
-
-			&:hover {
-				background: rgba(255, 255, 255, 0.9);
-			}
-		}
-
-		.mobile-tabs-dropdown {
-			@include m.glassmorphism;
-			background: var(--white);
-			position: absolute;
-			top: 100%;
-			left: 0;
-			right: 0;
-			z-index: var(--z-popover);
-			margin-top: 0.25rem;
-			border-radius: var(--border-radius);
-			opacity: 0;
-			visibility: hidden;
-			transform: translateY(-10px);
-			transition: all 0.2s ease;
-			max-height: 60vh;
-			overflow-y: auto;
-
-			scrollbar-width: thin;
-			scrollbar-color: var(--primary-300) transparent;
-
-			&::-webkit-scrollbar {
-				width: 4px;
-			}
-
-			&::-webkit-scrollbar-track {
-				background: transparent;
-			}
-
-			&::-webkit-scrollbar-thumb {
-				background: var(--primary-300);
-				border-radius: 2px;
-			}
-		}
-
-		.mobile-tab {
-			display: block;
-			width: 100%;
-			padding: 0.75rem 1rem;
-			text-align: left;
-			font-size: 0.9rem;
-			color: var(--primary-600);
-			background: none;
-			border: none;
-			border-bottom: 1px solid var(--primary-200);
-			cursor: pointer;
-			transition: var(--transition);
-
-			&:last-child {
-				border-bottom: none;
-			}
-
-			&:hover {
-				background: color-mix(in srgb, var(--primary-100) 30%, transparent);
-				color: var(--primary-700);
-			}
-
-			&.mobile-tab-active {
-				background: color-mix(in srgb, var(--primary-500) 10%, transparent);
-				color: var(--primary-800);
-				font-weight: 600;
-			}
-		}
-
-		body & .desktop-only {
-			@media (max-width: v.$breakpoint-md) {
-				display: none;
-			}
-		}
-
-		body & .mobile-only {
-			@media (min-width: v.$breakpoint-md) {
-				display: none;
-			}
-		}
+	/* Active tab uses primary as background */
+	:global(.tabs .tab:checked) {
+		background-color: var(--color-primary);
 	}
 </style>

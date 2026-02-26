@@ -273,8 +273,6 @@ $effect(() => {
 	<div class="settings-grid">
 		<div class="settings-panel">
 			<div class="settings-section">
-				<h2 class="settings-title">Профили</h2>
-
 				<div class="profile-manager-layout" class:editing={editingProfile !== null}>
 					<!-- Left Column: Profile List -->
 					<div class="profile-list-panel">
@@ -299,6 +297,15 @@ $effect(() => {
 								</button>
 							</div>
 						</div>
+
+						{#if appliedProfileId && profiles}
+							<div class="applied-profile-summary">
+								<span class="applied-profile-label">Активный профиль:</span>
+								<span class="applied-profile-name">
+									{profiles.find((p) => p.id === appliedProfileId)?.name}
+								</span>
+							</div>
+						{/if}
 
 						{#if isLoading}
 							<div class="profile-loading-state flex flex-col items-center justify-center gap-2">

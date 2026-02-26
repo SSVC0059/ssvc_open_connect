@@ -63,7 +63,6 @@
 	<div class="settings-grid">
 		<div class="settings-panel">
 			<div class="settings-section">
-				<h2 class="settings-title">{title}</h2>
 				{#if description}
 					<p class="settings-description">
 						{description}
