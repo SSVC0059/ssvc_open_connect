@@ -187,3 +187,40 @@
   - Статус MQTT и настройки клиента оформлены идентично NTP, на тех же контейнерах (`settings-container` / `settings-grid` / `settings-panel` / `settings-section` / `settings-group` / `settings-item` / `settings-item--stacked`).
   - Для переключения подсистемы используется `Toggle` в строке `.settings-item` с подписью (`input-label` + `settings-description`) и правым выравниванием тумблера по аналогии с NTP и Telegram.
 
+### 7. Маршрут `/system` (Status / Metrics / Core dump / Update)
+
+Маршрут `/system` оформлен теми же паттернами вкладок и контейнеров, что и `/oc/settings` и `/network`:
+
+- **Страница `interface/src/routes/system/+page.svelte`**:
+  - Вкладки DaisyUI (`tabs tabs-lift` + `tab` + `tab-content`) c `TabId = 'status' | 'metrics' | 'coredump' | 'update'`.
+  - Обёртка вкладок: `.tabs-container` c теми же отступами и оверрайдом активного таба (`:global(.tabs .tab:checked) { background-color: var(--color-primary); }`).
+- **Общий лейаут вкладок `/system`**:
+  - Каждая вкладка использует корневой класс `<div class="system-*-root">` и внутри общий каркас
+    `settings-container` → `settings-grid` → `settings-panel` → `settings-section`.
+  - Для системных вкладок сетка всегда одноколоночная (`grid-template-columns: 1fr`) и растягивается на всю ширину,
+    чтобы графики/таблицы занимали максимум доступного пространства.
+- **Вкладка `Status` (`SystemStatusTab.svelte`)**:
+  - Внутри `settings-section` контент оформлен как **таблица DaisyUI** (`table`) без заголовка, три столбца:
+    иконка, название, значение.
+  - Таблица центрируется и ограничена по ширине: обёртка `.status-content` + `.status-table-wrapper`
+    (на больших экранах ширина таблицы ~60%, `margin: auto`).
+  - Кнопки действий (`Restart`, `Factory reset`, `Sleep`) вынесены из таблицы в нижний блок `.status-actions`
+    и выровнены по центру; цвета уточнены локальными классами (`btn-factory-reset` — `--color-error`,
+    `btn-status-success` — `--color-success`).
+- **Вкладка `Metrics` (`SystemMetricsTab.svelte`)**:
+  - Использует тот же лейаут `settings-container` → `settings-grid` → `settings-panel` → `settings-section`.
+  - Внутри секции — только графики Chart.js (heap/PSRAM/filesystem/core temperature) и, при необходимости,
+    `BatteryMetrics`; дополнительные `SettingsCard` и фоновые панели не используются.
+  - Для холстов используются утилитарные классы Tailwind (`w-full overflow-x-auto`, фиксированная высота блоков).
+- **Вкладка `Core dump` (`SystemCoredumpTab.svelte`)**:
+  - Лейаут и контейнеры такие же, как у других системных вкладок (`settings-*` паттерн).
+  - Кнопки действий и списки дампов встроены прямо в `settings-section` без отдельных `SettingsCard`.
+- **Вкладка `Update` (`SystemUpdateTab.svelte`)**:
+  - Внутри `settings-section` рендерятся два компонента:
+    - `GithubFirmwareManager.svelte` — список релизов из GitHub.
+    - `UploadFirmware.svelte` — форма загрузки `.bin`/`.md5`.
+  - Оба компонента больше не используют `SettingsCard`, вместо этого применён единый паттерн карточки:
+    `div.update-card.rounded-box.bg-base-100.border.border-base-content/10.w-full.lg:w-3/4.mx-auto.flex.flex-col.gap-4.p-4.sm:p-6`.
+  - Заголовок внутри карточки оформлен как `flex items-center gap-2 text-xl font-medium` с иконкой Tabler слева
+    (Github / OTA) — визуально совпадает с другими заголовками настроек.
+
