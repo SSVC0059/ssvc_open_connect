@@ -45,9 +45,9 @@ toc:
 
 | Класс / паттерн | Назначение |
 | :--- | :--- |
-| `.tabs-container` | Обёртка для вкладок (используется в `/oc/settings` и `/network`), задаёт внешний отступ и колонковый лейаут. |
-| `tabs tabs-lift` | Классы DaisyUI для radio‑вкладок с «поднятой» нижней кромкой; глобальные оверрайды для нижней границы и типографики заданы в `Settings.svelte` и `network/+page.svelte`. |
-| `.tab` | Радио‑элемент вкладки DaisyUI; активная вкладка подсвечивается через `:global(.tabs .tab:checked)` фоном `var(--color-primary)`. |
+| `.tabs-container` | Обёртка для вкладок (используется в `/oc/settings`, `/oc/ssvc`, `/network` и `/system`), задаёт внешний отступ и колонковый лейаут. |
+| `tabs tabs-lift` | Классы DaisyUI для radio‑вкладок с «поднятой» нижней кромкой; нижняя граница для всех radio‑вкладок (`input[type="radio"][role="tab"]`) задана глобально в `app.css`, дополнительная типографика и фон табов переопределяются локально в `Settings.svelte`, `oc/ssvc/Settings.svelte`, `network/+page.svelte` и `system/+page.svelte`. |
+| `.tab` | Радио‑элемент вкладки DaisyUI; активная вкладка подсвечивается через `:global(.tabs .tab:checked)` фоном `var(--color-primary)` (локальный SCSS на страницах с вкладками). |
 | `.tab-content` | Контейнер содержимого вкладки (панели настроек, карточки). |
 
 ---

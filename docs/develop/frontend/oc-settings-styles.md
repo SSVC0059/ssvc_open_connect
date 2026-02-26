@@ -224,3 +224,13 @@
   - Заголовок внутри карточки оформлен как `flex items-center gap-2 text-xl font-medium` с иконкой Tabler слева
     (Github / OTA) — визуально совпадает с другими заголовками настроек.
 
+### 8. Маршрут `/oc/ssvc` (настройки SSVC)
+
+- **Страница `interface/src/routes/oc/ssvc/Settings.svelte`**:
+  - Использует тот же паттерн вкладок DaisyUI (`tabs tabs-lift` + `tab` + `tab-content`), что и `/oc/settings`, `/network` и `/system`.
+  - Вкладки (`general`, `valve-bandwidth`, `speed`, `parallel`) выбираются как по локальному состоянию `activeTab`, так и через параметр `tab` в URL (`/oc/ssvc?tab=general` и т.п.).
+  - Для каждой активной вкладки контент обёрнут в общий контейнер `div.settings-container`, чтобы переиспользовать layout из `_settings-grid.scss` (единый glassmorphism‑каркас для настроек).
+- **Глобальные стили вкладок SSVC**:
+  - Нижняя граница radio‑вкладок (`input[type="radio"][role="tab"]`) задаётся глобально в `app.css`, чтобы вкладки SSVC, `/oc/settings`, `/network` и `/system` выглядели единообразно.
+  - Типографика и фон активной вкладки переопределяются локально через `:global(.tabs .tab)` и `:global(.tabs .tab:checked)` по тому же принципу, что и в `oc/settings/Settings.svelte` и `system/+page.svelte`.
+
