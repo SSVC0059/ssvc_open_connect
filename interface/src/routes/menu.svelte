@@ -102,7 +102,7 @@
         {
             title: 'Соединения',
             icon: Remote,
-            feature: page.data.features.mqtt || page.data.features.ntp,
+            feature: false && (page.data.features.mqtt || page.data.features.ntp),
             submenu: [
                 {
                     title: 'MQTT',
@@ -114,6 +114,25 @@
                     title: 'NTP',
                     icon: NTP,
                     href: '/connections/ntp',
+                    feature: page.data.features.ntp
+                }
+            ]
+        },
+        {
+            title: 'Network',
+            icon: Remote,
+            feature: page.data.features.mqtt || page.data.features.ntp,
+            submenu: [
+                {
+                    title: 'MQTT',
+                    icon: MQTT,
+                    href: '/network?tab=mqtt',
+                    feature: page.data.features.mqtt
+                },
+                {
+                    title: 'NTP',
+                    icon: NTP,
+                    href: '/network?tab=ntp',
                     feature: page.data.features.ntp
                 }
             ]
