@@ -247,7 +247,6 @@ void SsvcCommandsQueue::registerCallbackCommands() {
     JsonDocument response;
     const DeserializationError error = deserializeJson(response, _message);
     if (error) {
-      xSemaphoreGive(mutex);
       return false;
     }
 
@@ -255,13 +254,11 @@ void SsvcCommandsQueue::registerCallbackCommands() {
     if (response["version"].is<String>()) {
       const std::string ssvcVersion = response["version"].as<std::string>();
       SsvcSettings::init().setSsvcVersion(ssvcVersion);
-      xSemaphoreGive(mutex);
       result = true;
     }
     if (response["api"].is<String>()) {
       const auto ssvcApiVersion = response["api"].as<float>();
       SsvcSettings::init().setSsvcApiVersion(ssvcApiVersion);
-      xSemaphoreGive(mutex);
       result = true;
     }
     if (result) {
