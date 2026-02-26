@@ -6,7 +6,6 @@
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-	import SettingsCard from '$lib/components/SettingsCard.svelte';
 	import Github from '~icons/tabler/brand-github';
 	import CloudDown from '~icons/tabler/cloud-download';
 	import Cancel from '~icons/tabler/x';
@@ -95,13 +94,14 @@
 	}
 </script>
 
-<SettingsCard collapsible={false}>
-	{#snippet icon()}
-		<Github class="lex-shrink-0 mr-2 h-6 w-6 self-end rounded-full" />
-	{/snippet}
-	{#snippet title()}
+<div
+	class="update-card rounded-box bg-base-100 border border-base-content/10 w-full lg:w-3/4 mx-auto flex flex-col gap-4 p-4 sm:p-6"
+>
+	<div class="flex items-center gap-2 text-xl font-medium">
+		<Github class="h-6 w-6" />
 		<span>Менеджер обновлений Github</span>
-	{/snippet}
+	</div>
+
 	{#await getGithubAPI()}
 		<div class="flex flex-col items-center justify-center gap-2 py-6">
 			<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
@@ -175,4 +175,4 @@
 			<span>Пожалуйста, подключитесь к сети с доступом в Интернет, чтобы выполнить обновление встроенного ПО.</span>
 		</div>
 	{/await}
-</SettingsCard>
+</div>

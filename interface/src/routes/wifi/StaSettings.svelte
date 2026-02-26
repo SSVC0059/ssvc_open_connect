@@ -264,7 +264,6 @@
 			<div class="settings-panel">
 				<!-- Секция 1: статус WiFi -->
 				<div class="settings-section">
-					<div class="settings-section-title">WiFi status</div>
 					<div class="flex w-full flex-col space-y-1">
 						<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
 							<div
@@ -410,7 +409,6 @@
 				<!-- Секция 2: настройки WiFi и сети -->
 				{#if !page.data.features.security || $user.admin}
 					<div class="settings-section">
-						<div class="settings-section-title">WiFi settings & networks</div>
 						<div class="settings-group">
 							<div class="settings-item settings-item--stacked">
 								<span class="input-label">Host Name (mDNS)</span>

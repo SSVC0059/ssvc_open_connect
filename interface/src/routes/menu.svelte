@@ -170,25 +170,25 @@
                 {
                     title: 'Статус системы',
                     icon: Health,
-                    href: '/system/status',
+                    href: '/system?tab=status',
                     feature: true
                 },
                 {
                     title: 'Системный монитор',
                     icon: Metrics,
-                    href: '/system/metrics',
+                    href: '/system?tab=metrics',
                     feature: page.data.features.analytics
                 },
                 {
                     title: 'Core Dump',
                     icon: Bug,
-                    href: '/system/coredump',
+                    href: '/system?tab=coredump',
                     feature: page.data.features.coredump
                 },
                 {
                     title: 'Обновление системы',
                     icon: Update,
-                    href: '/system/update',
+                    href: '/system?tab=update',
                     feature:
                         (page.data.features.ota ||
                             page.data.features.upload_firmware ||

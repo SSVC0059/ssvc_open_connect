@@ -205,7 +205,6 @@ let apStatus: ApStatus = $state({
 			<div class="settings-panel">
 				<!-- Секция 1: статус точки доступа -->
 				<div class="settings-section">
-					<div class="settings-section-title">Access point status</div>
 					<div class="flex w-full flex-col space-y-1">
 						<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
 							<div
@@ -262,7 +261,6 @@ let apStatus: ApStatus = $state({
 				<!-- Секция 2: настройки точки доступа -->
 				{#if !page.data.features.security || $user.admin}
 					<div class="settings-section">
-						<div class="settings-section-title">Access point settings</div>
 						{#await getAPSettings()}
 							<div class="flex flex-col items-center justify-center gap-2 py-6">
 								<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
