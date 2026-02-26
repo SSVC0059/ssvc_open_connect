@@ -15,16 +15,6 @@
   }
 }
 
-// Блок с переключателем — семантика DaisyUI
-.settings-toggle {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: oklch(var(--bc));
-}
-
 .settings-item {
   display: flex;
   align-items: center;

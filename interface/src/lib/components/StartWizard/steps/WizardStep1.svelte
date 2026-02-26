@@ -96,8 +96,6 @@
 </div>
 
 <style lang="scss">
-	@use '$lib/styles/components/setting-containers';
-
 	.settings-item-wrapper {
 		border-bottom: 0;
 	}

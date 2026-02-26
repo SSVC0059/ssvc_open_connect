@@ -225,7 +225,6 @@
 
 <style lang="scss">
 	@use '$lib/styles/base/variables' as v;
-	@use '$lib/styles/components/setting-containers';
 
 	/* Для Telegram-вкладки используем одноколоночную сетку на всех брейкпоинтах */
 	.settings-grid {

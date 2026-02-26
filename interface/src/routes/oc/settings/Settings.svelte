@@ -151,7 +151,7 @@
 						class="tab flex-1 whitespace-nowrap"
 						aria-label={tab.title}
 						checked={activeTab === index}
-						on:change={() => (activeTab = index)}
+						onchange={() => (activeTab = index)}
 					/>
 					<!-- Контент вкладки -->
 					<div
@@ -184,10 +184,6 @@
 	.tabs-container {
 		display: flex;
 		flex-direction: column;
-		.settings-container {
-			border: 1px solid oklch(var(--bc) / 0.2);
-			box-shadow: 0 4px 24px oklch(var(--bc) / 0.12);
-		}
 	}
 
 	/* Tabs font similar to h3 in profile header */

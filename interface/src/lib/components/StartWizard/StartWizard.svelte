@@ -265,6 +265,3 @@
 	</div>
 {/if}
 
-<style lang="scss">
-	@use '$lib/styles/views/wizard';
-</style>

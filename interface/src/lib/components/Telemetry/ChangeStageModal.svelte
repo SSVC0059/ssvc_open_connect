@@ -242,8 +242,3 @@
 	</div>
 {/if}
 
-<style lang="scss">
-	@use '$lib/styles/views/wizard';
-	@use '$lib/styles/components/valve-table';
-	@use '$lib/styles/components/setting-containers';
-</style>
