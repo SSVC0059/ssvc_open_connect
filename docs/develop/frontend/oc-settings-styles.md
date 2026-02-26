@@ -173,3 +173,17 @@
   - Read-only паттерн: `.read-only` на контейнере + глобальный селектор `body .read-only, body .read-only *`.
   - Нижние панели действий: `.modal-actions` + `btn`-классы (`.btn-primary`, `.btn-warning`, `.btn-back`, `.btn-success`).
 
+### 6. Маршрут `/network` (MQTT / NTP)
+
+Маршрут `/network` повторяет паттерны, описанные выше для `/oc/settings`:
+
+- **Страница `interface/src/routes/network/+page.svelte`**:
+  - Использует тот же паттерн вкладок DaisyUI (`tabs tabs-lift` + `tab` + `tab-content`), что и `oc/settings/Settings.svelte`.
+  - Обёртка вкладок: `.tabs-container` с такими же отступами и нижней рамкой под табами.
+- **Компонент `NtpSettings.svelte`**:
+  - Статус и настройки NTP оформлены через `settings-container` → `settings-grid` → `settings-panel` → `settings-section`.
+  - Блок настроек использует `settings-group` / `settings-item` / `settings-item--stacked`, глобальные `input-label`, `input-wrapper`, `settings-description` и паттерн `read-only` при выключенной подсистеме.
+- **Компонент `MqttSettings.svelte`**:
+  - Статус MQTT и настройки клиента оформлены идентично NTP, на тех же контейнерах (`settings-container` / `settings-grid` / `settings-panel` / `settings-section` / `settings-group` / `settings-item` / `settings-item--stacked`).
+  - Для переключения подсистемы используется `Toggle` в строке `.settings-item` с подписью (`input-label` + `settings-description`) и правым выравниванием тумблера по аналогии с NTP и Telegram.
+
