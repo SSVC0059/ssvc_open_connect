@@ -63,11 +63,6 @@
 		flex-direction: column;
 	}
 
-	/* Общая нижняя граница под всеми табами */
-	:global(.tabs.tabs-lift) {
-		border-bottom: 1px solid oklch(var(--bc, 0.25 0 260) / 0.25);
-	}
-
 	/* Цвет нижней границы и шрифт вкладок */
 	:global(.tabs.tabs-lift .tab) {
 		border-bottom-color: oklch(var(--bc, 0.25 0 260) / 0.25);

@@ -145,13 +145,13 @@
                 {
                     title: 'WiFi Статус',
                     icon: Router,
-                    href: '/wifi/sta',
+                    href: '/wifi?tab=sta',
                     feature: true
                 },
                 {
                     title: 'Точка доступа',
                     icon: AP,
-                    href: '/wifi/ap',
+                    href: '/wifi?tab=ap',
                     feature: true
                 }
             ]

@@ -190,16 +190,6 @@
 		}
 	}
 
-	/* Общая нижняя граница под всеми табами, чтобы не было "дыры" у первого */
-	:global(.tabs.tabs-lift) {
-		border-bottom: 1px solid oklch(var(--bc, 0.25 0 260) / 0.25);
-	}
-
-	/* Явно задаём цвет нижней границы для всех табов */
-	:global(.tabs.tabs-lift .tab) {
-		border-bottom-color: oklch(var(--bc, 0.25 0 260) / 0.25) !important;
-	}
-
 	/* Tabs font similar to h3 in profile header */
 	:global(.tabs .tab) {
 		font-size: 1.125rem;
