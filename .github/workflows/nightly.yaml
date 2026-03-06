@@ -80,15 +80,21 @@ jobs:
           name: calculator-artifact
           path: docs/calculator
 
-      # SemVer: пререлиз через дефис, идентификаторы через точку (0.2.6.2-nightly.main).
-      # Дефисы в имени ветки заменяем на точки, чтобы не путать с минусом в C/парсерах.
-      - name: Set nightly version (base from platformio.ini + suffix)
+      # ВАЖНО: версия должна быть валидным SemVer (MAJOR.MINOR.PATCH-prerelease).
+      # Иначе старые прошивки отдают не-semver (например "nightly") и ломают UI при сравнении версий.
+      # Формат: base из platformio.ini + "-nightly." + ветка (слэш/дефис → точка).
+      - name: Set nightly version (always valid semver)
         id: ver
         run: |
-          BASE=$(grep APP_VERSION platformio.ini | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+          BASE=$(grep APP_VERSION platformio.ini | head -1 | sed 's/.*"\([^"]*\)".*/\1/' || true)
+          if [ -z "$BASE" ] || ! echo "$BASE" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+'; then
+            echo "WARNING: Could not read base version from platformio.ini, using 0.0.0"
+            BASE="0.0.0"
+          fi
           echo "base=$BASE" >> $GITHUB_OUTPUT
           BRANCH="${{ github.ref_name }}"
-          BRANCH_NORM=$(echo "$BRANCH" | tr '/-' '.')
+          BRANCH_NORM=$(echo "$BRANCH" | tr '/-' '.' | sed 's/^v//')
+          [ -z "$BRANCH_NORM" ] && BRANCH_NORM="unknown"
           FULL="${BASE}-nightly.${BRANCH_NORM}"
           echo "full=$FULL" >> $GITHUB_OUTPUT
           echo "Using version: $FULL"
