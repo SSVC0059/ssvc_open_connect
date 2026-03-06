@@ -113,6 +113,10 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -122,11 +126,25 @@ jobs:
         run: |
           mkdir -p release-assets
           find all-artifacts -type f \( -name "*.bin" -o -name "*.md5" -o -name "*.zip" \) -exec cp {} release-assets/ \;
-          ls -R release-assets/
+          echo "--- release-assets contents ---"
+          ls -la release-assets/
+          BIN_COUNT=$(find release-assets -maxdepth 1 -name "*.bin" | wc -l)
+          if [ "$BIN_COUNT" -eq 0 ]; then
+            echo "ERROR: No .bin files in release-assets. Check artifact upload paths."
+            exit 1
+          fi
 
       - name: Set build date
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      # Тег nightly должен существовать для создания/обновления релиза (при первом запуске создаём)
+      - name: Ensure nightly tag exists
+        run: |
+          if ! git rev-parse nightly >/dev/null 2>&1; then
+            git tag nightly ${{ github.sha }}
+            git push origin nightly
+          fi
 
       - name: Update nightly release
         uses: softprops/action-gh-release@v2
