@@ -80,8 +80,19 @@ jobs:
           name: calculator-artifact
           path: docs/calculator
 
+      - name: Set nightly version (base from platformio.ini + suffix)
+        id: ver
+        run: |
+          BASE=$(grep APP_VERSION platformio.ini | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+          echo "base=$BASE" >> $GITHUB_OUTPUT
+          FULL="${BASE}-nightly-${{ github.ref_name }}"
+          echo "full=$FULL" >> $GITHUB_OUTPUT
+          echo "Using version: $FULL"
+
       - name: Build firmware for ${{ matrix.env_name }}
-        run: platformio run --environment ${{ matrix.env_name }} -D APP_VERSION=nightly
+        env:
+          PLATFORMIO_BUILD_FLAGS: "-D APP_VERSION=\"${{ steps.ver.outputs.full }}\""
+        run: platformio run --environment ${{ matrix.env_name }}
 
       - name: Collect artifacts for ${{ matrix.env_name }}
         run: |
