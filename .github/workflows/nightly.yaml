@@ -99,7 +99,9 @@ jobs:
           FULL="${BASE}-nightly.${BRANCH_NORM}"
           TAG="v${FULL}"
           echo "full=$FULL" >> $GITHUB_OUTPUT
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "tag<<EOF" >> $GITHUB_OUTPUT
+          echo "$TAG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
           echo "Using version: $FULL (tag: $TAG)"
           echo "PLATFORMIO_BUILD_FLAGS=-D APP_VERSION=\\\"${FULL}\\\"" >> $GITHUB_ENV
 
