@@ -63,7 +63,7 @@
 					update = true;
 					firmwareVersion = latestStable.tag_name;
 					firmwareDownloadLink = latestStable.assets[i].browser_download_url;
-					notifications.info('Firmware update available.', 5000);
+					notifications.info('Доступно новое обновление.', 5000);
 					break;
 				}
 			}
