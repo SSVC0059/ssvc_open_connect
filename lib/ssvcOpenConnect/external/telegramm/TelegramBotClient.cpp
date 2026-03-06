@@ -67,11 +67,11 @@ bool TelegramBotClient::init(TelegramSettingsService* settingsService) {
 
     _settingsService->read([this](const TelegramSettings& settings) {
         this->token = settings.botToken;
-        this->chatID = settings.chatId.toInt();
+        this->chatID = settings.chatId;
     });
 
     _bot.setToken(token.c_str());
-    ESP_LOGI("TelegramBotClient", "Chat ID: %lld", chatID);
+    ESP_LOGI("TelegramBotClient", "Chat ID: %s", chatID.c_str());
 
     sendHello();
 
@@ -96,7 +96,7 @@ void TelegramBotClient::shutoff() {
     }
 
     token = "";
-    chatID = 0;
+    chatID = "";
     statusMessageID = 0;
     _initialized = false;
 }
@@ -324,18 +324,18 @@ String TelegramBotClient::getBotToken() const
     return token;
 }
 
-void TelegramBotClient::setChatID (const int64_t _chatID)
+void TelegramBotClient::setChatID(const String& _chatID)
 {
-    if (_chatID != 0 && _settingsService) {
+    if (_chatID.length() > 0 && _settingsService) {
         _settingsService->update([&](TelegramSettings& settings) {
-            settings.chatId = String(_chatID);
+            settings.chatId = _chatID;
             return StateUpdateResult::CHANGED;
         }, "api");
         this->chatID = _chatID;
     }
 }
 
-int64_t TelegramBotClient::getChatId() const
+String TelegramBotClient::getChatId() const
 {
     return chatID;
 }
@@ -350,7 +350,7 @@ uint32_t TelegramBotClient::sendMessage(const std::string& message)
     fb::Message msg;
     msg.mode = fb::Message::Mode::HTML;
     msg.text = message.c_str();
-    msg.chatID = chatID;
+    msg.chatID = fb::ID(chatID);
     (void)createControlKeyboard();
 
     while (!_bot.isPolling())
@@ -367,7 +367,7 @@ void TelegramBotClient::updateMessage(const std::string& message, uint32_t messa
     fb::TextEdit et;
     et.mode = fb::Message::Mode::HTML;
     et.text = message.c_str();
-    et.chatID = chatID;
+    et.chatID = fb::ID(chatID);
     et.messageID = messageId;
 
     _bot.editText(et);
@@ -400,7 +400,7 @@ void TelegramBotClient::sendHello() {
     fb::Message msg;
     msg.mode = fb::Message::Mode::HTML;
     msg.text = msgText.str().c_str();
-    msg.chatID = chatID;
+    msg.chatID = fb::ID(chatID);
 
     while (!_bot.isPolling()) {
         fb::Result result = _bot.sendMessage(msg);

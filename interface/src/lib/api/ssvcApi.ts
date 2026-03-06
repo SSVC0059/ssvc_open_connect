@@ -120,10 +120,7 @@ export async function getTelegramSettings(): Promise< TelegramConfig| null> {
 		console.error('Ошибка загрузки настроек Telegram');
 		return null;
 	}
-	return {
-		token: response.data.token || '',
-		chat_id: response.data.chat_id || '',
-	};
+	return response.data;
 }
 
 /**
