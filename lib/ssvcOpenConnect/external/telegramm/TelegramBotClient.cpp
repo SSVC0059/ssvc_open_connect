@@ -1,4 +1,5 @@
 #include "TelegramBotClient.h"
+#include "core/SsvcConnector.h"
 
 TelegramBotClient& TelegramBotClient::bot() {
     static TelegramBotClient instance;
@@ -285,6 +286,11 @@ std::string TelegramBotClient::createStatusMessage() {
 
     std::ostringstream text;
     text << cachedStatus.header;
+
+    if (SsvcConnector::getConnector().uartCommunicationError) {
+        text << "⚠️ <b>Нет связи с SSVC</b>\n"
+             << "Проверьте подключение по UART и включено ли устройство.\n\n";
+    }
 
     if (!cachedStatus.rectificationInfo.empty()) {
         text << cachedStatus.rectificationInfo;

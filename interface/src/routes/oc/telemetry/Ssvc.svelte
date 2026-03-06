@@ -105,6 +105,12 @@
 
 </script>
 <div class="telemetry-container">
+	{#if status?.uartConnectionError}
+		<div class="uart-error-banner" role="alert">
+			<span class="uart-error-icon">⚠</span>
+			Нет связи с SSVC. Проверьте подключение по UART и включено ли устройство.
+		</div>
+	{/if}
 	<div class="status-bar">
 		<div class="status-left">
 			<span class="status-item">
@@ -239,6 +245,30 @@
 	@use "$lib/styles/base/mixins" as *;
 
   // Base Styles
+  .uart-error-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+    border: 1px solid #ffc107;
+    border-radius: var(--border-radius);
+    color: #856404;
+    font-weight: 600;
+    font-size: 0.95rem;
+
+    .uart-error-icon {
+      font-size: 1.25rem;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: linear-gradient(135deg, #5c4a00 0%, #7a5f00 100%);
+      border-color: #b38600;
+      color: #ffecb3;
+    }
+  }
+
   .telemetry-container {
     .status-bar {
       max-width: 100%;

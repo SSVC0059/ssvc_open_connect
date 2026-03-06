@@ -105,6 +105,9 @@ public:
     return command_queue ? uxQueueMessagesWaiting(command_queue) : 0;
   }
 
+  /** Запланировать повторный запрос getSettings при ошибке UART (SSVC выключен) */
+  void scheduleUartRetryTimer() const;
+
   bool _cmdSetResult{false};
 
   ~SsvcCommandsQueue()
@@ -120,6 +123,7 @@ public:
 private:
   QueueHandle_t command_queue;
   TimerHandle_t _settingsTimer = nullptr;
+  mutable TimerHandle_t _uartRetryTimer = nullptr;
   static constexpr UBaseType_t COMMAND_QUEUE_LENGTH = 50;
   static constexpr UBaseType_t COMMAND_QUEUE_ITEM_SIZE = sizeof(SsvcCommand);
 
@@ -146,6 +150,8 @@ private:
 
   std::unordered_map<EventBits_t, ResponseCallback>
   bitCallbacks; ///< Коллекция обработчиков
+
+  static void uartRetryTimerCallback(TimerHandle_t xTimer);
 
   /**
    * @brief Регистрация обработчика для бита события

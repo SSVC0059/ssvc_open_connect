@@ -6,6 +6,7 @@
 
 #include "TelemetryService.h"
 #include "commons/JsonMemoryLogger.h"
+#include "core/SsvcConnector.h"
 
 // Интервал обновления телеметрии (2 секунды)
 #define TELEMETRY_UPDATE_INTERVAL_MS 2000
@@ -127,6 +128,8 @@ void TelemetryService::updateTelemetryState()
 
     const JsonVariant _status = doc["status"].to<JsonVariant>();
     _rProcess.getStatus(_status);
+    _status["uartConnectionError"] =
+        SsvcConnector::getConnector().uartCommunicationError;
     ESP_LOGV(TAG, "Finished _rProcess.writeTelemetryTo(root).");
 
     String newTelemetryJson;
