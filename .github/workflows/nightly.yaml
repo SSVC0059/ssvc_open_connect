@@ -80,7 +80,7 @@ jobs:
           name: calculator-artifact
           path: docs/calculator
 
-      # Версия прошивки = base из platformio.ini + "-nightly". Тег релиза один: v{BASE}-nightly (удаляется и создаётся заново).
+      # Версия прошивки = base из platformio.ini + "-nightly". Подставляем в platformio.ini перед сборкой.
       - name: Set nightly version
         id: ver
         run: |
@@ -92,8 +92,8 @@ jobs:
           FULL="${BASE}-nightly"
           echo "full=$FULL" >> $GITHUB_OUTPUT
           echo "Using version: $FULL (tag: v${BASE}-nightly)"
-          # Сначала снять определение из ini, затем задать версию с суффиксом — иначе в прошивке остаётся значение из platformio.ini.
-          echo "PLATFORMIO_BUILD_FLAGS=-U APP_VERSION -D APP_VERSION=\\\"${FULL}\\\"" >> $GITHUB_ENV
+          sed -i '/APP_VERSION/s/[0-9]\+\.[0-9]\+\.[0-9]\+/'"${FULL}"'/' platformio.ini
+          grep APP_VERSION platformio.ini
 
       - name: Build firmware for ${{ matrix.env_name }}
         run: platformio run --environment ${{ matrix.env_name }}
