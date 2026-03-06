@@ -2,6 +2,7 @@
 	import { user } from '$lib/stores/user';
 	import { page } from '$app/state';
 	import { modals } from 'svelte-modals';
+	import type { ModalComponent } from 'svelte-modals';
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -13,10 +14,11 @@
 	import Prerelease from '~icons/tabler/test-pipe';
 	import Error from '~icons/tabler/circle-x';
 	import { compareVersions } from 'compare-versions';
-	import GithubUpdateDialog from '$lib/components/GithubUpdateDialog.svelte';
+	import FirmwareUpdateDialog from '$lib/components/FirmwareUpdateDialog.svelte';
 	import { assets } from '$app/paths';
 	import InfoDialog from '$lib/components/InfoDialog.svelte';
 	import Check from '~icons/tabler/check';
+	import { telemetry } from '$lib/stores/telemetry';
 
 	async function getGithubAPI() {
 		try {
@@ -66,28 +68,28 @@
 			}
 		}
 		if (url === '') {
-			// if no asset was found, use the first one
-			modals.open(InfoDialog, {
-				title: 'No matching firmware found',
+			modals.open(InfoDialog as unknown as ModalComponent<any>, {
+				title: 'Подходящая прошивка не найдена',
 				message:
-					'No matching firmware was found for the current device. Upload the firmware manually or build from sources.',
+					'Для текущего устройства не найдено соответствующей прошивки. Загрузите прошивку вручную или создайте ее из исходных текстов.',
 				dismiss: { label: 'OK', icon: Check },
 				onDismiss: () => modals.close()
 			});
 			return;
 		}
-
-		modals.open(ConfirmDialog, {
-			title: 'Confirm flashing new firmware to the device',
-			message: 'Are you sure you want to overwrite the existing firmware with a new one?',
+		modals.open(ConfirmDialog as unknown as ModalComponent<any>, {
+			title: 'Подтвердите установку новой прошивки на устройство',
+			message: 'Вы уверены, что хотите перезаписать существующую прошивку новой?',
 			labels: {
-				cancel: { label: 'Abort', icon: Cancel },
-				confirm: { label: 'Update', icon: CloudDown }
+				cancel: { label: 'Отменить', icon: Cancel },
+				confirm: { label: 'Обновление', icon: CloudDown }
 			},
 			onConfirm: () => {
+				// Reset OTA status before starting new download
+				telemetry.setOTAStatus({ status: 'none', progress: 0, error: '' });
 				postGithubDownload(url);
-				modals.open(GithubUpdateDialog, {
-					onConfirm: () => modals.closeAlls()
+				modals.open(FirmwareUpdateDialog as unknown as ModalComponent<any>, {
+					title: 'Загрузка встроенного ПО'
 				});
 			}
 		});
@@ -96,14 +98,20 @@
 
 <SettingsCard collapsible={false}>
 	{#snippet icon()}
-		<Github  class="lex-shrink-0 mr-2 h-6 w-6 self-end rounded-full" />
+		<Github class="lex-shrink-0 mr-2 h-6 w-6 self-end rounded-full" />
 	{/snippet}
 	{#snippet title()}
-		<span >Github Firmware Manager</span>
+		<span>Менеджер обновлений Github</span>
 	{/snippet}
 	{#await getGithubAPI()}
 		<Spinner />
 	{:then githubReleases}
+		<div class="alert alert-info">
+			<div>
+				<span class="font-bold">Текущая версия:</span>
+				v{page.data.features.firmware_version}
+			</div>
+		</div>
 		<div class="relative w-full overflow-visible">
 			<div class="overflow-x-auto" transition:slide|local={{ duration: 300, easing: cubicOut }}>
 				<table class="table w-full table-auto">
@@ -111,7 +119,7 @@
 						<tr class="font-bold">
 							<th align="left">Release</th>
 							<th align="center" class="hidden sm:block">Release Date</th>
-							<th align="center">Experimental</th>
+							<th align="center">Exp.</th>
 							<th align="center">Install</th>
 						</tr>
 					</thead>
@@ -130,7 +138,7 @@
 										rel="noopener noreferrer">{release.name}</a
 									></td
 								>
-								<td align="center" class="hidden min-h-full align-middle sm:block">
+								<td align="center" class="hidden min-h-full align-middl sm:block">
 									<div class="my-2">
 										{new Intl.DateTimeFormat('en-GB', {
 											dateStyle: 'medium'
@@ -143,9 +151,9 @@
 									{/if}
 								</td>
 								<td align="center">
-									{#if compareVersions(page.data.features.firmware_version, release.tag_name) != 0}
+									{#if compareVersions(page.data.features.firmware_version, release.tag_name) !== 0}
 										<button
-											class="btn btn-ghost btn-circle btn-sm"
+											class="btn btn-ghost btn-sm"
 											onclick={() => {
 												confirmGithubUpdate(release.assets);
 											}}
@@ -163,7 +171,7 @@
 	{:catch error}
 		<div class="alert alert-error shadow-lg">
 			<Error class="h-6 w-6 shrink-0" />
-			<span>Please connect to a network with internet access to perform a firmware update.</span>
+			<span>Пожалуйста, подключитесь к сети с доступом в Интернет, чтобы выполнить обновление встроенного ПО.</span>
 		</div>
 	{/await}
 </SettingsCard>

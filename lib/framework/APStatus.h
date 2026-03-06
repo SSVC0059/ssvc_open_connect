@@ -32,7 +32,7 @@ public:
 
     void begin();
 
-    bool isActive();
+    bool isActive() const;
 
 private:
     PsychicHttpServer *_server;

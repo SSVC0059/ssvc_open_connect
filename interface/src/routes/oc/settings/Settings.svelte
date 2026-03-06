@@ -1,24 +1,59 @@
 <script lang="ts">
-	import ThermalSensorSettings from '$lib/components/OCSettings/ThermalSensorSettings.svelte';
+	import { page } from '$app/stores';
+	import SensorsSettings from '$lib/components/OCSettings/SensorsSettings.svelte';
 	import TelegramSettings from '$lib/components/OCSettings/TelegramSettings.svelte';
+	import ProfileManager from '$lib/components/profiles/ProfileManager.svelte';
 	import { getSubsystemState, setSubsystemState } from '$lib/api/ssvcApi';
 	import type { SubsystemsState } from '$lib/types/ssvc';
 
 	interface Tab {
-		id: keyof SubsystemsState;
+		id: keyof SubsystemsState | 'profiles'; // Allow 'profiles' as a valid ID
 		title: string;
 		component: any;
+		isStatic?: boolean; // Flag for tabs that don't depend on subsystem state
+		alwaysShow?: boolean; // Flag for tabs that should always be visible
+		props?: Record<string, any>;
 	}
 
 	let subsystemsState = $state<SubsystemsState>({
+		atm_sensor: false,
+		i2c_bus: false,
+		settings: false,
 		telegram_bot: false,
-		thermal: false,
-		// другие подсистемы
+		thermal: false
 	});
 
 	let error = $state('');
 	let isLoading = $state(true);
 	let filteredTabs = $state<Tab[]>([]);
+
+	const availableTabs: Tab[] = [
+		{
+			id: 'profiles',
+			title: 'Профили',
+			component: ProfileManager,
+			isStatic: true
+		},
+		{
+			id: 'thermal',
+			title: 'Датчики температуры',
+			component: SensorsSettings,
+			props: { sensorType: 'thermal' }
+		},
+		{
+			id: 'atm_sensor',
+			title: 'Датчики давления',
+			component: SensorsSettings,
+			props: { sensorType: 'pressure' }
+		},
+		{
+			id: 'telegram_bot',
+			title: 'Telegram',
+			component: TelegramSettings,
+			alwaysShow: true
+		}
+		// Здесь можно добавить другие вкладки
+	];
 
 	$effect(() => {
 		loadSubsystemState();
@@ -29,15 +64,20 @@
 			const state = await getSubsystemState();
 			if (state) {
 				subsystemsState = state;
-				if (state) {
-					subsystemsState = state;
-					// Фильтруем вкладки, оставляя только те, которые есть в ответе сервера
-					filteredTabs = availableTabs.filter(tab => tab.id in state);
-					$inspect(subsystemsState)
-				}
+				// Фильтруем вкладки:
+				// - isStatic: всегда показываем
+				// - alwaysShow: всегда показываем (для настроек типа Telegram)
+				// - state[tab.id]: показываем, если подсистема включена (для датчиков)
+				filteredTabs = availableTabs.filter(
+					(tab) => tab.isStatic || tab.alwaysShow || state[tab.id as keyof SubsystemsState]
+				);
+			} else {
+				// Fallback if state is not returned, show only static tabs
+				filteredTabs = availableTabs.filter((tab) => tab.isStatic || tab.alwaysShow);
 			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Ошибка загрузки';
+			filteredTabs = availableTabs.filter((tab) => tab.isStatic || tab.alwaysShow); // Show static/alwaysShow tabs on error
 		} finally {
 			isLoading = false;
 		}
@@ -52,7 +92,6 @@
 
 			if (success) {
 				subsystemsState[subsystem] = newState;
-				// Перезагружаем состояние после изменения
 				await loadSubsystemState();
 			}
 		} catch (err) {
@@ -73,42 +112,38 @@
 	let activeTab = $state(0);
 	let isMobileMenuOpen = $state(false);
 
-	const availableTabs: Tab[] = [
-		{
-			id: 'thermal',
-			title: 'Термодатчики',
-			component: ThermalSensorSettings
-		},
-		{
-			id: 'telegram_bot',
-			title: 'Telegram',
-			component: TelegramSettings
+	$effect(() => {
+		const tabId = $page.url.searchParams.get('tab');
+		if (tabId) {
+			const index = filteredTabs.findIndex((tab) => tab.id === tabId);
+			if (index !== -1) {
+				activeTab = index;
+			}
 		}
-		// Здесь можно добавить другие вкладки
-	];
+	});
 
-	// Добавим вспомогательную функцию
 	function isSubsystemEnabled(id: string): boolean {
+		const tab = availableTabs.find((t) => t.id === id);
+		if (tab?.isStatic) return true; // Static tabs are always "enabled"
+
 		const key = id as keyof SubsystemsState;
 		return subsystemsState[key] ?? false;
 	}
 </script>
 
-
-
 <div class="container">
-		<div class="tabs-container">
+	<div class="tabs-container">
 		<!-- Мобильное меню -->
 		<div class="mobile-tabs-header" class:menu-open={isMobileMenuOpen}>
 			<button
 				class="mobile-menu-toggle"
-				onclick={() => isMobileMenuOpen = !isMobileMenuOpen}
+				onclick={() => (isMobileMenuOpen = !isMobileMenuOpen)}
 			>
 				<span class="mobile-menu-header">
 					{filteredTabs[activeTab]?.title || 'Меню'}
 				</span>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-					<path d="M7 10l5 5 5-5z"/>
+					<path d="M7 10l5 5 5-5z" />
 				</svg>
 			</button>
 
@@ -135,22 +170,28 @@
 					class:tab-active={activeTab === index}
 					onclick={() => (activeTab = index)}
 				>
-
 					{tab.title}
 				</button>
 			{/each}
 		</div>
 
 		<!-- Контент -->
-
-		{#each filteredTabs as tab, index}
-			{#if activeTab === index}
-				{@const Component = tab.component}
-				<Component
-					disabled={!isSubsystemEnabled(tab.id)}
-					onToggle={toggleSubsystemHandler(tab.id)}
-				/>
-			{/if}
-		{/each}
+		{#if isLoading}
+			<p>Загрузка...</p>
+			<!-- Or a spinner component -->
+		{:else if error}
+			<p style="color: red;">{error}</p>
+		{:else}
+			{#each filteredTabs as tab, index}
+				{#if activeTab === index}
+					{@const Component = tab.component}
+					<Component
+						{...tab.props}
+						disabled={!isSubsystemEnabled(tab.id)}
+						onToggle={tab.isStatic ? undefined : toggleSubsystemHandler(tab.id as keyof SubsystemsState)}
+					/>
+				{/if}
+			{/each}
+		{/if}
 	</div>
 </div>

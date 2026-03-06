@@ -33,12 +33,12 @@
 				token = await response.json();
 				user.init(token.access_token);
 				let username = $user.username;
-				notifications.success('User ' + username + ' signed in', 5000);
+				notifications.success('Пользователь ' + username + ' авторизован!', 5000);
 				signIn();
 			} else {
 				username = '';
 				password = '';
-				notifications.error('Wrong Username or Password!', 5000);
+				notifications.error('Неверное имя пользователя или пароль!', 5000);
 				loginFailed = true;
 				setTimeout(() => {
 					loginFailed = false;
@@ -64,12 +64,12 @@
 			</div>
 		</figure>
 		<div class="card-body w-80">
-			<h2 class="card-title text-2xl">Login</h2>
+			<h2 class="card-title text-2xl">Авторизация</h2>
 			<form class="fieldset w-full max-w-xs">
-				<label class="label" for="user">Username</label>
+				<label class="label" for="user">Имя пользователя</label>
 				<input type="text" class="input w-full max-w-xs" id="user" bind:value={username} />
 
-				<label class="label" for="pwd">Password </label>
+				<label class="label" for="pwd">Пароль </label>
 				<InputPassword id="pwd" bind:value={password} />
 
 				<div class="card-actions mt-4 justify-end">
@@ -77,7 +77,7 @@
 						class="btn btn-primary inline-flex items-center"
 						onclick={() => {
 							signInUser({ username: username, password: password });
-						}}><Login class="mr-2 h-5 w-5" /><span>Login</span></button
+						}}><Login class="mr-2 h-5 w-5" /><span>Вход</span></button
 					>
 				</div>
 			</form>

@@ -445,6 +445,7 @@ void SsvcCommandsQueue::at(const int attempt_count, const TickType_t timeout) co
 void SsvcCommandsQueue::set(const std::string& parameters, const int attempt_count,
                             const TickType_t timeout) const
 {
+  ESP_LOGI(TAG, "Set command called with parameters: %s", parameters.c_str());
   pushCommandInQueue(SsvcCommandType::SET, parameters, attempt_count, timeout);
 }
 

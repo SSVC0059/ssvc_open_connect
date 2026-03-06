@@ -16,8 +16,10 @@
     import Copyright from '~icons/tabler/copyright';
     import MQTT from '~icons/tabler/topology-star-3';
     import NTP from '~icons/tabler/clock-check';
+    import Telegram from '~icons/tabler/brand-telegram';
     import Metrics from '~icons/tabler/report-analytics';
     import Connected from '~icons/tabler/plug-connected';
+    import Book from '~icons/tabler/book';
     import SsvcIcon from '~icons/mdi/snake';
     import Esp from '~icons/mdi/car-esp';
     import Bug from '~icons/tabler/bug';
@@ -91,6 +93,12 @@
                     icon: NTP,
                     href: '/connections/ntp',
                     feature: page.data.features.ntp
+                },
+                {
+                    title: 'Telegramm',
+                    icon: Telegram,
+                    href: '/oc/settings?tab=telegram_bot',
+                    feature: true
                 }
             ]
         },
@@ -153,7 +161,13 @@
                         (!page.data.features.security || $user.admin)
                 }
             ]
-        }
+        },
+        {
+            title: 'Документация',
+            icon: Book,
+            href: '/documentation',
+            feature: true
+        },
     ] as menuItem[]);
 
     function setActiveMenuItem(targetTitle: string) {

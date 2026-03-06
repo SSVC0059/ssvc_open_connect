@@ -330,7 +330,7 @@
 						</div>
 						<div class="grow"></div>
 						<button
-							class="btn btn-circle btn-ghost btn-sm modal-button"
+							class="btn btn-ghost btn-sm modal-button"
 							onclick={() => {
 								showWifiDetails = !showWifiDetails;
 							}}

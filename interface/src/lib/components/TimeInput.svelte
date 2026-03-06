@@ -59,7 +59,7 @@
 	<div class="input-unit-container">
 		<input
 			type="text"
-			value={formattedTime}
+			bind:value={formattedTime}
 			onchange={handleInput}
 			class="input-field"
 			placeholder="HH:MM:SS"

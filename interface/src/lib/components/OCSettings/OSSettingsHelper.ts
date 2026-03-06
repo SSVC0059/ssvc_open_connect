@@ -14,6 +14,10 @@ export function getZoneDescription(zone: string): string {
 			return 'Исходящая вода';
 		case 'act':
 			return 'Трубка связи с атмосферой';
+		case 'tank':
+			return 'Куб';
+		case 'outdoor':
+			return 'Атмосфера';
 		case 'deleted':
 			return 'удаленные';
 		default:
@@ -26,6 +30,7 @@ export const availableZones = [
 	{ value: 'inlet_water', label: 'Входящая вода' },
 	{ value: 'outlet_water', label: 'Исходящая вода' },
 	{ value: 'act', label: 'Трубка связи с атмосферой' },
+	{ value: 'tank', label: 'Куб' },
 	{ value: 'unknown', label: 'Неизвестная зона' }
 ];
 

@@ -10,6 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  packages: write
   contents: write
 
 jobs:
@@ -18,7 +19,7 @@ jobs:
     continue-on-error: true  # Линтер не будет блокировать весь workflow
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - uses: actions/setup-python@v5
         with:
@@ -43,17 +44,54 @@ jobs:
             **/lint*.txt
           retention-days: 7
 
+  frontend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Install npm dependencies
+        run: npm install
+        working-directory: interface
+
+      - name: Build interface for tests
+        run: npm run build
+        working-directory: interface
+
+      - name: Build calculator for tests
+        run: npm run build:calculator
+        working-directory: interface
+
+      - name: Run npm tests
+        run: npm test
+        working-directory: interface
+
+      - name: Upload calculator artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: calculator-artifact
+          path: docs/calculator/rectification_calculator.js
+
   build:
     runs-on: ubuntu-latest
+    needs: [frontend-checks]
     strategy:
       matrix:
-        env_name: [esp32-s3-devkitc-1-16m, esp32-s3-devkitc-1-8m]
+        include:
+          - env_name: esp32-s3-devkitc-1-8m
+          - env_name: esp32-s3-devkitc-1-8m-secure
+          - env_name: esp32-s3-devkitc-1-16m
+          - env_name: esp32-s3-devkitc-1-16m-secure
 
     outputs:
       version: ${{ steps.version.outputs.version }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-python@v5
         with:
@@ -74,6 +112,12 @@ jobs:
       - name: Install Python requirements
         run: |
           pip install -r requirements.txt
+          
+      - name: Download calculator artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: calculator-artifact
+          path: docs/calculator
 
       - name: Build firmware for ${{ matrix.env_name }}
         run: platformio run --environment ${{ matrix.env_name }}
@@ -82,6 +126,7 @@ jobs:
         if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_artifacts == 'true')
         run: |
           mkdir -p artifacts/firmware/${{ matrix.env_name }} artifacts/zips
+          cp docs/calculator/rectification_calculator.js artifacts/firmware/${{ matrix.env_name }}/
           cp -r build/${{ matrix.env_name }}/* artifacts/firmware/${{ matrix.env_name }}/
           (cd artifacts/firmware/${{ matrix.env_name }} && zip -r ../../zips/${{ matrix.env_name }}.zip .)
           
@@ -112,88 +157,72 @@ jobs:
           path: build/${{ matrix.env_name }}/SSVC-Open-Connect_*
           retention-days: 3
 
+      - name: Upload ELF files
+        uses: actions/upload-artifact@v4
+        with:
+          name: elf-files-${{ matrix.env_name }}
+          path: build/elf/
+          if-no-files-found: error
+          retention-days: 90
+
   create-release:
-    needs: [build, lint]
+    needs: [ build, lint, frontend-checks ]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write # Обязательно для создания релиза
+
     steps:
-      - name: Download zip artifacts
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts                      
+          path: all-artifacts
 
-      - name: Debug files
+      - name: Prepare assets for release
         run: |
-          find artifacts -type f
+          mkdir -p release-assets
+          find all-artifacts -type f \( -name "*.bin" -o -name "*.md5" -o -name "*.zip" \) -exec cp {} release-assets/ \;
+          ls -R release-assets/
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || 'v0.0.0' }}
-          release_name: Release ${{ github.ref_name || 'v0.0.0' }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           draft: false
-          prerelease: false
+          prerelease: true
+          body_path: ${{ github.workspace }}-CHANGELOG.md
+          generate_release_notes: true
+          files: |
+            release-assets/*.bin
+            release-assets/*.md5
+            release-assets/*.zip
 
-      - name: Upload Release for ESP32S3-16m
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  release-elf-files:
+    needs: [ build, create-release ]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Разрешение на изменение релиза
+    steps:
+      - name: Download ELF artifacts
+        uses: actions/download-artifact@v4
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/firmware-esp32-s3-devkitc-1-16m/SSVC-Open-Connect_esp32-s3-devkitc-1-16m_${{ needs.build.outputs.version }}.bin
-          asset_name: SSVC-Open-Connect_esp32-s3-devkitc-1-16m_${{ needs.build.outputs.version }}.bin
-          asset_content_type: application/octet-stream
+          pattern: elf-files-*
+          path: elf-artifacts
+          merge-multiple: true
 
-      - name: Upload MD5 Checksum for ESP32S3-16m
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/firmware-esp32-s3-devkitc-1-16m/SSVC-Open-Connect_esp32-s3-devkitc-1-16m_${{ needs.build.outputs.version }}.md5
-          asset_name: SSVC-Open-Connect_esp32-s3-devkitc-1-16m_${{ needs.build.outputs.version }}.md5
-          asset_content_type: text/plain
+      - name: Archive all ELF files into a single zip
+        run: |
+          zip -r elf-files_${{ needs.build.outputs.version }}.zip .
+        working-directory: elf-artifacts
 
-      - name: Upload Release for ESP32S3-8m
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload ELF files to existing Release
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/firmware-esp32-s3-devkitc-1-8m/SSVC-Open-Connect_esp32-s3-devkitc-1-8m_${{ needs.build.outputs.version }}.bin
-          asset_name: SSVC-Open-Connect_esp32-s3-devkitc-1-8m_${{ needs.build.outputs.version }}.bin
-          asset_content_type: application/octet-stream
-
-      - name: Upload MD5 Checksum for ESP32S3-8m
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/firmware-esp32-s3-devkitc-1-8m/SSVC-Open-Connect_esp32-s3-devkitc-1-8m_${{ needs.build.outputs.version }}.md5
-          asset_name: SSVC-Open-Connect_esp32-s3-devkitc-1-8m_${{ needs.build.outputs.version }}.md5
-          asset_content_type: text/plain
-
-      - name: Upload ESP32-S3-16M Zip Archive
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/esp32-s3-devkitc-1-16m/esp32-s3-devkitc-1-16m.zip
-          asset_name: esp32-s3-devkitc-1-16m_${{ needs.build.outputs.version }}.zip
-          asset_content_type: application/zip
-
-      - name: Upload ESP32-S3-8M Zip Archive
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/esp32-s3-devkitc-1-8m/esp32-s3-devkitc-1-8m.zip
-          asset_name: esp32-s3-devkitc-1-8m_${{ needs.build.outputs.version }}.zip
-          asset_content_type: application/zip
+          # Экшн найдет релиз по тагу и добавит файл к нему
+          tag_name: ${{ github.ref_name }}
+          files: elf-artifacts/elf-files_${{ needs.build.outputs.version }}.zip

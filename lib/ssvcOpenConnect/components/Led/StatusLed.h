@@ -27,11 +27,11 @@ class StatusLed {
 
 public:
   explicit StatusLed(ESP32SvelteKit *esp32sveltekit);
-  void begin();
+  void begin(uint16_t neoPixelType);
 
 private:
-  uint32_t currentColor{};
   ESP32SvelteKit *_esp32sveltekit;
+  Adafruit_NeoPixel *_led = nullptr;
 
   [[noreturn]] static void checkStatus(void *pvParameters);
 };

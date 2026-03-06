@@ -52,6 +52,14 @@ public:
      */
     void executePollCycle() const;
 
+    // Тип функции для колбэка
+    using OnFirstScanCallback = std::function<void()>;
+
+    /**
+     * @brief Регистрирует функцию, которая будет вызвана один раз после успешного первого опроса.
+     */
+    void onFirstScanComplete(OnFirstScanCallback cb);
+
 private:
     SensorCoordinator() = default;
 
@@ -62,6 +70,12 @@ private:
     std::vector<PollingSubsystem*> _pollingSubsystems;
 
     static constexpr auto TAG = "SENSOR_COORDINATOR";
+
+    bool _firstScanDone = false;
+    std::vector<OnFirstScanCallback> _firstScanCallbacks;
+
+    // Метод для вызова всех подписанных функций
+    void notifyFirstScanDone();
 };
 
 

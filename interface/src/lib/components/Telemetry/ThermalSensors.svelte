@@ -10,24 +10,33 @@
         alarmThresholds?: AlarmThresholdsState | null;
     }>();
 
+    type ExtendedSensorReading = {
+        address: string;
+        v: number;
+        u: string;
+        type: string;
+    };
+
     type ZoneEntries = Array<[string, SensorReading[]]>;
 
     // 💡 Вспомогательная функция для получения ключей объекта зон,
     function getZoneEntries(response: TemperatureResponse | null): ZoneEntries {
-        if (!response) {
-            return [];
-        }
+        if (!response) return [];
 
+        // Object.entries(response) дает нам [имя_зоны, SensorMap]
         return Object.entries(response).map(([zoneName, sensorMap]) => {
-            // Преобразуем SensorMap в массив SensorReading[]
-            const sensorsArray: SensorReading[] = Object.entries(sensorMap).map(([address, temp]) => ({
+            // Преобразуем карту адресов в массив объектов SensorReading
+            const sensorsArray: SensorReading[] = Object.entries(sensorMap).map(([address, details]) => ({
                 address: address,
-                temp: temp
+                data: {
+                    v: details.v,
+                    u: details.u,
+                    type: details.type
+                }
             }));
 
-
             return [zoneName, sensorsArray];
-        }) as ZoneEntries;
+        });
     }
 
     // 💡 Получаем сгруппированные данные для цикла (Derived State)
@@ -56,7 +65,7 @@
     }
 </script>
 
-<h2 class="title">Датчики DS18B20</h2>
+<h2 class="title">Датчики</h2>
 {#if temperatureResponse}
     <div class="sensor-grid">
 
@@ -72,23 +81,24 @@
                 {#each sensors as sensor (sensor.address)}
                     {@const thresholds = sensorThresholdsMap().get(sensor.address)}
 
-                    {@const statusClass = getStatusClass(sensor.temp, thresholds)}
+                    {@const statusClass = getStatusClass(sensor.data.v, thresholds)}
 
                     <div class="reading-item">
                         <span class="reading-label">{sensor.address.slice(-4)}</span>
-                        <span class="reading-value {statusClass}">
-                            {sensor.temp.toFixed(2)}°C
-                        </span>
-                        {#if thresholds && thresholds.enabled}
 
-                            {@const minClass = sensor.temp <= thresholds.min ? 'threshold-active-min' : ''}
-                            {@const dangerousClass = sensor.temp >= thresholds.dangerous && sensor.temp < thresholds.critical ? 'threshold-active-dangerous' : ''}
-                            {@const criticalClass = sensor.temp >= thresholds.critical ? 'threshold-active-critical' : ''}
+                        <span class="reading-value {statusClass}">
+                            {sensor.data.v.toFixed(2)}{sensor.data.u}
+                        </span>
+
+                        {#if thresholds && thresholds.enabled}
+                            {@const minClass = sensor.data.v <= thresholds.min ? 'threshold-active-min' : ''}
+                            {@const dangerousClass = sensor.data.v >= thresholds.dangerous && sensor.data.v < thresholds.critical ? 'threshold-active-dangerous' : ''}
+                            {@const criticalClass = sensor.data.v >= thresholds.critical ? 'threshold-active-critical' : ''}
 
                             <div class="threshold-metadata">
-                                Мин: <span class="{minClass}">{thresholds.min}°C</span> |
-                                Опас: <span class="{dangerousClass}">{thresholds.dangerous}°C</span> |
-                                Крит: <span class="{criticalClass}">{thresholds.critical}°C</span>
+                                Мин: <span class="{minClass}">{thresholds.min}{sensor.data.u}</span> |
+                                Опас: <span class="{dangerousClass}">{thresholds.dangerous}{sensor.data.u}</span> |
+                                Крит: <span class="{criticalClass}">{thresholds.critical}{sensor.data.u}</span>
                             </div>
                         {/if}
                     </div>
@@ -99,6 +109,7 @@
         {/each}
     </div>
 {/if}
+
 <style lang="scss">
   @use "$lib/styles/base/mixins" as *;
 
@@ -110,15 +121,25 @@
     @include dark-theme-color;
   }
 
+  /* В ThermalSensors.svelte */
   .sensor-grid {
-    display: flex;
-    flex-direction: column;
-    @include parameter-container;
-    .flex{
+      @include parameter-container;
       display: flex;
-      justify-content: center;
-      gap: 1rem; 
-    }
+      flex-direction: column;
+      gap: 1rem;
+
+      flex: 1;            // Растягиваемся на всё место от .sensor-readings
+      overflow-y: auto;   // ВКЛЮЧАЕМ СКРОЛЛ
+      padding-right: 6px; // Отступ для полосы прокрутки
+
+      /* Стилизация скроллбара (чтобы не был уродливым) */
+      &::-webkit-scrollbar {
+          width: 4px;
+      }
+      &::-webkit-scrollbar-thumb {
+          background: var(--primary-500);
+          border-radius: 10px;
+      }
   }
 
   .no-data {

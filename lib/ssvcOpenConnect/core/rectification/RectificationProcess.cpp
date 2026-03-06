@@ -1,4 +1,5 @@
 #include "RectificationProcess.h"
+#include "components/sensors/SensorManager/SensorManager.h"
 
 /**
  *   SSVC Open Connect
@@ -26,8 +27,10 @@ RectificationProcess::RectificationProcess()
     currentProcessStatus(ProcessState::IDLE),
     metric(), _ssvcConnector(nullptr),
     _ssvcSettings(nullptr),
-    _openConnectSettingsService(nullptr),
-    eventReceived(false)
+    _ssvcMqttSettingsService(nullptr),
+    eventReceived(false),
+    initial_pressure(0.0f),
+    initial_pressure_set(false)
 {
   memset(startTime, 0, sizeof(startTime));
   memset(endTime, 0, sizeof(endTime));
@@ -35,10 +38,10 @@ RectificationProcess::RectificationProcess()
 
 void RectificationProcess::begin(SsvcConnector& connector,
                                  SsvcSettings& settings,
-                                 OpenConnectSettingsService& openConnectSettingsService) {
+                                 SsvcMqttSettingsService& ssvcMqttSettingsService) {
   _ssvcConnector = &connector;
   _ssvcSettings = &settings;
-  _openConnectSettingsService = &openConnectSettingsService;
+  _ssvcMqttSettingsService = &ssvcMqttSettingsService;
 
   xTaskCreatePinnedToCore(
       update,
@@ -49,6 +52,40 @@ void RectificationProcess::begin(SsvcConnector& connector,
       nullptr,
       1
   );
+
+  xTaskCreatePinnedToCore(
+      pressureSenderTask,
+      "PressureSender",
+      4096,
+      this,
+      (tskIDLE_PRIORITY),
+      nullptr,
+      1
+  );
+}
+
+[[noreturn]] void RectificationProcess::pressureSenderTask(void* pvParameters) {
+    const auto* self = static_cast<RectificationProcess*>(pvParameters);
+    constexpr TickType_t xDelay = pdMS_TO_TICKS(5000); // 5 секунд
+
+    while (true) {
+        vTaskDelay(xDelay);
+        ESP_LOGD(TAG, "PressureSenderTask running...");
+
+        if (self->currentProcessStatus == ProcessState::RUNNING) {
+            ESP_LOGD(TAG, "Rectification process is running. Checking for pressure sensor.");
+            const float relative_pressure = self->metric.common.relative_pressure;
+            if (relative_pressure != 0.0f) { // Only send if there's a meaningful relative pressure
+                ESP_LOGD(TAG, "Sending relative pressure to SSVC: %.2f", relative_pressure);
+                SsvcSettings::Builder builder;
+                builder.setTankPressureActual(relative_pressure);
+            } else {
+                ESP_LOGD(TAG, "Relative pressure is 0. Not sending.");
+            }
+        } else {
+            ESP_LOGD(TAG, "Rectification process is not running.");
+        }
+    }
 }
 
 // Сопоставление строки "type" с этапами RectificationStage
@@ -313,7 +350,7 @@ void RectificationProcess::update(void* pvParameters)
             {
               ESP_LOGV(TAG, "Проверка сохраненного PID");
               constexpr int savedPid = 0;
-              // self->_openConnectSettingsService.read(
+              // self->_ssvcMqttSettingsService.read(
               //   [&](OpenConnectSettingsManager& settings)
               //   {
               //     savedPid = settings.pid;
@@ -326,7 +363,7 @@ void RectificationProcess::update(void* pvParameters)
                 {
                   ESP_LOGV(TAG,
                            "Сохраненный PID не совпадает с новым PID");
-                  // self->_openConnectSettingsService.update(
+                  // self->_ssvcMqttSettingsService.update(
                   //   [&](OpenConnectSettingsManager& settings)
                   //   {
                   //     settings.pid = newPid; // turn on the lights
@@ -352,6 +389,7 @@ void RectificationProcess::update(void* pvParameters)
             self->rectificationStageStates = {};
 
             self->previousStage = RectificationStage::EMPTY;
+            self->initial_pressure_set = false; // Сбрасываем флаг при новом процессе
           }
           else
           {
@@ -364,7 +402,7 @@ void RectificationProcess::update(void* pvParameters)
           //        идет
           if (_currentStage == RectificationStage::WAITING)
           {
-            // Пид был установлен ранее, а теперь отсутствует и режим waiting -
+            // Pid был установлен ранее, а теперь отсутствует и режим waiting -
             // Завершен процесс
             if (self->pid != 0)
             {
@@ -466,19 +504,43 @@ void RectificationProcess::update(void* pvParameters)
 
         self->metric.type = telemetry["type"].as<std::string>();
         self->metric.common.mmhg =
-          telemetry["common"]["mmhg"].as<unsigned int>();
+          telemetry["common"]["mmhg"].as<float>();
         self->metric.common.tp1 = telemetry["common"]["tp1"].as<float>();
         self->metric.common.tp2 = telemetry["common"]["tp2"].as<float>();
         self->metric.common.relay = telemetry["common"]["relay"].as<int>() != 0;
         self->metric.common.signal =
           telemetry["common"]["signal"].as<int>() != 0;
+
+        // Получаем актуальное давление из SensorManager
+        float current_pressure = 0.0f;
+        auto sensors_by_zone = SensorManager::getInstance().getAllSensorsGroupedByZone(MeasuredValueType::PRESSURE);
+        auto it = sensors_by_zone.find(SensorZone::TANK);
+        if (it != sensors_by_zone.end() && !it->second.empty()) {
+            // Предполагаем, что в зоне TANK есть только один датчик давления
+            current_pressure = it->second[0]->getData();
+        }
+
+        // Расчет относительного давления
+        if (self->currentProcessStatus == ProcessState::RUNNING) {
+            if (!self->initial_pressure_set && current_pressure > 0) {
+                self->initial_pressure = current_pressure;
+                self->initial_pressure_set = true;
+                self->metric.common.relative_pressure = 0;
+            } else if (self->initial_pressure_set) {
+                self->metric.common.relative_pressure = current_pressure - self->initial_pressure;
+            }
+        } else {
+            self->initial_pressure_set = false;
+            self->metric.common.relative_pressure = 0;
+        }
+
         // Выводим значения полей common в лог
         ESP_LOGV("Telemetry",
-                 "Metric Common - mmhg: %u, tp1: %.2f, tp2: %.2f, relay: %d, "
-                 "signal: %d",
+                 "Metric Common - mmhg: %.2f, tp1: %.2f, tp2: %.2f, relay: %d, "
+                 "signal: %d, relative_pressure: %.2f",
                  self->metric.common.mmhg, self->metric.common.tp1,
                  self->metric.common.tp2, self->metric.common.relay,
-                 self->metric.common.signal);
+                 self->metric.common.signal, self->metric.common.relative_pressure);
 
         if (telemetry["tp1_target"].is<float>())
         {
@@ -529,10 +591,10 @@ void RectificationProcess::update(void* pvParameters)
           ESP_LOGV("SsvcSettings", "Обновлен period: %d", self->metric.period);
         }
 
-        if (telemetry["tank_mmhg"].is<int>())
+        if (telemetry["tank_mmhg"].is<float>())
         {
-          self->metric.tank_mmhg = telemetry["tank_mmhg"].as<int>();
-          ESP_LOGV("SsvcSettings", "Обновлен tank_mmhg: %d",
+          self->metric.tank_mmhg = telemetry["tank_mmhg"].as<float>();
+          ESP_LOGI("SsvcSettings", "Обновлен tank_mmhg: %d",
                    self->metric.tank_mmhg);
         }
 
@@ -748,7 +810,7 @@ void RectificationProcess::writeTelemetryTo(const JsonVariant telemetry)
     telemetry["stop"] = metric.stop;
     telemetry["stops"] = metric.stops;
 
-    const JsonObject common = telemetry["common"].to<JsonObject>();
+    JsonObject common = telemetry["common"].to<JsonObject>();
     if (metric.common.mmhg)
     {
       common["mmhg"] = metric.common.mmhg;
@@ -773,6 +835,9 @@ void RectificationProcess::writeTelemetryTo(const JsonVariant telemetry)
     common["signal"] = metric.common.signal;
     common["heatingOn"] = isHeatingOn();
     common["overclockingOn"] = isOverclockingOn();
+    if (initial_pressure_set) {
+        common["relative_pressure"] = metric.common.relative_pressure;
+    }
 
 
     telemetry["hysteresis"] = metric.hysteresis;
@@ -805,7 +870,7 @@ void RectificationProcess::writeTelemetryTo(const JsonVariant telemetry)
 
 }
 
-bool RectificationProcess::getStatus(const JsonVariant status) {
+bool RectificationProcess::getStatus(JsonVariant status) {
   if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
 
     status["stage"] = stageToString(currentStage);

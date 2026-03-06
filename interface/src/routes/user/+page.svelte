@@ -104,14 +104,14 @@
 
 	function confirmDelete(index: number) {
 		modals.open(ConfirmDialog, {
-			title: 'Confirm Delete User',
+			title: 'Подтверждение удаления пользователя',
 			message:
-				'Are you sure you want to delete the user "' +
+				'Вы действительно хотите удалить пользователя "' +
 				securitySettings.users[index].username +
 				'"?',
 			labels: {
-				cancel: { label: 'Abort', icon: Cancel },
-				confirm: { label: 'Yes', icon: Check }
+				cancel: { label: 'Отмена', icon: Cancel },
+				confirm: { label: 'Да', icon: Check }
 			},
 			onConfirm: () => {
 				securitySettings.users.splice(index, 1);
@@ -157,7 +157,7 @@
 				<Users class="lex-shrink-0 mr-2 h-6 w-6 self-end" />
 			{/snippet}
 			{#snippet title()}
-				<span>Manage Users</span>
+				<span>Управление пользователями</span>
 			{/snippet}
 			{#await getSecuritySettings()}
 				<Spinner />
@@ -174,8 +174,8 @@
 						<table class="table w-full table-auto">
 							<thead>
 								<tr class="font-bold">
-									<th align="left">Username</th>
-									<th align="center">Admin</th>
+									<th align="left">Имя пользователя</th>
+									<th align="center">Администратор</th>
 									<th align="right" class="pr-8">Edit</th>
 								</tr>
 							</thead>
@@ -191,13 +191,13 @@
 										<td align="right">
 											<span class="my-auto inline-flex flex-row space-x-2">
 												<button
-													class="btn btn-ghost btn-circle btn-xs"
+													class="btn btn-ghost btn-xs"
 													onclick={() => handleEdit(index)}
 												>
 													<Edit class="h-6 w-6" /></button
 												>
 												<button
-													class="btn btn-ghost btn-circle btn-xs"
+													class="btn btn-ghost btn-xs"
 													onclick={() => confirmDelete(index)}
 												>
 													<Delete class="text-error h-6 w-6" />
@@ -212,19 +212,20 @@
 				</div>
 				<div class="divider mb-0"></div>
 
-				<span class="pb-2 text-xl font-medium">Security Settings</span>
+				<span class="pb-2 text-xl font-medium">Настройки безопасности</span>
 				<div class="alert alert-warning shadow-lg">
 					<Warning class="h-6 w-6 shrink-0" />
 					<span
-						>The JWT secret is used to sign authentication tokens. If you modify the JWT Secret, all
-						users will be signed out.</span
+						>Секрет JWT используется для подписи токенов аутентификации.
+						Если вы измените секрет JWT, все пользователи выйдут из системы.</span
+
 					>
 				</div>
 				<label class="label" for="secret">JWT Secret</label>
 				<InputPassword bind:value={securitySettings.jwt_secret} id="secret" />
 				<div class="mt-6 flex justify-end">
 					<button class="btn btn-primary" onclick={() => postSecuritySettings(securitySettings)}
-						>Apply Settings</button
+						>Применить</button
 					>
 				</div>
 			{/await}

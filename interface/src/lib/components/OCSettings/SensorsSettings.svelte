@@ -1,10 +1,12 @@
 <svelte:options runes />
 
 <script lang="ts">
-    import { fetchAlarmThresholds, fetchSensorsTemperatureByZone } from '$lib/api/ssvcApi';
-    import type {AlarmThresholdsState, TemperatureResponse} from '$lib/types/Sensors';
-    import { getZoneDescription } from '$lib/components/OCSettings/OSSettingsHelper';
-    import SensorCard from '$lib/components/OCSettings/SensorCard.svelte';
+	import { fetchAlarmThresholds, fetchSensorsTemperatureByZone } from '$lib/api/ssvcApi';
+	import type { AlarmThresholdsState, TemperatureResponse } from '$lib/types/Sensors';
+	import { getZoneDescription } from '$lib/components/OCSettings/OSSettingsHelper';
+	import SensorCard from '$lib/components/OCSettings/SensorCard.svelte';
+
+	const { sensorType = 'temperature' } = $props<{ sensorType: 'temperature' | 'pressure' }>();
 
 	let temperatureResponse: TemperatureResponse | null | undefined = $state();
 	let alarmThresholdsState: AlarmThresholdsState | null = $state(null); // <-- НОВОЕ СОСТОЯНИЕ
@@ -39,12 +41,16 @@
 		return new Date(timestamp).toLocaleTimeString();
 	};
 
-    const zoneEntries = $derived(
-        temperatureResponse
-            ? Object.entries(temperatureResponse)
-            : []
-    );
-
+	const zoneEntries = $derived(
+		temperatureResponse
+			? Object.entries(temperatureResponse).map(([zone, sensors]) => {
+					const filteredSensors = Object.entries(sensors).filter(
+						([, sensorData]) => sensorData.type === sensorType
+					);
+					return [zone, Object.fromEntries(filteredSensors)];
+				})
+			: []
+	);
 </script>
 
 {#if isLoading}
@@ -59,19 +65,22 @@
 {:else}
 	<div class="sensors-main-container">
 		{#each zoneEntries as [zone, sensors]}
-			<div class="zone-panel">
-				<h2 class="zone-title">
-					{zone === 'unknown' ? 'Неизвестная зона' : getZoneDescription(zone)}
-				</h2>
-                <div class="sensors-grid">
-                    {#each Object.entries(sensors) as [address, temp] (address)}
-                        <SensorCard
-                                sensor={{ address, temp }}
-                                {alarmThresholdsState} onUpdate={reloadSensors}
-                        />
-                    {/each}
-                </div>
-			</div>
+			{#if Object.keys(sensors).length > 0}
+				<div class="zone-panel">
+					<h2 class="zone-title">
+						{zone === 'unknown' ? 'Неизвестная зона' : getZoneDescription(zone)}
+					</h2>
+					<div class="sensors-grid">
+						{#each Object.entries(sensors) as [address, temp] (address)}
+							<SensorCard
+								sensor={{ address, data: temp }}
+								{alarmThresholdsState}
+								onUpdate={reloadSensors}
+							/>
+						{/each}
+					</div>
+				</div>
+			{/if}
 		{:else}
 			<div class="empty-state">
 				<p class="empty-text">Нет данных о датчиках</p>
@@ -79,4 +88,3 @@
 		{/each}
 	</div>
 {/if}
-

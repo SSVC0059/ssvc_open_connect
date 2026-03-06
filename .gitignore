@@ -15,7 +15,6 @@ node_modules
 /lib/framework/WWWData.h
 lib/framework/WWWData.h
 *WWWData.h
-lib/framework/WWWData.h
 ssl_certs/cacert.pem
 /logs
 interface/.idea/
@@ -26,3 +25,19 @@ site
 scripts/__pycache__
 package.json
 package-lock.json
+rectification_calculator.js
+tools/coredump.bin
+/interface/coverage/interface/src/lib/actions/DistillationCycleModel.ts.html
+/interface/coverage/interface/src/lib/actions/index.html
+/interface/coverage/interface/index.html
+/interface/coverage/interface/tests.html
+/interface/coverage/base.css
+/interface/coverage/block-navigation.js
+/interface/coverage/clover.xml
+/interface/coverage/coverage-final.json
+/interface/coverage/favicon.png
+/interface/coverage/index.html
+/interface/coverage/prettify.css
+/interface/coverage/prettify.js
+/interface/coverage/sort-arrow-sprite.png
+/interface/coverage/sorter.js

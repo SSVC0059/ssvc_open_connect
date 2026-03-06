@@ -40,7 +40,18 @@ void SensorDataState::read(const SensorDataState& state, const JsonObject& root)
             const std::string& address = sensor_pair.first;
             const float value = sensor_pair.second;
 
-            zone_obj[address.c_str()] = value;
+            auto sensorObj = zone_obj[address].to<JsonObject>();
+
+            sensorObj["v"] = value;
+
+            AbstractSensor::Address binAddr;
+            SensorManager::stringToAddress(address, binAddr);
+
+            // 3. Теперь передаем правильный тип в менеджер
+            const AbstractSensor* s = SensorManager::getInstance().getSensorByAddress(binAddr);
+            sensorObj["u"] = s ? s->getUnit() : "";
+            sensorObj["type"] = s ? s->getType() : "undefined";
+
         }
     }
 }

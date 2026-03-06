@@ -178,15 +178,10 @@ void WiFiSettingsService::manageSTA()
     {
         return;
     }
-
-    // Connect or reconnect as required
-    if ((WiFi.getMode() & WIFI_STA) == 0)
-    {
 #ifdef SERIAL_INFO
-        Serial.println("Connecting to WiFi...");
+    Serial.println("Connecting to WiFi...");
 #endif
-        connectToWiFi();
-    }
+    connectToWiFi();
 }
 
 void WiFiSettingsService::connectToWiFi()
@@ -326,7 +321,7 @@ void WiFiSettingsService::updateRSSI()
 
 void WiFiSettingsService::onStationModeDisconnected(WiFiEvent_t event, WiFiEventInfo_t info)
 {
-    WiFi.disconnect(true);
+    manageSTA();
 }
 
 void WiFiSettingsService::onStationModeStop(WiFiEvent_t event, WiFiEventInfo_t info)

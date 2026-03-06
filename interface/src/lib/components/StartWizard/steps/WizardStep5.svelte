@@ -13,19 +13,7 @@
 
 <div class="settings-block">
 	<h2 class="settings-title">Настройка отбора тела</h2>
-	<div class="settings-item">
-		<label class="input-label" for="heads">
-			Время отбора подголовников, с.
-		</label>
-		<TimeInput
-			bind:value={settings.late_heads_timer}
-			step={300}
-			min={0}
-			max={86399}
-		/>
-	</div>
-
-	<div class="settings-item">
+		<div class="settings-item">
 		<label class="input-label" for="tp2Correction">
 			Гистерезис, °С
 		</label>

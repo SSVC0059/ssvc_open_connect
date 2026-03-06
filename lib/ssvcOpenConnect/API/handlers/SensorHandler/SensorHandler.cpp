@@ -30,7 +30,7 @@ SensorHandler::SensorHandler() = default;
 
 esp_err_t SensorHandler::updateSensorZone(PsychicRequest* request)
 {
-    auto response = PsychicJsonResponse(request, false);
+    auto response = PsychicJsonResponse(request, true);
     const JsonObject root = response.getRoot();
 
     // Проверка обязательных параметров
@@ -42,7 +42,7 @@ esp_err_t SensorHandler::updateSensorZone(PsychicRequest* request)
     }
 
     // Получение параметров
-    const std::string address = request->getParam("address")->value().c_str();
+    const char* address = request->getParam("address")->value().c_str();
     const std::string zoneName = request->getParam("zone")->value().c_str();
 
     // 1. Создание переменной для 8-байтового адреса (не используется для вызова сервиса, но необходима для проверки формата)

@@ -51,12 +51,12 @@ public:
         }
     }
 
-    void setSettingsService(OpenConnectSettingsService& service) {
-        _settingsService = &service;
+    void setSettingsService(SsvcMqttSettingsService& service) {
+        _ssvcMqttSettingsService = &service;
     }
 
 private:
-    OpenConnectSettingsService* _settingsService = nullptr;
+    SsvcMqttSettingsService* _ssvcMqttSettingsService = nullptr;
     bool _initialized = false;
     bool _enabled = false; // Отдельный флаг для состояния вкл/выкл
 

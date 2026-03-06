@@ -9,9 +9,10 @@
   /* Десктопная навигация */
   .tabs-nav {
     display: flex;
-    justify-content: space-between; /* Распределить пространство */
+    justify-content: flex-start; /* Распределить пространство */
     align-items: flex-end; /* Выравнивание по нижнему краю */
     padding-bottom: 0.5rem;
+    gap: 2rem;
 
     @media (max-width: 768px) {
       display: none;

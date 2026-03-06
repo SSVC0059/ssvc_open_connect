@@ -1,20 +1,4 @@
 #include "HandlerRegistrator.h"
-/**
-*   SSVC Open Connect
- *
- *   A firmware for ESP32 to interface with SSVC 0059 distillation controller
- *   via UART protocol. Features a responsive SvelteKit web interface for
- *   monitoring and controlling the distillation process.
- *   https://github.com/SSVC0059/ssvc_open_connect
- *
- *   Copyright (C) 2024 SSVC Open Connect Contributors
- *
- *   This software is independent and not affiliated with SSVC0059 company.
- *   All Rights Reserved. This software may be modified and distributed under
- *   the terms of the LGPL v3 license. See the LICENSE file for details.
- *
- *   Disclaimer: Use at your own risk. High voltage safety precautions required.
- **/
 
 #define TAG "HandlerRegistrar"
 
@@ -25,7 +9,9 @@ HandlerRegistrator::HandlerRegistrator(PsychicHttpServer& server,
                                  SensorHandler& sensorHandler,
                                  TelegramBotHandler& telegramBot,
                                  SubsystemHandler& subsystemHandler,
-                                 OpenConnectHandler& openConnectHandler)
+                                 OpenConnectHandler& openConnectHandler,
+                                 ProfileHandler& profileHandler,
+                                 FileHandler& fileHandler)
     : _server(server),
       _securityManager(securityManager),
       _settingsHandler(settingsHandler),
@@ -33,7 +19,9 @@ HandlerRegistrator::HandlerRegistrator(PsychicHttpServer& server,
       _sensorHandler(sensorHandler),
       _telegramBot(telegramBot),
       _subsystemHandler(subsystemHandler),
-      _openConnectHandler(openConnectHandler)
+      _openConnectHandler(openConnectHandler),
+      _profileHandler(profileHandler),
+      _fileHandler(fileHandler)
 {}
 
 void HandlerRegistrator::registerAllHandlers() const
@@ -46,6 +34,8 @@ void HandlerRegistrator::registerAllHandlers() const
     registerTelegramBot();
     registerSubsystemHandler();
     registerTelegramBotHandler();
+    registerProfileHandler();
+    registerFileHandler();
 
     ESP_LOGI(TAG, "All HTTP handlers registered successfully");
 }
@@ -58,6 +48,13 @@ void HandlerRegistrator::registerSettingsHandlers() const
                       return SettingsHandler::updateSettings(request);
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/settings", HTTP_GET,
+      _securityManager->wrapRequest(
+          [](PsychicRequest* request) {
+              return SettingsHandler::getSettings(request);
+          },
+          AuthenticationPredicates::IS_AUTHENTICATED));
 }
 
 void HandlerRegistrator::registerCommandHandlers() const
@@ -129,4 +126,73 @@ void HandlerRegistrator::registerTelegramBotHandler() const
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
 
+}
+
+void HandlerRegistrator::registerProfileHandler() const
+{
+    // GET /rest/profiles - Get list of all profiles (metadata)
+    _server.on("/rest/profiles", HTTP_GET,
+                _securityManager->wrapRequest(
+                        [](PsychicRequest* request) -> esp_err_t {
+                            return ProfileHandler::handleGetProfiles(request);
+                        }, AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // GET /rest/profiles/active - Get the ID of the active profile
+    _server.on("/rest/profiles/active", HTTP_GET,
+                _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
+                    return ProfileHandler::handleGetActiveProfile(request);
+        }, AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // GET /rest/profiles/content - Get full content of a specific profile (ID in query param)
+    _server.on("/rest/profiles/content", HTTP_GET,
+                _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
+                    return ProfileHandler::handleGetProfileContent(request);
+                }, AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // POST /rest/profiles - Create a profile from current settings
+    _server.on("/rest/profiles", HTTP_POST,
+                _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
+                    return ProfileHandler::handleCreateProfile(request);
+                }, AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // POST /rest/profiles/copy - Copy a profile (source ID and new name in body)
+    _server.on("/rest/profiles/copy", HTTP_POST,
+                _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
+                    return ProfileHandler::handleCopyProfile(request);
+                }, AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // PUT /rest/profiles/meta - Update profile metadata (e.g., name) (ID and new name in body)
+    _server.on("/rest/profiles/meta", HTTP_PUT,
+        _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
+            return ProfileHandler::handleUpdateProfileMeta(request);
+        }, AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // POST /rest/profiles/set-active - Set a profile as active and apply it (ID in body)
+    _server.on("/rest/profiles/set-active", HTTP_POST,
+        _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
+            return ProfileHandler::handleSetActiveAndApplyProfile(request);
+        }, AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // POST /rest/profiles/save - Save current settings to a profile (ID in body)
+    _server.on("/rest/profiles/save", HTTP_POST,
+        _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
+            return ProfileHandler::handleSaveSettingsToProfile(request);
+        }, AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // DELETE /rest/profiles/delete - Delete a profile (ID in body)
+    _server.on("/rest/profiles/delete", HTTP_DELETE,
+            _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
+                return ProfileHandler::handleDeleteProfile(request);
+            }, AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // POST /rest/profiles/content - Update profile content
+    _server.on("/rest/profiles/content", HTTP_POST,
+            _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
+                return ProfileHandler::handleUpdateProfileContent(request);
+            }, AuthenticationPredicates::IS_AUTHENTICATED));
+}
+
+void HandlerRegistrator::registerFileHandler() const
+{
+    _fileHandler.registerHandlers(_server, _securityManager);
 }

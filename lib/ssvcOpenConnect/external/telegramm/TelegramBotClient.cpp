@@ -1,22 +1,9 @@
 #include "TelegramBotClient.h"
 
-/**
- *   SSVC Open Connect
- *
- *   A firmware for ESP32 to interface with SSVC 0059 distillation controller
- *   via UART protocol. Features a responsive SvelteKit web interface for
- *   monitoring and controlling the distillation process.
- *   https://github.com/SSVC0059/ssvc_open_connect
- *
- *   Copyright (C) 2024 SSVC Open Connect Contributors
- *
- *   This software is independent and not affiliated with SSVC0059 company.
- *   All Rights Reserved. This software may be modified and distributed under
- *   the terms of the LGPL v3 license. See the LICENSE file for details.
- *   
- *   Disclaimer: Use at your own risk. High voltage safety precautions required.
- **/
-
+TelegramBotClient& TelegramBotClient::bot() {
+    static TelegramBotClient instance;
+    return instance;
+}
 
 TelegramBotClient::TelegramBotClient() = default;
 
@@ -30,7 +17,7 @@ String TelegramBotClient::createControlKeyboard() const {
         // Можно добавить дополнительные кнопки, например:
         // keyboard.addButton("🔄 Перезапустить", "/rect_restart");
     }
-    return ""; // Возвращаем пустую строку, если кнопки не нужны
+    return "";
 }
 
 void TelegramBotClient::initTelemetryTaskSender()
@@ -56,10 +43,16 @@ TelegramBotClient::~TelegramBotClient() {
 }
 
 
-bool TelegramBotClient::init() {
+bool TelegramBotClient::init(TelegramSettingsService* settingsService) {
     if (_initialized) {
         ESP_LOGW("TelegramBotClient", "Already initialized");
         return true;
+    }
+
+    _settingsService = settingsService;
+    if (!_settingsService) {
+        ESP_LOGE("TelegramBotClient", "Settings service is not provided!");
+        return false;
     }
 
     vTaskDelay(pdMS_TO_TICKS(10000));
@@ -71,20 +64,14 @@ bool TelegramBotClient::init() {
     }
 
     ESP_LOGI("TelegramBotClient", "Initializing TelegramBotClient");
-    {
-        token = GlobalConfig::config().get<String>(bootName, "token", "");
-        _bot.setToken(token.c_str());
-    }
 
-    {
-        chatID = GlobalConfig::config().get<int64_t>(bootName, "chat_id", 0);
-        ESP_LOGI("TelegramBotClient", "Chat ID: %lld", chatID);
-    }
+    _settingsService->read([this](const TelegramSettings& settings) {
+        this->token = settings.botToken;
+        this->chatID = settings.chatId.toInt();
+    });
 
-    // _bot.setLimit(MESSAGE_LIMIT_BY_UPDATE);
-    // ESP_LOGD("TelegramBotClient", "setPollMode");
-    // _bot.setPollMode(fb::Poll::Long, 20000);
-    // _bot.tick();
+    _bot.setToken(token.c_str());
+    ESP_LOGI("TelegramBotClient", "Chat ID: %lld", chatID);
 
     sendHello();
 
@@ -137,14 +124,13 @@ void TelegramBotClient::statusMessageSender(void* params) {
                 }
             } catch (...) {
                 ESP_LOGE("TelegramBotClient", "Exception in statusMessageSender");
-                vTaskDelay(pdMS_TO_TICKS(1000)); // Пауза перед повторной попыткой
+                vTaskDelay(pdMS_TO_TICKS(1000));
             }
         }
     }
 }
 
 void TelegramBotClient::updateSensorInfo() {
-    // 1. Получаем экземпляр сервиса данных датчиков
     SensorDataService* sensorService = SensorDataService::getInstance();
 
     if (sensorService == nullptr) {
@@ -157,31 +143,23 @@ void TelegramBotClient::updateSensorInfo() {
 
     sensorService->read([&](const SensorDataState& currentState) {
 
-        // Проверяем, есть ли вообще данные
         if (currentState.readings_by_zone.empty()) {
             cachedStatus.sensorZones.clear();
-            return; // Выходим из лямбды, если нет данных
+            return;
         }
 
-        // Временная структура для сравнения и хранения новых данных
-        // Использовать 'value' вместо 'temperature' для обобщения
         std::map<std::string, std::vector<std::string>> newSensorZones;
         bool dataChanged = false;
 
-        // 3. Итерируем по данным, сгруппированным по зонам
         for (const auto& zonePair : currentState.readings_by_zone) {
             const SensorZone zone = zonePair.first;
             const auto& readings = zonePair.second;
-
-            // Получаем переведенное название зоны
             const std::string zoneName = SensorZoneHelper::toString(zone);
-
-            // Создаем список для текстовых строк датчиков в этой зоне
             std::vector<std::string> sensorTexts;
 
             for (auto it = readings.rbegin(); it != readings.rend(); ++it) {
-                const std::string& address = it->first; // Адрес датчика не используется в выводе
-                const float sensorValue = it->second; // Использовать 'sensorValue' вместо 'temperature'
+                const std::string& address = it->first;
+                const float sensorValue = it->second;
 
                 std::string shortAddress;
                 if (address.length() > 4) {
@@ -202,18 +180,16 @@ void TelegramBotClient::updateSensorInfo() {
             }
         }
 
-        // 5. Проверяем, изменились ли данные по сравнению с кэшем
         if (cachedStatus.sensorZones.size() != newSensorZones.size() || cachedStatus.sensorZones != newSensorZones) {
             dataChanged = true;
         }
 
-        // 6. Обновляем кэш, только если есть изменения
         if (dataChanged) {
             cachedStatus.sensorZones = std::move(newSensorZones);
             cachedStatus.lastUpdateTime = millis();
         }
 
-    }); // Нет необходимости в originId для метода read()
+    });
 }
 
 void TelegramBotClient::initializeMessageStructure() {
@@ -269,9 +245,9 @@ void TelegramBotClient::updateRectificationInfo() {
     localtime_r(&now, &timeInfo);
 
     char time_buffer[64];
-    strftime(time_buffer, sizeof(time_buffer), "%d.%m.%Y %H:%M:%S", &timeInfo);  // Форматируем
+    strftime(time_buffer, sizeof(time_buffer), "%d.%m.%Y %H:%M:%S", &timeInfo);
 
-    buffer << "Время обновления: <b>" << time_buffer << "</b>\n\n";  // Можно изменить формат вывода
+    buffer << "Время обновления: <b>" << time_buffer << "</b>\n\n";
 
     if (hasTypeData || !lastValidData.type.empty()) {
         buffer << "<b>"
@@ -332,14 +308,15 @@ std::string TelegramBotClient::createStatusMessage() {
 }
 
 
-bool TelegramBotClient::setBotToken(const String& botToken) const
-{
-    if (botToken != "")
-    {
-        GlobalConfig::config().set(bootName, "token", botToken);
-        return true;
+void TelegramBotClient::setBotToken(const String& botToken) {
+    if (botToken != "" && _settingsService) {
+        _settingsService->update([&](TelegramSettings& settings) {
+            settings.botToken = botToken;
+            return StateUpdateResult::CHANGED;
+        }, "api");
+        this->token = botToken;
+        _bot.setToken(this->token.c_str());
     }
-    return false;
 }
 
 String TelegramBotClient::getBotToken() const
@@ -349,9 +326,13 @@ String TelegramBotClient::getBotToken() const
 
 void TelegramBotClient::setChatID (const int64_t _chatID)
 {
-    GlobalConfig::config().set<int64_t>(bootName, "chat_id", _chatID);
-    ESP_LOGD("TelegramBotClient", "setChatID: %lld", _chatID);
-    chatID = _chatID;
+    if (_chatID != 0 && _settingsService) {
+        _settingsService->update([&](TelegramSettings& settings) {
+            settings.chatId = String(_chatID);
+            return StateUpdateResult::CHANGED;
+        }, "api");
+        this->chatID = _chatID;
+    }
 }
 
 int64_t TelegramBotClient::getChatId() const
@@ -366,7 +347,6 @@ void TelegramBotClient::setPullMode(int _pullMode)
 
 uint32_t TelegramBotClient::sendMessage(const std::string& message)
 {
-
     fb::Message msg;
     msg.mode = fb::Message::Mode::HTML;
     msg.text = message.c_str();
@@ -414,8 +394,6 @@ void TelegramBotClient::sendHello() {
     }else {
         msgText << "🔌 <b>Версия API не загружена";
     }
-
-
 
     msgText << "🖥️ <b>Адрес:</b> http://" << WiFi.localIP().toString().c_str() << "\n";
 

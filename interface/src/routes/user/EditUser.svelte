@@ -75,7 +75,7 @@
 				onsubmit={preventDefault(handleSave)}
 				novalidate
 			>
-				<label class="label" for="username">Username</label>
+				<label class="label" for="username">Имя пользователя</label>
 				<input
 					type="text"
 					min="3"
@@ -87,14 +87,14 @@
 				/>
 				<label for="username" class="label"
 					><span class="text-error {errorUsername ? '' : 'hidden'}"
-						>Username must be between 3 and 32 characters long</span
+						>Имя пользователя должно содержать от 3 до 32 символов.</span
 					></label
 				>
-				<label class="label" for="pwd">Password </label>
+				<label class="label" for="pwd">Пароль </label>
 				<InputPassword bind:value={user.password} id="pwd" />
 				<label class="label my-auto cursor-pointer justify-start gap-4 mt-4">
 					<input type="checkbox" bind:checked={user.admin} class="checkbox checkbox-primary" />
-					<span class="">Is Admin?</span>
+					<span class="">Администратор</span>
 				</label>
 				<div class="divider my-2"></div>
 				<div class="flex justify-end gap-2">
@@ -105,11 +105,11 @@
 						}}
 						type="button"
 					>
-						<Cancel class="mr-2 h-5 w-5" /><span>Cancel</span></button
+						<Cancel class="mr-2 h-5 w-5" /><span>Отмена</span></button
 					>
 					<button
 						class="btn btn-primary text-primary-content inline-flex items-center"
-						type="submit"><Save class="mr-2 h-5 w-5" /><span>Save</span></button
+						type="submit"><Save class="mr-2 h-5 w-5" /><span>Сохранить</span></button
 					>
 				</div>
 			</form>

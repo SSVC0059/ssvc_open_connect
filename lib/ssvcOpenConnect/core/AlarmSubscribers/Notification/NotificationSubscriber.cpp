@@ -1,6 +1,19 @@
-//
-// Created by Admin on 16/10/2025.
-//
+/**
+*   SSVC Open Connect
+ *
+ *   A firmware for ESP32 to interface with SSVC 0059 distillation controller
+ *   via UART protocol. Features a responsive SvelteKit web interface for
+ *   monitoring and controlling the distillation process.
+ *   https://github.com/SSVC0059/ssvc_open_connect
+ *
+ *   Copyright (C) 2024 SSVC Open Connect Contributors
+ *
+ *   This software is independent and not affiliated with SSVC0059 company.
+ *   All Rights Reserved. This software may be modified and distributed under
+ *   the terms of the LGPL v3 license. See the LICENSE file for details.
+ *
+ *   Disclaimer: Use at your own risk. High voltage safety precautions required.
+ **/
 
 #include "NotificationSubscriber.h"
 
@@ -67,7 +80,6 @@ void NotificationSubscriber::reAlarmTimerAction() const
     sendNotification(currentEvent);
 }
 
-
 void NotificationSubscriber::onAlarm(const AlarmEvent& event) {
     const bool eventIsAlarm = event.level != AlarmLevel::NORMAL;
 
@@ -77,7 +89,7 @@ void NotificationSubscriber::onAlarm(const AlarmEvent& event) {
             "ReAlarmTimer",
             RE_NOTIFICATION_INTERVAL_MS,
             pdTRUE, // pdTRUE для периодического
-            (void*)this, // <-- ИЗМЕНЕНИЕ: Передаем указатель на ЭТОТ объект
+            (void*)this,
             reAlarmTimerCallback
         );
         ESP_LOGI(TAG, "ReAlarmTimer created.");
@@ -120,30 +132,32 @@ void NotificationSubscriber::onAlarm(const AlarmEvent& event) {
     }
 }
 
-// Статическая функция-коллбэк таймера
 void NotificationSubscriber::reAlarmTimerCallback(TimerHandle_t xTimer) {
-    // Получаем указатель на экземпляр NotificationSubscriber
-    const auto* self = static_cast<NotificationSubscriber*>(pvTimerGetTimerID(xTimer));
+    auto* self = static_cast<NotificationSubscriber*>(pvTimerGetTimerID(xTimer));
+    if (!self || !self->_isAlarmActive) return;
 
-    if (self->_isAlarmActive) {
-        // --- ИСПРАВЛЕНИЕ: Получаем текущее значение из датчика ---
-        // Используем getData() для получения актуального, последнего считанного значения
-        const float current_value = self->_lastActiveAlarm.sensor->getData();
+    const float current_value = self->_lastActiveAlarm.sensor->getData();
+    const float threshold = self->_lastActiveAlarm.threshold_value;
+    const AlarmLevel level = self->_lastActiveAlarm.level;
 
-        // 1. Создаем временное событие, копируя кэшированную тревогу
-        AlarmEvent currentEvent = self->_lastActiveAlarm;
-        // Обновляем значение на актуальное
-        currentEvent.current_value = current_value;
+    // Если текущее значение больше не нарушает порог, который вызвал эту тревогу
+    // Проверяем, нарушен ли порог
+    const bool still_violating = (
+        (level == AlarmLevel::MIN && current_value <= threshold) ||
+        ((level == AlarmLevel::DANGEROUS || level == AlarmLevel::CRITICAL) && current_value >= threshold)
+    );
 
-        ESP_LOGW(self->TAG, "Re-notification triggered by timer for sensor %s. Actual value: %.2f C (Cached: %.2f C).",
-                 currentEvent.sensor->getName().c_str(), currentEvent.current_value, self->_lastActiveAlarm.current_value);
-
-        // 2. Отправляем уведомление с актуальным значением
-        self->sendNotification(currentEvent);
-
-        // _lastActiveAlarm остается неизменным до тех пор, пока AlarmMonitor
-        // не пришлет событие AlarmLevel::NORMAL, что является правильным поведением.
+    if (!still_violating) {
+        ESP_LOGI(self->TAG, "Timer check: Sensor %s recovered (Val: %.2f). Stopping timer.",
+                 self->_lastActiveAlarm.sensor->getName().c_str(), current_value);
+        self->_isAlarmActive = false;
+        xTimerStop(xTimer, 0);
+        return;
     }
+
+    AlarmEvent currentEvent = self->_lastActiveAlarm;
+    currentEvent.current_value = current_value;
+    self->sendNotification(currentEvent);
 }
 
 void NotificationSubscriber::sendNotification(const AlarmEvent& event) const

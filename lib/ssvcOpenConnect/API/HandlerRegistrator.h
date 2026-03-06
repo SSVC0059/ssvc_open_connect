@@ -1,23 +1,6 @@
 #ifndef HANDLER_REGISTRAR_H
 #define HANDLER_REGISTRAR_H
 
-/**
-*   SSVC Open Connect
- *
- *   A firmware for ESP32 to interface with SSVC 0059 distillation controller
- *   via UART protocol. Features a responsive SvelteKit web interface for
- *   monitoring and controlling the distillation process.
- *   https://github.com/SSVC0059/ssvc_open_connect
- *
- *   Copyright (C) 2024 SSVC Open Connect Contributors
- *
- *   This software is independent and not affiliated with SSVC0059 company.
- *   All Rights Reserved. This software may be modified and distributed under
- *   the terms of the LGPL v3 license. See the LICENSE file for details.
- *
- *   Disclaimer: Use at your own risk. High voltage safety precautions required.
- **/
-
 #include "PsychicHttp.h"
 #include "SecurityManager.h"
 
@@ -27,6 +10,8 @@
 #include "handlers/OpenConnectHandler/OpenConnectHandler.h"
 #include "handlers/SubsystemHandler/SubsystemHandler.h"
 #include "handlers/TelegramBot/TelegramBotHandler.h"
+#include "handlers/ProfileHandler/ProfileHandler.h"
+#include "handlers/FileHandler/FileHandler.h"
 
 class HandlerRegistrator {
 public:
@@ -37,7 +22,9 @@ public:
                     SensorHandler& sensorHandler,
                     TelegramBotHandler& telegramBot,
                     SubsystemHandler& subsystemHandler,
-                    OpenConnectHandler& openConnectHandler);
+                    OpenConnectHandler& openConnectHandler,
+                    ProfileHandler& profileHandler,
+                    FileHandler& fileHandler);
 
     void registerAllHandlers() const;
 
@@ -45,13 +32,14 @@ private:
     PsychicHttpServer& _server;
     SecurityManager* _securityManager;
 
-    // Ссылки на обработчики
     SettingsHandler& _settingsHandler;
     CommandHandler& _commandHandler;
     SensorHandler& _sensorHandler;
     TelegramBotHandler& _telegramBot;
     SubsystemHandler& _subsystemHandler;
     OpenConnectHandler& _openConnectHandler;
+    ProfileHandler& _profileHandler;
+    FileHandler& _fileHandler;
 
     void registerSettingsHandlers() const;
     void registerCommandHandlers() const;
@@ -59,6 +47,8 @@ private:
     void registerTelegramBot() const;
     void registerSubsystemHandler() const;
     void registerTelegramBotHandler() const;
+    void registerProfileHandler() const;
+    void registerFileHandler() const;
 };
 
 #endif

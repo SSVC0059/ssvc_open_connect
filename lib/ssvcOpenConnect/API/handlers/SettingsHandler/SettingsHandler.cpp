@@ -19,6 +19,15 @@
 
 SettingsHandler::SettingsHandler() = default;
 
+esp_err_t SettingsHandler::getSettings(PsychicRequest *request) {
+    auto response = PsychicJsonResponse(request, false);
+    const auto root = response.getRoot();
+
+    const auto ssvcSettings = root["ssvcSettings"].to<JsonVariant>();
+    SsvcSettings::init().fillSettings(ssvcSettings);
+    return response.send();
+}
+
 esp_err_t SettingsHandler::updateSettings(PsychicRequest* request)
 {
     ESP_LOGD(TAG, "Received updateSettings request.");

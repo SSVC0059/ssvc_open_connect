@@ -21,6 +21,7 @@
 #include <climits>
 #include <map>
 #include <memory>
+#include <vector>
 #include <WString.h>
 #include "ArduinoJson.h"
 
@@ -295,6 +296,61 @@ public:
     }
 
     _setter(builder, boolValue);
+    return true;
+  }
+
+private:
+  Setter _setter;
+};
+
+// Обработчик для параметров вида [[float, float, int], [float, float, int], ...]
+class ArrayOfFloatFloatIntHandler final : public ParamHandler
+{
+public:
+  struct Values
+  {
+    float f1;
+    float f2;
+    int i1;
+  };
+
+  using Setter =
+      std::function<void(SsvcSettings::Builder&, const std::vector<Values>&)>;
+
+  explicit ArrayOfFloatFloatIntHandler(Setter setter) : _setter(std::move(setter))
+  {
+  }
+
+  bool handle(SsvcSettings::Builder& builder,
+              const JsonVariant& value) const override
+  {
+    if (!value.is<JsonArray>())
+      return false;
+
+    const JsonArray& arr = value.as<JsonArray>();
+    if (arr.size() > 4)
+    {
+      ESP_LOGE("ArrayOfFloatFloatIntHandler",
+               "Array size %d exceeds maximum of 4.", arr.size());
+      return false;
+    }
+
+    std::vector<Values> values;
+    for (const auto& item : value.as<JsonArray>())
+    {
+      if (!item.is<JsonArray>() || item.size() != 3 || !item[0].is<float>() ||
+          !item[1].is<float>() || !item[2].is<int>())
+      {
+        ESP_LOGE("ArrayOfFloatFloatIntHandler",
+                 "Invalid item in array: %s. Expected [float, float, int].",
+                 item.as<String>().c_str());
+        return false;
+      }
+      values.push_back({item[0].as<float>(), item[1].as<float>(),
+                        item[2].as<int>()});
+    }
+
+    _setter(builder, values);
     return true;
   }
 

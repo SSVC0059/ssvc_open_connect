@@ -104,7 +104,6 @@
 		});
 
 </script>
-
 <div class="telemetry-container">
 	<div class="status-bar">
 		<div class="status-left">
@@ -140,7 +139,6 @@
 						<div class="sensor-readings ">
 							<h3 class="section-title">Данные датчиков</h3>
 							{#if telemetry}
-								<h5 class="section-title">SSVC</h5>
 								<div class="readings-list">
 									<div class="reading-item">
 										<span class="reading-label">Колонна</span>
@@ -363,6 +361,10 @@
       height: 81vh;
       box-sizing: border-box;;
 
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+
       &.panel {
         margin-bottom: auto;
 
@@ -377,20 +379,38 @@
       }
 
       .controls-container {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
+				display: flex;
+				flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+				gap: 1rem; // Чтобы между датчиками и кнопкой был отступ
 
-        .sensor-readings {
-          @include parameter-container;
-        }
-      }
+				.sensor-readings {
+					flex: 1; // Датчики забирают всё свободное место
+					min-height: 0; // Важно для работы flex-скролла
+					display: flex;
+					flex-direction: column;
+					@include parameter-container;
+				}
 
-      .parameters-readings {
-        @include parameter-container;
-        margin-top: auto; // Гарантированно прижимает к низу
-      }
+				// Сделаем скроллбар аккуратным и тонким
+				&::-webkit-scrollbar {
+					width: 4px;
+				}
+				&::-webkit-scrollbar-thumb {
+					background: var(--primary-500);
+					border-radius: 10px;
+				}
+				&::-webkit-scrollbar-track {
+					background: rgba(0, 0, 0, 0.05);
+				}
+			}
 
-    }
-  }
+			.parameters-readings {
+				@include parameter-container;
+				margin-top: auto; // Гарантированно прижимает к низу
+			}
+
+				}
+  		}
 </style>

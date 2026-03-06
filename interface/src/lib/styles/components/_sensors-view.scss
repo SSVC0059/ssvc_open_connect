@@ -4,10 +4,10 @@
 /* ===== КОНТЕЙНЕР ДЛЯ ВСЕЙ СТРАНИЦЫ СЕНСОРОВ (.sensors-main-container) ===== */
 .sensors-main-container {
   margin: 0 auto;
-  padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  width: 100%;
 }
 
 /* ===== ПАНЕЛЬ ЗОНЫ (.zone-panel) ===== */
@@ -32,14 +32,11 @@
 /* ===== СЕТКА ДЛЯ КАРТОЧЕК СЕНСОРОВ (.sensors-grid) ===== */
 .sensors-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1.5rem;
   padding: 1rem;
 
   @media (min-width: 640px) {
-    // Увеличение минимальной ширины с 300px до 350px или 400px
-    // приведет к уменьшению количества колонок и увеличению ширины каждой карточки.
-    grid-template-columns: repeat(auto-fit, minmax(60rem, 1fr));
     gap: 1.5rem;
   }
 }

@@ -20,11 +20,12 @@
 
 #include "map"
 #include "ArduinoJson.h"
-#include "core/StatefulServices/OpenConnectSettingsService/OpenConnectSettings.h"
 #include "core/SsvcCommandsQueue.h"
 #include "core/SsvcConnector.h"
 #include "core/SsvcSettings/SsvcSettings.h"
 #include <Arduino.h>
+
+#include "core/StatefulServices/OpenConnectSettingsService/ssvcMqttSettings.h"
 
 #define TEMP_GRAPH_ARRAY_SIZE 720
 #define PERIOD_GRAPH_SEC 20
@@ -49,11 +50,12 @@ public:
 
   struct Common
   {
-    unsigned int mmhg;
+    float mmhg;
     float tp1;
     float tp2;
     bool relay;
     bool signal;
+    float relative_pressure;
   };
 
   enum class RectificationEvent
@@ -82,7 +84,7 @@ public:
     std::string time;
     float open;
     unsigned int period;
-    unsigned int tank_mmhg;
+    float tank_mmhg;
     float tp1_sap;
     float tp2_sap;
     float hysteresis;
@@ -121,11 +123,11 @@ public:
 
 
   void begin(SsvcConnector& connector, SsvcSettings& settings,
-                 OpenConnectSettingsService& openConnectSettingsService);
+                 SsvcMqttSettingsService& ssvcMqttSettingsService);
 
 
   void writeTelemetryTo(JsonVariant telemetry);
-  bool getStatus(const JsonVariant status);
+  bool getStatus(JsonVariant status);
 
   static std::string translateRectificationStage(const std::string& stageStr);
 
@@ -137,7 +139,11 @@ private:
   // Приватный конструктор
   RectificationProcess();
 
+  float initial_pressure;
+  bool initial_pressure_set;
+
   static void update(void* pvParameters);
+  [[noreturn]] static void pressureSenderTask(void* pvParameters);
 
   int pid;
   boolean pidChecked = false; // флаг проверки PID
@@ -159,7 +165,7 @@ private:
 
   SsvcConnector* _ssvcConnector;
   SsvcSettings* _ssvcSettings;
-  OpenConnectSettingsService* _openConnectSettingsService;
+  SsvcMqttSettingsService* _ssvcMqttSettingsService;
   static RectificationProcess* _rectificationProcess;
 
   static RectificationStage

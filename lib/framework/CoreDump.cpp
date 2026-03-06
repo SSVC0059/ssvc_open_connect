@@ -37,60 +37,32 @@ void CoreDump::begin()
     ESP_LOGV("CoreDump", "Registered GET endpoint: %s", CORE_DUMP_SERVICE_PATH);
 }
 
-esp_err_t CoreDump::coreDump(PsychicRequest *request)
-{
-    size_t coredump_addr;
-    size_t coredump_size;
-    esp_err_t err = esp_core_dump_image_get(&coredump_addr, &coredump_size);
-    if (err != ESP_OK)
-    {
-        request->reply(500, "application/json", "{\"status\":\"error\",\"message\":\"core dump not available\"}");
-        return err;
-    }
-    size_t const chunk_len = 3 * 16; // must be multiple of 3
-    size_t const b64_len = chunk_len / 3 * 4 + 4;
-    uint8_t *const chunk = (uint8_t *)malloc(chunk_len);
-    char *const b64 = (char *)malloc(b64_len);
-    assert(chunk && b64);
-
-    /*if (write_cfg->start) {
-        if ((err = write_cfg->start(write_cfg->priv)) != ESP_OK) {
-            return err;
-        }
-    }*/
-
-    ESP_LOGI(SVK_TAG, "Coredump is %u bytes", coredump_size);
+esp_err_t CoreDump::coreDump(PsychicRequest* request) {
     httpd_resp_set_status(request->request(), "200 OK");
     PsychicResponse response(request);
     response.setCode(200);
     response.setContentType("application/octet-stream");
+    response.addHeader("Content-Disposition", "attachment;filename=core.bin");
     response.sendHeaders();
-    for (size_t offset = 0; offset < coredump_size; offset += chunk_len)
-    {
-        uint const read_len = MIN(chunk_len, coredump_size - offset);
-        if (esp_flash_read(esp_flash_default_chip, chunk, coredump_addr + offset, read_len))
-        {
-            ESP_LOGE(SVK_TAG, "Coredump read failed");
-            break;
-        }
-        err = response.sendChunk(chunk, read_len);
-        if (err != ESP_OK)
-        {
-            break;
-        }
-    }
-    free(chunk);
-    free(b64);
 
-    err = response.finishChunking();
+    esp_partition_iterator_t partition_iterator = esp_partition_find(
+        ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, "coredump");
 
-    /*uint32_t sec_num = coredump_size / SPI_FLASH_SEC_SIZE;
-    if (coredump_size % SPI_FLASH_SEC_SIZE) {
-        sec_num++;
+    const esp_partition_t* partition = esp_partition_get(partition_iterator);
+
+    int file_size = 65536;
+    int chunk_size = 1024;
+    int i = 0;
+    for (i = 0; i < (file_size / chunk_size); i++) {
+        uint8_t store_data[chunk_size];
+        ESP_ERROR_CHECK(esp_partition_read(partition, i * chunk_size, store_data, chunk_size));
+        response.sendChunk(store_data, chunk_size);
     }
-    err = esp_flash_erase_region(esp_flash_default_chip, coredump_addr, sec_num * SPI_FLASH_SEC_SIZE);
-    if (err != ESP_OK) {
-        ESP_LOGE(SVK_TAG, "Failed to erase coredump (%d)!", err);
-    }*/
-    return err;
+    uint16_t pending_size = file_size - (i * chunk_size);
+    uint8_t pending_data[pending_size];
+    if (pending_size > 0) {
+        ESP_ERROR_CHECK(esp_partition_read(partition, i * chunk_size, pending_data, pending_size));
+        response.sendChunk(pending_data, pending_size);
+    }
+    return response.finishChunking();
 }

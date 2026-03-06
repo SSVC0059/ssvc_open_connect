@@ -17,15 +17,14 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
-Adafruit_NeoPixel led(1, DEFAULT_STATUS_LED_PIN, NEO_GRB + NEO_KHZ800);
-
 StatusLed::StatusLed(ESP32SvelteKit *esp32sveltekit)
     : _esp32sveltekit(esp32sveltekit) {}
 
-void StatusLed::begin() {
+void StatusLed::begin(uint16_t neoPixelType) {
+  _led = new Adafruit_NeoPixel(1, DEFAULT_STATUS_LED_PIN, neoPixelType + NEO_KHZ800);
 
-  led.begin();
-  led.setBrightness(20);
+  _led->begin();
+  _led->setBrightness(20);
 
   //    Запуск задачи отслеживания текущего статуса подключения
 
@@ -46,23 +45,25 @@ void StatusLed::begin() {
 [[noreturn]] void StatusLed::checkStatus(void *pvParameters) {
   auto *self = static_cast<StatusLed *>(pvParameters);
   while (true) {
-    ConnectionStatus currentStatus =
-        self->_esp32sveltekit->getConnectionStatus();
-    ESP_LOGV("StatusLed,", "current status: %d", currentStatus);
-    if (currentStatus == ConnectionStatus::OFFLINE) {
-      led.fill(0xFF0000);
-    } else if (currentStatus == ConnectionStatus::AP) {
-      led.fill(0x42AAFF);
-    } else if (currentStatus == ConnectionStatus::AP_CONNECTED) {
-      led.fill(0x0000FF);
-    } else if (currentStatus == ConnectionStatus::STA) {
-      led.fill(0xFFFF00);
-    } else if (currentStatus == ConnectionStatus::STA_CONNECTED) {
-      led.fill(0x00FF00);
-    } else {
-      led.fill(0xFFFFFF);
+    if (self->_led) {
+        ConnectionStatus currentStatus =
+            self->_esp32sveltekit->getConnectionStatus();
+        ESP_LOGV("StatusLed,", "current status: %d", currentStatus);
+        if (currentStatus == ConnectionStatus::OFFLINE) {
+        self->_led->fill(0xFF0000);
+        } else if (currentStatus == ConnectionStatus::AP) {
+        self->_led->fill(0x42AAFF);
+        } else if (currentStatus == ConnectionStatus::AP_CONNECTED) {
+        self->_led->fill(0x0000FF);
+        } else if (currentStatus == ConnectionStatus::STA) {
+        self->_led->fill(0xFFFF00);
+        } else if (currentStatus == ConnectionStatus::STA_CONNECTED) {
+        self->_led->fill(0x00FF00);
+        } else {
+        self->_led->fill(0xFFFFFF);
+        }
+        self->_led->show();
     }
-    led.show();
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
