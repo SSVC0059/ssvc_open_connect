@@ -56,8 +56,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: [frontend-checks, native-tests]
-    outputs:
-      tag: ${{ steps.ver.outputs.tag }}
     strategy:
       matrix:
         include:
@@ -82,27 +80,15 @@ jobs:
           name: calculator-artifact
           path: docs/calculator
 
-      # ВАЖНО: версия и тег должны быть валидным SemVer (MAJOR.MINOR.PATCH-prerelease).
-      # Формат: base из platformio.ini + "-nightly." + ветка (слэш/дефис → точка), тег = "v${FULL}".
-      - name: Set nightly version and tag (always valid semver)
+      # Версия для прошивки = base из platformio.ini + "-nightly" (фиксированный тег v{BASE}-nightly).
+      - name: Set nightly version
         id: ver
         run: |
           BASE=$(grep APP_VERSION platformio.ini | head -1 | sed 's/.*"\([^"]*\)".*/\1/' || true)
-          if [ -z "$BASE" ] || ! echo "$BASE" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+'; then
-            echo "WARNING: Could not read base version from platformio.ini, using 0.0.0"
-            BASE="0.0.0"
-          fi
-          echo "base=$BASE" >> $GITHUB_OUTPUT
-          BRANCH="${{ github.ref_name }}"
-          BRANCH_NORM=$(echo "$BRANCH" | tr '/-' '.' | sed 's/^v//')
-          [ -z "$BRANCH_NORM" ] && BRANCH_NORM="unknown"
-          FULL="${BASE}-nightly.${BRANCH_NORM}"
-          TAG="v${FULL}"
+          [[ -z "$BASE" || ! "$BASE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && BASE="0.0.0"
+          FULL="${BASE}-nightly"
           echo "full=$FULL" >> $GITHUB_OUTPUT
-          echo "tag<<EOF" >> $GITHUB_OUTPUT
-          echo "$TAG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          echo "Using version: $FULL (tag: $TAG)"
+          echo "Using version: $FULL"
           echo "PLATFORMIO_BUILD_FLAGS=-D APP_VERSION=\\\"${FULL}\\\"" >> $GITHUB_ENV
 
       - name: Build firmware for ${{ matrix.env_name }}
@@ -135,53 +121,42 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v6
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: all-artifacts
 
-      - name: Prepare release assets
+      - name: Prepare assets for release
         run: |
           mkdir -p release-assets
           find all-artifacts -type f \( -name "*.bin" -o -name "*.md5" -o -name "*.zip" \) -exec cp {} release-assets/ \;
-          echo "--- release-assets contents ---"
-          ls -la release-assets/
-          BIN_COUNT=$(find release-assets -maxdepth 1 -name "*.bin" | wc -l)
-          if [ "$BIN_COUNT" -eq 0 ]; then
-            echo "ERROR: No .bin files in release-assets. Check artifact upload paths."
-            exit 1
-          fi
+          ls -R release-assets/
 
       - name: Set build date
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-      - name: Set nightly tag
+      # Фиксированный тег v{BASE}-nightly; удаляем старый релиз с этим тегом, если есть.
+      - name: Set nightly tag and delete old release
         id: tag
         run: |
           BASE=$(grep APP_VERSION platformio.ini | head -1 | sed 's/.*"\([^"]*\)".*/\1/' || true)
-          if [ -z "$BASE" ] || ! echo "$BASE" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+'; then
-            BASE="0.0.0"
-          fi
-          BRANCH="${{ github.ref_name }}"
-          BRANCH_NORM=$(echo "$BRANCH" | tr '/-' '.' | sed 's/^v//')
-          [ -z "$BRANCH_NORM" ] && BRANCH_NORM="unknown"
-          FULL="${BASE}-nightly.${BRANCH_NORM}"
-          TAG="v${FULL}"
-          { echo "tag<<RELEASE_TAG_EOF"; echo "$TAG"; echo "RELEASE_TAG_EOF"; } >> $GITHUB_OUTPUT
+          [[ -z "$BASE" || ! "$BASE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && BASE="0.0.0"
+          TAG="v${BASE}-nightly"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Using tag: $TAG"
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
 
-      - name: Update nightly release
-        uses: softprops/action-gh-release@v2.4.2
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: "Nightly (${{ steps.date.outputs.date }})"
-          prerelease: true
           draft: false
+          prerelease: true
           overwrite_files: true
           body: |
             ⚠️ **Экспериментальная сборка** — может быть нестабильной.
