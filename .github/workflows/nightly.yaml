@@ -5,9 +5,6 @@
 name: Nightly Build
 
 on:
-  schedule:
-    # Ежедневно в 02:00 UTC (05:00 МСК)
-    - cron: "0 2 * * *"
   workflow_dispatch:
 
 permissions:
