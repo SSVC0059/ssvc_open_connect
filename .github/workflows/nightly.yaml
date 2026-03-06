@@ -160,7 +160,6 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-      # Тег считаем здесь, чтобы не зависеть от matrix job output (он может быть пустым).
       - name: Set nightly tag
         id: tag
         run: |
@@ -173,7 +172,7 @@ jobs:
           [ -z "$BRANCH_NORM" ] && BRANCH_NORM="unknown"
           FULL="${BASE}-nightly.${BRANCH_NORM}"
           TAG="v${FULL}"
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          { echo "tag<<RELEASE_TAG_EOF"; echo "$TAG"; echo "RELEASE_TAG_EOF"; } >> $GITHUB_OUTPUT
           echo "Using tag: $TAG"
 
       - name: Update nightly release
