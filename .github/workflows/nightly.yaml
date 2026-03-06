@@ -80,16 +80,20 @@ jobs:
           name: calculator-artifact
           path: docs/calculator
 
-      # Версия для прошивки = base из platformio.ini + "-nightly" (фиксированный тег v{BASE}-nightly).
+      # Версия прошивки = base из platformio.ini + "-nightly". Тег релиза один: v{BASE}-nightly (удаляется и создаётся заново).
       - name: Set nightly version
         id: ver
         run: |
-          BASE=$(grep APP_VERSION platformio.ini | head -1 | sed 's/.*"\([^"]*\)".*/\1/' || true)
-          [[ -z "$BASE" || ! "$BASE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && BASE="0.0.0"
+          BASE=$(grep -E 'APP_VERSION' platformio.ini | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          if [[ -z "$BASE" ]]; then
+            echo "WARNING: Could not read version from platformio.ini, using 0.0.0"
+            BASE="0.0.0"
+          fi
           FULL="${BASE}-nightly"
           echo "full=$FULL" >> $GITHUB_OUTPUT
-          echo "Using version: $FULL"
-          echo "PLATFORMIO_BUILD_FLAGS=-D APP_VERSION=\\\"${FULL}\\\"" >> $GITHUB_ENV
+          echo "Using version: $FULL (tag: v${BASE}-nightly)"
+          # Сначала снять определение из ini, затем задать версию с суффиксом — иначе в прошивке остаётся значение из platformio.ini.
+          echo "PLATFORMIO_BUILD_FLAGS=-U APP_VERSION -D APP_VERSION=\\\"${FULL}\\\"" >> $GITHUB_ENV
 
       - name: Build firmware for ${{ matrix.env_name }}
         run: platformio run --environment ${{ matrix.env_name }}
@@ -139,15 +143,16 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-      # Фиксированный тег v{BASE}-nightly; удаляем старый релиз с этим тегом, если есть.
+      # Тег v{BASE}-nightly. Удаляем предыдущий ночной релиз с этим тегом, затем создаём новый.
       - name: Set nightly tag and delete old release
         id: tag
         run: |
-          BASE=$(grep APP_VERSION platformio.ini | head -1 | sed 's/.*"\([^"]*\)".*/\1/' || true)
-          [[ -z "$BASE" || ! "$BASE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && BASE="0.0.0"
+          BASE=$(grep -E 'APP_VERSION' platformio.ini | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          [[ -z "$BASE" ]] && BASE="0.0.0"
           TAG="v${BASE}-nightly"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "Using tag: $TAG"
+          echo "base=$BASE" >> $GITHUB_OUTPUT
+          echo "Using tag: $TAG (base: $BASE)"
           gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
 
       - name: Create Release and Upload Assets
@@ -161,6 +166,9 @@ jobs:
           body: |
             ⚠️ **Экспериментальная сборка** — может быть нестабильной.
             Обновляется ежедневно. Используйте только если понимаете риски.
+
+            **Собран по версии:** ${{ steps.tag.outputs.base }}
+            **Ветка:** ${{ github.ref_name }}
           files: |
             release-assets/*.bin
             release-assets/*.md5

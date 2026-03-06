@@ -24,7 +24,7 @@
 	import type { SystemInformation } from '$lib/types/models';
 
 	/** Минимальная свободная heap (байт) для OTA с устройства; иначе предлагаем установку через браузер. */
-	const FREE_HEAP_THRESHOLD = 80 * 1024;
+	const FREE_HEAP_THRESHOLD = 60 * 1024;
 	/** Эмуляция нехватки памяти: откройте страницу с ?simulateLowMemory=1 в URL. */
 	function isSimulateLowMemory(): boolean {
 		if (typeof window === 'undefined') return false;
