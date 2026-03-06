@@ -80,18 +80,21 @@ jobs:
           name: calculator-artifact
           path: docs/calculator
 
+      # SemVer: пререлиз через дефис, идентификаторы через точку (0.2.6.2-nightly.main).
+      # Дефисы в имени ветки заменяем на точки, чтобы не путать с минусом в C/парсерах.
       - name: Set nightly version (base from platformio.ini + suffix)
         id: ver
         run: |
           BASE=$(grep APP_VERSION platformio.ini | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
           echo "base=$BASE" >> $GITHUB_OUTPUT
-          FULL="${BASE}-nightly-${{ github.ref_name }}"
+          BRANCH="${{ github.ref_name }}"
+          BRANCH_NORM=$(echo "$BRANCH" | tr '/-' '.')
+          FULL="${BASE}-nightly.${BRANCH_NORM}"
           echo "full=$FULL" >> $GITHUB_OUTPUT
           echo "Using version: $FULL"
+          echo "PLATFORMIO_BUILD_FLAGS=-D APP_VERSION=\\\"${FULL}\\\"" >> $GITHUB_ENV
 
       - name: Build firmware for ${{ matrix.env_name }}
-        env:
-          PLATFORMIO_BUILD_FLAGS: "-D APP_VERSION=\"${{ steps.ver.outputs.full }}\""
         run: platformio run --environment ${{ matrix.env_name }}
 
       - name: Collect artifacts for ${{ matrix.env_name }}
