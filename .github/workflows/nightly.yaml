@@ -160,10 +160,26 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
+      # Тег считаем здесь, чтобы не зависеть от matrix job output (он может быть пустым).
+      - name: Set nightly tag
+        id: tag
+        run: |
+          BASE=$(grep APP_VERSION platformio.ini | head -1 | sed 's/.*"\([^"]*\)".*/\1/' || true)
+          if [ -z "$BASE" ] || ! echo "$BASE" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+'; then
+            BASE="0.0.0"
+          fi
+          BRANCH="${{ github.ref_name }}"
+          BRANCH_NORM=$(echo "$BRANCH" | tr '/-' '.' | sed 's/^v//')
+          [ -z "$BRANCH_NORM" ] && BRANCH_NORM="unknown"
+          FULL="${BASE}-nightly.${BRANCH_NORM}"
+          TAG="v${FULL}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Using tag: $TAG"
+
       - name: Update nightly release
         uses: softprops/action-gh-release@v2.4.2
         with:
-          tag_name: ${{ needs.build.outputs.tag }}
+          tag_name: ${{ steps.tag.outputs.tag }}
           name: "Nightly (${{ steps.date.outputs.date }})"
           prerelease: true
           draft: false
