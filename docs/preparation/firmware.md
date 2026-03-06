@@ -1,6 +1,9 @@
 # Скачивание релиза SSVC Open Connect
 
-Актуальные релизы  всегда хранятся на странице релизов проекта в [github](https://github.com/SSVC0059/ssvc_open_connect/releases)
+Актуальные релизы всегда хранятся на странице релизов проекта в [github](https://github.com/SSVC0059/ssvc_open_connect/releases)
+
+!!! tip "Обновление страницы флешера"
+    При создании релиза (тег v*) CI автоматически копирует прошивку в `docs/firmware/`. При ручном добавлении: `python scripts/docs/update_firmware_docs.py` (сборка + копирование), `python scripts/docs/update_firmware_docs.py --github` (загрузка с GitHub) или `python scripts/docs/update_firmware_docs.py --manifest-only` (только индекс). Подробнее — [Сборка и CI](../develop/build.md).
 
 
 ## Виды релизов

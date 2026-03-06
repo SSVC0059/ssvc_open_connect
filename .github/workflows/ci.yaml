@@ -5,6 +5,8 @@ on:
       - master
       - main
       - edit_docs
+  workflow_dispatch:
+    # Ручной запуск: Actions → Deploy MkDocs → Run workflow → выбрать ветку
 
 permissions:
   contents: write
@@ -15,7 +17,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Setup Python
         uses: actions/setup-python@v4
