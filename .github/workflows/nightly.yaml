@@ -80,10 +80,9 @@ jobs:
           name: calculator-artifact
           path: docs/calculator
 
-      # ВАЖНО: версия должна быть валидным SemVer (MAJOR.MINOR.PATCH-prerelease).
-      # Иначе старые прошивки отдают не-semver (например "nightly") и ломают UI при сравнении версий.
-      # Формат: base из platformio.ini + "-nightly." + ветка (слэш/дефис → точка).
-      - name: Set nightly version (always valid semver)
+      # ВАЖНО: версия и тег должны быть валидным SemVer (MAJOR.MINOR.PATCH-prerelease).
+      # Формат: base из platformio.ini + "-nightly." + ветка (слэш/дефис → точка), тег = "v${FULL}".
+      - name: Set nightly version and tag (always valid semver)
         id: ver
         run: |
           BASE=$(grep APP_VERSION platformio.ini | head -1 | sed 's/.*"\([^"]*\)".*/\1/' || true)
@@ -96,8 +95,10 @@ jobs:
           BRANCH_NORM=$(echo "$BRANCH" | tr '/-' '.' | sed 's/^v//')
           [ -z "$BRANCH_NORM" ] && BRANCH_NORM="unknown"
           FULL="${BASE}-nightly.${BRANCH_NORM}"
+          TAG="v${FULL}"
           echo "full=$FULL" >> $GITHUB_OUTPUT
-          echo "Using version: $FULL"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Using version: $FULL (tag: $TAG)"
           echo "PLATFORMIO_BUILD_FLAGS=-D APP_VERSION=\\\"${FULL}\\\"" >> $GITHUB_ENV
 
       - name: Build firmware for ${{ matrix.env_name }}
@@ -155,18 +156,10 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-      # Тег nightly должен существовать для создания/обновления релиза (при первом запуске создаём)
-      - name: Ensure nightly tag exists
-        run: |
-          if ! git rev-parse nightly >/dev/null 2>&1; then
-            git tag nightly ${{ github.sha }}
-            git push origin nightly
-          fi
-
       - name: Update nightly release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: nightly
+          tag_name: ${{ steps.ver.outputs.tag }}
           name: "Nightly (${{ steps.date.outputs.date }})"
           prerelease: true
           draft: false
