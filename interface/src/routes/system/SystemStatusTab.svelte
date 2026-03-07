@@ -24,6 +24,7 @@
 	import SDK from '~icons/tabler/sdk';
 	import type { SystemInformation, Analytics } from '$lib/types/models';
 	import { socket } from '$lib/stores/socket';
+	import { convertSeconds } from '$lib/utils/formatters';
 
 let systemInformation: SystemInformation = $state({
 	esp_platform: '',
@@ -146,30 +147,6 @@ let systemInformation: SystemInformation = $state({
 				postSleep();
 			}
 		});
-	}
-
-	function convertSeconds(seconds: number) {
-		let minutes = Math.floor(seconds / 60);
-		let hours = Math.floor(minutes / 60);
-		let days = Math.floor(hours / 24);
-
-		hours = hours % 24;
-		minutes = minutes % 60;
-		seconds = seconds % 60;
-
-		let result = '';
-		if (days > 0) {
-			result += days + ' day' + (days > 1 ? 's' : '') + ' ';
-		}
-		if (hours > 0) {
-			result += hours + ' hour' + (hours > 1 ? 's' : '') + ' ';
-		}
-		if (minutes > 0) {
-			result += minutes + ' minute' + (minutes > 1 ? 's' : '') + ' ';
-		}
-		result += seconds + ' second' + (seconds > 1 ? 's' : '');
-
-		return result;
 	}
 
 	type StatusRow = { icon: typeof CPU; name: string; value: string };

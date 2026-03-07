@@ -66,7 +66,7 @@
                 {
                     title: 'Телеметрия',
                     icon: Connected,
-                    href: '/oc/telemetry ',
+                    href: '/oc/telemetry',
                     feature: true
                 },
                 {
@@ -104,7 +104,7 @@
                 {
                     title: 'Open Connect',
                     icon: Esp,
-                    href: '/oc/settings ',
+                    href: '/oc/settings',
                     feature: true,
                     submenu: [
                         {
@@ -126,25 +126,6 @@
                             feature: true
                         }
                     ]
-                }
-            ]
-        },
-        {
-            title: 'Соединения',
-            icon: Remote,
-            feature: false && (page.data.features.mqtt || page.data.features.ntp),
-            submenu: [
-                {
-                    title: 'MQTT',
-                    icon: MQTT,
-                    href: '/connections/mqtt',
-                    feature: page.data.features.mqtt
-                },
-                {
-                    title: 'NTP',
-                    icon: NTP,
-                    href: '/connections/ntp',
-                    feature: page.data.features.ntp
                 }
             ]
         },

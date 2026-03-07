@@ -3,6 +3,7 @@
 	import { user } from '$lib/stores/user';
 	import { notifications } from '$lib/components/toasts/notifications';
 	import { TIME_ZONES } from './timezones';
+	import { convertSeconds } from '$lib/utils/formatters';
 	import Toggle from '$lib/components/Toggle.svelte';
 	import NTP from '~icons/tabler/clock-check';
 	import Server from '~icons/tabler/server';
@@ -72,30 +73,6 @@
 			isStatusLoading = false;
 		}
 	});
-
-	function convertSeconds(seconds: number) {
-		let minutes = Math.floor(seconds / 60);
-		let hours = Math.floor(minutes / 60);
-		let days = Math.floor(hours / 24);
-
-		hours = hours % 24;
-		minutes = minutes % 60;
-		seconds = seconds % 60;
-
-		let result = '';
-		if (days > 0) {
-			result += days + ' day' + (days > 1 ? 's' : '') + ' ';
-		}
-		if (hours > 0) {
-			result += hours + ' hour' + (hours > 1 ? 's' : '') + ' ';
-		}
-		if (minutes > 0) {
-			result += minutes + ' minute' + (minutes > 1 ? 's' : '') + ' ';
-		}
-		result += seconds + ' second' + (seconds > 1 ? 's' : '');
-
-		return result;
-	}
 
 	function handleToggleEnabled(event: Event) {
 		if (!ntpSettings) return;
