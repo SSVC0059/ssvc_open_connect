@@ -80,11 +80,11 @@ jobs:
           name: calculator-artifact
           path: docs/calculator
 
-      # Версия прошивки = base из platformio.ini + "-nightly". Подставляем в platformio.ini перед сборкой.
+      # Версия прошивки = полная base из platformio.ini + "-nightly" (например 0.2.6.2 → 0.2.6.2-nightly).
       - name: Set nightly version
         id: ver
         run: |
-          BASE=$(grep -E 'APP_VERSION' platformio.ini | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          BASE=$(grep -E 'APP_VERSION' platformio.ini | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)*' | head -1)
           if [[ -z "$BASE" ]]; then
             echo "WARNING: Could not read version from platformio.ini, using 0.0.0"
             BASE="0.0.0"
@@ -92,7 +92,7 @@ jobs:
           FULL="${BASE}-nightly"
           echo "full=$FULL" >> $GITHUB_OUTPUT
           echo "Using version: $FULL (tag: v${BASE}-nightly)"
-          sed -i '/APP_VERSION/s/[0-9]\+\.[0-9]\+\.[0-9]\+/'"${FULL}"'/' platformio.ini
+          sed -i '/APP_VERSION/s/[0-9]\+\.[0-9]\+\(\.[0-9]\+\)*/'"${FULL}"'/' platformio.ini
           grep APP_VERSION platformio.ini
 
       - name: Build firmware for ${{ matrix.env_name }}
@@ -147,7 +147,7 @@ jobs:
       - name: Set nightly tag and delete old release
         id: tag
         run: |
-          BASE=$(grep -E 'APP_VERSION' platformio.ini | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          BASE=$(grep -E 'APP_VERSION' platformio.ini | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)*' | head -1)
           [[ -z "$BASE" ]] && BASE="0.0.0"
           TAG="v${BASE}-nightly"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
