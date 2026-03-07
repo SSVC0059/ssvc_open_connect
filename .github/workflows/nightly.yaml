@@ -80,11 +80,11 @@ jobs:
           name: calculator-artifact
           path: docs/calculator
 
-      # Версия прошивки = полная base из platformio.ini + "-nightly" (например 0.2.6.2 → 0.2.6.2-nightly).
+      # Версия прошивки и тег = маска v0.2.6-nightly (три сегмента из platformio.ini, последняя цифра отбрасывается).
       - name: Set nightly version
         id: ver
         run: |
-          BASE=$(grep -E 'APP_VERSION' platformio.ini | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)*' | head -1)
+          BASE=$(grep -E 'APP_VERSION' platformio.ini | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
           if [[ -z "$BASE" ]]; then
             echo "WARNING: Could not read version from platformio.ini, using 0.0.0"
             BASE="0.0.0"
@@ -143,11 +143,11 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-      # Тег v{BASE}-nightly. Удаляем предыдущий ночной релиз с этим тегом, затем создаём новый.
+      # Тег v{BASE}-nightly (BASE = три сегмента, без последней цифры). Удаляем старый ночной релиз, затем создаём новый.
       - name: Set nightly tag and delete old release
         id: tag
         run: |
-          BASE=$(grep -E 'APP_VERSION' platformio.ini | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)*' | head -1)
+          BASE=$(grep -E 'APP_VERSION' platformio.ini | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
           [[ -z "$BASE" ]] && BASE="0.0.0"
           TAG="v${BASE}-nightly"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
