@@ -10,6 +10,9 @@ const config: UserConfig = {
 		environment: 'jsdom',
 		include: ['tests/**/*.test.ts', 'src/**/*.test.ts'],
 		setupFiles: ['tests/setup.ts'],
+		deps: {
+			inline: [/@sveltejs\/kit/]
+		},
 		coverage: {
 			provider: 'v8',
 			exclude: [
