@@ -46,7 +46,7 @@
 	let selectedZoneForSensor: Record<string, string> = $state({});
 
 	function getSelectedZone(address: string): string {
-		return selectedZoneForSensor[address] || '';
+		return selectedZoneForSensor[address] || sensor.zone || '';
 	}
 
 	async function moveSensor(address: string) {
@@ -320,7 +320,7 @@
 						>
 							<option value="">Зона...</option>
 							{#each availableZones as zoneOption}
-								<option value={zoneOption.value} disabled={zoneOption.value === sensor.address}>
+								<option value={zoneOption.value} disabled={sensor.zone ? zoneOption.value === sensor.zone : false}>
 									{zoneOption.label}
 								</option>
 							{/each}

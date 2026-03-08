@@ -19,6 +19,7 @@ export type SensorMap = {
 export type SensorReading = {
 	address: string;
 	data: SensorDetails;
+	zone?: string;
 };
 
 export type TemperatureResponse = {

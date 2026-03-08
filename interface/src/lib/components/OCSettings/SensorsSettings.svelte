@@ -2,7 +2,7 @@
 
 <script lang="ts">
 	import { fetchAlarmThresholds, fetchSensorsTemperatureByZone } from '$lib/api/ssvcApi';
-	import type { AlarmThresholdsState, TemperatureResponse } from '$lib/types/Sensors';
+	import type { AlarmThresholdsState, SensorDetails, TemperatureResponse } from '$lib/types/Sensors';
 	import { getZoneDescription } from '$lib/components/OCSettings/OSSettingsHelper';
 	import SensorCard from '$lib/components/OCSettings/SensorCard.svelte';
 
@@ -44,12 +44,13 @@
 	const zoneEntries = $derived(
 		temperatureResponse
 			? Object.entries(temperatureResponse).map(([zone, sensors]) => {
+					const expectedType = sensorType === 'temperature' ? 'thermal' : sensorType;
 					const filteredSensors = Object.entries(sensors).filter(
-						([, sensorData]) => sensorData.type === sensorType
+						([, sensorData]) => sensorData.type === expectedType
 					);
-					return [zone, Object.fromEntries(filteredSensors)];
+					return [zone, Object.fromEntries(filteredSensors)] as [string, Record<string, SensorDetails>];
 				})
-			: []
+			: ([] as [string, Record<string, SensorDetails>][])
 	);
 	const title =
 		sensorType === 'pressure' ? 'Датчики давления' : 'Датчики температуры';
@@ -94,7 +95,7 @@
 									<div class="sensors-grid">
 										{#each Object.entries(sensors) as [address, temp] (address)}
 											<SensorCard
-												sensor={{ address, data: temp }}
+												sensor={{ address, data: temp, zone }}
 												{alarmThresholdsState}
 												onUpdate={reloadSensors}
 												sensorsType={sensorType}
