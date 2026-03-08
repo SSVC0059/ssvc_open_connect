@@ -160,18 +160,18 @@
 				<span class="sensor-span">Адрес:</span>
 				<span class="sensor-value font-mono" title={sensor.address}>{sensor.address}</span>
 			</div>
-			<div class="sensor-temperature">
-				{#if sensor.data.type === 'temperature'}
-					<span class="sensor-span">Темп.:</span>
-				{:else if sensor.data.type?.toLowerCase() === 'pressure'}
-					<span class="sensor-span">Давление.:</span>
-				{/if}
+		<div class="sensor-temperature">
+			{#if sensor.data.type === 'thermal'}
+				<span class="sensor-span">Темп.:</span>
+			{:else if sensor.data.type?.toLowerCase() === 'pressure'}
+				<span class="sensor-span">Давление.:</span>
+			{/if}
 
 				<span class="sensor-value"> {sensor.data?.v ?? '--'} {sensor.data?.u ?? ''} </span>
 			</div>
 		</div>
 
-		{#if sensor.data.type === 'temperature'}
+		{#if sensor.data.type === 'thermal'}
 			<div class="temperature-bar-compact-container">
 				<div class="temperature-bar-compact">
 					{#if currentThresholds?.dangerous}

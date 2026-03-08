@@ -46,21 +46,27 @@ void StatusLed::begin(uint16_t neoPixelType) {
   auto *self = static_cast<StatusLed *>(pvParameters);
   while (true) {
     if (self->_led) {
-        ConnectionStatus currentStatus =
-            self->_esp32sveltekit->getConnectionStatus();
-        ESP_LOGV("StatusLed,", "current status: %d", currentStatus);
-        if (currentStatus == ConnectionStatus::OFFLINE) {
-        self->_led->fill(0xFF0000);
-        } else if (currentStatus == ConnectionStatus::AP) {
-        self->_led->fill(0x42AAFF);
-        } else if (currentStatus == ConnectionStatus::AP_CONNECTED) {
-        self->_led->fill(0x0000FF);
-        } else if (currentStatus == ConnectionStatus::STA) {
-        self->_led->fill(0xFFFF00);
-        } else if (currentStatus == ConnectionStatus::STA_CONNECTED) {
-        self->_led->fill(0x00FF00);
+        // Ошибка UART (SSVC выключен) — мигание оранжевым
+        if (SsvcConnector::getConnector().uartCommunicationError) {
+          const bool blinkOn = (millis() / 300) % 2 == 0;
+          self->_led->fill(blinkOn ? 0xFF8000 : 0x000000);
         } else {
-        self->_led->fill(0xFFFFFF);
+          ConnectionStatus currentStatus =
+              self->_esp32sveltekit->getConnectionStatus();
+          ESP_LOGV("StatusLed,", "current status: %d", currentStatus);
+          if (currentStatus == ConnectionStatus::OFFLINE) {
+            self->_led->fill(0xFF0000);
+          } else if (currentStatus == ConnectionStatus::AP) {
+            self->_led->fill(0x42AAFF);
+          } else if (currentStatus == ConnectionStatus::AP_CONNECTED) {
+            self->_led->fill(0x0000FF);
+          } else if (currentStatus == ConnectionStatus::STA) {
+            self->_led->fill(0xFFFF00);
+          } else if (currentStatus == ConnectionStatus::STA_CONNECTED) {
+            self->_led->fill(0x00FF00);
+          } else {
+            self->_led->fill(0xFFFFFF);
+          }
         }
         self->_led->show();
     }

@@ -9,7 +9,7 @@ export type Zones = {
 export type SensorDetails = {
 	v: number; // Значение (Value)
 	u: string; // Единица измерения (Unit), например "°C" или "mmHg"
-	type: string; // Тип измерения, например "temperature" или "pressure"
+	type: string; // Тип измерения, например "thermal" или "pressure"
 };
 
 export type SensorMap = {

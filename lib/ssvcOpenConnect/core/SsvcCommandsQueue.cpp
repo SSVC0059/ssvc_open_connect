@@ -106,6 +106,39 @@ void delayed_get_settings_callback(const TimerHandle_t xTimer) {
   xTimerDelete(xTimer, 0);
 }
 
+void SsvcCommandsQueue::uartRetryTimerCallback(TimerHandle_t xTimer) {
+  auto *self = static_cast<SsvcCommandsQueue *>(pvTimerGetTimerID(xTimer));
+  if (self) {
+    ESP_LOGI(TAG, "UART retry: requesting settings and version");
+    self->getSettings();
+    self->version();
+    xTimerDelete(xTimer, 0);
+    self->_uartRetryTimer = nullptr;
+  }
+}
+
+void SsvcCommandsQueue::scheduleUartRetryTimer() const {
+  if (_uartRetryTimer != nullptr) {
+    return;  // Таймер уже запланирован
+  }
+  _uartRetryTimer = xTimerCreate(
+      "uart_retry_timer",
+      pdMS_TO_TICKS(GET_SETTINGS_REQUEST_TIMER),
+      pdFALSE,
+      const_cast<SsvcCommandsQueue *>(this),
+      SsvcCommandsQueue::uartRetryTimerCallback);
+  if (_uartRetryTimer != nullptr &&
+      xTimerStart(_uartRetryTimer, 0) == pdPASS) {
+    ESP_LOGI(TAG, "Scheduled UART retry in %d seconds",
+             GET_SETTINGS_REQUEST_TIMER / 1000);
+  } else {
+    if (_uartRetryTimer != nullptr) {
+      xTimerDelete(_uartRetryTimer, 0);
+      _uartRetryTimer = nullptr;
+    }
+  }
+}
+
 /**
  * @brief Основная задача обработки команд из очереди и отправки их SSVC
  *
@@ -247,7 +280,6 @@ void SsvcCommandsQueue::registerCallbackCommands() {
     JsonDocument response;
     const DeserializationError error = deserializeJson(response, _message);
     if (error) {
-      xSemaphoreGive(mutex);
       return false;
     }
 
@@ -255,13 +287,11 @@ void SsvcCommandsQueue::registerCallbackCommands() {
     if (response["version"].is<String>()) {
       const std::string ssvcVersion = response["version"].as<std::string>();
       SsvcSettings::init().setSsvcVersion(ssvcVersion);
-      xSemaphoreGive(mutex);
       result = true;
     }
     if (response["api"].is<String>()) {
       const auto ssvcApiVersion = response["api"].as<float>();
       SsvcSettings::init().setSsvcApiVersion(ssvcApiVersion);
-      xSemaphoreGive(mutex);
       result = true;
     }
     if (result) {

@@ -66,7 +66,8 @@ esp_err_t CoreDump::coreDump(PsychicRequest *request)
     uint8_t *buffer = (uint8_t *)malloc(chunk_size);
     if (!buffer) return ESP_ERR_NO_MEM;
 
-    for (size_t offset = 0; offset < coredump_size; offset += chunk_size) {
+    size_t offset = 0;
+    for (; offset < coredump_size; offset += chunk_size) {
         size_t read_len = (coredump_size - offset < chunk_size) ? (coredump_size - offset) : chunk_size;
 
         // Читаем напрямую из flash, зная адрес и смещение
@@ -81,18 +82,22 @@ esp_err_t CoreDump::coreDump(PsychicRequest *request)
             break;
         }
     }
+    bool transfer_complete = (offset >= coredump_size);
 
     free(buffer);
     response.finishChunking();
 
-    // 4. Очистка (Erase) — теперь мы знаем точный размер и адрес
-    // Стираем секторами по 4КБ
-    uint32_t sectors_to_erase = (coredump_size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
-    ESP_LOGI(SVK_TAG, "Erasing %u sectors of coredump", sectors_to_erase);
+    // 4. Очистка (Erase) — только при успешной передаче, чтобы сохранить дамп для повторной попытки
+    if (transfer_complete) {
+        uint32_t sectors_to_erase = (coredump_size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
+        ESP_LOGI(SVK_TAG, "Erasing %u sectors of coredump", sectors_to_erase);
 
-    err = esp_flash_erase_region(esp_flash_default_chip, coredump_addr, sectors_to_erase * SPI_FLASH_SEC_SIZE);
-    if (err != ESP_OK) {
-        ESP_LOGE(SVK_TAG, "Erase failed: %d", err);
+        err = esp_flash_erase_region(esp_flash_default_chip, coredump_addr, sectors_to_erase * SPI_FLASH_SEC_SIZE);
+        if (err != ESP_OK) {
+            ESP_LOGE(SVK_TAG, "Erase failed: %d", err);
+        }
+    } else {
+        ESP_LOGW(SVK_TAG, "Transfer incomplete, coredump preserved for retry");
     }
 
     return err;

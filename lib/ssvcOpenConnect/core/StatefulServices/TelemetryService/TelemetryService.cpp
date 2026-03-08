@@ -5,17 +5,27 @@
  **/
 
 #include "TelemetryService.h"
+#include "commons/JsonMemoryLogger.h"
+#include "core/SsvcConnector.h"
 
 // Интервал обновления телеметрии (2 секунды)
 #define TELEMETRY_UPDATE_INTERVAL_MS 2000
+
 #define TELEMETRY_REST_PATH "/rest/telemetry"
 
-void TelemetryState::read(const TelemetryState &state, JsonObject &root)
+static JsonMemoryLogger s_readMemLogger("TelemetryRead", 20);  // лог раз в 20 вызовов
 
+void TelemetryService::readStateToJson(TelemetryState& state, JsonObject& root)
 {
-    // Десериализуем сохраненный JSON и вставляем его содержимое в корневой объект ответа
-    JsonDocument doc;
+    s_readMemLogger.recordBefore();
+    _jsonAllocator.reset();
+    _jsonAllocator.setTag("TelemetryRead");
+
+    // Десериализуем сохраненный JSON и вставляем его содержимое в корневой объект ответа (документ в PSRAM)
+    JsonDocument doc(&_jsonAllocator);
     const DeserializationError error = deserializeJson(doc, state.telemetryJson);
+    s_readMemLogger.logAfterParse(doc.overflowed(), _jsonAllocator.usedInternalRam());
+
     if (!error && doc.is<JsonObject>()) {
         // Вставляем все содержимое сохраненного JSON (telemetry + status) в корень ответа
         root.set(doc.as<JsonObject>());
@@ -43,13 +53,13 @@ TelemetryService::TelemetryService(PsychicHttpServer *server,
                                     ESP32SvelteKit* sveltekit,
                                    RectificationProcess& rProcess)
     :   _rProcess(rProcess),
-        _httpEndpoint(TelemetryState::read,
+        _httpEndpoint([this](TelemetryState& s, JsonObject& r) { readStateToJson(s, r); },
                     TelemetryState::update,
                     this,
                     server,
                     TELEMETRY_REST_PATH,
                     sveltekit->getSecurityManager()),
-        _mqttEndpoint(TelemetryState::read,
+        _mqttEndpoint([this](TelemetryState& s, JsonObject& r) { readStateToJson(s, r); },
                TelemetryState::update,
                this,
                sveltekit->getMqttClient(),
@@ -99,10 +109,16 @@ void TelemetryService::begin() const
         ESP_LOGE(TAG, "TelemetryService: Timer not initialized!");
 }
 
+static JsonMemoryLogger s_updateMemLogger("TelemetryUpdate", 0);  // лог при каждом обновлении
+
 void TelemetryService::updateTelemetryState()
 {
-    // 1. Создаем временный документ для сбора данных
-    JsonDocument doc;
+    s_updateMemLogger.recordBefore();
+    _jsonAllocator.reset();
+    _jsonAllocator.setTag("TelemetryUpdate");
+
+    // 1. Создаем временный документ для сбора данных (в PSRAM при наличии)
+    JsonDocument doc(&_jsonAllocator);
 
     // 2. RectificationProcess заполняет нужными данными
     // НОВЫЙ ЛОГ: Перед вызовом критической функции (место сбоя)
@@ -112,10 +128,14 @@ void TelemetryService::updateTelemetryState()
 
     const JsonVariant _status = doc["status"].to<JsonVariant>();
     _rProcess.getStatus(_status);
+    _status["uartConnectionError"] =
+        SsvcConnector::getConnector().uartCommunicationError;
     ESP_LOGV(TAG, "Finished _rProcess.writeTelemetryTo(root).");
 
     String newTelemetryJson;
     const size_t size = serializeJson(doc, newTelemetryJson); // Захват размера
+
+    s_updateMemLogger.logAfterParse(doc.overflowed(), _jsonAllocator.usedInternalRam(), size);
 
     // НОВЫЙ ЛОГ: Размер JSON
     ESP_LOGV(TAG, "Serialized JSON size: %zu bytes. Old size: %zu bytes.", 
