@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { updateAlarmThresholds, updateSensorZone } from '$lib/api/ssvcApi';
 	import { availableZones } from '$lib/components/OCSettings/OSSettingsHelper';
-	import { Spinner } from 'flowbite-svelte';
 	import type { AlarmThresholdsState, ThresholdSettings, SensorReading } from '$lib/types/Sensors';
 	import ThresholdCalculatorModal from './ThresholdCalculatorModal.svelte';
 
@@ -47,7 +46,7 @@
 	let selectedZoneForSensor: Record<string, string> = $state({});
 
 	function getSelectedZone(address: string): string {
-		return selectedZoneForSensor[address] || '';
+		return selectedZoneForSensor[address] || sensor.zone || '';
 	}
 
 	async function moveSensor(address: string) {
@@ -286,7 +285,7 @@
 							disabled={savingThresholds}
 						>
 							{#if savingThresholds}
-								<Spinner />
+								<span class="loading loading-spinner loading-md inline-block shrink-0" aria-hidden="true"></span>
 							{:else}
 								Сохранить
 							{/if}
@@ -321,7 +320,7 @@
 						>
 							<option value="">Зона...</option>
 							{#each availableZones as zoneOption}
-								<option value={zoneOption.value} disabled={zoneOption.value === sensor.zone}>
+								<option value={zoneOption.value} disabled={sensor.zone ? zoneOption.value === sensor.zone : false}>
 									{zoneOption.label}
 								</option>
 							{/each}
@@ -332,7 +331,7 @@
 							disabled={movingSensor === sensor.address || !getSelectedZone(sensor.address)}
 						>
 							{#if movingSensor === sensor.address}
-								<Spinner />
+								<span class="loading loading-spinner loading-md inline-block shrink-0" aria-hidden="true"></span>
 							{:else}
 								Переместить
 							{/if}
@@ -352,3 +351,158 @@
 		/>
 	{/if}
 {/if}
+
+<style lang="scss">
+	@use "$lib/styles/base/variables" as v;
+	@use "$lib/styles/base/mixins" as m;
+
+	.sensor-card {
+		padding: 1rem;
+		border-radius: var(--border-radius);
+		margin-bottom: 1rem;
+		border: var(--glass-border);
+	}
+
+	.sensor-header {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		margin-bottom: 1rem;
+
+		@media (min-width: v.$breakpoint-sm) {
+			flex-direction: row;
+			justify-content: space-between;
+			align-items: center;
+		}
+	}
+
+	.sensor-address,
+	.sensor-temperature {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		min-width: 0;
+	}
+
+	.sensor-label {
+		color: var(--primary-600);
+		font-weight: 500;
+		font-size: 0.9rem;
+		flex-shrink: 0;
+	}
+
+	.sensor-value {
+		color: var(--primary-800);
+		font-weight: 600;
+		font-size: 1rem;
+
+		&.font-mono {
+			font-family: monospace;
+			font-style: italic;
+			font-size: 0.9rem;
+		}
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.sensor-temperature,
+		.sensor-value {
+			color: oklch(var(--bc));
+		}
+	}
+
+	.temperature-bar-compact-container {
+		margin: 0.5rem 0;
+	}
+
+	.temperature-bar-compact {
+		height: 0.625rem;
+		background-color: var(--primary-100);
+		border-radius: 9999px;
+		overflow: hidden;
+		position: relative;
+		margin-bottom: 0.25rem;
+	}
+
+	.temperature-fill-compact {
+		height: 100%;
+		background: linear-gradient(90deg, var(--blue-500), var(--red-600));
+		border-radius: 9999px;
+		transition: width 0.3s ease;
+	}
+
+	.temperature-threshold-marker {
+		position: absolute;
+		top: 0;
+		height: 100%;
+		width: 2px;
+		z-index: var(--z-dropdown);
+	}
+
+	.warning-marker {
+		background-color: var(--yellow-500);
+	}
+
+	.critical-marker {
+		background-color: var(--red-500);
+	}
+
+	.temperature-labels-compact {
+		display: flex;
+		justify-content: space-between;
+		font-size: 0.75rem;
+		color: var(--primary-500);
+		overflow: hidden;
+
+		span {
+			white-space: nowrap;
+		}
+	}
+
+	.sensor-controls {
+		margin-top: 1rem;
+	}
+
+	.sensor-actions {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+
+		@media (min-width: v.$breakpoint-sm) {
+			flex-direction: row;
+			align-items: stretch;
+		}
+	}
+
+	.zone-controls-compact {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		flex: 1;
+		min-width: 0;
+
+		@media (min-width: v.$breakpoint-sm) {
+			flex-direction: row;
+		}
+
+		:global(.input-field) {
+			flex: 1;
+			min-width: 0;
+		}
+	}
+
+	.threshold-editor {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.control-actions {
+		display: flex;
+		gap: 0.5rem;
+
+		:global(.btn) {
+			flex: 1;
+			justify-content: center;
+		}
+	}
+</style>

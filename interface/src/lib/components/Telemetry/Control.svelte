@@ -266,7 +266,7 @@
         align-items: center;
         justify-content: center;
 
-        svg {
+        :global(svg) {
           height: 100%;
           width: 100%;
         }

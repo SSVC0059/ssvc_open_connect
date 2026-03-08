@@ -1,9 +1,8 @@
 <script lang="ts">
-
+	import { page } from '$app/stores';
 	import type { SsvcSettings } from '$lib/types/ssvc';
 	import { fetchSettings, updateSetting } from '$lib/api/ssvcApi';
 	import { notifications } from '$lib/components/toasts/notifications';
-	// Подкомпоненты
 	import GeneralSettings from '$lib/components/SsvcSettings/GeneralSettings.svelte';
 	import ValveBandwidth from '$lib/components/SsvcSettings/ValveBandwidth.svelte';
 	import SpeedSettings from '$lib/components/SsvcSettings/SpeedSettings.svelte';
@@ -12,22 +11,19 @@
 
 	let ssvcSettings = $state<SsvcSettings | null>();
 	let activeTab = $state(0);
-	let isMobileMenuOpen = $state(false);
-	function closeMobileMenu() {
-		isMobileMenuOpen = false;
-	}
 
 	const loadSsvcSettings = async () => {
 		try {
 			ssvcSettings = await fetchSettings();
 		} catch (err) {
 			if (err instanceof Error) {
+				console.error(err);
 			}
 		}
 	};
 
-	async function saveChanges(field: string, value: any) {
-		let result = await updateSetting(field, value);
+	async function saveChanges(field: string, value: unknown) {
+		const result = await updateSetting(field, value);
 		if (result) {
 			notifications.success('Настройка сохранена', 5000);
 			await loadSsvcSettings();
@@ -36,20 +32,18 @@
 		}
 	}
 
-	// Определяем тип для вкладки
 	interface Tab {
 		id: string;
 		title: string;
 		component: any;
-		// Можно уточнить тип компонента при необходимости
 		props: Record<string, unknown>;
 	}
 
-	// Реактивное вычисление вкладок
 	const availableTabs = $derived(computeTabs(ssvcSettings));
-	// Функция для вычисления вкладок
+
 	function computeTabs(settings: SsvcSettings | null | undefined): Tab[] {
 		if (!settings) return [];
+
 		return [
 			{
 				id: 'general',
@@ -83,70 +77,94 @@
 	});
 
 	$effect(() => {
+		const tabId = $page.url.searchParams.get('tab');
+		if (tabId) {
+			const index = availableTabs.findIndex((tab) => tab.id === tabId);
+			if (index !== -1) {
+				activeTab = index;
+				return;
+			}
+		}
+
 		if (activeTab >= availableTabs.length && availableTabs.length > 0) {
 			activeTab = 0;
 		}
 	});
 </script>
 
-<div class="container">
+<div class="container oc-ssvc-settings-root">
 	<div class="tabs-container">
-		<div class="mobile-tabs-header" class:menu-open={isMobileMenuOpen}>
-			<button class="mobile-menu-toggle" onclick={() => isMobileMenuOpen = !isMobileMenuOpen}>
-				<span class="mobile-menu-header">{availableTabs[activeTab]?.title ||
-				'Меню'}</span>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-					<path d="M7 10l5 5 5-5z"/>
-				</svg>
-			</button>
-
-			<div class="tabs-nav-wrapper mobile-tabs-dropdown">
+		{#if !ssvcSettings}
+			<div class="flex flex-col items-center justify-center gap-2 py-6">
+				<p class="loading-text">Загрузка настроек SSVC...</p>
+				<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+			</div>
+		{:else}
+			<div class="tabs tabs-lift tabs-md w-full" role="tablist" aria-label="SSVC settings tabs">
 				{#each availableTabs as tab, index}
-					<button
-						class="mobile-tab {activeTab === index ? 'mobile-tab-active' : ''}"
-						onclick={() => {
-															activeTab = index;
-															isMobileMenuOpen = false;
-													}}
-					>
-						{tab.title}
-					</button>
+					<input
+						type="radio"
+						name="oc_ssvc_tabs"
+						role="tab"
+						class="tab flex-1 whitespace-nowrap"
+						aria-label={tab.title}
+						checked={activeTab === index}
+						onchange={() => (activeTab = index)}
+					/>
+					<div role="tabpanel" class="tab-content w-full mt-4">
+						{#if activeTab === index}
+							{@const Component = tab.component}
+							<div class="settings-container">
+								<Component {...tab.props} />
+							</div>
+						{/if}
+					</div>
 				{/each}
+			</div>
+		{/if}
+
+		{#if ssvcSettings}
+			<div class="ssvc-refresh-actions mt-6 flex justify-center">
 				<button
-					class="refresh-button mobile-menu-item"
-					onclick={() => {
-						loadSsvcSettings();
-						isMobileMenuOpen = false;
-					}}
+					type="button"
+					class="btn btn-ssvc-refresh"
+					title="Перезагрузить настройки"
+					onclick={loadSsvcSettings}
 				>
-					<Reload />
-					<span>Перезагрузить настройки</span>
+					<Reload class="h-5 w-5" />
+					<span>Обновить</span>
 				</button>
 			</div>
-		</div>
-
-		<nav class="tabs-nav desktop-only">
-			<div class="tabs-nav-content">
-				{#each availableTabs as tab, index}
-					<button
-						class="tab {activeTab === index ? 'tab-active text-active' : ''}"
-						onclick={() => (activeTab = index)}
-					>
-						{tab.title}
-					</button>
-				{/each}
-			</div>
-
-			<button class="refresh-button" onclick={loadSsvcSettings} title="Перезагрузить настройки">
-				<Reload />
-			</button>
-		</nav>
-
-		{#each availableTabs as tab, index}
-			{#if activeTab === index}
-				{@const Component = tab.component}
-				<Component {...tab.props} />
-			{/if}
-		{/each}
+		{/if}
 	</div>
 </div>
+
+<style lang="scss">
+	.tabs-container {
+		display: flex;
+		flex-direction: column;
+	}
+
+	:global(.oc-ssvc-settings-root .settings-container) {
+		width: 100%;
+	}
+
+	:global(.tabs .tab) {
+		font-size: 1.125rem;
+		font-weight: 600;
+	}
+
+	:global(.tabs .tab:checked) {
+		background-color: var(--color-primary);
+	}
+
+	.btn-ssvc-refresh {
+		background-color: var(--color-info);
+		color: oklch(1 0 0);
+		border: none;
+	}
+
+	.btn-ssvc-refresh:hover {
+		opacity: 0.9;
+	}
+</style>

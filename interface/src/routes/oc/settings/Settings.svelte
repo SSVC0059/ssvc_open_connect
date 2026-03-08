@@ -110,7 +110,6 @@
 	};
 
 	let activeTab = $state(0);
-	let isMobileMenuOpen = $state(false);
 
 	$effect(() => {
 		const tabId = $page.url.searchParams.get('tab');
@@ -133,71 +132,68 @@
 
 <div class="container">
 	<div class="tabs-container">
-		<!-- Мобильное меню -->
-		<div class="mobile-tabs-header" class:menu-open={isMobileMenuOpen}>
-			<button
-				class="mobile-menu-toggle"
-				onclick={() => (isMobileMenuOpen = !isMobileMenuOpen)}
-			>
-				<span class="mobile-menu-header">
-					{filteredTabs[activeTab]?.title || 'Меню'}
-				</span>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-					<path d="M7 10l5 5 5-5z" />
-				</svg>
-			</button>
-
-			<div class="mobile-tabs-dropdown">
-				{#each filteredTabs as tab, index}
-					<button
-						class="mobile-tab {activeTab === index ? 'mobile-tab-active' : ''}"
-						onclick={() => {
-							activeTab = index;
-							isMobileMenuOpen = false;
-						}}
-					>
-						{tab.title}
-					</button>
-				{/each}
-			</div>
-		</div>
-
-		<!-- Десктопное меню -->
-		<div class="tabs-nav desktop-only">
-			{#each filteredTabs as tab, index}
-				<button
-					class="tab"
-					class:tab-active={activeTab === index}
-					onclick={() => (activeTab = index)}
-				>
-					{tab.title}
-				</button>
-			{/each}
-		</div>
-
-		<!-- Контент -->
 		{#if isLoading}
-			<p>Загрузка...</p>
-			<!-- Or a spinner component -->
+			<div class="loading-container flex flex-col items-center gap-2">
+				<p class="loading-text">Загрузка...</p>
+				<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+			</div>
 		{:else if error}
 			<p class="error-text">{error}</p>
 		{:else}
-			{#each filteredTabs as tab, index}
-				{#if activeTab === index}
-					{@const Component = tab.component}
-					<Component
-						{...tab.props}
-						disabled={!isSubsystemEnabled(tab.id)}
-						onToggle={tab.isStatic ? undefined : toggleSubsystemHandler(tab.id as keyof SubsystemsState)}
+			<!-- DaisyUI radio tabs-lift + tab content -->
+			<div class="tabs tabs-lift tabs-md w-full" role="tablist">
+				{#each filteredTabs as tab, index}
+					<!-- Вкладка -->
+					<input
+						type="radio"
+						name="oc_settings_tabs"
+						role="tab"
+						class="tab flex-1 whitespace-nowrap"
+						aria-label={tab.title}
+						checked={activeTab === index}
+						onchange={() => (activeTab = index)}
 					/>
-				{/if}
-			{/each}
+					<!-- Контент вкладки -->
+					<div
+						role="tabpanel"
+						class="tab-content w-full mt-4"
+					>
+						{#if activeTab === index}
+							{@const Component = tab.component}
+							<Component
+								{...tab.props}
+								disabled={!isSubsystemEnabled(tab.id)}
+								onToggle={tab.isStatic ? undefined : toggleSubsystemHandler(tab.id as keyof SubsystemsState)}
+							/>
+						{/if}
+					</div>
+				{/each}
+			</div>
 		{/if}
 	</div>
 </div>
 
 <style lang="scss">
+	@use "$lib/styles/base/variables" as v;
+	@use "$lib/styles/base/mixins" as m;
+
 	.error-text {
 		color: var(--red-600);
+	}
+
+	.tabs-container {
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* Tabs font similar to h3 in profile header */
+	:global(.tabs .tab) {
+		font-size: 1.125rem;
+		font-weight: 600;
+	}
+
+	/* Active tab uses primary as background */
+	:global(.tabs .tab:checked) {
+		background-color: var(--color-primary);
 	}
 </style>

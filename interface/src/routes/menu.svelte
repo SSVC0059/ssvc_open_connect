@@ -11,6 +11,10 @@
     import AP from '~icons/tabler/access-point';
     import Remote from '~icons/tabler/network';
     import Control from '~icons/tabler/adjustments';
+    import DropletCog from '~icons/tabler/droplet-cog';
+    import DeviceTabletStar from '~icons/tabler/device-tablet-star';
+    import CapStraight from '~icons/tabler/cap-straight';
+    import ClockEdit from '~icons/tabler/clock-edit';
     import Avatar from '~icons/tabler/user-circle';
     import Logout from '~icons/tabler/logout';
     import Copyright from '~icons/tabler/copyright';
@@ -23,6 +27,7 @@
     import SsvcIcon from '~icons/mdi/snake';
     import Esp from '~icons/mdi/car-esp';
     import Bug from '~icons/tabler/bug';
+    import Temperature from '~icons/tabler/temperature';
     import { page } from '$app/state';
     import { user } from '$lib/stores/user';
     import type { Component } from 'svelte';
@@ -48,6 +53,7 @@
         href: string;
         feature: boolean;
         active?: boolean;
+        submenu?: subMenuItem[];
     };
 
     let menuItems = $state([
@@ -60,45 +66,85 @@
                 {
                     title: 'Телеметрия',
                     icon: Connected,
-                    href: '/oc/telemetry ',
+                    href: '/oc/telemetry',
                     feature: true
                 },
                 {
                     title: 'Настройки SSVC',
                     icon: Control,
-                    href: '/oc/ssvc ',
-                    feature: true
+                    href: '/oc/ssvc?tab=general',
+                    feature: true,
+                    submenu: [
+                        {
+                            title: 'Общие',
+                            icon: Control,
+                            href: '/oc/ssvc?tab=general',
+                            feature: true
+                        },
+                        {
+                            title: 'Клапаны',
+                            icon: DropletCog,
+                            href: '/oc/ssvc?tab=valve-bandwidth',
+                            feature: true
+                        },
+                        {
+                            title: 'Параметры отбора',
+                            icon: ClockEdit,
+                            href: '/oc/ssvc?tab=speed',
+                            feature: true
+                        },
+                        {
+                            title: 'Параллельный отбор',
+                            icon: CapStraight,
+                            href: '/oc/ssvc?tab=parallel',
+                            feature: true
+                        }
+                    ]
                 },
                 {
                     title: 'Open Connect',
                     icon: Esp,
-                    href: '/oc/settings ',
-                    feature: true
+                    href: '/oc/settings',
+                    feature: true,
+                    submenu: [
+                        {
+                            title: 'Профили',
+                            icon: DeviceTabletStar,
+                            href: '/oc/settings?tab=profiles',
+                            feature: true
+                        },
+                        {
+                            title: 'Датчики температуры',
+                            icon: Temperature,
+                            href: '/oc/settings?tab=thermal',
+                            feature: true
+                        },
+                        {
+                            title: 'Telegram',
+                            icon: Telegram,
+                            href: '/oc/settings?tab=telegram_bot',
+                            feature: true
+                        }
+                    ]
                 }
             ]
         },
         {
-            title: 'Соединения',
+            title: 'Network',
             icon: Remote,
             feature: page.data.features.mqtt || page.data.features.ntp,
             submenu: [
                 {
                     title: 'MQTT',
                     icon: MQTT,
-                    href: '/connections/mqtt',
+                    href: '/network?tab=mqtt',
                     feature: page.data.features.mqtt
                 },
                 {
                     title: 'NTP',
                     icon: NTP,
-                    href: '/connections/ntp',
+                    href: '/network?tab=ntp',
                     feature: page.data.features.ntp
-                },
-                {
-                    title: 'Telegramm',
-                    icon: Telegram,
-                    href: '/oc/settings?tab=telegram_bot',
-                    feature: true
                 }
             ]
         },
@@ -110,13 +156,13 @@
                 {
                     title: 'WiFi Статус',
                     icon: Router,
-                    href: '/wifi/sta',
+                    href: '/wifi?tab=sta',
                     feature: true
                 },
                 {
                     title: 'Точка доступа',
                     icon: AP,
-                    href: '/wifi/ap',
+                    href: '/wifi?tab=ap',
                     feature: true
                 }
             ]
@@ -135,25 +181,25 @@
                 {
                     title: 'Статус системы',
                     icon: Health,
-                    href: '/system/status',
+                    href: '/system?tab=status',
                     feature: true
                 },
                 {
                     title: 'Системный монитор',
                     icon: Metrics,
-                    href: '/system/metrics',
+                    href: '/system?tab=metrics',
                     feature: page.data.features.analytics
                 },
                 {
                     title: 'Core Dump',
                     icon: Bug,
-                    href: '/system/coredump',
+                    href: '/system?tab=coredump',
                     feature: page.data.features.coredump
                 },
                 {
                     title: 'Обновление системы',
                     icon: Update,
-                    href: '/system/update',
+                    href: '/system?tab=update',
                     feature:
                         (page.data.features.ota ||
                             page.data.features.upload_firmware ||
@@ -173,8 +219,22 @@
     function setActiveMenuItem(targetTitle: string) {
         menuItems.forEach((item) => {
             item.active = item.title === targetTitle;
+
             item.submenu?.forEach((subItem) => {
                 subItem.active = subItem.title === targetTitle;
+
+                subItem.submenu?.forEach((child) => {
+                    child.active = child.title === targetTitle;
+
+                    if (child.active) {
+                        subItem.active = true;
+                        item.active = true;
+                    }
+                });
+
+                if (subItem.active) {
+                    item.active = true;
+                }
             });
         });
         closeMenu();
@@ -209,14 +269,39 @@
                                 {#each menuItem.submenu as subMenuItem}
                                     {#if subMenuItem.feature}
                                         <li class="hover-bordered">
-                                            <a
-                                                    href={subMenuItem.href}
-                                                    class:bg-base-100={subMenuItem.active}
-                                                    class="text-ml font-bold"
-                                                    onclick={() => {
-													setActiveMenuItem(subMenuItem.title);
-												}}><subMenuItem.icon class="h-5 w-5" />{subMenuItem.title}</a
-                                            >
+                                            {#if subMenuItem.submenu}
+                                                <details open={subMenuItem.submenu.some((child) => child.active)}>
+                                                    <summary class="text-ml font-bold">
+                                                        <subMenuItem.icon class="h-5 w-5" />
+                                                        {subMenuItem.title}
+                                                    </summary>
+                                                    <ul>
+                                                        {#each subMenuItem.submenu as child}
+                                                            {#if child.feature}
+                                                                <li class="hover-bordered">
+                                                                    <a
+                                                                            href={child.href}
+                                                                            class:bg-base-100={child.active}
+                                                                            class="text-ml font-bold"
+                                                                            onclick={() => {
+																				setActiveMenuItem(child.title);
+																			}}><child.icon class="h-5 w-5" />{child.title}</a
+                                                                    >
+                                                                </li>
+                                                            {/if}
+                                                        {/each}
+                                                    </ul>
+                                                </details>
+                                            {:else}
+                                                <a
+                                                        href={subMenuItem.href}
+                                                        class:bg-base-100={subMenuItem.active}
+                                                        class="text-ml font-bold"
+                                                        onclick={() => {
+															setActiveMenuItem(subMenuItem.title);
+														}}><subMenuItem.icon class="h-5 w-5" />{subMenuItem.title}</a
+                                                >
+                                            {/if}
                                         </li>
                                     {/if}
                                 {/each}

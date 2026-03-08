@@ -365,7 +365,7 @@ export const TIME_ZONES: TimeZones = {
     "Europe/Bucharest": "EET-2EEST,M3.5.0/3,M10.5.0/4",
     "Europe/Budapest": "CET-1CEST,M3.5.0,M10.5.0/3",
     "Europe/Busingen": "CET-1CEST,M3.5.0,M10.5.0/3",
-    "Europe/Chisinau": "EET-2EEST,M3.5.0,M10.5.0/3",
+    "Europe/Chisinau": "EET-2EEST,M3.5.0/3,M10.5.0/4",
     "Europe/Copenhagen": "CET-1CEST,M3.5.0,M10.5.0/3",
     "Europe/Dublin": "IST-1GMT0,M10.5.0,M3.5.0/1",
     "Europe/Gibraltar": "CET-1CEST,M3.5.0,M10.5.0/3",
@@ -426,7 +426,7 @@ export const TIME_ZONES: TimeZones = {
     "Indian/Mayotte": "EAT-3",
     "Indian/Reunion": "UNK-4",
     "Pacific/Apia": "UNK-13UNK,M9.5.0/3,M4.1.0/4",
-    "Pacific/Auckland": "NZST-12NZDT,M9.5.0,M4.1.0/3",
+    "Pacific/Auckland": "UNK-13UNK,M9.5.0/3,M4.1.0/4",
     "Pacific/Bougainville": "UNK-11",
     "Pacific/Chatham": "UNK-12:45UNK,M9.5.0/2:45,M4.1.0/3:45",
     "Pacific/Chuuk": "UNK-10",
@@ -464,3 +464,4 @@ export const TIME_ZONES: TimeZones = {
     "Pacific/Wake": "UNK-12",
     "Pacific/Wallis": "UNK-12"
   };
+

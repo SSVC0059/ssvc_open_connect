@@ -135,7 +135,96 @@
 	</Portal>
 {/if}
 
-<style>
+<style lang="scss">
+	@use "$lib/styles/base/mixins" as m;
+
+	/* ===== ОСНОВНЫЕ СТИЛИ МОДАЛЬНЫХ ОКОН ===== */
+	:global(.modal-overlay) {
+		position: fixed;
+		inset: 0;
+		z-index: var(--z-modal-backdrop);
+		background: color-mix(in srgb, var(--black) 50%, transparent);
+		backdrop-filter: blur(4px);
+
+		&.fade-in {
+			animation: fadeIn 0.2s ease-out;
+		}
+	}
+
+	:global(.modal-dialog) {
+		position: fixed;
+		inset: 0;
+		z-index: var(--z-modal);
+		display: grid;
+		place-items: center;
+		pointer-events: none;
+	}
+
+	:global(.modal-content) {
+		background: var(--white);
+		border-radius: var(--border-radius);
+		box-shadow: var(--glass-shadow);
+		pointer-events: auto;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		padding: 1rem;
+		max-height: 100vh;
+		min-width: fit-content;
+		max-width: min(28rem, 90vw);
+		border: var(--glass-border);
+		background: var(--glass-background);
+		backdrop-filter: blur(8px);
+	}
+
+	:global(.modal-title) {
+		color: inherit;
+		text-align: center;
+		font-size: 1.5rem;
+		font-weight: 700;
+		line-height: 2rem;
+		margin: 0;
+	}
+
+	:global(.modal-divider) {
+		height: 1px;
+		background-color: currentColor;
+		opacity: 0.2;
+		margin: 0.5rem 0;
+		border: none;
+	}
+
+	:global(.modal-body) {
+		overflow-y: auto;
+		padding: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+
+		scrollbar-width: thin;
+		scrollbar-color: var(--primary-300) transparent;
+
+		&::-webkit-scrollbar {
+			width: 4px;
+		}
+
+		&::-webkit-scrollbar-track {
+			background: transparent;
+		}
+
+		&::-webkit-scrollbar-thumb {
+			background: var(--primary-300);
+			border-radius: 2px;
+		}
+	}
+
+	:global(.modal-actions) {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 0.5rem;
+	}
+
 	.info-text--centered {
 		text-align: center;
 	}

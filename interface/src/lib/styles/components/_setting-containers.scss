@@ -1,20 +1,18 @@
+@use "$lib/styles/base/variables" as v;
 @use "$lib/styles/base/mixins" as m;
 
 .settings-group {
+  @include m.glassmorphism;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-}
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  border: var(--glass-border);
 
-// Блок с переключателем
-.settings-toggle {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--primary-800);
-  @include m.dark-theme-color;
+  @media (prefers-color-scheme: dark) {
+    background-color: var(--dark-surface-color);
+  }
 }
 
 .settings-item {
@@ -23,7 +21,7 @@
   justify-content: space-between;
 
   min-height: 48px;
-  border-bottom: 1px solid var(--primary-100);
+  border-bottom: 1px solid oklch(var(--bc) / 0.25);
 
   &:last-child {
     border-bottom: none;
@@ -36,22 +34,20 @@
     text-align: left;
   }
 
-  // Лейбл занимает оставшееся место
+  // Лейбл занимает оставшееся место — семантика DaisyUI
   & > .input-label,
   & > .settings-label {
     flex-grow: 1;
   }
 
   .settings-label {
-    color: var(--primary-700);
+    color: oklch(var(--bc));
     font-weight: 500;
-    @include m.dark-theme-color;
   }
 
   .settings-value {
-    color: var(--primary-800);
+    color: oklch(var(--bc));
     font-weight: 500;
-    @include m.dark-theme-color;
   }
 
   .toggle-container {
@@ -62,22 +58,34 @@
     font-size: 0.75rem;
   }
 
+  &.settings-item--stacked {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+
+    .input-wrapper {
+      width: 100%;
+
+      @media (min-width: v.$breakpoint-md) {
+        width: 50%;
+      }
+    }
+  }
+
   // Модификатор для read-only состояния
   &.read-only {
-    // Делаем текст меток и значений более тусклым
     .settings-label, .input-label, .settings-value {
-      color: var(--primary-500);
+      color: oklch(var(--bc) / 0.75);
     }
 
-    // Отключаем все элементы ввода и переключатели внутри
     input,
     .toggle-container {
       opacity: 0.6;
       pointer-events: none;
       cursor: default;
-      background-color: var(--primary-100); // Используем фон для индикации неактивности
+      background-color: oklch(var(--b2));
       box-shadow: none;
-      border-color: var(--primary-200);
+      border-color: oklch(var(--b3));
     }
   }
 }
@@ -92,10 +100,9 @@
   }
 
   .settings-title {
-
     font-size: 1.125rem;
     font-weight: 600;
-    color: var(--primary-800);
+    color: oklch(var(--bc));
   }
 }
 

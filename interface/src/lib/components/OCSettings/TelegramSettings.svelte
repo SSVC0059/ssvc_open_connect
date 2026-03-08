@@ -11,6 +11,7 @@
 	import Cancel from '~icons/tabler/x';
 	import Power from '~icons/tabler/reload';
 	import { notifications } from '$lib/components/toasts/notifications';
+	import Toggle from '$lib/components/Toggle.svelte';
 
 	let token = $state('');
 	let chat_id = $state('');
@@ -77,8 +78,13 @@
 		}
 	}
 
-	function confirmToggle() {
-		let status = disabled ? 'включить' : 'отключить'
+	function confirmToggle(event: Event) {
+		// Не даём тумблеру «зафиксировать» новое состояние до подтверждения.
+		// Возвращаем визуальное состояние назад, пока пользователь не нажмёт «Перезапуск».
+		const input = event.currentTarget as HTMLInputElement;
+		input.checked = !input.checked;
+
+		let status = disabled ? 'включить' : 'отключить';
 		modals.open(ConfirmDialog, {
 			title: 'Включение подсистемы',
 			message: 'Вы действительно хотите ' + status + ' подсистему и перезагрузить микроконтроллер?',
@@ -95,99 +101,137 @@
 </script>
 
 <div class="settings-container" class:disabled>
-	<div class="settings-item">
-		<div class="input-label-container">
-			<span class="input-label">Состояние подсистемы</span>
-			<span class="settings-description">{disabled ? 'Отключена' : 'Активна'}</span>
-		</div>
-		<label class="toggle-container">
-			<input
-				type="checkbox"
-				class="toggle-input"
-				checked={!disabled}
-				onchange={confirmToggle}
-			/>
-			<span class="toggle-slider"></span>
-		</label>
-	</div>
-
-	{#if isLoading}
-		<div class="loading-container">
-			<p class="loading-text">Загрузка настроек...</p>
-			<div class="loading-spinner"></div>
-		</div>
-	{:else if error}
-		<div class="error-container">
-			<p class="error-text">Ошибка: {error}</p>
-		</div>
-	{:else}
+	<div class="settings-grid">
+		<div class="settings-panel">
 			<div class="settings-section">
-				<!-- Поле для токена бота -->
-				<div class="input-group">
-					<span class="input-label">Telegram Bot Token</span>
-					<div class="input-wrapper">
-						<input
-							type={showToken ? 'text' : 'password'}
-							bind:value={token}
-							disabled={disabled}
-							class="input-field"
-							placeholder="Введите токен бота"
-						/>
-						<button
-							type="button"
-							onclick={toggleTokenVisibility}
-							disabled={disabled}
-							class="edit-button"
-							title={showToken ? 'Скрыть токен' : 'Показать токен'}
-						>
-							{#if showToken}
-								<Eye />
-							{:else}
-								<Eye_off />
-							{/if}
-						</button>
+				<div class="settings-group">
+					<!-- Строка: состояние подсистемы -->
+					<div class="settings-item">
+						<div class="input-label-container">
+							<span class="input-label">Состояние подсистемы</span>
+							<span class="settings-description">{disabled ? 'Отключена' : 'Активна'}</span>
+						</div>
+						<Toggle checked={!disabled} onchange={confirmToggle} />
 					</div>
-					<p class="settings-description">
-						Пример: <code>7532468911:MAHOs4hPCb0lfK6QlOFynhoKIEIJrAfiCd34</code>
-					</p>
-				</div>
 
-				<!-- Поле для Chat ID -->
-				<div class="input-group">
-					<span class="input-label">Chat ID</span>
-					<div class="input-wrapper">
-						<input
-							type="text"
-							bind:value={chat_id}
-							disabled={disabled}
-							class="input-field"
-							placeholder="Введите ID чата"
-						/>
-					</div>
-					<p class="settings-description">
-						Числовой ID чата или канала (например: <code>-1002737904165</code>)
-					</p>
-				</div>
+					{#if isLoading}
+						<div class="settings-item">
+							<div class="loading-container flex flex-col items-center gap-2">
+								<p class="loading-text">Загрузка настроек...</p>
+								<span
+									class="loading loading-spinner loading-lg text-primary"
+									aria-hidden="true"
+								></span>
+							</div>
+						</div>
+					{:else if error}
+						<div class="settings-item">
+							<div class="error-container">
+								<p class="error-text">Ошибка: {error}</p>
+							</div>
+						</div>
+					{:else}
+						<!-- Строка: Telegram Bot Token -->
+						<div class="settings-item settings-item--stacked">
+							<span class="input-label">Telegram Bot Token</span>
+							<div class="input-wrapper">
+								<input
+									type={showToken ? 'text' : 'password'}
+									bind:value={token}
+									disabled={disabled}
+									class="input-field"
+									placeholder="Введите токен бота"
+								/>
+								<button
+									type="button"
+									onclick={toggleTokenVisibility}
+									disabled={disabled}
+									class="edit-button"
+									title={showToken ? 'Скрыть токен' : 'Показать токен'}
+								>
+									{#if showToken}
+										<Eye />
+									{:else}
+										<Eye_off />
+									{/if}
+								</button>
+							</div>
+							<p class="settings-description">
+								Пример:
+								<code>7532468911:MAHOs4hPCb0lfK6QlOFynhoKIEIJrAfiCd34</code>
+							</p>
+						</div>
 
-				<!-- Кнопка сохранения -->
-				<div class="modal-actions">
-					<button
-						onclick={saveSettings}
-						disabled={disabled || isSaving}
-						class="btn btn-primary"
-					>
-						{#if isSaving}
-							<svg class="btn-icon spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-							</svg>
-							Сохранение...
-						{:else}
-							Сохранить настройки
-						{/if}
-					</button>
+						<!-- Строка: Chat ID -->
+						<div class="settings-item settings-item--stacked">
+							<span class="input-label">Chat ID</span>
+							<div class="input-wrapper">
+								<input
+									type="text"
+									bind:value={chat_id}
+									disabled={disabled}
+									class="input-field"
+									placeholder="Введите ID чата"
+								/>
+							</div>
+							<p class="settings-description">
+								Числовой ID чата или канала (например:
+								<code>-1002737904165</code>)
+							</p>
+						</div>
+
+						<!-- Строка: действия -->
+						<div class="settings-item">
+							<div class="modal-actions">
+								<button
+									onclick={saveSettings}
+									disabled={disabled || isSaving}
+									class="btn btn-primary"
+								>
+									{#if isSaving}
+										<svg
+											class="btn-icon spinner"
+											xmlns="http://www.w3.org/2000/svg"
+											fill="none"
+											viewBox="0 0 24 24"
+										>
+											<circle
+												class="opacity-25"
+												cx="12"
+												cy="12"
+												r="10"
+												stroke="currentColor"
+												stroke-width="4"
+											></circle>
+											<path
+												class="opacity-75"
+												fill="currentColor"
+												d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+											></path>
+										</svg>
+										Сохранение...
+									{:else}
+										Сохранить настройки
+									{/if}
+								</button>
+							</div>
+						</div>
+					{/if}
 				</div>
 			</div>
-	{/if}
+		</div>
+	</div>
 </div>
 
+<style lang="scss">
+	@use '$lib/styles/base/variables' as v;
+
+	/* Для Telegram-вкладки используем одноколоночную сетку на всех брейкпоинтах */
+	.settings-grid {
+		grid-template-columns: 1fr;
+
+		@media (min-width: v.$breakpoint-md) {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

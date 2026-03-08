@@ -1,7 +1,6 @@
 import type { PageLoad } from './$types';
-import { goto } from '$app/navigation';
 
+// No special data needed; keep for type completeness
 export const load = (async () => {
-	goto('/');
-	return;
+	return {};
 }) satisfies PageLoad;

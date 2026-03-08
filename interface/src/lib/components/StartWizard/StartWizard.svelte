@@ -254,7 +254,7 @@
 						onclick={submitSettings} 
 						class="btn btn-success" disabled={isLoading}>
 						{#if isLoading}
-							<span class="loading-spinner"></span>
+							<span class="loading loading-spinner loading-md text-primary-content" aria-hidden="true"></span>
 						{:else}
 							<Check class="h-5 w-5" />
 						{/if}
@@ -266,3 +266,4 @@
 
 	</div>
 {/if}
+
