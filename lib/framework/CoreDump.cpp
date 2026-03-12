@@ -37,32 +37,68 @@ void CoreDump::begin()
     ESP_LOGV("CoreDump", "Registered GET endpoint: %s", CORE_DUMP_SERVICE_PATH);
 }
 
-esp_err_t CoreDump::coreDump(PsychicRequest* request) {
-    httpd_resp_set_status(request->request(), "200 OK");
+esp_err_t CoreDump::coreDump(PsychicRequest *request)
+{
+    size_t coredump_addr;
+    size_t coredump_size;
+
+    // 1. Пытаемся найти валидный дамп через официальное API
+    esp_err_t err = esp_core_dump_image_get(&coredump_addr, &coredump_size);
+
+    if (err != ESP_OK || coredump_size == 0) {
+        ESP_LOGW(SVK_TAG, "Core dump not found or empty");
+        request->reply(404, "application/json", "{\"status\":\"error\",\"message\":\"no core dump found\"}");
+        return err;
+    }
+
+    ESP_LOGI(SVK_TAG, "Found coredump: size %u bytes at addr 0x%x", coredump_size, coredump_addr);
+
+    // 2. Настраиваем HTTP ответ
     PsychicResponse response(request);
     response.setCode(200);
     response.setContentType("application/octet-stream");
-    response.addHeader("Content-Disposition", "attachment;filename=core.bin");
+    // Чтобы браузер сразу предлагал сохранить файл
+    response.addHeader("Content-Disposition", "attachment; filename=core.bin");
     response.sendHeaders();
 
-    esp_partition_iterator_t partition_iterator = esp_partition_find(
-        ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, "coredump");
+    // 3. Читаем и отправляем чанками
+    const size_t chunk_size = 512; // Оптимально: не перегружает стек и быстро передает
+    uint8_t *buffer = (uint8_t *)malloc(chunk_size);
+    if (!buffer) return ESP_ERR_NO_MEM;
 
-    const esp_partition_t* partition = esp_partition_get(partition_iterator);
+    size_t offset = 0;
+    for (; offset < coredump_size; offset += chunk_size) {
+        size_t read_len = (coredump_size - offset < chunk_size) ? (coredump_size - offset) : chunk_size;
 
-    int file_size = 65536;
-    int chunk_size = 1024;
-    int i = 0;
-    for (i = 0; i < (file_size / chunk_size); i++) {
-        uint8_t store_data[chunk_size];
-        ESP_ERROR_CHECK(esp_partition_read(partition, i * chunk_size, store_data, chunk_size));
-        response.sendChunk(store_data, chunk_size);
+        // Читаем напрямую из flash, зная адрес и смещение
+        err = esp_flash_read(esp_flash_default_chip, buffer, coredump_addr + offset, read_len);
+        if (err != ESP_OK) {
+            ESP_LOGE(SVK_TAG, "Flash read failed at offset %u", offset);
+            break;
+        }
+
+        if (response.sendChunk(buffer, read_len) != ESP_OK) {
+            ESP_LOGE(SVK_TAG, "Chunk send failed");
+            break;
+        }
     }
-    uint16_t pending_size = file_size - (i * chunk_size);
-    uint8_t pending_data[pending_size];
-    if (pending_size > 0) {
-        ESP_ERROR_CHECK(esp_partition_read(partition, i * chunk_size, pending_data, pending_size));
-        response.sendChunk(pending_data, pending_size);
+    bool transfer_complete = (offset >= coredump_size);
+
+    free(buffer);
+    response.finishChunking();
+
+    // 4. Очистка (Erase) — только при успешной передаче, чтобы сохранить дамп для повторной попытки
+    if (transfer_complete) {
+        uint32_t sectors_to_erase = (coredump_size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
+        ESP_LOGI(SVK_TAG, "Erasing %u sectors of coredump", sectors_to_erase);
+
+        err = esp_flash_erase_region(esp_flash_default_chip, coredump_addr, sectors_to_erase * SPI_FLASH_SEC_SIZE);
+        if (err != ESP_OK) {
+            ESP_LOGE(SVK_TAG, "Erase failed: %d", err);
+        }
+    } else {
+        ESP_LOGW(SVK_TAG, "Transfer incomplete, coredump preserved for retry");
     }
-    return response.finishChunking();
+
+    return err;
 }

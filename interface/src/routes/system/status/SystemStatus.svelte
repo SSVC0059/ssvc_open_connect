@@ -5,7 +5,6 @@
 	import { page } from '$app/state';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import SettingsCard from '$lib/components/SettingsCard.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import CPU from '~icons/tabler/cpu';
@@ -26,6 +25,7 @@
 	import SDK from '~icons/tabler/sdk';
 	import type { SystemInformation, Analytics } from '$lib/types/models';
 	import { socket } from '$lib/stores/socket';
+	import { convertSeconds } from '$lib/utils/formatters';
 
 	let systemInformation: SystemInformation = $state();
 
@@ -124,32 +124,6 @@
 		});
 	}
 
-	function convertSeconds(seconds: number) {
-		// Calculate the number of seconds, minutes, hours, and days
-		let minutes = Math.floor(seconds / 60);
-		let hours = Math.floor(minutes / 60);
-		let days = Math.floor(hours / 24);
-
-		// Calculate the remaining hours, minutes, and seconds
-		hours = hours % 24;
-		minutes = minutes % 60;
-		seconds = seconds % 60;
-
-		// Create the formatted string
-		let result = '';
-		if (days > 0) {
-			result += days + ' day' + (days > 1 ? 's' : '') + ' ';
-		}
-		if (hours > 0) {
-			result += hours + ' hour' + (hours > 1 ? 's' : '') + ' ';
-		}
-		if (minutes > 0) {
-			result += minutes + ' minute' + (minutes > 1 ? 's' : '') + ' ';
-		}
-		result += seconds + ' second' + (seconds > 1 ? 's' : '');
-
-		return result;
-	}
 </script>
 
 <SettingsCard collapsible={false}>
@@ -162,7 +136,9 @@
 
 	<div class="w-full overflow-x-auto">
 		{#await getSystemStatus()}
-			<Spinner />
+			<div class="flex flex-col items-center justify-center gap-2 py-6">
+				<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+			</div>
 		{:then nothing}
 			<div
 				class="flex w-full flex-col space-y-1"

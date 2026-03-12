@@ -105,6 +105,12 @@
 
 </script>
 <div class="telemetry-container">
+	{#if status?.uartConnectionError}
+		<div class="uart-error-banner" role="alert">
+			<span class="uart-error-icon">⚠</span>
+			Нет связи с SSVC. Проверьте подключение по UART и включено ли устройство.
+		</div>
+	{/if}
 	<div class="status-bar">
 		<div class="status-left">
 			<span class="status-item">
@@ -235,9 +241,34 @@
 </div>
 
 <style lang="scss">
+	@use "$lib/styles/base/variables" as v;
 	@use "$lib/styles/base/mixins" as *;
 
   // Base Styles
+  .uart-error-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+    border: 1px solid #ffc107;
+    border-radius: var(--border-radius);
+    color: #856404;
+    font-weight: 600;
+    font-size: 0.95rem;
+
+    .uart-error-icon {
+      font-size: 1.25rem;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: linear-gradient(135deg, #5c4a00 0%, #7a5f00 100%);
+      border-color: #b38600;
+      color: #ffecb3;
+    }
+  }
+
   .telemetry-container {
     .status-bar {
       max-width: 100%;
@@ -267,8 +298,7 @@
       .status-item {
         .label {
           font-weight: 700;
-					color: var(--primary-800);
-          @include dark-theme-color;
+          color: var(--text-color);
         }
         .time-value {
           font-weight: 700;
@@ -276,7 +306,7 @@
       }
 
       // On mobile, stack everything and center it
-      @media (max-width: 768px) {
+      @media (max-width: v.$breakpoint-md) {
         flex-direction: column;
         justify-content: center;
         gap: 0.5rem;
@@ -303,7 +333,7 @@
           display: flex;
           flex-direction: column;
 
-          @media (min-width: 1024px) {
+          @media (min-width: v.$breakpoint-lg) {
             grid-column: span 3;
           }
 
@@ -334,22 +364,26 @@
           }
         }
 
-        @media (min-width: 1024px) {
+        @media (min-width: v.$breakpoint-lg) {
           flex-direction: row;
+          align-items: stretch;
+
+          .sidebar-left,
+          .center-panel,
+          .sidebar-right {
+            min-width: 0; // позволяем колонкам сжиматься, чтобы избежать горизонтального скролла
+          }
 
           .sidebar-left {
-            flex: 0 0 25%; // 25% ширины, не растягивается
-            min-width: 250px;
+            flex: 0 0 22%; // при 1024px оставляем больше места центру
           }
 
           .center-panel {
-            flex: 1; // Занимает оставшееся пространство
-            min-width: 0; // Важно для корректного сжатия
+            flex: 1;
           }
 
           .sidebar-right {
-            flex: 0 0 25%; // 25% ширины
-            min-width: 250px;
+            flex: 0 0 22%;
           }
         }
       }
@@ -371,10 +405,9 @@
         .panel-title {
           font-size: 2rem;
           font-weight: 700;
-          color: var(--primary-800);
+          color: var(--text-color);
           margin-bottom: 1rem;
           text-align: center;
-          @include dark-theme-color;
         }
       }
 
@@ -391,6 +424,12 @@
 					display: flex;
 					flex-direction: column;
 					@include parameter-container;
+					/* Override mixin color so theme text is readable in dark mode */
+					.section-title,
+					.readings-list .reading-item .reading-label,
+					.readings-list .reading-item .reading-value {
+						color: var(--text-color) !important;
+					}
 				}
 
 				// Сделаем скроллбар аккуратным и тонким
@@ -409,6 +448,12 @@
 			.parameters-readings {
 				@include parameter-container;
 				margin-top: auto; // Гарантированно прижимает к низу
+				/* Override mixin color so theme text is readable in dark mode */
+				.section-title,
+				.readings-list .reading-item .reading-label,
+				.readings-list .reading-item .reading-value {
+					color: var(--text-color) !important;
+				}
 			}
 
 				}

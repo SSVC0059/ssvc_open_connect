@@ -1,7 +1,4 @@
 <script lang="ts">
-	import { Popover } from 'flowbite-svelte';
-	import { slide } from 'svelte/transition';
-
 	interface Props {
 		n: string;
 		vo?: number;
@@ -14,8 +11,11 @@
 
 	let { n, vo = 0, o = 0, p = 0, s = 0, f = 0, active = false }: Props = $props();
 
-	// вычисляем статус (runes mode)
 	const status = $derived(active ? "active" : f > 0 ? "done" : "not-started");
+
+	const tooltipText = $derived(
+		`Параметры клапана\nВремя открытия: ${o} сек\nПериодичность: ${p} сек\nСкорость отбора: ${s} мл/ч\nПропускная способность: ${vo / 100}%`
+	);
 </script>
 
 {#if status !== "not-started"}
@@ -28,36 +28,15 @@
 					<p class="status-completed">Этап завершен</p>
 				{:else if status === "active"}
 					<div class="active-stage">
-						<span class="valve-value">
-							{#if o}
-								{o.toFixed(2)} / {p}
-							{:else}
-								Закрыт
-							{/if}
-						</span>
-
-						<Popover
-							title="Параметры клапана"
-							transition={slide}
-							placement="left"
-						>
-							<div class="parameter-row">
-								<p>Время открытия:</p>
-								<p class="parameter-value">{o} сек</p>
-							</div>
-							<div class="parameter-row">
-								<p>Периодичность:</p>
-								<p class="parameter-value">{p} сек</p>
-							</div>
-							<div class="parameter-row">
-								<p>Cкорость отбора:</p>
-								<p class="parameter-value">{s} мл/ч</p>
-							</div>
-							<div class="parameter-row">
-								<p>Пропускная способность:</p>
-								<p class="parameter-value">{vo / 100}%</p>
-							</div>
-						</Popover>
+						<div class="tooltip tooltip-left whitespace-pre-line" data-tip={tooltipText}>
+							<span class="valve-value cursor-help">
+								{#if o}
+									{o.toFixed(2)} / {p}
+								{:else}
+									Закрыт
+								{/if}
+							</span>
+						</div>
 					</div>
 				{/if}
 
@@ -69,7 +48,7 @@
 {/if}
 
 <style lang="scss">
-
+  @use "$lib/styles/base/variables" as v;
   @use "$lib/styles/base/mixins" as *;
 
   .valve-content {
@@ -93,7 +72,7 @@
     .status-completed {
       margin-top: 0.25rem;
       font-weight: 600;
-      color: #10b981;
+      color: var(--green-500);
       text-align: center;
     }
 
@@ -104,7 +83,7 @@
       margin-top: 0.5rem;
       font-size: 1rem;
 
-      @media (min-width: 1024px) {
+      @media (min-width: v.$breakpoint-lg) {
         font-size: 1.25rem;
       }
     }
@@ -128,23 +107,6 @@
     .collected-value {
       font-weight: 700;
       color: var(--green-500);
-    }
-
-    .parameter-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 0.5rem;
-      font-size: 0.875rem;
-      font-weight: 300;
-      color: var(--primary-500);
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-    }
-
-    .parameter-value {
-      font-weight: 600;
     }
   }
 

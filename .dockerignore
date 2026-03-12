@@ -1,0 +1,21 @@
+# Исключения для Docker build context
+.pio
+.pioenvs
+.piolibdeps
+interface/node_modules
+interface/build
+interface/coverage
+data/www
+src/certs
+ssl_certs/cacert.pem
+build
+releases
+logs
+*.log
+.git
+.gitignore
+.vscode
+.idea
+docs
+mkdocs.yml
+site

@@ -20,6 +20,7 @@
 
 #include "Adafruit_NeoPixel.h"
 #include "ESP32SvelteKit.h"
+#include "core/SsvcConnector.h"
 
 #define DEFAULT_STATUS_LED_PIN 48
 

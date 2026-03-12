@@ -88,6 +88,8 @@ void SsvcConnector::initSsvcController() {
   );
 }
 
+constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
+
 [[noreturn]] void SsvcConnector::_telemetry(void *pvParameters) {
   auto *self = static_cast<SsvcConnector *>(pvParameters);
   static char data[1024];        // Буфер для данных
@@ -103,12 +105,14 @@ void SsvcConnector::initSsvcController() {
 
     memset(data, 0, sizeof(data));
     int idx = 0;
+    TickType_t lastByteTime = xTaskGetTickCount();
 
     while (true) {
       // Чтение одного байта за раз
       const int len = uart_read_bytes(SSVC_OPEN_CONNECT_UART_NUM,
                                 (uint8_t *)&data[idx], 1, pdMS_TO_TICKS(100));
       if (len > 0) {
+        lastByteTime = xTaskGetTickCount();
         // Если встретили символ переноса строки, завершаем чтение
         if (data[idx] == '\n') {
           data[idx] = '\0'; // Завершаем строку
@@ -121,6 +125,10 @@ void SsvcConnector::initSsvcController() {
           break;
         }
       } else {
+        // Таймаут: если долго нет данных — выходим (SSVC выключен)
+        if ((xTaskGetTickCount() - lastByteTime) > pdMS_TO_TICKS(UART_READ_TIMEOUT_MS)) {
+          break;
+        }
         vTaskDelay(pdMS_TO_TICKS(100));
       }
     }
@@ -133,13 +141,16 @@ void SsvcConnector::initSsvcController() {
       ESP_LOGE("SsvcConnector", "Ошибка десериализации: %s", error.c_str());
 
       if (errorCounter >= errorThreshold) {
+        if (!self->uartCommunicationError) {
+          SsvcCommandsQueue::getQueue().scheduleUartRetryTimer();
+        }
         self->uartCommunicationError = true;
       }
     } else {
 
-      ESP_LOGI("SsvcConnector", "Начало вывода данных", data);
-      ESP_LOGI("SsvcConnector", "%s", data);
-      ESP_LOGI("SsvcConnector", "Конец вывода данных");
+      ESP_LOGV("SsvcConnector", "Начало вывода данных");
+      ESP_LOGV("SsvcConnector", "%s", data);
+      ESP_LOGV("SsvcConnector", "Конец вывода данных");
 
       if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
         self->lastMessage = std::string(data);
@@ -150,6 +161,12 @@ void SsvcConnector::initSsvcController() {
                  "Не удалось захватить мьютекс для lastMessage");
       }
 
+      // SSVC появился после ошибки связи — запрашиваем настройки и версию
+      if (self->uartCommunicationError) {
+        ESP_LOGI("SsvcConnector", "SSVC connected, requesting settings and version");
+        SsvcCommandsQueue::getQueue().getSettings();
+        SsvcCommandsQueue::getQueue().version();
+      }
       self->uartCommunicationError = false;
       if (doc["type"] == "response") {
         if (doc["request"] == "GET_SETTINGS") {
@@ -191,7 +208,7 @@ void SsvcConnector::initSsvcController() {
       }
     }
 
-    vTaskDelay(pdMS_TO_TICKS(500)); // Пауза для предотвращения перегрузки
+    vTaskDelay(pdMS_TO_TICKS(500)); 
   }
 }
 

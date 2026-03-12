@@ -344,7 +344,11 @@ print(f"\nИспользуется ELF файл: {kwargs['prog']}")
 print("\nЗапуск анализа core dump...")
 print("=" * 60)
 
-# Удаляем неиспользуемые аргументы
+# Сохраняем пути перед очисткой kwargs
+final_elf = kwargs.get('prog')
+final_core = kwargs.get('core')
+
+# Удаляем неиспользуемые аргументы для конструктора CoreDump
 for key in ['elf_dir', 'ps_profile', 'skip_esp_setup']:
     if key in kwargs:
         del kwargs[key]
@@ -361,6 +365,28 @@ try:
                 pass
 
     print("\n✓ Анализ завершен успешно!")
+
+    # ====== 6. ИНСТРУКЦИЯ ДЛЯ ИНТЕРАКТИВНОЙ ОТЛАДКИ ======
+    # ====== 6. ИНСТРУКЦИЯ ДЛЯ ИНТЕРАКТИВНОЙ ОТЛАДКИ ======
+    print("\n" + "=" * 60)
+    print("КОМАНДА ДЛЯ ЗАПУСКА GDB (ИНТЕРАКТИВНАЯ ОТЛАДКА)")
+    print("=" * 60)
+
+    # Извлекаем путь к GDB, который скрипт нашел в начале
+    gdb_path = kwargs.get('gdb')
+
+    # Формируем команду с ПРЯМЫМ указанием GDB, чтобы не зависеть от окружения PATH
+    if gdb_path:
+        debug_cmd = f"python -m esp_coredump dbg_corefile --gdb \"{gdb_path}\" --core {final_core} {final_elf}"
+    else:
+        debug_cmd = f"python -m esp_coredump dbg_corefile --core {final_core} {final_elf}"
+
+    print("Чтобы изучить переменные и стек 'вживую', выполните:")
+    print(f"\n{debug_cmd}\n")
+    print("Полезные команды GDB:")
+    print("  bt full       - показать стек и значения всех переменных")
+    print("  f 0           - перейти к кадру падения")
+    print("=" * 60)
 
 except Exception as e:
     print(f"\n✗ Ошибка при анализе core dump: {e}")
@@ -380,3 +406,4 @@ except Exception as e:
     print(f"python analyze_dump.py --prog build\\ssvc_open_connect.elf coredump.bin")
 
     sys.exit(1)
+

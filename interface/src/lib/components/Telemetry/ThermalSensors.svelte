@@ -188,51 +188,51 @@
 
       // ИСПРАВЛЕНИЕ: Удалено !important
       .threshold-active-min {
-        color: var(--color-blue-400, #4C9AFF);
+        color: var(--blue-400);
         font-weight: 600;
       }
 
       .threshold-active-dangerous {
-        color: var(--color-orange-500, #FF9900);
+        color: var(--orange-500);
         font-weight: 700;
-        background-color: var(--color-orange-500-light, rgba(255, 153, 0, 0.15));
+        background-color: var(--orange-500-light);
       }
 
       .threshold-active-critical {
-        color: var(--color-red-600, #D93F36);
+        color: var(--red-600);
         font-weight: 800;
-        background-color: var(--color-red-600-light, rgba(217, 63, 54, 0.25));
+        background-color: var(--red-600-light);
       }
     }
   }
 
   // 💡 Стилизация для индикации порогов
   .status-min {
-    color: var(--color-blue-400, #4C9AFF);
+    color: var(--blue-400);
     font-weight: 600;
   }
 
   .status-dangerous {
-    color: var(--color-orange-500, #FF9900);
+    color: var(--orange-500);
     font-weight: 700;
-    background-color: var(--color-orange-500-light, rgba(255, 153, 0, 0.15));
+    background-color: var(--orange-500-light);
     padding: 0 4px;
     border-radius: 4px;
   }
 
   .status-critical {
-    color: var(--color-red-600, #D93F36);
+    color: var(--red-600);
     font-weight: 800;
     animation: pulse-red 1s infinite alternate;
     padding: 0 4px;
     border-radius: 4px;
-    background-color: var(--color-red-600-light, rgba(217, 63, 54, 0.25));
+    background-color: var(--red-600-light);
   }
 
 
   @keyframes pulse-red {
-    from { box-shadow: 0 0 5px var(--color-red-600, #D93F36);
+    from { box-shadow: 0 0 5px var(--red-600);
     }
-    to { box-shadow: 0 0 8px var(--color-red-600, #D93F36), 0 0 12px var(--color-red-600-dark, #A02B25); }
+    to { box-shadow: 0 0 8px var(--red-600), 0 0 12px var(--red-600-dark); }
   }
 </style>

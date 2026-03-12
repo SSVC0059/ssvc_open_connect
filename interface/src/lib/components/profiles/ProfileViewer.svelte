@@ -63,7 +63,7 @@
 		<!-- ОБЩИЕ ПАРАМЕТРЫ                                                         -->
 		<!-- ======================================================================= -->
 		{#if profile.powerKw != null || profile.volumeL != null || profile.strengthVol != null || profile.stabilizationMin != null}
-			<div class="card">
+			<div class="profile-card">
 				<h3 class="card-title">Общие параметры</h3>
 				<div class="params-grid">
 					{#if profile.powerKw != null}
@@ -86,7 +86,7 @@
 			<!-- ======================================================================= -->
 			<!-- ИТОГОВАЯ АНАЛИТИКА                                                      -->
 			<!-- ======================================================================= -->
-			<div class="card summary-card">
+			<div class="profile-card">
 				<h3 class="card-title">Итоговые параметры процесса</h3>
 				<div class="summary-grid">
 					<AnalyticsValue
@@ -114,7 +114,7 @@
 			<!-- ======================================================================= -->
 			<!-- РАЗБИВКА ПО ФРАКЦИЯМ                                                    -->
 			<!-- ======================================================================= -->
-			<div class="card">
+			<div class="profile-card">
 				<h3 class="card-title">Разбивка по фракциям</h3>
 				<div class="fractions-grid">
 					<!-- Головы -->
@@ -248,24 +248,21 @@
 		gap: 1rem;
 	}
 
-	.card {
-		background-color: var(--white);
+	/* Светлая тема: отчётливо отделяем карточки от панели */
+	.profile-card {
+		background-color: oklch(var(--b2, 0.96 0.01 260));
 		border-radius: var(--border-radius);
-		padding: 1.25rem;
-		border: 1px solid var(--primary-300);
+		padding: 1.25rem 1.5rem;
+		border: 1px solid oklch(var(--bc, 0.25 0 260) / 0.25);
+		box-shadow: 0 4px 24px oklch(var(--bc, 0.25 0 260) / 0.12);
 	}
 
 	.card-title {
 		font-size: 1.125rem;
-		color: var(--primary-800);
+		color: oklch(var(--bc));
 		margin: 0 0 1rem 0;
 		padding-bottom: 0.75rem;
-		border-bottom: 1px solid var(--primary-200);
-	}
-
-	.summary-card {
-		background-color: var(--primary-100);
-		border-color: var(--blue-300);
+		border-bottom: 1px solid oklch(var(--bc) / 0.25);
 	}
 
 	.summary-grid,
@@ -282,8 +279,8 @@
 	}
 
 	.fraction-card {
-		background-color: var(--gray-50);
-		border: 1px solid var(--primary-200);
+		background-color: oklch(var(--b3));
+		border: 1px solid oklch(var(--bc, 0.25 0 260) / 0.3);
 		padding: 1rem;
 		border-radius: var(--border-radius);
 		display: flex;
@@ -294,7 +291,7 @@
 	.fraction-title {
 		font-size: 1rem;
 		font-weight: 600;
-		color: var(--primary-700);
+		color: oklch(var(--bc));
 		margin: 0;
 		text-align: center;
 	}
@@ -302,14 +299,32 @@
 	.message-box {
 		padding: 2rem;
 		text-align: center;
-		background-color: var(--gray-50);
+		background-color: oklch(var(--b2));
+		border: 1px solid oklch(var(--bc) / 0.25);
 		border-radius: var(--border-radius);
-		color: var(--gray-600);
+		color: oklch(var(--bc) / 0.8);
 	}
 
 	.error-box {
-		background-color: var(--red-50);
-		color: var(--red-700);
-		border: 1px solid var(--red-200);
+		background-color: oklch(var(--er) / 0.15);
+		color: oklch(var(--er));
+		border: 1px solid oklch(var(--er) / 0.5);
+	}
+
+	/* Тёмная тема: DaisyUI --b1/--b2/--b3 слишком близки по яркости, секции сливаются с фоном — единый фон всех секций */
+	@media (prefers-color-scheme: dark) {
+		.profile-card {
+			background-color: var(--dark-surface-color);
+			border-color: var(--dark-border-color);
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+		}
+		.fraction-card {
+			background-color: var(--dark-surface-color);
+			border-color: var(--dark-border-color);
+		}
+		.message-box {
+			background-color: var(--dark-surface-color);
+			border-color: var(--dark-border-color);
+		}
 	}
 </style>

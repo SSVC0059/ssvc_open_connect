@@ -18,18 +18,7 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
-class StringView {
-public:
-    StringView(const char* data, size_t size) : data_(data), size_(size) {}
-    StringView(const std::string& s) : data_(s.data()), size_(s.size()) {}
-
-    const char* data() const { return data_; }
-    size_t size() const { return size_; }
-
-private:
-    const char* data_;
-    size_t size_;
-};
+#include "StringView.h"
 
 // RAII-обертка для мьютекса
 class MutexLocker {

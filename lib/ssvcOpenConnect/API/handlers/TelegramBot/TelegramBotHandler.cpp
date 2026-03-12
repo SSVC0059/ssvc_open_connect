@@ -49,10 +49,15 @@ esp_err_t TelegramBotHandler::updateSettings(PsychicRequest* request)
         result = true;
     }
 
-    if (jsonBuffer["chat_id"].is<std::string>()) {
-        const auto chat_id = jsonBuffer["chat_id"].as<int64_t>();
-        ESP_LOGD(TAG, "Received chat_id: %d", chat_id);
+    if (jsonBuffer["chat_id"].is<const char*>() || jsonBuffer["chat_id"].is<std::string>()) {
+        const auto chat_id = jsonBuffer["chat_id"].as<String>();
+        ESP_LOGD(TAG, "Received chat_id: %s", chat_id.c_str());
         TelegramBotClient::bot().setChatID(chat_id);
+        result = true;
+    } else if (!jsonBuffer["chat_id"].isNull()) {
+        char buf[24];
+        snprintf(buf, sizeof(buf), "%lld", (long long)jsonBuffer["chat_id"].as<int64_t>());
+        TelegramBotClient::bot().setChatID(String(buf));
         result = true;
     }
 
@@ -75,7 +80,7 @@ esp_err_t TelegramBotHandler::getSettings(PsychicRequest* request)
     const auto root = response.getRoot();
     response.setCode(200);
     const String token = TelegramBotClient::bot().getBotToken();
-    const int64_t chat_id = TelegramBotClient::bot().getChatId();
+    const String chat_id = TelegramBotClient::bot().getChatId();
     root["token"] = token;
     root["chat_id"] = chat_id;
     return response.send();

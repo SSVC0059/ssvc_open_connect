@@ -11,7 +11,8 @@
 		isOpen?: boolean;
 		title: string;
 		message: string;
-		onConfirm: any;
+		onConfirm: () => void;
+		onCancel?: () => void;
 		labels?: any;
 	}
 
@@ -20,6 +21,7 @@
 		title,
 		message,
 		onConfirm,
+		onCancel = () => modals.close(),
 		labels = {
 			cancel: { label: 'Cancel', icon: Cancel },
 			confirm: { label: 'OK', icon: Check }
@@ -46,6 +48,7 @@
 				<button
 					class="btn btn-primary inline-flex items-center"
 					onclick={() => {
+						onCancel();
 						modals.close();
 					}}><labels.cancel.icon class="h-5 w-5" /><span>{labels?.cancel.label}</span></button
 				>

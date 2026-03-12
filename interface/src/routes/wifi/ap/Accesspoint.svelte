@@ -7,8 +7,6 @@
 	import { user } from '$lib/stores/user';
 	import { page } from '$app/state';
 	import { notifications } from '$lib/components/toasts/notifications';
-	import Spinner from '$lib/components/Spinner.svelte';
-	import Collapsible from '$lib/components/Collapsible.svelte';
 	import AP from '~icons/tabler/access-point';
 	import MAC from '~icons/tabler/dna-2';
 	import Home from '~icons/tabler/home';
@@ -195,7 +193,9 @@
 	{/snippet}
 	<div class="w-full">
 		{#await getAPStatus()}
-			<Spinner />
+			<div class="flex flex-col items-center justify-center gap-2 py-6">
+				<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+			</div>
 		{:then nothing}
 			<div
 				class="flex w-full flex-col space-y-1"
@@ -262,7 +262,9 @@
 				Change AP Settings
 			</div>
 			{#await getAPSettings()}
-				<Spinner />
+				<div class="flex flex-col items-center justify-center gap-2 py-6">
+					<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+				</div>
 			{:then nothing}
 				<div
 					class="flex flex-col gap-2 p-0"

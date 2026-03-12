@@ -6,7 +6,6 @@
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-	import SettingsCard from '$lib/components/SettingsCard.svelte';
 	import FirmwareUpdateDialog from '$lib/components/FirmwareUpdateDialog.svelte';
 	import { telemetry } from '$lib/stores/telemetry';
 	import OTA from '~icons/tabler/file-upload';
@@ -209,13 +208,14 @@
 	}
 </script>
 
-<SettingsCard collapsible={false}>
-	{#snippet icon()}
-		<OTA class="flex-shrink-0 mr-2 h-6 w-6 self-end rounded-full" />
-	{/snippet}
-	{#snippet title()}
+<div
+	class="update-card rounded-box bg-base-100 border border-base-content/10 w-full lg:w-3/4 mx-auto flex flex-col gap-4 p-4 sm:p-6"
+>
+	<div class="flex items-center gap-2 text-xl font-medium">
+		<OTA class="h-6 w-6" />
 		<span>Загрузка обновления</span>
-	{/snippet}
+	</div>
+
 	<div class="alert alert-warning shadow-lg">
 		<Warning class="h-6 w-6 shrink-0" />
 		<span
@@ -262,4 +262,4 @@
 		accept=".bin,.md5"
 		onchange={handleFileChange}
 	/>
-</SettingsCard>
+</div>

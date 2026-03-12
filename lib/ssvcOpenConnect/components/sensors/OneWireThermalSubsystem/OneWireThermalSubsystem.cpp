@@ -21,6 +21,8 @@
 #include "components/sensors/DS18B20Sensor/DS18B20Sensor.h"
 #include "components/sensors/SensorManager/SensorManager.h"
 #include "core/SsvcOpenConnect.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 OneWireThermalSubsystem& OneWireThermalSubsystem::getInstance() {
     static OneWireThermalSubsystem instance;
@@ -40,6 +42,8 @@ bool OneWireThermalSubsystem::initialize() {
 
     // 2. Поиск и регистрация датчиков
     discoverAndRegisterSensors();
+
+    dallasTemp->setWaitForConversion(false);
 
     const auto* ssvcConnect = &SsvcOpenConnect::getInstance();
 
@@ -128,13 +132,14 @@ void OneWireThermalSubsystem::poll() {
     if (dallasTemp) {
         ESP_LOGV(TAG, "Polling cycle started. Requesting temperatures for all %zu devices.", ds18b20Sensors.size());
 
-        dallasTemp->requestTemperatures(); 
-        
-        ESP_LOGV(TAG, "Temperature conversion initiated/completed.");
+        dallasTemp->requestTemperatures();
+
+        const uint16_t conversionMs = dallasTemp->millisToWaitForConversion();
+        vTaskDelay(pdMS_TO_TICKS(conversionMs));
+
+        ESP_LOGV(TAG, "Temperature conversion completed (waited %u ms).", static_cast<unsigned>(conversionMs));
     }
 
-    // 2. Фаза 2: Считывание и обновление состояния
-    // Итерируемся по внутреннему списку DS18B20Sensor*.
     int readCount = 0;
     for (DS18B20Sensor* dsSensor : ds18b20Sensors) {
         

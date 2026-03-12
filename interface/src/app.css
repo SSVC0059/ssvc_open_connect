@@ -29,17 +29,38 @@
         --primary-600: #486581;
         --primary-700: #334e68;
         --primary-800: #243b53;
+
+        /* Glass color aliases */
+        --glass-primary-800: var(--primary-800);
+        --glass-primary-200: var(--primary-200);
+        --glass-secondary-600: var(--primary-600);
+        --glass-secondary-300: var(--primary-300);
+        --glass-secondary-700: var(--primary-700);
+        --glass-secondary-500: var(--primary-500);
+
         --blue-300: #abcafa;
+        --blue-400: #4c9aff;
         --blue-500: #3b82f6;
         --blue-600: #2563eb;
+        --cyan-500: #00d4ef;
+        --orange-500: #ff9900;
+        --orange-500-light: rgba(255, 153, 0, 0.15);
         --green-300: #80db93;
+        --green-400: #64ff00;
         --green-500: #10b981;
         --green-600: #059669;
+        --yellow-100: #fef3c7;
+        --yellow-300: #fde68a;
         --yellow-500: #f59e0b;
         --yellow-600: #d97706;
+        --yellow-800: #92400e;
+        --red-100: #fee2e2;
         --red-300: #d87c7c;
+        --red-400: #ff6a6e;
         --red-500: #cd4848;
         --red-600: #dc2626;
+        --red-600-light: rgba(220, 38, 38, 0.25);
+        --red-600-dark: #b91c1c;
         --red-700: #b91c1c;
         --white: #ffffff;
         --black: #000000;
@@ -47,6 +68,12 @@
         --gray-300: #919191;
         --gray-500: #636363;
         --gray-600: #4c4c4c;
+
+        /* RGB значения для использования в rgba() */
+        --primary-100-rgb: 240, 244, 248;
+        --primary-500-rgb: 98, 125, 152;
+        --black-rgb: 0, 0, 0;
+        --blue-500-rgb: 59, 130, 246;
 
         /* Тени и эффекты */
         --glass-shadow: 0 8px 32px 0 rgba(36, 59, 83, 0.37);
@@ -57,13 +84,49 @@
         /* Размеры */
         --border-radius: 0.75rem;
         --transition: all 0.3s ease;
+
+        /* Z-index шкала */
+        --z-base: 0;
+        --z-dropdown: 10;
+        --z-sticky: 40;
+        --z-modal-backdrop: 40;
+        --z-modal: 50;
+        --z-popover: 1000;
+
+        /* Алиасы для NumberInput/TimeInput (следуют теме DaisyUI) */
+        --border-color: oklch(var(--b3, 0.88 0.01 260));
+        --input-bg: oklch(var(--b2, 0.96 0.01 260));
+        --text-color: oklch(var(--bc, 0.25 0 260));
+        --secondary-bg: oklch(var(--b2, 0.94 0.01 260));
+        --hover-bg: oklch(var(--b3, 0.9 0.01 260));
+        --gray-500: oklch(var(--bc) / 0.7);
     }
 
-    /* Темная тема */
+    /* Темная тема — переменные в одном месте (единый источник) */
     @media (prefers-color-scheme: dark) {
         :root {
             --glass-background: rgba(0, 0, 0, 0.25);
             --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+            /* Переменные тёмной темы (wizard, overlay, surfaces, borders) */
+            --dark-bg-overlay: rgba(0, 0, 0, 0.75);
+            --dark-surface-color: #2d3748;
+            --dark-footer-bg: #4a5568;
+            --dark-step-inactive-bg: #5a6575;
+            --dark-text-muted: #a0aec0;
+            --dark-border-color: #4a5568;
+            /* NumberInput/TimeInput — видимые границы и фон в тёмной теме */
+            --border-color: rgba(255, 255, 255, 0.35);
+            --input-bg: #2d3748;
+            --text-color: #e2e8f0;
+            --secondary-bg: #4a5568;
+            --hover-bg: #5a6575;
+            --gray-500: rgba(255, 255, 255, 0.6);
         }
+    }
+
+    /* Radio tab inputs (DaisyUI tabs-lift): единая нижняя граница */
+    input[type="radio"][role="tab"] {
+        border-bottom-width: 1px;
+        border-bottom-color: oklch(0.86 0 0);
     }
 }

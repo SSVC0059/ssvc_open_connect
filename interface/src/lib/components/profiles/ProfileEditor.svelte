@@ -145,7 +145,7 @@
 		<!-- ======================================================================= -->
 		<!-- ОБЩИЕ ПАРАМЕТРЫ                                                         -->
 		<!-- ======================================================================= -->
-		<div class="card">
+		<div class="profile-card">
 			<div class="card-header">
 				<h3 class="card-title">Параметры процесса</h3>
 			</div>
@@ -172,7 +172,7 @@
 		<!-- ======================================================================= -->
 		<!-- НАСТРОЙКИ ФРАКЦИЙ                                                       -->
 		<!-- ======================================================================= -->
-		<div class="card">
+		<div class="profile-card">
 			<div class="card-header">
 				<h3 class="card-title">Настройки отбора по фракциям</h3>
 				{#if isFractionSumInvalid}
@@ -387,7 +387,9 @@
 				<summary>
 					<div class="summary-content active">
 						<span>Тело</span>
-						<ChevronDown class="chevron" />
+						<div class="summary-controls">
+							<ChevronDown class="chevron" />
+						</div>
 					</div>
 				</summary>
 				<div class="fraction-body" transition:slide|local>
@@ -395,7 +397,7 @@
 					<div class="settings-col">
 						<h4 class="col-title">Параметры отбора</h4>
 
-						<div class="sub-settings-grid" style="border-top: none; padding-top: 0;">
+						<div class="sub-settings-grid sub-settings-grid--no-top">
 							<div class="sub-settings-group">
 								<h5 class="sub-settings-title">Завершение отбора</h5>
 								<div class="input-group">
@@ -572,6 +574,8 @@
 {/if}
 
 <style lang="scss">
+	@use "$lib/styles/base/variables" as v;
+
 	.editor-layout {
 		display: flex;
 		flex-direction: column;
@@ -579,10 +583,10 @@
 	}
 
 	.card {
-		background-color: var(--white);
+		background-color: oklch(var(--b2));
 		border-radius: var(--border-radius);
-		padding: 1.0rem;
-		border: 1px solid var(--primary-300);
+		padding: 1rem;
+		border: 1px solid oklch(var(--bc) / 0.25);
 	}
 
 	.card-header {
@@ -608,7 +612,7 @@
 
 	.card-title {
 		font-size: 1.125rem;
-		color: var(--primary-800);
+		color: oklch(var(--bc));
 		margin: 0;
 	}
 
@@ -619,14 +623,20 @@
 	}
 
 	.fraction-details {
+		width: 100%;
+		min-width: 0;
+		border-radius: var(--border-radius);
+		background-color: var(--gray-50);
 		border-bottom: 2px solid var(--primary-300);
 		padding-bottom: 1rem;
 		margin-bottom: 1rem;
+		overflow: hidden;
+		box-sizing: border-box;
 
 		&:last-of-type {
-			border-bottom: none;
 			margin-bottom: 0;
-			padding-bottom: 0;
+			/* border-bottom оставляем — чтобы «Тело» и другие последние секции имели ту же рамку, что и остальные */
+			/* padding-bottom оставляем 1rem для единой высоты блоков */
 		}
 
 		summary {
@@ -634,8 +644,14 @@
 			cursor: pointer;
 			padding: 0;
 			font-weight: 600;
-			display: block;
+			display: flex;
+			align-items: center;
 			transition: background-color 0.2s;
+			min-width: 0;
+			overflow: hidden;
+			height: 3.25rem;
+			min-height: 3.25rem;
+			box-sizing: border-box;
 
 			&:hover {
 				background-color: var(--primary-100);
@@ -650,8 +666,19 @@
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
-			padding: 0.75rem 0.25rem;
+			width: 100%;
+			min-width: 0;
+			min-height: 100%;
+			padding: 0 0.25rem;
 			border-radius: var(--border-radius);
+			box-sizing: border-box;
+
+			& > span {
+				min-width: 0;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
 
 			&.active {
 				color: var(--primary-800);
@@ -662,6 +689,7 @@
 			display: flex;
 			align-items: center;
 			gap: 0.75rem;
+			flex-shrink: 0;
 		}
 
 		.chevron {
@@ -676,14 +704,13 @@
 	}
 
 	.fraction-body {
-		background-color: var(--gray-50);
 		border-top: 1px solid var(--primary-300);
 		padding: 1rem;
 		display: grid;
 		grid-template-columns: 1fr;
 		gap: 1.5rem;
 
-		@media (min-width: 768px) {
+		@media (min-width: v.$breakpoint-md) {
 			grid-template-columns: 2fr 1fr;
 		}
 	}
@@ -704,7 +731,7 @@
 		gap: 0.75rem;
 		align-self: start; /* Не растягиваться на всю высоту, если левая колонка выше */
 
-		@media (min-width: 1024px) {
+		@media (min-width: v.$breakpoint-lg) {
 			grid-template-columns: 1fr 1fr;
 			gap: 0.5rem 1rem;
 
@@ -731,8 +758,13 @@
 		border-top: 1px solid var(--primary-300);
 		padding-top: 1rem;
 
-		@media (min-width: 768px) {
+		@media (min-width: v.$breakpoint-md) {
 			grid-template-columns: 1fr 1fr;
+		}
+
+		&--no-top {
+			border-top: none;
+			padding-top: 0;
 		}
 	}
 
@@ -800,6 +832,15 @@
 		align-items: flex-end;
 		transition: opacity 0.2s;
 
+		.input-group {
+			min-width: 5.5rem; /* чтобы числа вроде 0,25 не обрезались */
+		}
+
+		.input-field {
+			min-width: 4.5em; /* запас под дробную часть */
+			box-sizing: border-box;
+		}
+
 		&.disabled {
 			opacity: 0.3;
 			pointer-events: none;
@@ -841,9 +882,10 @@
 		background-color: rgba(255, 255, 255, 0.8);
 		backdrop-filter: blur(4px);
 		border-top: 1px solid var(--primary-300);
+		border-radius: var(--border-radius);
 		position: sticky;
 		bottom: 0;
-		z-index: 10;
+		z-index: var(--z-dropdown);
 	}
 
 	.btn-primary,
@@ -873,12 +915,71 @@
 	}
 
 	.btn-secondary {
-		background-color: var(--white);
-		color: var(--primary-700);
-		border-color: var(--primary-300);
+		background-color: oklch(var(--b2));
+		color: oklch(var(--bc));
+		border-color: oklch(var(--bc) / 0.3);
 
 		&:hover {
-			background-color: var(--primary-100);
+			background-color: oklch(var(--b3));
+		}
+	}
+
+	/* Тёмная тема: карточки и панели редактора (DaisyUI --b2/--b3 в dark слишком тёмные — задаём контрастные фоны) */
+	@media (prefers-color-scheme: dark) {
+		.card {
+			background-color: var(--dark-surface-color);
+			border-color: var(--dark-border-color);
+		}
+		.results-col {
+			background-color: var(--dark-step-inactive-bg);
+			border-color: var(--dark-border-color);
+		}
+		.fraction-details {
+			background-color: var(--dark-step-inactive-bg);
+			border-bottom-color: var(--dark-border-color);
+		}
+		.fraction-details summary:hover {
+			background-color: var(--hover-bg);
+		}
+		.fraction-body {
+			border-top-color: var(--dark-border-color);
+		}
+		.summary-content.active {
+			color: var(--text-color);
+		}
+		.chevron {
+			color: var(--text-color);
+		}
+		.col-title {
+			color: var(--text-color);
+			border-bottom-color: var(--dark-border-color);
+		}
+		.sub-settings-title {
+			color: var(--dark-text-muted);
+		}
+		.sub-settings-grid {
+			border-top-color: var(--dark-border-color);
+		}
+		.fraction-warning {
+			background-color: rgba(185, 28, 28, 0.25);
+			color: var(--red-300);
+			border-color: var(--red-600);
+		}
+		.final-analytics-card {
+			background-color: var(--secondary-bg);
+			border-color: var(--dark-border-color);
+		}
+		.actions-panel {
+			background-color: rgba(45, 55, 72, 0.95);
+			border-top-color: var(--dark-border-color);
+		}
+		.btn-secondary {
+			background-color: var(--secondary-bg);
+			color: var(--text-color);
+			border-color: var(--dark-border-color);
+		}
+		.btn-secondary:hover {
+			background-color: var(--hover-bg);
 		}
 	}
 </style>

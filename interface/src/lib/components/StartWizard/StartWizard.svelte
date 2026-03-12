@@ -14,6 +14,7 @@
 	import Step7 from '$lib/components/StartWizard/steps/WizardStep7.svelte';
 	import type { SsvcSettings } from '$lib/types/ssvc';
 	import { fetchSettings, saveSettings, sendCommand } from '$lib/api/ssvcApi';
+	import { normalizeSettingsForWizard } from '$lib/components/StartWizard/wizardDefaults';
 
 	interface Props {
 		isOpen: boolean;
@@ -44,7 +45,8 @@
 		if (hasFetchedInitialData) return; // Предотвращаем повторные вызовы
 
 		try {
-			settings = await fetchSettings();
+			const loaded = await fetchSettings();
+			settings = normalizeSettingsForWizard(loaded);
 			hasFetchedInitialData = true;
 
 			// Инициализируем stepData только один раз при первой загрузке
@@ -252,7 +254,7 @@
 						onclick={submitSettings} 
 						class="btn btn-success" disabled={isLoading}>
 						{#if isLoading}
-							<span class="loading-spinner"></span>
+							<span class="loading loading-spinner loading-md text-primary-content" aria-hidden="true"></span>
 						{:else}
 							<Check class="h-5 w-5" />
 						{/if}
@@ -264,3 +266,4 @@
 
 	</div>
 {/if}
+

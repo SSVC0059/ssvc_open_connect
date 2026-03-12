@@ -97,7 +97,7 @@
 
 	.unit-label {
 		padding-right: 10px;
-		color: #888;
+		color: var(--gray-500);
 		font-size: 14px;
 		white-space: nowrap;
 	}

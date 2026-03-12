@@ -171,7 +171,7 @@ void SsvcOpenConnect::subsystemManager()
     subsystemManager.setInitialState("atm_sensor", true);
 
     #if FT_ENABLED(FT_TELEGRAM_BOT)
-        subsystemManager.setInitialState("telegram_bot", false);
+        subsystemManager.setInitialState("telegram_bot", true);
     #endif
 
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] Starting subsystem manager...");

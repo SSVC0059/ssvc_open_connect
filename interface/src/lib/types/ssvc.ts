@@ -42,6 +42,8 @@ export type RectStatus = {
 	startTime: string;
 	endTime: string;
 	stages: Stages;
+	/** Ошибка связи по UART (SSVC выключен или отключён) */
+	uartConnectionError?: boolean;
 };
 
 // Этапы ректификации

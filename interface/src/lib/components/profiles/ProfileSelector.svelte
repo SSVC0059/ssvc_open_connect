@@ -2,7 +2,6 @@
 	import { Fa } from 'svelte-fa';
 	import { faCog, faPlay } from '@fortawesome/free-solid-svg-icons';
 	import { goto } from '$app/navigation';
-	import Spinner from '../Spinner.svelte';
 	import type { Profile, Profiles } from '$lib/types/ssvc';
 	import { getProfiles, setActiveAndApplyProfile } from '$lib/api/Profiles';
 
@@ -76,7 +75,7 @@
 		{/if}
 	</select>
 	{#if isSaving}
-		<Spinner />
+		<span class="loading loading-spinner loading-md text-primary inline-block shrink-0" aria-hidden="true"></span>
 	{/if}
 	{#if hasChanged}
 		<button class="btn btn-icon" onclick={saveProfileChange} disabled={isSaving} title="Применить профиль">
