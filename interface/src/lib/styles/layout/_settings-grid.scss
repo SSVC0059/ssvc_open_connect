@@ -13,13 +13,11 @@
   border-radius: var(--border-radius);
 }
 
+/* Внутренняя обёртка — без своей тени/рамки, только компоновка (issue #119) */
 .settings-panel {
-  background: var(--glass-background);
-  border: var(--glass-border);
+  background: transparent;
   border-radius: var(--border-radius);
-  backdrop-filter: blur(8px);
   overflow: hidden;
-  box-shadow: var(--glass-shadow);
 }
 
 .settings-section {
@@ -32,7 +30,7 @@
 }
 
 .settings-grid {
-  @include m.glassmorphism;
+
   position: relative;
   width: auto;
   margin: 0;
