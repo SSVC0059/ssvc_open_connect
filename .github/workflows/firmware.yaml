@@ -2,7 +2,7 @@ name: Build Firmware
 
 on:
   push:
-    branches: [ '**' ]
+    branches-ignore: [ edit_docs ]
     tags:
       - 'v*'
   pull_request:
