@@ -8,6 +8,18 @@ import userEvent from '@testing-library/user-event';
 import { createMockSsvcSettings } from '../../lib/createMockSsvcSettings';
 import { SPEED_SETTINGS_EXPECTED_REQUESTS } from '../../lib/speedSettingsExpectedRequests';
 
+// Предотвращает загрузку @sveltejs/kit и ошибку "Cannot find package '__sveltekit'"
+vi.mock('$app/stores', () => ({
+	page: {
+		subscribe: (fn: (v: unknown) => void) => {
+			fn({ url: new URL('http://test/'), params: {}, data: {}, status: 200, error: null });
+			return () => {};
+		}
+	},
+	navigating: { subscribe: (fn: (v: unknown) => void) => { fn(null); return () => {}; } },
+	updated: { subscribe: (fn: (v: unknown) => void) => { fn(false); return () => {}; } }
+}));
+
 vi.mock('$lib/api/ssvcApi', () => ({
 	fetchSettings: vi.fn(),
 	updateSetting: vi.fn()
@@ -38,12 +50,11 @@ describe('Settings — Параметры отбора (updateSetting)', () => {
 		render(Settings);
 
 		await waitFor(() => {
-			const tabs = screen.getAllByRole('button', { name: /Параметры отбора/i });
-			expect(tabs.length).toBeGreaterThanOrEqual(1);
+			expect(screen.getByRole('tab', { name: /Параметры отбора/i })).toBeInTheDocument();
 		});
 
-		const tabButtons = screen.getAllByRole('button', { name: /Параметры отбора/i });
-		await userEvent.setup().click(tabButtons[0]);
+		const speedTab = screen.getByRole('tab', { name: /Параметры отбора/i });
+		await userEvent.setup().click(speedTab);
 
 		await waitFor(() => {
 			expect(screen.getByText(headsSpec.sectionTitle)).toBeInTheDocument();
@@ -71,7 +82,7 @@ describe('Settings — Параметры отбора (updateSetting)', () => {
 	it('при нажатии «Перезагрузить настройки» вызывается fetchSettings снова', async () => {
 		render(Settings);
 		await waitFor(() => {
-			expect(fetchSettings).toHaveBeenCalled();
+			expect(screen.getByTitle(/Перезагрузить настройки/i)).toBeInTheDocument();
 		});
 		const callCount = vi.mocked(fetchSettings).mock.calls.length;
 		const refreshBtn = screen.getByTitle(/Перезагрузить настройки/i);
@@ -81,20 +92,13 @@ describe('Settings — Параметры отбора (updateSetting)', () => {
 		});
 	});
 
-	it('мобильное меню: открытие и переключение вкладки на «Параметры отбора»', async () => {
+	it('переключение вкладки на «Параметры отбора» отображает содержимое', async () => {
 		render(Settings);
 		await waitFor(() => {
-			expect(screen.getByText('Гистерезис при отборе тела')).toBeInTheDocument();
+			expect(screen.getByRole('tab', { name: /Параметры отбора/i })).toBeInTheDocument();
 		});
-		const menuToggle = document.querySelector('.mobile-tabs-header .mobile-menu-toggle');
-		expect(menuToggle).toBeTruthy();
-		await userEvent.setup().click(menuToggle as HTMLElement);
-		await waitFor(() => {
-			const speedTab = screen.getAllByRole('button', { name: /^Параметры отбора$/i });
-			expect(speedTab.length).toBeGreaterThanOrEqual(1);
-		});
-		const speedTabs = screen.getAllByRole('button', { name: /^Параметры отбора$/i });
-		await userEvent.setup().click(speedTabs[speedTabs.length - 1]);
+		const speedTab = screen.getByRole('tab', { name: /Параметры отбора/i });
+		await userEvent.setup().click(speedTab);
 		await waitFor(() => {
 			expect(screen.getByText(headsSpec.sectionTitle)).toBeInTheDocument();
 		});

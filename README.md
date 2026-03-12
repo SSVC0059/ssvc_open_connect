@@ -52,6 +52,10 @@
 
 1. Документация по настройке и установке храниться на текущий момент на [Yandex диске](https://disk.yandex.ru/d/oCTET2X-F2TFOw)
 
+## Документация для разработчиков
+
+- **Стратегия стилей фронтенда (Tailwind/DaisyUI, SCSS):** [docs/develop/frontend/styling.md](docs/develop/frontend/styling.md)
+
 ## Примечания
 
 - TODO

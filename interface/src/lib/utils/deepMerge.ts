@@ -13,7 +13,6 @@ export function deepMerge(target: any, source: any): any {
 				output[key] = deepMerge(target[key], source[key]);
 			} else {
 				output[key] = source[key];
-				output[key] = source[key];
 			}
 		});
 	}

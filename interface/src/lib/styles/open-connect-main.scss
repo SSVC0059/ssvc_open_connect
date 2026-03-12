@@ -1,33 +1,27 @@
+// Актуальный список подключаемых файлов — см. docs/develop/frontend/styles-audit-and-plan.md п. 1.2
 
-// 1. НАСТРОЙКИ И БАЗА
-@use "$lib/styles/base/variables"; // Импорт SCSS переменных
-@use "$lib/styles/base/mixins" as m;    // Импорт миксинов
+// 1. BASE
+@use "$lib/styles/base/variables";
+@use "$lib/styles/base/mixins" as m;
 
-// 2. МАКЕТ (LAYOUT)
+// 2. LAYOUT
 @use "$lib/styles/layout/container";      // .container
 @use "$lib/styles/layout/settings-grid";  // .settings-container, .settings-panel, .settings-section
 
-// 3. КОМПОНЕНТЫ
-@use "$lib/styles/components/modals";  // Общие стили модальных окон
-@use "$lib/styles/components/tabs";    // Стили вкладок
-@use "$lib/styles/components/inputs";  // Стили полей ввода, лейблов, чекбоксов
-@use "$lib/styles/components/toggles"; // Стили тогглов
-@use "$lib/styles/components/buttons"; // Стили кнопок
-@use "$lib/styles/components/sensor-card";
-@use "$lib/styles/components/sensors-view";
-@use "$lib/styles/components/time-editor";
-@use "$lib/styles/components/setting-containers.scss";
-@use "$lib/styles/components/valve-table.scss";
-@use "$lib/styles/components/loading-spinner";
-@use "$lib/styles/components/profile-manager";
-
-
-// 4. СПЕЦИФИЧНЫЕ ВИДЫ/СТРАНИЦЫ
-@use "$lib/styles/views/wizard"; // Импорт стилей мастера
-
-// 5. ТЕМЫ
-@use "$lib/styles/themes/dark-theme"; // Общий блок @media (prefers-color-scheme: dark)
+// 3. THEMES
+@use "$lib/styles/themes/dark-theme";     // пустой блок после миграции на DaisyUI; переменные в app.css
 @use "$lib/styles/themes/responsive";
 
-// 6. УТИЛИТЫ И ПРОЧЕЕ
+// 4. BASE (animations)
 @use "$lib/styles/base/animations";
+
+// 5. COMPONENTS (global: избегаем Unused CSS selector при импорте в дочерних компонентах)
+@use "$lib/styles/components/setting-containers";
+@use "$lib/styles/components/valve-table";
+@use "$lib/styles/views/wizard";
+
+// --- Подключаются только в компонентах через @use (не здесь): profile-manager ---
+
+// --- Удалены (стили в +layout.svelte и компонентах): _buttons, _inputs, _modals, _tabs ---
+
+// --- Намеренно не подключаются (стили заданы в компонентах): _sensors-view, _sensor-card, _toggles. Подробнее: docs/develop/frontend/styles-cleanup-audit.md, раздел 6 ---

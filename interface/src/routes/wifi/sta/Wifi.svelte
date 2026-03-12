@@ -15,7 +15,6 @@
 	import type { KnownNetworkItem, WifiSettings, WifiStatus } from '$lib/types/models';
 	import ScanNetworks from './Scan.svelte';
 	import EditNetwork from './EditNetwork.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
 	import AP from '~icons/tabler/access-point';
 	import Router from '~icons/tabler/router';
 	import Settings from '~icons/tabler/settings';
@@ -267,7 +266,9 @@
 		<span>WiFi Connection</span>
 	{/snippet}
 	{#await getWifiData()}
-		<Spinner />
+		<div class="flex flex-col items-center justify-center gap-2 py-6">
+			<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+		</div>
 	{:then nothing}
 		<div class="w-full overflow-x-auto">
 			<div

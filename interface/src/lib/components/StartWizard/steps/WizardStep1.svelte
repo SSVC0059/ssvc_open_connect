@@ -95,7 +95,7 @@
 	</div>
 </div>
 
-<style>
+<style lang="scss">
 	.settings-item-wrapper {
 		border-bottom: 0;
 	}
