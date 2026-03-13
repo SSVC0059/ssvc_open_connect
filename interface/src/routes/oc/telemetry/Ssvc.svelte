@@ -345,8 +345,8 @@
             .stage-controls {
               flex: 1;
 
+              /* Без своей тени/рамки — панель уже в .glassmorphism.panel (issue #119) */
               .valves-block {
-                @include glassmorphism;
                 border-radius: var(--border-radius);
 
                 &:not(:last-child) {

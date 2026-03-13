@@ -1,14 +1,13 @@
 @use "$lib/styles/base/variables" as v;
 @use "$lib/styles/base/mixins" as m;
 
+/* Обёртка группы настроек — без своей тени/рамки при вложении в .settings-container (issue #119) */
 .settings-group {
-  @include m.glassmorphism;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
   border-radius: 1rem;
-  border: var(--glass-border);
 
   @media (prefers-color-scheme: dark) {
     background-color: var(--dark-surface-color);
