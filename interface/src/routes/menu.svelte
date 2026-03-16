@@ -28,7 +28,8 @@
     import Esp from '~icons/mdi/car-esp';
     import Bug from '~icons/tabler/bug';
     import Temperature from '~icons/tabler/temperature';
-    import { page } from '$app/state';
+import { page } from '$app/state';
+import { goto } from '$app/navigation';
     import { user } from '$lib/stores/user';
     import type { Component } from 'svelte';
 
@@ -240,6 +241,35 @@
         closeMenu();
     }
 
+    function openParentDefault(subItem: subMenuItem) {
+        const firstChild = subItem.submenu && subItem.submenu[0];
+        if (firstChild) {
+            goto(firstChild.href);
+            setActiveMenuItem(firstChild.title);
+        } else if (subItem.href) {
+            goto(subItem.href);
+            setActiveMenuItem(subItem.title);
+        }
+    }
+
+    function openRootDefault(item: menuItem) {
+        // Специальный случай: корневой пункт SSVC всегда ведёт в телеметрию
+        if (item.title === 'SSVC') {
+            goto('/oc/telemetry', { replaceState: true });
+            setActiveMenuItem('Телеметрия');
+            return;
+        }
+
+        const firstChild = item.submenu && item.submenu[0];
+        if (firstChild && firstChild.href) {
+            goto(firstChild.href, { replaceState: true });
+            setActiveMenuItem(firstChild.title);
+        } else if (item.href) {
+            goto(item.href, { replaceState: true });
+            setActiveMenuItem(item.title);
+        }
+    }
+
     $effect(() => {
         setActiveMenuItem(page.data.title);
     });
@@ -261,7 +291,10 @@
                 <li>
                     {#if menuItem.submenu}
                         <details open={menuItem.submenu.some((subItem) => subItem.active)}>
-                            <summary class="text-lg font-bold">
+                            <summary
+                                    class="text-lg font-bold"
+                                    onclick={() => openRootDefault(menuItem)}
+                            >
                                 <menuItem.icon class="h-6 w-6" />
                                 {menuItem.title}
                             </summary>
@@ -271,7 +304,10 @@
                                         <li class="hover-bordered">
                                             {#if subMenuItem.submenu}
                                                 <details open={subMenuItem.submenu.some((child) => child.active)}>
-                                                    <summary class="text-ml font-bold">
+                                                    <summary
+                                                            class="text-ml font-bold"
+                                                            onclick={() => openParentDefault(subMenuItem)}
+                                                    >
                                                         <subMenuItem.icon class="h-5 w-5" />
                                                         {subMenuItem.title}
                                                     </summary>

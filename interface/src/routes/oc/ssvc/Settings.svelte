@@ -8,6 +8,7 @@
 	import SpeedSettings from '$lib/components/SsvcSettings/SpeedSettings.svelte';
 	import ParallelValve from '$lib/components/SsvcSettings/ParallelValve.svelte';
 	import Reload from '~icons/tabler/reload';
+	import { goto } from '$app/navigation';
 
 	let ssvcSettings = $state<SsvcSettings | null>();
 	let activeTab = $state(0);
@@ -90,6 +91,14 @@
 			activeTab = 0;
 		}
 	});
+
+	function setActiveTab(index: number) {
+		activeTab = index;
+		const tab = availableTabs[index];
+		if (tab) {
+			goto(`/oc/ssvc?tab=${tab.id}`, { replaceState: true });
+		}
+	}
 </script>
 
 <div class="container oc-ssvc-settings-root">
@@ -109,7 +118,7 @@
 						class="tab flex-1 whitespace-nowrap"
 						aria-label={tab.title}
 						checked={activeTab === index}
-						onchange={() => (activeTab = index)}
+						onchange={() => setActiveTab(index)}
 					/>
 					<div role="tabpanel" class="tab-content w-full mt-4">
 						{#if activeTab === index}

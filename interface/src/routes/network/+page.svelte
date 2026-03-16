@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import MqttSettings from './MqttSettings.svelte';
 	import NtpSettings from './NtpSettings.svelte';
+	import { goto } from '$app/navigation';
 
 	type TabId = 'mqtt' | 'ntp';
 
@@ -28,6 +29,14 @@
 			}
 		}
 	});
+
+	function setActiveTab(index: number) {
+		activeIndex = index;
+		const tab = tabs[index];
+		if (tab) {
+			goto(`/network?tab=${tab.id}`, { replaceState: true });
+		}
+	}
 </script>
 
 <div
@@ -44,7 +53,7 @@
 					class="tab flex-1 whitespace-nowrap"
 					aria-label={tab.title}
 					checked={activeIndex === index}
-					onchange={() => (activeIndex = index)}
+					onchange={() => setActiveTab(index)}
 				/>
 				<div role="tabpanel" class="tab-content w-full mt-4">
 					{#if activeIndex === index}
