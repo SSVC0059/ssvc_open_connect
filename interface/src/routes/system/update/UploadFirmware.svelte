@@ -209,7 +209,7 @@
 </script>
 
 <div
-	class="update-card rounded-box bg-base-100 border border-base-content/10 w-full lg:w-3/4 mx-auto flex flex-col gap-4 p-4 sm:p-6"
+	class="update-card rounded-box border border-base-content/10 w-full lg:w-3/4 mx-auto flex flex-col gap-4 p-4 sm:p-6"
 >
 	<div class="flex items-center gap-2 text-xl font-medium">
 		<OTA class="h-6 w-6" />
@@ -257,7 +257,7 @@
 		type="file"
 		id="binFile"
 		bind:this={fileInput}
-		class="file-input file-input-secondary mt-4 w-full"
+		class="input-field file-input file-input-secondary mt-4 w-full"
 		bind:files
 		accept=".bin,.md5"
 		onchange={handleFileChange}

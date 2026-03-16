@@ -201,7 +201,7 @@
 				class="flex w-full flex-col space-y-1"
 				transition:slide|local={{ duration: 300, easing: cubicOut }}
 			>
-				<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+				<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 					<div
 						class="mask mask-hexagon h-auto w-10 {apStatusDescription[apStatus.status].bg_color}"
 					>
@@ -215,7 +215,7 @@
 					</div>
 				</div>
 
-				<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+				<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 					<div class="mask mask-hexagon bg-primary h-auto w-10">
 						<Home class="text-primary-content h-auto w-full scale-75" />
 					</div>
@@ -227,7 +227,7 @@
 					</div>
 				</div>
 
-				<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+				<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 					<div class="mask mask-hexagon bg-primary h-auto w-10">
 						<MAC class="text-primary-content h-auto w-full scale-75" />
 					</div>
@@ -239,7 +239,7 @@
 					</div>
 				</div>
 
-				<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+				<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 					<div class="mask mask-hexagon bg-primary h-auto w-10">
 						<Devices class="text-primary-content h-auto w-full scale-75" />
 					</div>
@@ -278,7 +278,7 @@
 					>
 						<div>
 							<label class="label" for="apmode">Provide Access Point ... </label>
-							<select class="select w-full" id="apmode" bind:value={apSettings.provision_mode}>
+							<select class="input-field select w-full" id="apmode" bind:value={apSettings.provision_mode}>
 								{#each provisionMode as mode}
 									<option value={mode.id}>
 										{mode.text}
@@ -290,7 +290,7 @@
 							<label class="label" for="ssid">SSID</label>
 							<input
 								type="text"
-								class="input w-full invalid:border-error invalid:border-2 {formErrors.ssid
+								class="input-field input w-full invalid:border-error invalid:border-2 {formErrors.ssid
 									? 'border-error border-2'
 									: ''}"
 								bind:value={apSettings.ssid}
@@ -316,7 +316,7 @@
 								type="number"
 								min="1"
 								max="13"
-								class="input w-full invalid:border-error invalid:border-2 {formErrors.channel
+								class="input-field input w-full invalid:border-error invalid:border-2 {formErrors.channel
 									? 'border-error border-2'
 									: ''}"
 								bind:value={apSettings.channel}
@@ -336,7 +336,7 @@
 								type="number"
 								min="1"
 								max="8"
-								class="input w-full invalid:border-error invalid:border-2 {formErrors.max_clients
+								class="input-field input w-full invalid:border-error invalid:border-2 {formErrors.max_clients
 									? 'border-error border-2'
 									: ''}"
 								bind:value={apSettings.max_clients}
@@ -354,7 +354,7 @@
 							<label class="label" for="localIP">Local IP</label>
 							<input
 								type="text"
-								class="input w-full {formErrors.local_ip ? 'border-error border-2' : ''}"
+								class="input-field input w-full {formErrors.local_ip ? 'border-error border-2' : ''}"
 								minlength="7"
 								maxlength="15"
 								size="15"
@@ -373,7 +373,7 @@
 							<label class="label" for="gateway">Gateway IP</label>
 							<input
 								type="text"
-								class="input w-full {formErrors.gateway_ip ? 'border-error border-2' : ''}"
+								class="input-field input w-full {formErrors.gateway_ip ? 'border-error border-2' : ''}"
 								minlength="7"
 								maxlength="15"
 								size="15"
@@ -391,7 +391,7 @@
 							<label class="label" for="subnet">Subnet Mask</label>
 							<input
 								type="text"
-								class="input w-full {formErrors.subnet_mask ? 'border-error border-2' : ''}"
+								class="input-field input w-full {formErrors.subnet_mask ? 'border-error border-2' : ''}"
 								minlength="7"
 								maxlength="15"
 								size="15"

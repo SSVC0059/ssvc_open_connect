@@ -275,7 +275,7 @@
 				class="flex w-full flex-col space-y-1"
 				transition:slide|local={{ duration: 300, easing: cubicOut }}
 			>
-				<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+				<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 					<div
 						class="mask mask-hexagon h-auto w-10 {wifiStatus.status === 3
 							? 'bg-success'
@@ -295,7 +295,7 @@
 					</div>
 				</div>
 				{#if wifiStatus.status === 3}
-					<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+					<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 						<div class="mask mask-hexagon bg-primary h-auto w-10">
 							<SSID class="text-primary-content h-auto w-full scale-75" />
 						</div>
@@ -307,7 +307,7 @@
 						</div>
 					</div>
 
-					<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+					<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 						<div class="mask mask-hexagon bg-primary h-auto w-10">
 							<Home class="text-primary-content h-auto w-full scale-75" />
 						</div>
@@ -319,7 +319,7 @@
 						</div>
 					</div>
 
-					<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+					<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 						<div class="mask mask-hexagon bg-primary h-auto w-10">
 							<WiFi class="text-primary-content h-auto w-full scale-75" />
 						</div>
@@ -352,7 +352,7 @@
 					class="flex w-full flex-col space-y-1 pt-1"
 					transition:slide|local={{ duration: 300, easing: cubicOut }}
 				>
-					<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+					<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 						<div class="mask mask-hexagon bg-primary h-auto w-10">
 							<MAC class="text-primary-content h-auto w-full scale-75" />
 						</div>
@@ -364,7 +364,7 @@
 						</div>
 					</div>
 
-					<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+					<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 						<div class="mask mask-hexagon bg-primary h-auto w-10">
 							<Channel class="text-primary-content h-auto w-full scale-75" />
 						</div>
@@ -376,7 +376,7 @@
 						</div>
 					</div>
 
-					<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+					<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 						<div class="mask mask-hexagon bg-primary h-auto w-10">
 							<Gateway class="text-primary-content h-auto w-full scale-75" />
 						</div>
@@ -388,7 +388,7 @@
 						</div>
 					</div>
 
-					<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+					<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 						<div class="mask mask-hexagon bg-primary h-auto w-10">
 							<Subnet class="text-primary-content h-auto w-full scale-75" />
 						</div>
@@ -400,7 +400,7 @@
 						</div>
 					</div>
 
-					<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+					<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 						<div class="mask mask-hexagon bg-primary h-auto w-10">
 							<DNS class="text-primary-content h-auto w-full scale-75" />
 						</div>
@@ -431,7 +431,7 @@
 								type="text"
 								min="3"
 								max="32"
-								class="input input-bordered invalid:border-error w-full invalid:border-2 {formErrorhostname
+								class="input-field input input-bordered invalid:border-error w-full invalid:border-2 {formErrorhostname
 									? 'border-error border-2'
 									: ''}"
 								bind:value={wifiSettings.hostname}
@@ -451,7 +451,7 @@
 
 						<div>
 							<label class="label" for="apmode">WiFi Connection Mode</label>
-							<select class="select w-full" id="apmode" bind:value={wifiSettings.connection_mode}>
+							<select class="input-field select w-full" id="apmode" bind:value={wifiSettings.connection_mode}>
 								{#each connectionMode as mode}
 									<option value={mode.id}>
 										{mode.text}

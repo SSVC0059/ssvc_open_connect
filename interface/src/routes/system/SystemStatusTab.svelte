@@ -217,7 +217,7 @@ let systemInformation: SystemInformation = $state({
 							</div>
 						{:then nothing}
 							<div
-								class="status-table-wrapper overflow-x-auto rounded-box border border-base-content/5 bg-base-100"
+								class="status-table-wrapper overflow-x-auto rounded-box border border-base-content/5"
 								transition:slide|local={{ duration: 300, easing: cubicOut }}
 							>
 								<table class="table">

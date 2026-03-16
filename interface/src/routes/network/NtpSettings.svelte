@@ -147,7 +147,7 @@
 						</div>
 					{:else if ntpStatus}
 						<div class="flex w-full flex-col space-y-1">
-							<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+							<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 								<div
 									class="mask mask-hexagon h-auto w-10 {ntpStatus.status === 1
 										? 'bg-success'
@@ -167,7 +167,7 @@
 								</div>
 							</div>
 
-							<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+							<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 								<div class="mask mask-hexagon bg-primary h-auto w-10">
 									<Server class="text-primary-content h-auto w-full scale-75" />
 								</div>
@@ -179,7 +179,7 @@
 								</div>
 							</div>
 
-							<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+							<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 								<div class="mask mask-hexagon bg-primary h-auto w-10">
 									<Clock class="text-primary-content h-auto w-full scale-75" />
 								</div>
@@ -194,7 +194,7 @@
 								</div>
 							</div>
 
-							<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+							<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 								<div class="mask mask-hexagon bg-primary h-auto w-10">
 									<UTC class="text-primary-content h-auto w-full scale-75" />
 								</div>
@@ -210,7 +210,7 @@
 								</div>
 							</div>
 
-							<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+							<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 								<div class="mask mask-hexagon bg-primary h-auto w-10">
 									<Stopwatch class="text-primary-content h-auto w-full scale-75" />
 								</div>
@@ -278,7 +278,7 @@
 								<span class="input-label">Time Zone</span>
 								<div class="input-wrapper">
 									<select
-										class="select w-full"
+										class="input-field select w-full"
 										bind:value={ntpSettings.tz_label}
 										id="tz"
 										disabled={isFieldsDisabled}

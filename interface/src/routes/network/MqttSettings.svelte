@@ -173,9 +173,9 @@
 						<div class="error-container">
 							<p class="error-text">{statusError}</p>
 						</div>
-					{:else if mqttStatus}
+						{:else if mqttStatus}
 						<div class="flex w-full flex-col space-y-1">
-							<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+							<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 								<div
 									class="mask mask-hexagon h-auto w-10 {mqttStatus.connected === true
 										? 'bg-success'
@@ -201,7 +201,7 @@
 								</div>
 							</div>
 
-							<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+							<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 								<div class="mask mask-hexagon bg-primary h-auto w-10">
 									<Client class="text-primary-content h-auto w-full scale-75" />
 								</div>

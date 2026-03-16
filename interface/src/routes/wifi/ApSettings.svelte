@@ -206,7 +206,7 @@ let apStatus: ApStatus = $state({
 				<!-- Секция 1: статус точки доступа -->
 				<div class="settings-section">
 					<div class="flex w-full flex-col space-y-1">
-						<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+						<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 							<div
 								class="mask mask-hexagon h-auto w-10 {apStatusDescription[apStatus.status].bg_color}"
 							>
@@ -220,7 +220,7 @@ let apStatus: ApStatus = $state({
 							</div>
 						</div>
 
-						<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+						<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 							<div class="mask mask-hexagon bg-primary h-auto w-10">
 								<Home class="text-primary-content h-auto w-full scale-75" />
 							</div>
@@ -232,7 +232,7 @@ let apStatus: ApStatus = $state({
 							</div>
 						</div>
 
-						<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+						<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 							<div class="mask mask-hexagon bg-primary h-auto w-10">
 								<MAC class="text-primary-content h-auto w-full scale-75" />
 							</div>
@@ -244,7 +244,7 @@ let apStatus: ApStatus = $state({
 							</div>
 						</div>
 
-						<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+						<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 							<div class="mask mask-hexagon bg-primary h-auto w-10">
 								<Devices class="text-primary-content h-auto w-full scale-75" />
 							</div>
@@ -280,7 +280,7 @@ let apStatus: ApStatus = $state({
 										<span class="input-label">Provide Access Point ...</span>
 										<div class="input-wrapper">
 											<select
-												class="select w-full"
+												class="input-field select w-full"
 												id="apmode"
 												bind:value={apSettings.provision_mode}
 											>
@@ -298,7 +298,7 @@ let apStatus: ApStatus = $state({
 										<div class="input-wrapper">
 											<input
 												type="text"
-												class="input w-full invalid:border-error invalid:border-2 {formErrors.ssid
+												class="input-field input w-full invalid:border-error invalid:border-2 {formErrors.ssid
 													? 'border-error border-2'
 													: ''}"
 												bind:value={apSettings.ssid}
@@ -327,7 +327,7 @@ let apStatus: ApStatus = $state({
 												type="number"
 												min="1"
 												max="13"
-												class="input w-full invalid:border-error invalid:border-2 {formErrors.channel
+												class="input-field input w-full invalid:border-error invalid:border-2 {formErrors.channel
 													? 'border-error border-2'
 													: ''}"
 												bind:value={apSettings.channel}
@@ -349,7 +349,7 @@ let apStatus: ApStatus = $state({
 												type="number"
 												min="1"
 												max="8"
-												class="input w-full invalid:border-error invalid:border-2 {formErrors.max_clients
+												class="input-field input w-full invalid:border-error invalid:border-2 {formErrors.max_clients
 													? 'border-error border-2'
 													: ''}"
 												bind:value={apSettings.max_clients}
@@ -369,7 +369,7 @@ let apStatus: ApStatus = $state({
 										<div class="input-wrapper">
 											<input
 												type="text"
-												class="input w-full {formErrors.local_ip ? 'border-error border-2' : ''}"
+												class="input-field input w-full {formErrors.local_ip ? 'border-error border-2' : ''}"
 												minlength="7"
 												maxlength="15"
 												size="15"
@@ -390,7 +390,7 @@ let apStatus: ApStatus = $state({
 										<div class="input-wrapper">
 											<input
 												type="text"
-												class="input w-full {formErrors.gateway_ip
+												class="input-field input w-full {formErrors.gateway_ip
 													? 'border-error border-2'
 													: ''}"
 												minlength="7"
@@ -413,7 +413,7 @@ let apStatus: ApStatus = $state({
 										<div class="input-wrapper">
 											<input
 												type="text"
-												class="input w-full {formErrors.subnet_mask
+												class="input-field input w-full {formErrors.subnet_mask
 													? 'border-error border-2'
 													: ''}"
 												minlength="7"
