@@ -237,11 +237,11 @@
 	}
 
 	:global(.btn.btn-back) {
-		background: var(--gray-500);
+		background: var(--yellow-500);
 		color: var(--white);
 	}
 	:global(.btn.btn-back:hover:not(:disabled)) {
-		background: var(--gray-600);
+		background: var(--yellow-500);
 	}
 
 	:global(.btn-icon) {
