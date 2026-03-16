@@ -7,9 +7,6 @@
   flex-grow: 1;
   height: 100%;
   transition: grid-template-columns 0.3s ease-in-out;
-  box-shadow: var(--glass-shadow);
-  border: var(--glass-border);
-  border-radius: var(--border-radius);
 
   @media (min-width: v.$breakpoint-md) {
     grid-template-columns: 300px 1fr;
