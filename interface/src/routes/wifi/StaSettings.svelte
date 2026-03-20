@@ -73,6 +73,7 @@
 	let isSettingsDirty: boolean = $derived(JSON.stringify(wifiSettings) !== strWifiSettings);
 
 	let showWifiDetails = $state(false);
+	let isSettingsExpanded = $state(false);
 
 	let formErrorhostname = $state(false);
 
@@ -278,9 +279,9 @@
 								/>
 							</div>
 							<div>
-								<div class="font-bold">Status</div>
+								<div class="font-bold">Статус</div>
 								<div class="text-sm opacity-75">
-									{wifiStatus.status === 3 ? 'Connected' : 'Inactive'}
+									{wifiStatus.status === 3 ? 'Подключен' : 'Отключен'}
 								</div>
 							</div>
 						</div>
@@ -408,147 +409,157 @@
 
 				<!-- Секция 2: настройки WiFi и сети -->
 				{#if !page.data.features.security || $user.admin}
-					<div class="settings-section">
-						<div class="settings-group">
-							<div class="settings-item settings-item--stacked">
-								<span class="input-label">Host Name (mDNS)</span>
-								<div class="input-wrapper">
-									<input
-										type="text"
-										min="3"
-										max="32"
-										class="input-field input input-bordered w-full {formErrorhostname
-											? 'border-error border-2'
-											: ''}"
-										bind:value={wifiSettings.hostname}
-										id="hostname"
-										required
-									/>
+					<div class="settings-section settings-section--collapsible">
+						<button
+							class="btn btn-outline btn-primary w-full"
+							type="button"
+							onclick={() => (isSettingsExpanded = !isSettingsExpanded)}
+							aria-expanded={isSettingsExpanded}
+						>
+							{isSettingsExpanded ? 'Скрыть настройки' : 'Показать настройки'}
+						</button>
+						{#if isSettingsExpanded}
+							<div class="settings-group mt-4">
+								<div class="settings-item settings-item--stacked">
+									<span class="input-label">Host Name (mDNS)</span>
+									<div class="input-wrapper">
+										<input
+											type="text"
+											min="3"
+											max="32"
+											class="input-field input input-bordered w-full {formErrorhostname
+												? 'border-error border-2'
+												: ''}"
+											bind:value={wifiSettings.hostname}
+											id="hostname"
+											required
+										/>
+									</div>
+									{#if formErrorhostname}
+										<p class="settings-description text-error text-sm">
+											Host name must be between 3 and 32 characters long.
+										</p>
+									{:else}
+										<p class="settings-description">
+											Name used for mDNS discovery of this device.
+										</p>
+									{/if}
 								</div>
-								{#if formErrorhostname}
-									<p class="settings-description text-error text-sm">
-										Host name must be between 3 and 32 characters long.
-									</p>
-								{:else}
-									<p class="settings-description">
-										Name used for mDNS discovery of this device.
-									</p>
-								{/if}
-							</div>
 
-							<div class="settings-item settings-item--stacked">
-								<span class="input-label">WiFi Connection Mode</span>
-								<div class="input-wrapper">
-									<select
-										class="input-field select w-full"
-										id="apmode"
-										bind:value={wifiSettings.connection_mode}
-									>
-										{#each connectionMode as mode}
-											<option value={mode.id}>
-												{mode.text}
-											</option>
-										{/each}
-									</select>
+								<div class="settings-item settings-item--stacked">
+									<span class="input-label">WiFi Connection Mode</span>
+									<div class="input-wrapper">
+										<select
+											class="input-field select w-full"
+											id="apmode"
+											bind:value={wifiSettings.connection_mode}
+										>
+											{#each connectionMode as mode}
+												<option value={mode.id}>
+													{mode.text}
+												</option>
+											{/each}
+										</select>
+									</div>
 								</div>
-							</div>
 
-							<div class="settings-item">
-								<div class="modal-actions">
-									<button
-										class="btn btn-primary text-primary-content btn-md"
-										type="button"
-										onclick={() => {
-											handleNewNetwork();
-										}}
-									>
-										<Add class="h-6 w-6" />
-									</button>
-									<button
-										class="btn btn-primary text-primary-content btn-md"
-										type="button"
-										onclick={() => {
-											if (!isNetworkListTooLong()) {
-												scanForNetworks();
-											}
-										}}
-									>
-										<Scan class="h-6 w-6" />
-									</button>
-									<button
-										class="btn btn-success text-success-content btn-md"
-										type="button"
-										onclick={applyWifiSettings}
-									>
-										<Save class="h-6 w-6" />
-									</button>
+								<div class="settings-item">
+									<div class="modal-actions">
+										<button
+											class="btn btn-primary text-primary-content btn-md"
+											type="button"
+											onclick={() => {
+												handleNewNetwork();
+											}}
+										>
+											<Add class="h-6 w-6" />
+										</button>
+										<button
+											class="btn btn-primary text-primary-content btn-md"
+											type="button"
+											onclick={() => {
+												if (!isNetworkListTooLong()) {
+													scanForNetworks();
+												}
+											}}
+										>
+											<Scan class="h-6 w-6" />
+										</button>
+										<button
+											class="btn btn-success text-success-content btn-md"
+											type="button"
+											onclick={applyWifiSettings}
+										>
+											<Save class="h-6 w-6" />
+										</button>
+									</div>
 								</div>
-							</div>
 
-							<div class="settings-item settings-item--stacked">
-								<span class="input-label">Configured networks</span>
-								<div class="input-wrapper wifi-networks-wrapper">
-									<div transition:slide|local={{ duration: 300, easing: cubicOut }}>
-										{#if wifiSettings.wifi_networks.length === 0}
-											<div class="text-center text-base-content/50 mt-2">
-												No WiFi networks configured yet.
-												<br />
-												Scan for available networks or add one manually.
-											</div>
-										{:else}
-											<DraggableList
-												items={wifiSettings.wifi_networks}
-												onReorder={handleNetworkReorder}
-												class="space-y-2"
-											>
-												{#snippet children({ item: network, index }: { item: any; index: number })}
-													<!-- svelte-ignore a11y_click_events_have_key_events -->
-													<div class="rounded-box flex items-center space-x-3 px-4 py-2">
-														<Grip class="h-6 w-6 text-base-content/30 cursor-grab" />
-														<div class="mask mask-hexagon bg-primary h-auto w-10 shrink-0">
-															<Router class="text-primary-content h-auto w-full scale-75" />
-														</div>
-														<div>
-															<div class="font-bold">{network.ssid}</div>
-														</div>
-														{#if network.static_ip_config}
-															<div class="badge badge-sm badge-secondary opacity-75">
-																Static
+								<div class="settings-item settings-item--stacked">
+									<span class="input-label">Configured networks</span>
+									<div class="input-wrapper wifi-networks-wrapper">
+										<div transition:slide|local={{ duration: 300, easing: cubicOut }}>
+											{#if wifiSettings.wifi_networks.length === 0}
+												<div class="text-center text-base-content/50 mt-2">
+													No WiFi networks configured yet.
+													<br />
+													Scan for available networks or add one manually.
+												</div>
+											{:else}
+												<DraggableList
+													items={wifiSettings.wifi_networks}
+													onReorder={handleNetworkReorder}
+													class="space-y-2"
+												>
+													{#snippet children({ item: network, index }: { item: any; index: number })}
+														<!-- svelte-ignore a11y_click_events_have_key_events -->
+														<div class="rounded-box flex items-center space-x-3 px-4 py-2">
+															<Grip class="h-6 w-6 text-base-content/30 cursor-grab" />
+															<div class="mask mask-hexagon bg-primary h-auto w-10 shrink-0">
+																<Router class="text-primary-content h-auto w-full scale-75" />
 															</div>
-														{:else}
-															<div
-																class="badge badge-sm badge-outline badge-secondary opacity-75"
-															>
-																DHCP
+															<div>
+																<div class="font-bold">{network.ssid}</div>
 															</div>
-														{/if}
-														<div class="grow"></div>
-														<div class="space-x-0 px-0 mx-0">
-															<button
-																class="btn btn-ghost btn-sm"
-																onclick={() => {
-																	handleEdit(index);
-																}}
-															>
-																<Edit class="h-5 w-5" />
-															</button>
-															<button
-																class="btn btn-ghost btn-sm"
-																onclick={() => {
-																	confirmDelete(index);
-																}}
-															>
-																<Delete class="h-5 w-5 text-error" />
-															</button>
+															{#if network.static_ip_config}
+																<div class="badge badge-sm badge-secondary opacity-75">
+																	Static
+																</div>
+															{:else}
+																<div
+																	class="badge badge-sm badge-outline badge-secondary opacity-75"
+																>
+																	DHCP
+																</div>
+															{/if}
+															<div class="grow"></div>
+															<div class="space-x-0 px-0 mx-0">
+																<button
+																	class="btn btn-ghost btn-sm"
+																	onclick={() => {
+																		handleEdit(index);
+																	}}
+																>
+																	<Edit class="h-5 w-5" />
+																</button>
+																<button
+																	class="btn btn-ghost btn-sm"
+																	onclick={() => {
+																		confirmDelete(index);
+																	}}
+																>
+																	<Delete class="h-5 w-5 text-error" />
+																</button>
+															</div>
 														</div>
-													</div>
-												{/snippet}
-											</DraggableList>
-										{/if}
+													{/snippet}
+												</DraggableList>
+											{/if}
+										</div>
 									</div>
 								</div>
 							</div>
-						</div>
+						{/if}
 					</div>
 				{/if}
 			</div>
@@ -576,6 +587,11 @@
 	:global(.wifi-sta-root .wifi-networks-wrapper > *),
 	:global(.wifi-sta-root .wifi-networks-wrapper .space-y-2) {
 		width: 100%;
+	}
+
+	:global(.wifi-sta-root .settings-section--collapsible) {
+		display: flex;
+		flex-direction: column;
 	}
 </style>
 

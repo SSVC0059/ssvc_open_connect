@@ -29,6 +29,7 @@ let apStatus: ApStatus = $state({
 	mac_address: '',
 	station_num: 0
 });
+let isSettingsExpanded = $state(false);
 
 	let formField: any = $state();
 
@@ -213,7 +214,7 @@ let apStatus: ApStatus = $state({
 								<AP class="h-auto w-full scale-75 {apStatusDescription[apStatus.status].text_color}" />
 							</div>
 							<div>
-								<div class="font-bold">Status</div>
+								<div class="font-bold">Статус</div>
 								<div class="text-sm opacity-75">
 									{apStatusDescription[apStatus.status].description}
 								</div>
@@ -260,16 +261,25 @@ let apStatus: ApStatus = $state({
 
 				<!-- Секция 2: настройки точки доступа -->
 				{#if !page.data.features.security || $user.admin}
-					<div class="settings-section">
-						{#await getAPSettings()}
-							<div class="flex flex-col items-center justify-center gap-2 py-6">
-								<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
-							</div>
-						{:then nothing}
-							<div
-								class="flex flex-col gap-2 p-0"
-								transition:slide|local={{ duration: 300, easing: cubicOut }}
-							>
+					<div class="settings-section settings-section--collapsible">
+						<button
+							class="btn btn-outline btn-primary w-full"
+							type="button"
+							onclick={() => (isSettingsExpanded = !isSettingsExpanded)}
+							aria-expanded={isSettingsExpanded}
+						>
+							{isSettingsExpanded ? 'Скрыть настройки' : 'Показать настройки'}
+						</button>
+						{#if isSettingsExpanded}
+							{#await getAPSettings()}
+								<div class="mt-4 flex flex-col items-center justify-center gap-2 py-6">
+									<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+								</div>
+							{:then nothing}
+								<div
+									class="mt-4 flex flex-col gap-2 p-0"
+									transition:slide|local={{ duration: 300, easing: cubicOut }}
+								>
 								<form
 									class="settings-group grid w-full grid-cols-1 content-center gap-x-4 gap-y-2 mb-4 sm:grid-cols-2"
 									onsubmit={preventDefault(handleSubmitAP)}
@@ -277,7 +287,7 @@ let apStatus: ApStatus = $state({
 									bind:this={formField}
 								>
 									<div class="settings-item settings-item--stacked">
-										<span class="input-label">Provide Access Point ...</span>
+										<span class="input-label">Включать  точку доступа ...</span>
 										<div class="input-wrapper">
 											<select
 												class="input-field select w-full"
@@ -438,18 +448,19 @@ let apStatus: ApStatus = $state({
 												bind:checked={apSettings.ssid_hidden}
 												class="checkbox checkbox-primary"
 											/>
-											<span class="">Hide SSID</span>
+											<span class="">прятать SSID</span>
 										</label>
 									</div>
 
 									<div class="settings-item">
 										<div class="modal-actions">
-											<button class="btn btn-primary" type="submit">Apply Settings</button>
+											<button class="btn btn-primary" type="submit">Применить настройки</button>
 										</div>
 									</div>
 								</form>
-							</div>
-						{/await}
+								</div>
+							{/await}
+						{/if}
 					</div>
 				{/if}
 			</div>
@@ -468,6 +479,11 @@ let apStatus: ApStatus = $state({
 
 	:global(.wifi-ap-root .settings-panel) {
 		width: 100%;
+	}
+
+	:global(.wifi-ap-root .settings-section--collapsible) {
+		display: flex;
+		flex-direction: column;
 	}
 </style>
 

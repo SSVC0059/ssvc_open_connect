@@ -7,8 +7,6 @@
     import Health from '~icons/tabler/stethoscope';
     import Update from '~icons/tabler/refresh-alert';
     import WiFi from '~icons/tabler/wifi';
-    import Router from '~icons/tabler/router';
-    import AP from '~icons/tabler/access-point';
     import Remote from '~icons/tabler/network';
     import Control from '~icons/tabler/adjustments';
     import DropletCog from '~icons/tabler/droplet-cog';
@@ -138,20 +136,7 @@ import { goto } from '$app/navigation';
             title: 'WiFi',
             icon: WiFi,
             feature: true,
-            submenu: [
-                {
-                    title: 'WiFi Статус',
-                    icon: Router,
-                    href: '/wifi?tab=sta',
-                    feature: true
-                },
-                {
-                    title: 'Точка доступа',
-                    icon: AP,
-                    href: '/wifi?tab=ap',
-                    feature: true
-                }
-            ]
+            href: '/wifi'
         },
         {
             title: 'Пользователи',
