@@ -26,10 +26,11 @@
     border-bottom: none;
   }
 
-  // Переопределение для поля ввода внутри двуколоночного контейнера
+  // Поля ввода не ограничиваем по ширине
   & > .input-field {
-    flex-shrink: 0;
-    width: 100px;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
     text-align: left;
   }
 
@@ -53,6 +54,10 @@
     flex-shrink: 0;
   }
 
+  .checkbox-container {
+    flex-shrink: 0;
+  }
+
   .text-xs {
     font-size: 0.75rem;
   }
@@ -64,10 +69,6 @@
 
     .input-wrapper {
       width: 100%;
-
-      @media (min-width: v.$breakpoint-md) {
-        width: 50%;
-      }
     }
   }
 
@@ -78,7 +79,8 @@
     }
 
     input,
-    .toggle-container {
+    .toggle-container,
+    .checkbox-container {
       opacity: 0.6;
       pointer-events: none;
       cursor: default;
@@ -108,6 +110,15 @@
 .settings-item input[type="checkbox"] {
   /* Добавляем отступ справа для разделения чекбокса и текста */
   margin-right: 0.5rem; /* 1rem = 16px. Вы можете настроить это значение. */
+}
+
+.settings-item .input-wrapper,
+.settings-item .input-field,
+.settings-item input:not([type="checkbox"]):not([type="radio"]),
+.settings-item select,
+.settings-item textarea {
+  width: 100%;
+  max-width: none;
 }
 
 // Глобальный класс для принудительной блокировки всех вложенных элементов

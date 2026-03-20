@@ -18,8 +18,6 @@
     import Avatar from '~icons/tabler/user-circle';
     import Logout from '~icons/tabler/logout';
     import Copyright from '~icons/tabler/copyright';
-    import MQTT from '~icons/tabler/topology-star-3';
-    import NTP from '~icons/tabler/clock-check';
     import Telegram from '~icons/tabler/brand-telegram';
     import Metrics from '~icons/tabler/report-analytics';
     import Connected from '~icons/tabler/plug-connected';
@@ -134,20 +132,7 @@ import { goto } from '$app/navigation';
             title: 'Network',
             icon: Remote,
             feature: page.data.features.mqtt || page.data.features.ntp,
-            submenu: [
-                {
-                    title: 'MQTT',
-                    icon: MQTT,
-                    href: '/network?tab=mqtt',
-                    feature: page.data.features.mqtt
-                },
-                {
-                    title: 'NTP',
-                    icon: NTP,
-                    href: '/network?tab=ntp',
-                    feature: page.data.features.ntp
-                }
-            ]
+            href: '/network'
         },
         {
             title: 'WiFi',

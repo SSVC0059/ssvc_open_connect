@@ -25,6 +25,7 @@
 	});
 
 	let isFieldsDisabled = $state(true);
+	let isSettingsExpanded = $state(false);
 
 	async function loadMQTTSettings() {
 		try {
@@ -188,12 +189,12 @@
 									/>
 								</div>
 								<div>
-									<div class="font-bold">Status</div>
+									<div class="font-bold">Статус подсистемы</div>
 									<div class="text-sm opacity-75">
 										{#if mqttStatus.connected}
-											Connected
+											MQTT работает
 										{:else if !mqttStatus.enabled}
-											MQTT Disabled
+											MQTT выключен
 										{:else}
 											{mqttStatus.last_error}
 										{/if}
@@ -217,161 +218,171 @@
 				</div>
 
 				<!-- Section 2: MQTT settings -->
-				<div class="settings-section">
-					{#if isSettingsLoading}
-						<div class="loading-container flex flex-col items-center gap-2">
-							<p class="loading-text">Loading MQTT settings...</p>
-							<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
-						</div>
-					{:else if settingsError}
-						<div class="error-container">
-							<p class="error-text">{settingsError}</p>
-						</div>
-					{:else if mqttSettings}
-						<div class="settings-group">
-							<!-- Enable MQTT toggle -->
-							<div class="settings-item mqtt-toggle-row">
-								<div class="input-label-container">
-									<span class="input-label">MQTT subsystem</span>
-									<span class="settings-description">
-										{mqttSettings.enabled ? 'Enabled' : 'Disabled'}
-									</span>
-								</div>
-								<Toggle checked={mqttSettings.enabled} onchange={handleToggleEnabled} />
+				<div class="settings-section settings-section--collapsible">
+					<button
+						class="btn btn-outline btn-primary w-full"
+						type="button"
+						onclick={() => (isSettingsExpanded = !isSettingsExpanded)}
+						aria-expanded={isSettingsExpanded}
+					>
+						{isSettingsExpanded ? 'Скрыть настройки' : 'Показать настройки'}
+					</button>
+					{#if isSettingsExpanded}
+						{#if isSettingsLoading}
+							<div class="loading-container mt-4 flex flex-col items-center gap-2">
+								<p class="loading-text">Загрузка настроек MQTT...</p>
+								<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
 							</div>
+						{:else if settingsError}
+							<div class="error-container mt-4">
+								<p class="error-text">{settingsError}</p>
+							</div>
+						{:else if mqttSettings}
+							<div class="settings-group mt-4">
+								<!-- Enable MQTT toggle -->
+								<div class="settings-item mqtt-toggle-row">
+									<div class="input-label-container">
+										<span class="input-label">Подсистема MQTT</span>
+										<span class="settings-description">
+											{mqttSettings.enabled ? 'включена' : 'выключена'}
+										</span>
+									</div>
+									<Toggle checked={mqttSettings.enabled} onchange={handleToggleEnabled} />
+								</div>
 
-							<!-- URI -->
-							<div class="settings-item settings-item--stacked" class:read-only={isFieldsDisabled}>
-								<span class="input-label">URI</span>
-								<div class="input-wrapper">
-									<input
-										type="text"
-										min="3"
-										max="64"
-										class="input-field"
-										bind:value={mqttSettings.uri}
-										id="host"
-										required
-										disabled={isFieldsDisabled}
-									/>
+								<!-- URI -->
+								<div class="settings-item settings-item--stacked" class:read-only={isFieldsDisabled}>
+									<span class="input-label">URI</span>
+									<div class="input-wrapper">
+										<input
+											type="text"
+											min="3"
+											max="64"
+											class="input-field"
+											bind:value={mqttSettings.uri}
+											id="host"
+											required
+											disabled={isFieldsDisabled}
+										/>
+									</div>
+									{#if formErrors.host}
+										<p class="settings-description text-error text-sm">
+											Must be a valid URI (hostname or IPv4).
+										</p>
+									{:else}
+										<p class="settings-description">Hostname or IPv4 address with optional path.</p>
+									{/if}
 								</div>
-								{#if formErrors.host}
-									<p class="settings-description text-error text-sm">
-										Must be a valid URI (hostname or IPv4).
-									</p>
-								{:else}
-									<p class="settings-description">Hostname or IPv4 address with optional path.</p>
-								{/if}
-							</div>
 
-							<!-- Username -->
-							<div class="settings-item settings-item--stacked" class:read-only={isFieldsDisabled}>
-								<span class="input-label">Username</span>
-								<div class="input-wrapper">
-									<input
-										type="text"
-										class="input-field"
-										bind:value={mqttSettings.username}
-										id="user"
-										disabled={isFieldsDisabled}
-									/>
+								<!-- Username -->
+								<div class="settings-item settings-item--stacked" class:read-only={isFieldsDisabled}>
+									<span class="input-label">Username</span>
+									<div class="input-wrapper">
+										<input
+											type="text"
+											class="input-field"
+											bind:value={mqttSettings.username}
+											id="user"
+											disabled={isFieldsDisabled}
+										/>
+									</div>
 								</div>
-							</div>
 
-							<!-- Password -->
-							<div class="settings-item settings-item--stacked" class:read-only={isFieldsDisabled}>
-								<span class="input-label">Password</span>
-								<div class="input-wrapper">
-									<InputPassword bind:value={mqttSettings.password} id="pwd" />
+								<!-- Password -->
+								<div class="settings-item settings-item--stacked" class:read-only={isFieldsDisabled}>
+									<span class="input-label">Password</span>
+									<div class="input-wrapper">
+										<InputPassword bind:value={mqttSettings.password} id="pwd" />
+									</div>
 								</div>
-							</div>
 
-							<!-- Client ID -->
-							<div class="settings-item settings-item--stacked" class:read-only={isFieldsDisabled}>
-								<span class="input-label">Client ID</span>
-								<div class="input-wrapper">
-									<input
-										type="text"
-										class="input-field"
-										bind:value={mqttSettings.client_id}
-										id="clientid"
-										disabled={isFieldsDisabled}
-									/>
+								<!-- Client ID -->
+								<div class="settings-item settings-item--stacked" class:read-only={isFieldsDisabled}>
+									<span class="input-label">Client ID</span>
+									<div class="input-wrapper">
+										<input
+											type="text"
+											class="input-field"
+											bind:value={mqttSettings.client_id}
+											id="clientid"
+											disabled={isFieldsDisabled}
+										/>
+									</div>
 								</div>
-							</div>
 
-							<!-- Keep Alive -->
-							<div class="settings-item settings-item--stacked" class:read-only={isFieldsDisabled}>
-								<span class="input-label">Keep Alive</span>
-								<div class="input-wrapper">
-									<input
-										type="number"
-										min="1"
-										max="600"
-										class="input-field"
-										bind:value={mqttSettings.keep_alive}
-										id="keepalive"
-										required
-										disabled={isFieldsDisabled}
-									/>
+								<!-- Keep Alive -->
+								<div class="settings-item settings-item--stacked" class:read-only={isFieldsDisabled}>
+									<span class="input-label">Keep Alive</span>
+									<div class="input-wrapper">
+										<input
+											type="number"
+											min="1"
+											max="600"
+											class="input-field"
+											bind:value={mqttSettings.keep_alive}
+											id="keepalive"
+											required
+											disabled={isFieldsDisabled}
+										/>
+									</div>
+									{#if formErrors.keep_alive}
+										<p class="settings-description text-error text-sm">
+											Must be between 1 and 600 seconds.
+										</p>
+									{:else}
+										<p class="settings-description">Seconds between keep-alive packets (1–600).</p>
+									{/if}
 								</div>
-								{#if formErrors.keep_alive}
-									<p class="settings-description text-error text-sm">
-										Must be between 1 and 600 seconds.
-									</p>
-								{:else}
-									<p class="settings-description">Seconds between keep-alive packets (1–600).</p>
-								{/if}
-							</div>
 
-							<!-- Publish Message Interval -->
-							<div class="settings-item settings-item--stacked" class:read-only={isFieldsDisabled}>
-								<span class="input-label">Publish Message Interval</span>
-								<div class="input-wrapper">
-									<input
-										type="number"
-										min="0"
-										max="1000"
-										class="input-field"
-										bind:value={mqttSettings.message_interval_ms}
-										id="ratelimit"
-										required
-										disabled={isFieldsDisabled}
-									/>
+								<!-- Publish Message Interval -->
+								<div class="settings-item settings-item--stacked" class:read-only={isFieldsDisabled}>
+									<span class="input-label">Publish Message Interval</span>
+									<div class="input-wrapper">
+										<input
+											type="number"
+											min="0"
+											max="1000"
+											class="input-field"
+											bind:value={mqttSettings.message_interval_ms}
+											id="ratelimit"
+											required
+											disabled={isFieldsDisabled}
+										/>
+									</div>
+									{#if formErrors.rate_limit}
+										<p class="settings-description text-error text-sm">
+											Must be between 0 and 1000 milliseconds.
+										</p>
+									{:else}
+										<p class="settings-description">
+											Milliseconds between published messages (0–1000).
+										</p>
+									{/if}
 								</div>
-								{#if formErrors.rate_limit}
-									<p class="settings-description text-error text-sm">
-										Must be between 0 and 1000 milliseconds.
-									</p>
-								{:else}
-									<p class="settings-description">
-										Milliseconds between published messages (0–1000).
-									</p>
-								{/if}
-							</div>
 
-							<!-- Clean Session -->
-							<div class="settings-item" class:read-only={isFieldsDisabled}>
-								<span class="settings-label">Clean Session</span>
-								<div class="toggle-container">
-									<input
-										type="checkbox"
-										bind:checked={mqttSettings.clean_session}
-										class="checkbox checkbox-primary"
-										disabled={isFieldsDisabled}
-									/>
+								<!-- Clean Session -->
+								<div class="settings-item" class:read-only={isFieldsDisabled}>
+									<span class="settings-label">Clean Session</span>
+									<div class="checkbox-container">
+										<input
+											type="checkbox"
+											bind:checked={mqttSettings.clean_session}
+											class="clean-session-checkbox"
+											disabled={isFieldsDisabled}
+										/>
+									</div>
 								</div>
-							</div>
 
-							<!-- Actions -->
-							<div class="settings-item">
-								<div class="modal-actions">
-									<button class="btn btn-primary" type="button" onclick={submitMQTTSettings}>
-										Apply Settings
-									</button>
+								<!-- Actions -->
+								<div class="settings-item">
+									<div class="modal-actions">
+										<button class="btn btn-primary" type="button" onclick={submitMQTTSettings}>
+											Применить настройки
+										</button>
+									</div>
 								</div>
 							</div>
-						</div>
+						{/if}
 					{/if}
 				</div>
 			</div>
@@ -415,6 +426,19 @@
 
 	:global(.mqtt-settings-root .mqtt-toggle-row .settings-description) {
 		margin: 0;
+	}
+
+	:global(.mqtt-settings-root .settings-section--collapsible) {
+		display: flex;
+		flex-direction: column;
+	}
+
+	:global(.mqtt-settings-root .clean-session-checkbox) {
+		appearance: auto;
+		width: 1.1rem;
+		height: 1.1rem;
+		display: inline-block;
+		accent-color: var(--color-primary);
 	}
 </style>
 
