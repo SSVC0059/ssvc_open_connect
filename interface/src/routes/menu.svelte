@@ -20,6 +20,8 @@
     import Metrics from '~icons/tabler/report-analytics';
     import Connected from '~icons/tabler/plug-connected';
     import Book from '~icons/tabler/book';
+    import ChevronLeft from '~icons/tabler/chevron-left';
+    import ChevronRight from '~icons/tabler/chevron-right';
     import SsvcIcon from '~icons/mdi/snake';
     import Esp from '~icons/mdi/car-esp';
     import Bug from '~icons/tabler/bug';
@@ -30,6 +32,7 @@ import { goto } from '$app/navigation';
     import type { Component } from 'svelte';
 
     let { closeMenu } = $props();
+    let isCollapsed = $state(false);
 
     const github = { href: 'https://github.com/' + page.data.github, active: true };
 
@@ -245,21 +248,43 @@ import { goto } from '$app/navigation';
     });
 </script>
 
-<div class="bg-base-200 text-base-content flex h-full w-80 flex-col p-4">
+<div
+    class="bg-base-200 text-base-content flex h-full flex-col transition-all duration-200 {isCollapsed
+        ? 'w-20 p-2'
+        : 'w-80 p-4'}"
+>
     <!-- Sidebar content here -->
-    <a
-            href="/"
-            class="rounded-box mb-4 flex items-center hover:scale-[1.02] active:scale-[0.98]"
-            onclick={() => setActiveMenuItem('')}
-    >
-        <img src={logo} alt="Logo" class="max-h-12 max-w-12 h-auto w-auto object-contain" />
-        <h1 class="px-4 text-2xl font-bold">{page.data.appName}</h1>
-    </a>
+    <div class="mb-2 flex items-center">
+        <a
+                href="/"
+                class="rounded-box flex items-center hover:scale-[1.02] active:scale-[0.98]"
+                onclick={() => setActiveMenuItem('')}
+        >
+            <img src={logo} alt="Logo" class="max-h-12 max-w-12 h-auto w-auto object-contain" />
+            {#if !isCollapsed}
+                <h1 class="px-4 text-2xl font-bold">{page.data.appName}</h1>
+            {/if}
+        </a>
+    </div>
     <ul class="menu w-full rounded-box menu-vertical flex-nowrap overflow-y-auto">
         {#each menuItems as menuItem, i (menuItem.title)}
             {#if menuItem.feature}
                 <li>
-                    {#if menuItem.submenu}
+                    {#if isCollapsed}
+                        <a
+                                href={menuItem.href}
+                                class:bg-base-100={menuItem.active}
+                                class="justify-center px-2"
+                                title={menuItem.title}
+                                aria-label={menuItem.title}
+                                onclick={(event) => {
+								event.preventDefault();
+								openRootDefault(menuItem);
+							}}
+                        >
+                            <menuItem.icon class="h-6 w-6" />
+                        </a>
+                    {:else if menuItem.submenu}
                         <details open={menuItem.submenu.some((subItem) => subItem.active)}>
                             <summary
                                     class="text-lg font-bold"
@@ -334,7 +359,10 @@ import { goto } from '$app/navigation';
     {#if page.data.features.security}
         <div class="flex items-center">
             <Avatar class="h-8 w-8" />
-            <span class="grow px-4 text-xl font-bold">{$user.username}</span>
+            {#if !isCollapsed}
+                <span class="grow px-4 text-xl font-bold">{$user.username}</span>
+            {/if}
+            <div class="grow"></div>
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div
@@ -348,6 +376,20 @@ import { goto } from '$app/navigation';
         </div>
     {/if}
 
+    <div class="mb-2 flex justify-center">
+        <button
+                class="btn btn-ghost btn-sm"
+                type="button"
+                aria-label={isCollapsed ? 'Expand menu' : 'Collapse menu'}
+                onclick={() => (isCollapsed = !isCollapsed)}
+        >
+            {#if isCollapsed}
+                <ChevronRight class="h-5 w-5" />
+            {:else}
+                <ChevronLeft class="h-5 w-5" />
+            {/if}
+        </button>
+    </div>
     <div class="divider my-0"></div>
     <div class="flex items-center">
         {#if github.active}
@@ -360,8 +402,10 @@ import { goto } from '$app/navigation';
             ><Discord class="h-5 w-5" /></a
             >
         {/if}
-        <div class="inline-flex grow items-center justify-end text-sm">
-            <Copyright class="h-4 w-4" /><span class="px-2">{page.data.copyright}</span>
-        </div>
+        {#if !isCollapsed}
+            <div class="inline-flex grow items-center justify-end text-sm">
+                <Copyright class="h-4 w-4" /><span class="px-2">{page.data.copyright}</span>
+            </div>
+        {/if}
     </div>
 </div>
