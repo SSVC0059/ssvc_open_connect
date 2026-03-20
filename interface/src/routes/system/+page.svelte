@@ -19,10 +19,10 @@
 	};
 
 	const tabs: Tab[] = [
-		{ id: 'status', title: 'Status', component: SystemStatusTab },
-		{ id: 'metrics', title: 'Metrics', component: SystemMetricsTab },
+		{ id: 'status', title: 'Статус системы', component: SystemStatusTab },
+		{ id: 'metrics', title: 'Монитор', component: SystemMetricsTab },
 		{ id: 'coredump', title: 'Core dump', component: SystemCoredumpTab },
-		{ id: 'update', title: 'Update', component: SystemUpdateTab }
+		{ id: 'update', title: 'Обновление', component: SystemUpdateTab }
 	];
 
 	let activeIndex = $state(0);

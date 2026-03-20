@@ -217,40 +217,38 @@ let systemInformation: SystemInformation = $state({
 							</div>
 						{:then nothing}
 							<div
-								class="status-table-wrapper overflow-x-auto rounded-box border border-base-content/5"
+								class="status-grid-wrapper rounded-box border border-base-content/5 p-2"
 								transition:slide|local={{ duration: 300, easing: cubicOut }}
 							>
-								<table class="table">
-									<tbody>
-										{#each statusRows as row (row.name)}
-											{@const Icon = row.icon}
-											<tr class="active">
-												<td class="w-12">
-													<div class="mask mask-hexagon bg-primary h-10 w-10 flex items-center justify-center">
-														<Icon class="text-primary-content h-5 w-5" />
-													</div>
-												</td>
-												<td class="font-medium">{row.name}</td>
-												<td class="text-sm opacity-90">{row.value}</td>
-											</tr>
-										{/each}
-									</tbody>
-								</table>
+								<div class="status-grid">
+									{#each statusRows as row (row.name)}
+										{@const Icon = row.icon}
+										<article class="status-item rounded-box border border-base-content/5 p-3">
+											<div class="status-item-icon">
+												<div class="mask mask-hexagon bg-primary h-10 w-10 flex items-center justify-center">
+													<Icon class="text-primary-content h-5 w-5" />
+												</div>
+											</div>
+											<div class="status-item-name">{row.name}</div>
+											<div class="status-item-value">{row.value}</div>
+										</article>
+									{/each}
+								</div>
 							</div>
 
 							{#if !page.data.features.security || $user.admin}
 								<div class="status-actions flex flex-wrap justify-center gap-2">
 									<button class="btn btn-warning" type="button" onclick={confirmRestart}>
 										<Power class="h-5 w-5" />
-										<span>Restart</span>
+										<span>Перезапустить</span>
 									</button>
 									<button class="btn btn-error btn-factory-reset" type="button" onclick={confirmReset}>
 										<FactoryReset class="h-5 w-5" />
-										<span>Factory reset</span>
+										<span>Сброс настроек</span>
 									</button>
 									<button class="btn btn-secondary btn-status-success" type="button" onclick={confirmSleep}>
 										<Sleep class="h-5 w-5" />
-										<span>Sleep</span>
+										<span>Спящий режим</span>
 									</button>
 								</div>
 							{/if}
@@ -282,11 +280,45 @@ let systemInformation: SystemInformation = $state({
 		align-items: center;
 	}
 
-	.status-table-wrapper {
+	.status-grid-wrapper {
 		width: 100%;
+	}
+
+	.status-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 0.75rem;
+
 		@media (min-width: 1024px) {
-			width: 60%;
+			grid-template-columns: 1fr 1fr;
 		}
+	}
+
+	.status-item {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		grid-template-areas:
+			'icon name'
+			'icon value';
+		column-gap: 0.75rem;
+		row-gap: 0.25rem;
+		align-items: center;
+	}
+
+	.status-item-icon {
+		grid-area: icon;
+	}
+
+	.status-item-name {
+		grid-area: name;
+		font-weight: 600;
+	}
+
+	.status-item-value {
+		grid-area: value;
+		font-size: 0.875rem;
+		opacity: 0.9;
+		word-break: break-word;
 	}
 
 	.status-actions {
