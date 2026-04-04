@@ -111,7 +111,7 @@ public:
         root["subnet_mask"] = settings.subnetMask.toString();
     }
 
-    static StateUpdateResult update(JsonObject &root, APSettings &settings)
+    static StateUpdateResult update(JsonObject &root, APSettings &settings, const String &originId)
     {
         APSettings newSettings = {};
         newSettings.provisionMode = root["provision_mode"] | FACTORY_AP_PROVISION_MODE;
@@ -146,7 +146,7 @@ public:
 class APSettingsService : public StatefulService<APSettings>
 {
 public:
-    APSettingsService(PsychicHttpServer *server, FS *fs, SecurityManager *securityManager);
+    APSettingsService(AsyncWebServer *server, FS *fs, SecurityManager *securityManager);
 
     void begin();
     void loop();
@@ -154,7 +154,7 @@ public:
     void recoveryMode();
 
 private:
-    PsychicHttpServer *_server;
+    AsyncWebServer *_server;
     SecurityManager *_securityManager;
     HttpEndpoint<APSettings> _httpEndpoint;
     FSPersistence<APSettings> _fsPersistence;

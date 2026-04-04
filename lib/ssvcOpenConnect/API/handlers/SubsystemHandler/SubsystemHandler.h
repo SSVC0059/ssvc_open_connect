@@ -18,7 +18,8 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
-#include "PsychicHttp.h"
+#include <ESPAsyncWebServer.h>
+#include <AsyncJson.h>
 
 #include "core/SubsystemManager/SubsystemManager.h"
 #include <unordered_map>
@@ -27,10 +28,10 @@ class SubsystemHandler {
 public:
     SubsystemHandler();
 
-    static esp_err_t getStatus(PsychicRequest* request);
-    static esp_err_t  state(PsychicRequest* request);
-    static esp_err_t  disable(PsychicRequest* request);
-    static esp_err_t  enable(PsychicRequest* request);
+    static void getStatus(AsyncWebServerRequest* request);
+    static void state(AsyncWebServerRequest* request, JsonVariant& json);
+    static void disable(AsyncWebServerRequest* request);
+    static void enable(AsyncWebServerRequest* request);
 
 private:
     static constexpr auto TAG = "SubsystemHandler";

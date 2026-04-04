@@ -38,7 +38,9 @@ bool SsvcSettings::load(const std::string &json) {
 
   SsvcMqttSettingsService* settingsService = SsvcMqttSettingsService::getInstance();
   auto jsonObject = doc.as<JsonObject>();
-  settingsService->update(jsonObject, ssvcMqttSettings::update, "settings");
+  settingsService->update(jsonObject,
+      [](JsonObject& root, ssvcMqttSettings& s, const String&) { return ssvcMqttSettings::update(root, s); },
+      "settings");
 
   if (error) {
     ESP_LOGE("SssvcController", "ошибка десериализации настроек: %s",

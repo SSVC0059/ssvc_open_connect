@@ -49,18 +49,18 @@ void TelemetryService::vUpdateTimerCallback(TimerHandle_t xTimer)
     }
 }
 
-TelemetryService::TelemetryService(PsychicHttpServer *server,
+TelemetryService::TelemetryService(AsyncWebServer *server,
                                     ESP32SvelteKit* sveltekit,
                                    RectificationProcess& rProcess)
     :   _rProcess(rProcess),
         _httpEndpoint([this](TelemetryState& s, JsonObject& r) { readStateToJson(s, r); },
-                    TelemetryState::update,
+                    [](JsonObject& root, TelemetryState& s, const String&) { return TelemetryState::update(root, s); },
                     this,
                     server,
                     TELEMETRY_REST_PATH,
                     sveltekit->getSecurityManager()),
         _mqttEndpoint([this](TelemetryState& s, JsonObject& r) { readStateToJson(s, r); },
-               TelemetryState::update,
+               [](JsonObject& root, TelemetryState& s, const String&) { return TelemetryState::update(root, s); },
                this,
                sveltekit->getMqttClient(),
                TELEMETRY_PUB_TOPIC,

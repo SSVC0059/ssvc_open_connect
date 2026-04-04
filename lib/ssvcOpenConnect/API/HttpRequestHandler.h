@@ -2,7 +2,7 @@
 #define SSVC_OPEN_CONNECT_HTTPREQUESTHANDLER_H
 
 #include "HandlerRegistrator.h"
-#include "PsychicHttp.h"
+#include <ESPAsyncWebServer.h>
 #include "SecurityManager.h"
 #include "handlers/OpenConnectHandler/OpenConnectHandler.h"
 #include "handlers/ProfileHandler/ProfileHandler.h"
@@ -11,14 +11,14 @@
 
 class HttpRequestHandler {
 public:
-  HttpRequestHandler(PsychicHttpServer& server,
+  HttpRequestHandler(AsyncWebServer& server,
                     SecurityManager* securityManager,
                     ProfileService* profileService,
                     FS* fs);
   void begin() const;
 
 private:
-    PsychicHttpServer& _server;
+    AsyncWebServer& _server;
     SecurityManager* _securityManager;
     ProfileService* _profileService;
     FS* _fs;

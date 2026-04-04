@@ -27,14 +27,16 @@ void ssvcMqttSettings::read(const ssvcMqttSettings& settings, const JsonObject& 
 
 
 SsvcMqttSettingsService::SsvcMqttSettingsService(
-  PsychicHttpServer *server, ESP32SvelteKit *_esp32sveltekit)
+  AsyncWebServer *server, ESP32SvelteKit *_esp32sveltekit)
     :_mqttEndpoint(
-          ssvcMqttSettings::read,
-          ssvcMqttSettings::update,
+          [](ssvcMqttSettings& s, JsonObject& r) { ssvcMqttSettings::read(s, r); },
+          [](JsonObject& root, ssvcMqttSettings& s, const String&) { return ssvcMqttSettings::update(root, s); },
           this,
           _esp32sveltekit->getMqttClient(),
           OPEN_CONNECT_SETTINGS_PUB_TOPIC,
-          ""
+          "",
+          0,
+          false
     )
 {
   _instance = this;

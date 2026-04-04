@@ -66,7 +66,7 @@ private:
         const size_t freeInt = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
         const size_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
         const char* tag = _tag ? _tag : JSON_SPIRAM_ALLOCATOR_LOG_TAG;
-        ESP_LOGD(tag,
+        ESP_LOGV(tag,
             "JSON doc: first alloc from %s (%u B) | free internal=%u PSRAM=%u",
             fromPsram ? "PSRAM" : "internal",
             (unsigned)size, (unsigned)freeInt, (unsigned)freePsram);

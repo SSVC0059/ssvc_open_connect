@@ -64,23 +64,25 @@ void SensorDataService::triggerZoneDataRecalculation()
     ESP_LOGI(TAG, "Triggered data recalculation due to zone change.");
 }
 
-SensorDataService::SensorDataService(PsychicHttpServer *server,
+SensorDataService::SensorDataService(AsyncWebServer *server,
                                     ESP32SvelteKit* sveltekit)
-    : _httpEndpoint(
-          SensorDataState::read,
-          SensorDataState::update,
+    :       _httpEndpoint(
+          [](SensorDataState& s, JsonObject& r) { SensorDataState::read(s, r); },
+          [](JsonObject& root, SensorDataState& s, const String&) { return SensorDataState::update(root, s); },
           this,
           server,
           SENSOR_DATA_ENDPOINT, // /rest/data
           sveltekit->getSecurityManager()
       ),
       _mqttEndpoint(
-          SensorDataState::read,
-          SensorDataState::update,
+          [](SensorDataState& s, JsonObject& r) { SensorDataState::read(s, r); },
+          [](JsonObject& root, SensorDataState& s, const String&) { return SensorDataState::update(root, s); },
           this,
           sveltekit->getMqttClient(),
           SENSOR_DATA_PUB_TOPIC,
-          ""
+          "",
+          0,
+          false
           )
 {
     ESP_LOGI(TAG, "SensorDataService initialized (RAM-only, HTTP: %s, MQTT: %s)",

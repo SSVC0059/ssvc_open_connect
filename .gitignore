@@ -30,3 +30,4 @@ tools/coredump.bin
 # Coverage (vitest/v8, Istanbul, etc.)
 interface/coverage/
 **/coverage/
+__pycache__

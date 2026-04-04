@@ -42,7 +42,7 @@ public:
   static SsvcOpenConnect& getInstance();
 
   static void subsystemManager();
-  void begin(PsychicHttpServer& server, ESP32SvelteKit& esp32sveltekit, EventSocket* socket, SecurityManager* securityManager);
+  void begin(AsyncWebServer& server, ESP32SvelteKit& esp32sveltekit, EventSocket* socket, SecurityManager* securityManager);
 
   ESP32SvelteKit* getESP32SvelteKit() const { return _esp32sveltekit; }
   SensorConfigService* getSensorConfigService() const { return _sensorConfigService; }
@@ -57,7 +57,7 @@ public:
 private:
   SsvcOpenConnect() = default;
 
-  PsychicHttpServer* _server = nullptr;
+  AsyncWebServer* _server = nullptr;
   ESP32SvelteKit* _esp32sveltekit = nullptr;
   EventSocket* _socket = nullptr;
   SecurityManager* _securityManager = nullptr;
