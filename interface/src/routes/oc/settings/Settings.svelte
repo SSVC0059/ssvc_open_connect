@@ -3,6 +3,7 @@
 	import SensorsSettings from '$lib/components/OCSettings/SensorsSettings.svelte';
 	import TelegramSettings from '$lib/components/OCSettings/TelegramSettings.svelte';
 	import ProfileManager from '$lib/components/profiles/ProfileManager.svelte';
+	import { goto } from '$app/navigation';
 	import { getSubsystemState, setSubsystemState } from '$lib/api/ssvcApi';
 	import type { SubsystemsState } from '$lib/types/ssvc';
 
@@ -121,6 +122,14 @@
 		}
 	});
 
+	function setActiveTab(index: number) {
+		activeTab = index;
+		const tab = filteredTabs[index];
+		if (tab) {
+			goto(`/oc/settings?tab=${tab.id}`, { replaceState: true });
+		}
+	}
+
 	function isSubsystemEnabled(id: string): boolean {
 		const tab = availableTabs.find((t) => t.id === id);
 		if (tab?.isStatic) return true; // Static tabs are always "enabled"
@@ -151,7 +160,7 @@
 						class="tab flex-1 whitespace-nowrap"
 						aria-label={tab.title}
 						checked={activeTab === index}
-						onchange={() => (activeTab = index)}
+						onchange={() => setActiveTab(index)}
 					/>
 					<!-- Контент вкладки -->
 					<div

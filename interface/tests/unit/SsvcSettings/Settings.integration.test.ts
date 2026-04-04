@@ -20,6 +20,10 @@ vi.mock('$app/stores', () => ({
 	updated: { subscribe: (fn: (v: unknown) => void) => { fn(false); return () => {}; } }
 }));
 
+vi.mock('$app/navigation', () => ({
+	goto: vi.fn()
+}));
+
 vi.mock('$lib/api/ssvcApi', () => ({
 	fetchSettings: vi.fn(),
 	updateSetting: vi.fn()

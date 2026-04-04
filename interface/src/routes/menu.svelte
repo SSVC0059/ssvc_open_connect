@@ -7,8 +7,6 @@
     import Health from '~icons/tabler/stethoscope';
     import Update from '~icons/tabler/refresh-alert';
     import WiFi from '~icons/tabler/wifi';
-    import Router from '~icons/tabler/router';
-    import AP from '~icons/tabler/access-point';
     import Remote from '~icons/tabler/network';
     import Control from '~icons/tabler/adjustments';
     import DropletCog from '~icons/tabler/droplet-cog';
@@ -18,21 +16,23 @@
     import Avatar from '~icons/tabler/user-circle';
     import Logout from '~icons/tabler/logout';
     import Copyright from '~icons/tabler/copyright';
-    import MQTT from '~icons/tabler/topology-star-3';
-    import NTP from '~icons/tabler/clock-check';
     import Telegram from '~icons/tabler/brand-telegram';
     import Metrics from '~icons/tabler/report-analytics';
     import Connected from '~icons/tabler/plug-connected';
     import Book from '~icons/tabler/book';
+    import ChevronLeft from '~icons/tabler/chevron-left';
+    import ChevronRight from '~icons/tabler/chevron-right';
     import SsvcIcon from '~icons/mdi/snake';
     import Esp from '~icons/mdi/car-esp';
     import Bug from '~icons/tabler/bug';
     import Temperature from '~icons/tabler/temperature';
-    import { page } from '$app/state';
+import { page } from '$app/state';
+import { goto } from '$app/navigation';
     import { user } from '$lib/stores/user';
     import type { Component } from 'svelte';
 
     let { closeMenu } = $props();
+    let isCollapsed = $state(false);
 
     const github = { href: 'https://github.com/' + page.data.github, active: true };
 
@@ -133,39 +133,13 @@
             title: 'Network',
             icon: Remote,
             feature: page.data.features.mqtt || page.data.features.ntp,
-            submenu: [
-                {
-                    title: 'MQTT',
-                    icon: MQTT,
-                    href: '/network?tab=mqtt',
-                    feature: page.data.features.mqtt
-                },
-                {
-                    title: 'NTP',
-                    icon: NTP,
-                    href: '/network?tab=ntp',
-                    feature: page.data.features.ntp
-                }
-            ]
+            href: '/network'
         },
         {
             title: 'WiFi',
             icon: WiFi,
             feature: true,
-            submenu: [
-                {
-                    title: 'WiFi Статус',
-                    icon: Router,
-                    href: '/wifi?tab=sta',
-                    feature: true
-                },
-                {
-                    title: 'Точка доступа',
-                    icon: AP,
-                    href: '/wifi?tab=ap',
-                    feature: true
-                }
-            ]
+            href: '/wifi'
         },
         {
             title: 'Пользователи',
@@ -240,28 +214,82 @@
         closeMenu();
     }
 
+    function openParentDefault(subItem: subMenuItem) {
+        const firstChild = subItem.submenu && subItem.submenu[0];
+        if (firstChild) {
+            goto(firstChild.href);
+            setActiveMenuItem(firstChild.title);
+        } else if (subItem.href) {
+            goto(subItem.href);
+            setActiveMenuItem(subItem.title);
+        }
+    }
+
+    function openRootDefault(item: menuItem) {
+        // Специальный случай: корневой пункт SSVC всегда ведёт в телеметрию
+        if (item.title === 'SSVC') {
+            goto('/oc/telemetry', { replaceState: true });
+            setActiveMenuItem('Телеметрия');
+            return;
+        }
+
+        const firstChild = item.submenu && item.submenu[0];
+        if (firstChild && firstChild.href) {
+            goto(firstChild.href, { replaceState: true });
+            setActiveMenuItem(firstChild.title);
+        } else if (item.href) {
+            goto(item.href, { replaceState: true });
+            setActiveMenuItem(item.title);
+        }
+    }
+
     $effect(() => {
         setActiveMenuItem(page.data.title);
     });
 </script>
 
-<div class="bg-base-200 text-base-content flex h-full w-80 flex-col p-4">
+<div
+    class="bg-base-200 text-base-content flex h-full flex-col transition-all duration-200 {isCollapsed
+        ? 'w-20 p-2'
+        : 'w-80 p-4'}"
+>
     <!-- Sidebar content here -->
-    <a
-            href="/"
-            class="rounded-box mb-4 flex items-center hover:scale-[1.02] active:scale-[0.98]"
-            onclick={() => setActiveMenuItem('')}
-    >
-        <img src={logo} alt="Logo" class="max-h-12 max-w-12 h-auto w-auto object-contain" />
-        <h1 class="px-4 text-2xl font-bold">{page.data.appName}</h1>
-    </a>
+    <div class="mb-2 flex items-center">
+        <a
+                href="/"
+                class="rounded-box flex items-center hover:scale-[1.02] active:scale-[0.98]"
+                onclick={() => setActiveMenuItem('')}
+        >
+            <img src={logo} alt="Logo" class="max-h-12 max-w-12 h-auto w-auto object-contain" />
+            {#if !isCollapsed}
+                <h1 class="px-4 text-2xl font-bold">{page.data.appName}</h1>
+            {/if}
+        </a>
+    </div>
     <ul class="menu w-full rounded-box menu-vertical flex-nowrap overflow-y-auto">
         {#each menuItems as menuItem, i (menuItem.title)}
             {#if menuItem.feature}
                 <li>
-                    {#if menuItem.submenu}
+                    {#if isCollapsed}
+                        <a
+                                href={menuItem.href}
+                                class:bg-base-100={menuItem.active}
+                                class="justify-center px-2"
+                                title={menuItem.title}
+                                aria-label={menuItem.title}
+                                onclick={(event) => {
+								event.preventDefault();
+								openRootDefault(menuItem);
+							}}
+                        >
+                            <menuItem.icon class="h-6 w-6" />
+                        </a>
+                    {:else if menuItem.submenu}
                         <details open={menuItem.submenu.some((subItem) => subItem.active)}>
-                            <summary class="text-lg font-bold">
+                            <summary
+                                    class="text-lg font-bold"
+                                    onclick={() => openRootDefault(menuItem)}
+                            >
                                 <menuItem.icon class="h-6 w-6" />
                                 {menuItem.title}
                             </summary>
@@ -271,7 +299,10 @@
                                         <li class="hover-bordered">
                                             {#if subMenuItem.submenu}
                                                 <details open={subMenuItem.submenu.some((child) => child.active)}>
-                                                    <summary class="text-ml font-bold">
+                                                    <summary
+                                                            class="text-ml font-bold"
+                                                            onclick={() => openParentDefault(subMenuItem)}
+                                                    >
                                                         <subMenuItem.icon class="h-5 w-5" />
                                                         {subMenuItem.title}
                                                     </summary>
@@ -328,7 +359,10 @@
     {#if page.data.features.security}
         <div class="flex items-center">
             <Avatar class="h-8 w-8" />
-            <span class="grow px-4 text-xl font-bold">{$user.username}</span>
+            {#if !isCollapsed}
+                <span class="grow px-4 text-xl font-bold">{$user.username}</span>
+            {/if}
+            <div class="grow"></div>
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div
@@ -342,6 +376,20 @@
         </div>
     {/if}
 
+    <div class="mb-2 flex justify-center">
+        <button
+                class="btn btn-ghost btn-sm"
+                type="button"
+                aria-label={isCollapsed ? 'Expand menu' : 'Collapse menu'}
+                onclick={() => (isCollapsed = !isCollapsed)}
+        >
+            {#if isCollapsed}
+                <ChevronRight class="h-5 w-5" />
+            {:else}
+                <ChevronLeft class="h-5 w-5" />
+            {/if}
+        </button>
+    </div>
     <div class="divider my-0"></div>
     <div class="flex items-center">
         {#if github.active}
@@ -354,8 +402,10 @@
             ><Discord class="h-5 w-5" /></a
             >
         {/if}
-        <div class="inline-flex grow items-center justify-end text-sm">
-            <Copyright class="h-4 w-4" /><span class="px-2">{page.data.copyright}</span>
-        </div>
+        {#if !isCollapsed}
+            <div class="inline-flex grow items-center justify-end text-sm">
+                <Copyright class="h-4 w-4" /><span class="px-2">{page.data.copyright}</span>
+            </div>
+        {/if}
     </div>
 </div>

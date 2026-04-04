@@ -24,6 +24,7 @@
 	});
 
 	let isFieldsDisabled = $state(true);
+	let isSettingsExpanded = $state(false);
 
 	async function loadNTPSettings() {
 		try {
@@ -147,7 +148,7 @@
 						</div>
 					{:else if ntpStatus}
 						<div class="flex w-full flex-col space-y-1">
-							<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+							<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 								<div
 									class="mask mask-hexagon h-auto w-10 {ntpStatus.status === 1
 										? 'bg-success'
@@ -160,31 +161,31 @@
 									/>
 								</div>
 								<div>
-									<div class="font-bold">Status</div>
+									<div class="font-bold">Статус подсистемы</div>
 									<div class="text-sm opacity-75">
 										{ntpStatus.status === 1 ? 'Active' : 'Inactive'}
 									</div>
 								</div>
 							</div>
 
-							<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+							<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 								<div class="mask mask-hexagon bg-primary h-auto w-10">
 									<Server class="text-primary-content h-auto w-full scale-75" />
 								</div>
 								<div>
-									<div class="font-bold">NTP Server</div>
+									<div class="font-bold">NTP сервер</div>
 									<div class="text-sm opacity-75">
 										{ntpStatus.server}
 									</div>
 								</div>
 							</div>
 
-							<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+							<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 								<div class="mask mask-hexagon bg-primary h-auto w-10">
 									<Clock class="text-primary-content h-auto w-full scale-75" />
 								</div>
 								<div>
-									<div class="font-bold">Local Time</div>
+									<div class="font-bold">Местное время</div>
 									<div class="text-sm opacity-75">
 										{new Intl.DateTimeFormat('en-GB', {
 											dateStyle: 'long',
@@ -194,12 +195,12 @@
 								</div>
 							</div>
 
-							<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+							<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 								<div class="mask mask-hexagon bg-primary h-auto w-10">
 									<UTC class="text-primary-content h-auto w-full scale-75" />
 								</div>
 								<div>
-									<div class="font-bold">UTC Time</div>
+									<div class="font-bold">Время UTC</div>
 									<div class="text-sm opacity-75">
 										{new Intl.DateTimeFormat('en-GB', {
 											dateStyle: 'long',
@@ -210,7 +211,7 @@
 								</div>
 							</div>
 
-							<div class="rounded-box bg-base-100 flex items-center space-x-3 px-4 py-2">
+							<div class="rounded-box flex items-center space-x-3 px-4 py-2">
 								<div class="mask mask-hexagon bg-primary h-auto w-10">
 									<Stopwatch class="text-primary-content h-auto w-full scale-75" />
 								</div>
@@ -226,79 +227,89 @@
 				</div>
 
 				<!-- Секция 2: настройки NTP -->
-				<div class="settings-section">
-					{#if isSettingsLoading}
-						<div class="loading-container flex flex-col items-center gap-2">
-							<p class="loading-text">Loading NTP settings...</p>
-							<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
-						</div>
-					{:else if settingsError}
-						<div class="error-container">
-							<p class="error-text">{settingsError}</p>
-						</div>
-					{:else if ntpSettings}
-						<div class="settings-group">
-							<!-- Enable NTP toggle -->
-							<div class="settings-item ntp-toggle-row">
-								<div class="input-label-container">
-									<span class="input-label">NTP subsystem</span>
-									<span class="settings-description">
-										{ntpSettings.enabled ? 'Enabled' : 'Disabled'}
-									</span>
-								</div>
-								<Toggle checked={ntpSettings.enabled} onchange={handleToggleEnabled} />
+				<div class="settings-section settings-section--collapsible">
+					<button
+						class="btn btn-outline btn-primary w-full"
+						type="button"
+						onclick={() => (isSettingsExpanded = !isSettingsExpanded)}
+						aria-expanded={isSettingsExpanded}
+					>
+						{isSettingsExpanded ? 'Скрыть настройки' : 'Показать настройки'}
+					</button>
+					{#if isSettingsExpanded}
+						{#if isSettingsLoading}
+							<div class="loading-container mt-4 flex flex-col items-center gap-2">
+								<p class="loading-text">Loading NTP settings...</p>
+								<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
 							</div>
+						{:else if settingsError}
+							<div class="error-container mt-4">
+								<p class="error-text">{settingsError}</p>
+							</div>
+						{:else if ntpSettings}
+							<div class="settings-group mt-4">
+								<!-- Enable NTP toggle -->
+								<div class="settings-item ntp-toggle-row">
+									<div class="input-label-container">
+										<span class="input-label">NTP подсистема</span>
+										<span class="settings-description">
+											{ntpSettings.enabled ? 'включена' : 'выключена'}
+										</span>
+									</div>
+									<Toggle checked={ntpSettings.enabled} onchange={handleToggleEnabled} />
+								</div>
 
-							<!-- NTP server -->
-							<div class="settings-item settings-item--stacked">
-								<span class="input-label">Server</span>
-								<div class="input-wrapper">
-									<input
-										type="text"
-										min="3"
-										max="64"
-										class="input-field"
-										bind:value={ntpSettings.server}
-										id="server"
-										required
-										disabled={isFieldsDisabled}
-									/>
+								<!-- NTP server -->
+								<div class="settings-item settings-item--stacked">
+									<span class="input-label">Сервер</span>
+									<div class="input-wrapper">
+										<input
+											type="text"
+											min="3"
+											max="64"
+											class="input-field"
+											bind:value={ntpSettings.server}
+											id="server"
+											required
+											disabled={isFieldsDisabled}
+										/>
+									</div>
+									{#if formErrors.server}
+										<p class="settings-description text-error text-sm">
+											Please enter a valid NTP server (hostname or IPv4).
+										</p>
+									{:else}
+										<p class="settings-description">Hostname or IPv4 address.</p>
+									{/if}
 								</div>
-								{#if formErrors.server}
-									<p class="settings-description text-error text-sm">
-										Please enter a valid NTP server (hostname or IPv4).
-									</p>
-								{:else}
-									<p class="settings-description">Hostname or IPv4 address.</p>
-								{/if}
-							</div>
 
-							<!-- Time zone -->
-							<div class="settings-item settings-item--stacked">
-								<span class="input-label">Time Zone</span>
-								<div class="input-wrapper">
-									<select
-										class="select w-full"
-										bind:value={ntpSettings.tz_label}
-										id="tz"
-										disabled={isFieldsDisabled}
-									>
-										{#each Object.entries(TIME_ZONES) as [tz_label, tz_format]}
-											<option value={tz_label}>{tz_label}</option>
-										{/each}
-									</select>
+								<!-- Time zone -->
+								<div class="settings-item settings-item--stacked">
+									<span class="input-label">Таймзона</span>
+									<div class="input-wrapper">
+										<select
+											class="input-field select w-full"
+											bind:value={ntpSettings.tz_label}
+											id="tz"
+											disabled={isFieldsDisabled}
+										>
+											{#each Object.entries(TIME_ZONES) as [tz_label, tz_format]}
+												<option value={tz_label}>{tz_label}</option>
+											{/each}
+										</select>
+									</div>
 								</div>
-							</div>
 
-							<!-- Actions -->
-							<div class="settings-item">
-								<div class="modal-actions">
-									<button class="btn btn-primary" type="button" onclick={submitNTPSettings}>
-										Apply Settings
-									</button>
+								<!-- Actions -->
+								<div class="settings-item">
+									<div class="modal-actions">
+										<button class="btn btn-primary" type="button" onclick={submitNTPSettings}>
+											Применить настройки
+										</button>
+									</div>
 								</div>
 							</div>
-						</div>
+						{/if}
 					{/if}
 				</div>
 			</div>
@@ -342,6 +353,11 @@
 
 	:global(.ntp-settings-root .ntp-toggle-row .settings-description) {
 		margin: 0;
+	}
+
+	:global(.ntp-settings-root .settings-section--collapsible) {
+		display: flex;
+		flex-direction: column;
 	}
 </style>
 

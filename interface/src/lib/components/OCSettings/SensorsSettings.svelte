@@ -129,9 +129,8 @@
 		width: 100%;
 	}
 
-	/* ===== ПАНЕЛЬ ЗОНЫ (.zone-panel) — одна рамка/тень от glassmorphism (issue #119) ===== */
+	/* ===== ПАНЕЛЬ ЗОНЫ (.zone-panel) — без собственной тени/рамки, только layout ===== */
 	.zone-panel {
-		@include m.glassmorphism;
 		border-radius: 1rem;
 		overflow: hidden;
 

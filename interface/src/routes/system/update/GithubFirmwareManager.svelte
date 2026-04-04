@@ -259,7 +259,7 @@
 </script>
 
 <div
-	class="update-card rounded-box bg-base-100 border border-base-content/10 w-full lg:w-3/4 mx-auto flex flex-col gap-4 p-4 sm:p-6"
+	class="update-card rounded-box border border-base-content/10 w-full lg:w-3/4 mx-auto flex flex-col gap-4 p-4 sm:p-6"
 >
 	<div class="flex items-center gap-2 text-xl font-medium">
 		<Github class="h-6 w-6" />
@@ -296,7 +296,7 @@
 							<tr
 								class={isCurrentVersion(release)
 									? 'bg-primary text-primary-content'
-									: 'bg-base-100 h-14'}
+									: 'h-14'}
 							>
 								<td align="left" class="text-base font-semibold">
 									<a

@@ -4,6 +4,7 @@
 	import SystemMetricsTab from './SystemMetricsTab.svelte';
 	import SystemCoredumpTab from './SystemCoredumpTab.svelte';
 	import SystemUpdateTab from './SystemUpdateTab.svelte';
+	import { goto } from '$app/navigation';
 
 	type TabId = 'status' | 'metrics' | 'coredump' | 'update';
 
@@ -18,10 +19,10 @@
 	};
 
 	const tabs: Tab[] = [
-		{ id: 'status', title: 'Status', component: SystemStatusTab },
-		{ id: 'metrics', title: 'Metrics', component: SystemMetricsTab },
+		{ id: 'status', title: 'Статус системы', component: SystemStatusTab },
+		{ id: 'metrics', title: 'Монитор', component: SystemMetricsTab },
 		{ id: 'coredump', title: 'Core dump', component: SystemCoredumpTab },
-		{ id: 'update', title: 'Update', component: SystemUpdateTab }
+		{ id: 'update', title: 'Обновление', component: SystemUpdateTab }
 	];
 
 	let activeIndex = $state(0);
@@ -36,6 +37,14 @@
 			}
 		}
 	});
+
+	function setActiveTab(index: number) {
+		activeIndex = index;
+		const tab = tabs[index];
+		if (tab) {
+			goto(`/system?tab=${tab.id}`, { replaceState: true });
+		}
+	}
 </script>
 
 <div
@@ -52,7 +61,7 @@
 					class="tab flex-1 whitespace-nowrap"
 					aria-label={tab.title}
 					checked={activeIndex === index}
-					onchange={() => (activeIndex = index)}
+					onchange={() => setActiveTab(index)}
 				/>
 				<div role="tabpanel" class="tab-content w-full mt-4">
 					{#if activeIndex === index}

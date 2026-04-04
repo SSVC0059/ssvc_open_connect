@@ -428,7 +428,13 @@ $effect(() => {
 	</div>
 </div>
 <div class="hidden">
-	<input type="file" accept=".json" bind:this={fileInput} onchange={handleFileUpload} />
+	<input
+		type="file"
+		accept=".json"
+		bind:this={fileInput}
+		onchange={handleFileUpload}
+		class="input-field"
+	/>
 </div>
 
 <style lang="scss">

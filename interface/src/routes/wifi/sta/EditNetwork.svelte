@@ -152,7 +152,7 @@
 						<label class="label" for="ssid">SSID</label>
 						<input
 							type="text"
-							class="input input-bordered invalid:border-error w-full invalid:border-2 {formErrors.ssid
+							class="input-field input input-bordered invalid:border-error w-full invalid:border-2 {formErrors.ssid
 								? 'border-error border-2'
 								: ''}"
 							bind:value={networkEditable.ssid}
@@ -196,7 +196,7 @@
 							<label class="label" for="localIP">Local IP</label>
 							<input
 								type="text"
-								class="input input-bordered w-full {formErrors.local_ip
+								class="input-field input input-bordered w-full {formErrors.local_ip
 									? 'border-error border-2'
 									: ''}"
 								minlength="7"
@@ -221,7 +221,7 @@
 							<label class="label" for="gateway">Gateway IP</label>
 							<input
 								type="text"
-								class="input input-bordered w-full {formErrors.gateway_ip
+								class="input-field input input-bordered w-full {formErrors.gateway_ip
 									? 'border-error border-2'
 									: ''}"
 								minlength="7"
@@ -245,7 +245,7 @@
 							<label class="label" for="subnet">Subnet Mask</label>
 							<input
 								type="text"
-								class="input input-bordered w-full {formErrors.subnet_mask
+								class="input-field input input-bordered w-full {formErrors.subnet_mask
 									? 'border-error border-2'
 									: ''}"
 								minlength="7"
@@ -269,7 +269,7 @@
 							<label class="label" for="dns_1">DNS 1</label>
 							<input
 								type="text"
-								class="input input-bordered w-full {formErrors.dns_1
+								class="input-field input input-bordered w-full {formErrors.dns_1
 									? 'border-error border-2'
 									: ''}"
 								minlength="7"
@@ -293,7 +293,7 @@
 							<label class="label" for="dns_2">DNS 2</label>
 							<input
 								type="text"
-								class="input input-bordered w-full {formErrors.dns_2
+								class="input-field input input-bordered w-full {formErrors.dns_2
 									? 'border-error border-2'
 									: ''}"
 								minlength="7"

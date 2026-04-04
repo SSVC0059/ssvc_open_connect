@@ -295,7 +295,7 @@
 							class="btn btn-back"
 							disabled={savingThresholds}
 						>
-							Отмена
+							Свернуть
 						</button>
 						{#if sensor.data.type === 'pressure'}
 							<button
