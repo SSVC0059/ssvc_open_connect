@@ -39,7 +39,7 @@ class SsvcMqttSettingsService : public StatefulService<ssvcMqttSettings>
 {
 public:
 
-    SsvcMqttSettingsService(PsychicHttpServer* server,
+    SsvcMqttSettingsService(AsyncWebServer* server,
                                ESP32SvelteKit* _esp32sveltekit);
 
     ~SsvcMqttSettingsService() = default;

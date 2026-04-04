@@ -25,7 +25,7 @@ SsvcOpenConnect& SsvcOpenConnect::getInstance() {
     return instance;
 }
 
-void SsvcOpenConnect::begin(PsychicHttpServer& server,
+void SsvcOpenConnect::begin(AsyncWebServer& server,
                             ESP32SvelteKit& esp32sveltekit,
                             EventSocket* socket,
                             SecurityManager* securityManager)

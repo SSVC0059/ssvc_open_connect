@@ -106,7 +106,7 @@ public:
         root["message_interval_ms"] = settings.messageIntervalMs;
     }
 
-    static StateUpdateResult update(JsonObject &root, MqttSettings &settings)
+    static StateUpdateResult update(JsonObject &root, MqttSettings &settings, const String &originId)
     {
         settings.enabled = root["enabled"] | FACTORY_MQTT_ENABLED;
         settings.uri = root["uri"] | FACTORY_MQTT_URI;
@@ -123,7 +123,7 @@ public:
 class MqttSettingsService : public StatefulService<MqttSettings>
 {
 public:
-    MqttSettingsService(PsychicHttpServer *server, FS *fs, SecurityManager *securityManager);
+    MqttSettingsService(AsyncWebServer *server, FS *fs, SecurityManager *securityManager);
     ~MqttSettingsService();
 
     void begin();
@@ -141,7 +141,7 @@ protected:
     void onConfigUpdated();
 
 private:
-    PsychicHttpServer *_server;
+    AsyncWebServer *_server;
     SecurityManager *_securityManager;
     HttpEndpoint<MqttSettings> _httpEndpoint;
     FSPersistence<MqttSettings> _fsPersistence;

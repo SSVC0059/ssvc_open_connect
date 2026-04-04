@@ -18,14 +18,14 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
-#include "PsychicHttp.h"
+#include <ESPAsyncWebServer.h>
 #include "core/SsvcCommandsQueue.h"
 
 class CommandHandler {
 public:
     CommandHandler();
 
-    static esp_err_t handleCommand(PsychicRequest* request);
+    static void handleCommand(AsyncWebServerRequest* request, JsonVariant& json);
 
 private:
     static const std::map<std::string, std::function<void()>> COMMAND_MAP;

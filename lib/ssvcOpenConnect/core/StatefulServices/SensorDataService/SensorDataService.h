@@ -69,7 +69,7 @@ struct SensorDataState {
 class SensorDataService final : public StatefulService<SensorDataState> {
 public:
 
-    explicit SensorDataService(PsychicHttpServer *server,
+    explicit SensorDataService(AsyncWebServer *server,
                                ESP32SvelteKit* sveltekit);
     ~SensorDataService() = default;
 

@@ -6,6 +6,7 @@
 
 // Опережающее объявление вместо #include "TelegramBotClient.h"
 class TelegramBotClient;
+class AsyncWebServer;
 
 class TelegramBotSubsystem final : public Subsystem {
 public:
@@ -19,12 +20,12 @@ public:
         _ssvcMqttSettingsService = &service;
     }
 
-    void setHttpServer(PsychicHttpServer& server) {
+    void setHttpServer(AsyncWebServer& server) {
         _server = &server;
     }
 private:
     SsvcMqttSettingsService* _ssvcMqttSettingsService = nullptr;
-    PsychicHttpServer* _server = nullptr;
+    AsyncWebServer* _server = nullptr;
     TelegramBotClient* bot = nullptr;
     bool _initialized = false;
     bool _enabled = false;

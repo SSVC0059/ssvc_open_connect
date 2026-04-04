@@ -28,74 +28,61 @@
 SensorHandler::SensorHandler() = default;
 
 
-esp_err_t SensorHandler::updateSensorZone(PsychicRequest* request)
+void SensorHandler::updateSensorZone(AsyncWebServerRequest* request)
 {
-    auto response = PsychicJsonResponse(request, true);
-    const JsonObject root = response.getRoot();
-
     // Проверка обязательных параметров
     if (!request->hasParam("address") || !request->hasParam("zone")) {
-        root["status"] = "error";
-        root["message"] = "Missing required parameters: 'address' and 'zone'";
-        response.setCode(400);
-        return response.send();
+        request->send(400, "application/json", R"({"status":"error","message":"Missing required parameters: 'address' and 'zone'"})");
+        return;
     }
 
-    // Получение параметров
     const char* address = request->getParam("address")->value().c_str();
     const std::string zoneName = request->getParam("zone")->value().c_str();
 
-    // 1. Создание переменной для 8-байтового адреса (не используется для вызова сервиса, но необходима для проверки формата)
     AbstractSensor::Address addressBytes;
-
-    // 2. Преобразование строкового адреса в массив байт
     if (!SensorManager::stringToAddress(address, addressBytes)) {
-        // Обработка ошибки, если строка имеет неверный формат (например, не 16 hex-символов)
-        root["status"] = "error";
-        root["message"] = "Invalid 1-Wire address format. Must be 16 hex characters.";
-        root["address"] = address;
-        response.setCode(400);
-        return response.send();
+        request->send(400, "application/json", R"({"status":"error","message":"Invalid 1-Wire address format. Must be 16 hex characters.","address":")" + String(address) + "\"}");
+        return;
     }
 
-    // Преобразование зоны
     SensorZone zone;
     try {
         zone = SensorZoneHelper::fromString(zoneName);
     } catch (const std::invalid_argument& e) {
-        root["status"] = "error";
-        root["message"] = "Invalid zone value. Valid values: unknown, inlet_water, outlet_water, act";
-        root["received_zone"] = zoneName;
-        response.setCode(400);
-        return response.send();
+        String body = R"({"status":"error","message":"Invalid zone value. Valid values: unknown, inlet_water, outlet_water, act","received_zone":")" + String(zoneName.c_str()) + "\"}";
+        request->send(400, "application/json", body);
+        return;
     }
     SensorConfigService* service = SsvcOpenConnect::getInstance().getSensorConfigService();
     if (!service) {
-        // Логирование ошибки и возврат 500, если сервис не найден
-        root["message"] = "Zone Service not initialized";
-        response.setCode(500);
-        return response.send();
+        request->send(500, "application/json", R"({"message":"Zone Service not initialized"})");
+        return;
     }
 
-    // ВЫЗОВ СЕРВИСА: Используем корректное имя переменной 'address'
     const bool success = service->setZoneForSensor(address, zone);
 
-    // Формирование ответа
+    AsyncJsonResponse* response = new AsyncJsonResponse();
+    JsonObject root = response->getRoot();
     if (success) {
         root["status"] = "success";
-        root["message"] = "Zone updated successfully (Persistence initiated)"; // Добавлено уточнение про персистентность
+        root["message"] = "Zone updated successfully (Persistence initiated)";
         root["address"] = address;
-        root["zone"] = zoneName;
-        response.setCode(200);
+        root["zone"] = zoneName.c_str();
     } else {
         root["status"] = "error";
         root["message"] = "Failed to update zone. Sensor not found or invalid parameters";
         root["address"] = address;
-        root["zone"] = zoneName;
-        response.setCode(404);
+        root["zone"] = zoneName.c_str();
+        response->setLength();
+        String str;
+        serializeJson(root, str);
+        request->send(404, "application/json", str);
+        delete response;
+        return;
     }
 
-    return response.send();
+    response->setLength();
+    request->send(response);
 }
 
 void SensorHandler::parseQueryParams(const String& query,

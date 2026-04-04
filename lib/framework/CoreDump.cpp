@@ -19,9 +19,7 @@
 #include "esp_partition.h"
 #include "esp_flash.h"
 
-#define MIN(a, b) ({ __typeof__ (a) _a = (a); __typeof__ (b) _b = (b); _a < _b ? _a : _b; })
-
-CoreDump::CoreDump(PsychicHttpServer *server,
+CoreDump::CoreDump(AsyncWebServer *server,
                    SecurityManager *securityManager) : _server(server),
                                                        _securityManager(securityManager)
 {
@@ -37,68 +35,33 @@ void CoreDump::begin()
     ESP_LOGV("CoreDump", "Registered GET endpoint: %s", CORE_DUMP_SERVICE_PATH);
 }
 
-esp_err_t CoreDump::coreDump(PsychicRequest *request)
+void CoreDump::coreDump(AsyncWebServerRequest *request)
 {
     size_t coredump_addr;
     size_t coredump_size;
-
-    // 1. Пытаемся найти валидный дамп через официальное API
     esp_err_t err = esp_core_dump_image_get(&coredump_addr, &coredump_size);
-
-    if (err != ESP_OK || coredump_size == 0) {
-        ESP_LOGW(SVK_TAG, "Core dump not found or empty");
-        request->reply(404, "application/json", "{\"status\":\"error\",\"message\":\"no core dump found\"}");
-        return err;
+    if (err != ESP_OK)
+    {
+        request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"core dump not available\"}");
+        return;
     }
+    ESP_LOGI(SVK_TAG, "Coredump is %u bytes", coredump_size);
 
-    ESP_LOGI(SVK_TAG, "Found coredump: size %u bytes at addr 0x%x", coredump_size, coredump_addr);
-
-    // 2. Настраиваем HTTP ответ
-    PsychicResponse response(request);
-    response.setCode(200);
-    response.setContentType("application/octet-stream");
-    // Чтобы браузер сразу предлагал сохранить файл
-    response.addHeader("Content-Disposition", "attachment; filename=core.bin");
-    response.sendHeaders();
-
-    // 3. Читаем и отправляем чанками
-    const size_t chunk_size = 512; // Оптимально: не перегружает стек и быстро передает
-    uint8_t *buffer = (uint8_t *)malloc(chunk_size);
-    if (!buffer) return ESP_ERR_NO_MEM;
-
-    size_t offset = 0;
-    for (; offset < coredump_size; offset += chunk_size) {
-        size_t read_len = (coredump_size - offset < chunk_size) ? (coredump_size - offset) : chunk_size;
-
-        // Читаем напрямую из flash, зная адрес и смещение
-        err = esp_flash_read(esp_flash_default_chip, buffer, coredump_addr + offset, read_len);
-        if (err != ESP_OK) {
-            ESP_LOGE(SVK_TAG, "Flash read failed at offset %u", offset);
-            break;
-        }
-
-        if (response.sendChunk(buffer, read_len) != ESP_OK) {
-            ESP_LOGE(SVK_TAG, "Chunk send failed");
-            break;
-        }
+    uint8_t *buffer = (uint8_t *)malloc(coredump_size);
+    if (!buffer)
+    {
+        request->send(500, "text/plain", "coredump alloc failed");
+        return;
     }
-    bool transfer_complete = (offset >= coredump_size);
-
+    err = esp_flash_read(esp_flash_default_chip, buffer, coredump_addr, coredump_size);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(SVK_TAG, "Coredump read failed");
+        free(buffer);
+        request->send(500, "text/plain", "coredump read failed");
+        return;
+    }
+    AsyncWebServerResponse *response = request->beginResponse(200, "application/octet-stream", buffer, coredump_size);
+    request->send(response);
     free(buffer);
-    response.finishChunking();
-
-    // 4. Очистка (Erase) — только при успешной передаче, чтобы сохранить дамп для повторной попытки
-    if (transfer_complete) {
-        uint32_t sectors_to_erase = (coredump_size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
-        ESP_LOGI(SVK_TAG, "Erasing %u sectors of coredump", sectors_to_erase);
-
-        err = esp_flash_erase_region(esp_flash_default_chip, coredump_addr, sectors_to_erase * SPI_FLASH_SEC_SIZE);
-        if (err != ESP_OK) {
-            ESP_LOGE(SVK_TAG, "Erase failed: %d", err);
-        }
-    } else {
-        ESP_LOGW(SVK_TAG, "Transfer incomplete, coredump preserved for retry");
-    }
-
-    return err;
 }

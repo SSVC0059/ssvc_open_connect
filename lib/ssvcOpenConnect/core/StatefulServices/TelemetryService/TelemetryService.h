@@ -58,7 +58,7 @@ class TelemetryService : public StatefulService<TelemetryState>
 public:
     // Конструктор
     TelemetryService(
-            PsychicHttpServer *server,
+            AsyncWebServer *server,
             ESP32SvelteKit* sveltekit,
             RectificationProcess& rProcess
         );

@@ -63,30 +63,31 @@ private:
  */
 class SensorConfigService : public StatefulService<SensorConfigState> {
 public:
-    SensorConfigService(PsychicHttpServer* server, ESP32SvelteKit* sveltekit) :
+    SensorConfigService(AsyncWebServer* server, ESP32SvelteKit* sveltekit) :
         _httpEndpoint(
-            SensorConfigState::read,
-            SensorConfigState::update,
+            [](SensorConfigState& state, JsonObject& root) { SensorConfigState::read(state, root); },
+            [](JsonObject& root, SensorConfigState& state, const String&) { return SensorConfigState::update(root, state); },
             this,
             server,
             ZONE_SETTINGS_ENDPOINT,
             sveltekit->getSecurityManager()
             ),
         _fsPersistence(
-            SensorConfigState::read,
-            SensorConfigState::update,
+            [](SensorConfigState& state, JsonObject& root) { SensorConfigState::read(state, root); },
+            [](JsonObject& root, SensorConfigState& state, const String&) { return SensorConfigState::update(root, state); },
             this,
             sveltekit->getFS(),
             ZONE_SETTINGS_FILE
             ),
-        _mqttEndpoint(SensorConfigState::read,
-                   SensorConfigState::update,
-                   this,
-                   sveltekit->getMqttClient(),
-                   SENSOR_ZONE_PUB_TOPIC,
-                   SENSOR_ZONE_SET_TOPIC,
-                   0, // QoS (Quality of Service)
-                   false)
+        _mqttEndpoint(
+            [](SensorConfigState& state, JsonObject& root) { SensorConfigState::read(state, root); },
+            [](JsonObject& root, SensorConfigState& state, const String&) { return SensorConfigState::update(root, state); },
+            this,
+            sveltekit->getMqttClient(),
+            SENSOR_ZONE_PUB_TOPIC,
+            SENSOR_ZONE_SET_TOPIC,
+            0,
+            false)
     {
     }
 

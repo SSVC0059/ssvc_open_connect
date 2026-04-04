@@ -1,7 +1,7 @@
 #ifndef HANDLER_REGISTRAR_H
 #define HANDLER_REGISTRAR_H
 
-#include "PsychicHttp.h"
+#include <ESPAsyncWebServer.h>
 #include "SecurityManager.h"
 
 #include "handlers/SettingsHandler/SettingsHandler.h"
@@ -15,7 +15,7 @@
 
 class HandlerRegistrator {
 public:
-    HandlerRegistrator(PsychicHttpServer& server,
+    HandlerRegistrator(AsyncWebServer& server,
                     SecurityManager* securityManager,
                     SettingsHandler& settingsHandler,
                     CommandHandler& commandHandler,
@@ -29,7 +29,7 @@ public:
     void registerAllHandlers() const;
 
 private:
-    PsychicHttpServer& _server;
+    AsyncWebServer& _server;
     SecurityManager* _securityManager;
 
     SettingsHandler& _settingsHandler;

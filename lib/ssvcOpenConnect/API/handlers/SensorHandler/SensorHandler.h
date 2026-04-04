@@ -5,7 +5,8 @@
 #ifndef SENSOR_HANDLER_H
 #define SENSOR_HANDLER_H
 
-#include "PsychicHttp.h"
+#include <ESPAsyncWebServer.h>
+#include <AsyncJson.h>
 
 #include <vector>
 #include <utility>
@@ -14,8 +15,8 @@ class SensorHandler {
 public:
     SensorHandler();
 
-    static esp_err_t getSensorAddresses(PsychicRequest* request);
-    static esp_err_t updateSensorZone(PsychicRequest* request);
+    static void getSensorAddresses(AsyncWebServerRequest* request);
+    static void updateSensorZone(AsyncWebServerRequest* request);
 
 private:
     static void parseQueryParams(const String& query,

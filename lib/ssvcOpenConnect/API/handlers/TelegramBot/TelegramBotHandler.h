@@ -18,20 +18,21 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
-#include "PsychicHttp.h"
+#include <ESPAsyncWebServer.h>
+#include <AsyncJson.h>
 
 class TelegramBotHandler {
 public:
     TelegramBotHandler();
 
-    static esp_err_t settings(PsychicRequest* request);
-    static esp_err_t updateSettings(PsychicRequest* request);
-    static esp_err_t getSettings(PsychicRequest* request);
+    static void settings(AsyncWebServerRequest* request);
+    static void updateSettings(AsyncWebServerRequest* request, JsonVariant& json);
+    static void getSettings(AsyncWebServerRequest* request);
 
 private:
     static bool checkSubsystemEnabled();
-    static esp_err_t setToken(PsychicRequest* request);
-    static esp_err_t setChatId(PsychicRequest* request);
+    static void setToken(AsyncWebServerRequest* request);
+    static void setChatId(AsyncWebServerRequest* request);
     static constexpr const char* TAG = "TelegramBot";
 };
 

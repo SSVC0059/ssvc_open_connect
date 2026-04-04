@@ -1,5 +1,5 @@
-#ifndef MqttStatus_h
-#define MqttStatus_h
+#ifndef EthernetStatus_h
+#define EthernetStatus_h
 
 /**
  *   ESP32 SvelteKit
@@ -16,19 +16,22 @@
  **/
 
 #include <WiFi.h>
+#include <ETH.h>
 
-#include <MqttSettingsService.h>
 #include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncJson.h>
+#include <IPUtils.h>
 #include <SecurityManager.h>
 
-#define MQTT_STATUS_SERVICE_PATH "/rest/mqttStatus"
+#define ETHERNET_STATUS_SERVICE_PATH "/rest/ethernetStatus"
 
-class MqttStatus
+#if FT_ENABLED(FT_ETHERNET)
+
+class EthernetStatus
 {
 public:
-    MqttStatus(AsyncWebServer *server, MqttSettingsService *mqttSettingsService, SecurityManager *securityManager);
+    EthernetStatus(AsyncWebServer *server, SecurityManager *securityManager);
 
     void begin();
 
@@ -37,9 +40,15 @@ public:
 private:
     AsyncWebServer *_server;
     SecurityManager *_securityManager;
-    MqttSettingsService *_mqttSettingsService;
 
-    void mqttStatus(AsyncWebServerRequest *request);
+    // static functions for logging Ethernet events to the UART
+    // they are using the same signature as WiFi events
+    static void onConnected(WiFiEvent_t event, WiFiEventInfo_t info);
+    static void onDisconnected(WiFiEvent_t event, WiFiEventInfo_t info);
+    static void onGotIP(WiFiEvent_t event, WiFiEventInfo_t info);
+    void ethernetStatus(AsyncWebServerRequest *request);
 };
 
-#endif // end MqttStatus_h
+#endif // end FT_ENABLED(FT_ETHERNET)
+
+#endif // end EthernetStatus_h

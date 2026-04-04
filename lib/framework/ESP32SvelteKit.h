@@ -42,8 +42,10 @@
 #include <WiFiScanner.h>
 #include <WiFiSettingsService.h>
 #include <WiFiStatus.h>
+#include <EthernetSettingsService.h>
+#include <EthernetStatus.h>
 #include <ESPFS.h>
-#include <PsychicHttp.h>
+#include <ESPAsyncWebServer.h>
 #include <vector>
 
 #ifdef EMBED_WWW
@@ -87,7 +89,7 @@ enum class ConnectionStatus
 class ESP32SvelteKit
 {
 public:
-    ESP32SvelteKit(PsychicHttpServer *server, unsigned int numberEndpoints = 115);
+    ESP32SvelteKit(AsyncWebServer *server);
 
     void begin();
 
@@ -101,7 +103,7 @@ public:
         return &ESPFS;
     }
 
-    PsychicHttpServer *getServer()
+    AsyncWebServer *getServer()
     {
         return _server;
     }
@@ -202,9 +204,8 @@ public:
     }
 
 private:
-    PsychicHttpServer *_server;
+    AsyncWebServer *_server;
     TaskHandle_t _loopTaskHandle;
-    unsigned int _numberEndpoints;
     FeaturesService _featureService;
     SecuritySettingsService _securitySettingsService;
     WiFiSettingsService _wifiSettingsService;
@@ -212,6 +213,10 @@ private:
     WiFiStatus _wifiStatus;
     APSettingsService _apSettingsService;
     APStatus _apStatus;
+#if FT_ENABLED(FT_ETHERNET)
+    EthernetSettingsService _ethernetSettingsService;
+    EthernetStatus _ethernetStatus;
+#endif
     EventSocket _socket;
     NotificationService _notificationService;
 #if FT_ENABLED(FT_NTP)

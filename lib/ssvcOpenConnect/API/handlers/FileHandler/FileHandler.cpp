@@ -1,17 +1,17 @@
 #include "FileHandler.h"
 #include <ArduinoJson.h>
-#include "PsychicFileResponse.h"
 
 FileHandler::FileHandler(FS* fs) : _fs(fs) {}
 
-void FileHandler::registerHandlers(PsychicHttpServer& server, SecurityManager* securityManager) {
-    auto listFilesHandler = [this](PsychicRequest* request) -> esp_err_t {
+void FileHandler::registerHandlers(AsyncWebServer& server, SecurityManager* securityManager) {
+    auto listFilesHandler = [this](AsyncWebServerRequest* request) {
         JsonDocument doc;
         auto rootArray = doc.to<JsonArray>();
 
         File root = _fs->open("/");
         if (!root) {
-            return request->reply(500, "text/plain", "Could not open root directory");
+            request->send(500, "text/plain", "Could not open root directory");
+            return;
         }
 
         buildFileTree(rootArray, root);
@@ -19,68 +19,78 @@ void FileHandler::registerHandlers(PsychicHttpServer& server, SecurityManager* s
 
         String jsonResponse;
         serializeJson(doc, jsonResponse);
-        return request->reply(200, "application/json", jsonResponse.c_str());
+        request->send(200, "application/json", jsonResponse.c_str());
     };
     server.on("/rest/files", HTTP_GET, securityManager->wrapRequest(listFilesHandler, AuthenticationPredicates::IS_AUTHENTICATED));
 
-    auto downloadFileHandler = [this](PsychicRequest* request) -> esp_err_t {
-        const String path = request->path();
+    auto downloadFileHandler = [this](AsyncWebServerRequest* request) {
+        const String path = request->url();
         String prefix = "/rest/files";
         if (path.startsWith(prefix)) {
             String filePath = path.substring(prefix.length());
             if (filePath.isEmpty() || filePath == "/") {
-                return request->reply(400, "text/plain", "File path cannot be empty");
+                request->send(400, "text/plain", "File path cannot be empty");
+                return;
             }
 
             File file = _fs->open(filePath, "r");
             if (!file || file.isDirectory()) {
-                return request->reply(404, "text/plain", "File not found or is a directory");
+                if (file) file.close();
+                request->send(404, "text/plain", "File not found or is a directory");
+                return;
             }
-
-            auto* response = new PsychicFileResponse(request, file, filePath, String(), true);
-            return response->send();
+            file.close();
+            request->send(*_fs, filePath, "application/octet-stream");
+            return;
         }
-        return request->reply(404);
+        request->send(404);
     };
     server.on("/rest/files/*", HTTP_GET, securityManager->wrapRequest(downloadFileHandler, AuthenticationPredicates::IS_AUTHENTICATED));
 
-    auto deleteFileHandler = [this](PsychicRequest* request) -> esp_err_t {
-        const String path = request->path();
+    auto deleteFileHandler = [this](AsyncWebServerRequest* request) {
+        const String path = request->url();
         const String prefix = "/rest/files";
         if (path.startsWith(prefix)) {
             const String filePath = path.substring(prefix.length());
             if (filePath.isEmpty()) {
-                return request->reply(400, "text/plain", "File path cannot be empty");
+                request->send(400, "text/plain", "File path cannot be empty");
+                return;
             }
             if (_fs->remove(filePath)) {
-                return request->reply(204); // No Content
+                request->send(204);
             } else {
-                return request->reply(500, "text/plain", "Failed to delete file");
+                request->send(500, "text/plain", "Failed to delete file");
             }
+            return;
         }
-        return request->reply(404);
+        request->send(404);
     };
     server.on("/rest/files/*", HTTP_DELETE, securityManager->wrapRequest(deleteFileHandler, AuthenticationPredicates::IS_AUTHENTICATED));
 
-    auto copyFileHandler = [this](PsychicRequest* request) -> esp_err_t {
-        JsonDocument doc;
-        deserializeJson(doc, request->body());
-        const String sourcePath = doc["source"];
-        const String destPath = doc["destination"];
+    auto copyFileHandler = [this](AsyncWebServerRequest* request, JsonVariant& json) {
+        if (!json.is<JsonObject>()) {
+            request->send(400, "text/plain", "Invalid JSON body");
+            return;
+        }
+        const String sourcePath = json["source"].as<String>();
+        const String destPath = json["destination"].as<String>();
 
         if (sourcePath.isEmpty() || destPath.isEmpty()) {
-            return request->reply(400, "text/plain", "Missing 'source' or 'destination' fields");
+            request->send(400, "text/plain", "Missing 'source' or 'destination' fields");
+            return;
         }
 
         File sourceFile = _fs->open(sourcePath, "r");
         if (!sourceFile) {
-            return request->reply(404, "text/plain", "Source file not found");
+            request->send(404, "text/plain", "Source file not found");
+            return;
         }
 
         File destFile = _fs->open(destPath, "w");
         if (!destFile) {
             sourceFile.close();
-            return request->reply(500, "text/plain", "Could not create destination file");
+            request->send(500, "text/plain", "Could not create destination file");
+            return;
         }
 
         uint8_t buf[512];
@@ -91,9 +101,9 @@ void FileHandler::registerHandlers(PsychicHttpServer& server, SecurityManager* s
 
         sourceFile.close();
         destFile.close();
-        return request->reply(201); // Created
+        request->send(201);
     };
-    server.on("/rest/files/copy", HTTP_POST, securityManager->wrapRequest(copyFileHandler, AuthenticationPredicates::IS_AUTHENTICATED));
+    server.on("/rest/files/copy", HTTP_POST, securityManager->wrapCallback(copyFileHandler, AuthenticationPredicates::IS_AUTHENTICATED));
 }
 
 void FileHandler::buildFileTree(JsonArray& parentArray, File& dir) {
