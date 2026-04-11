@@ -42,6 +42,8 @@ export type RectStatus = {
 	startTime: string;
 	endTime: string;
 	stages: Stages;
+	/** Ошибка связи по UART (SSVC выключен или отключён) */
+	uartConnectionError?: boolean;
 };
 
 // Этапы ректификации
@@ -158,6 +160,9 @@ export type TelegramConfig = {
 export type SubsystemsState = {
 	telegram_bot: boolean;
 	thermal: boolean;
+	i2c_bus: boolean;
+	atm_sensor: boolean;
+	settings:	boolean;
 };
 
 export type SendCommandResponse = {

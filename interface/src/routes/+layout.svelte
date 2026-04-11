@@ -8,7 +8,7 @@
 	import { socket } from '$lib/stores/socket';
 	import type { userProfile } from '$lib/stores/user';
 	import { page } from '$app/state';
-	import { Modals, modals } from 'svelte-modals';
+	import { Modals } from 'svelte-modals';
 	import Toast from '$lib/components/toasts/Toast.svelte';
 	import { notifications } from '$lib/components/toasts/notifications';
 	import { fade } from 'svelte/transition';
@@ -182,3 +182,172 @@
 </Modals>
 
 <Toast />
+
+<style lang="scss">
+	@use "$lib/styles/base/mixins" as m;
+
+	/* ===== Кнопки (shared) ===== */
+	:global(.btn) {
+		border: none;
+		background: none;
+		cursor: pointer;
+		font: inherit;
+		display: inline-flex;
+		align-items: center;
+		flex: none;
+		padding: 0.5rem 1rem;
+		border-radius: calc(var(--border-radius) / 2);
+		font-weight: 500;
+		transition: var(--transition);
+		text-decoration: none;
+	}
+
+	:global(html .btn:disabled) {
+		opacity: 0.5;
+		cursor: not-allowed;
+		transform: none;
+	}
+
+	:global(.btn:hover:not(:disabled)) {
+		transform: translateY(-1px);
+	}
+
+	:global(.btn.btn-primary) {
+		background: var(--blue-500);
+		color: var(--white);
+	}
+	:global(.btn.btn-primary:hover:not(:disabled)) {
+		background: var(--blue-600);
+	}
+
+	:global(.btn.btn-warning) {
+		background: var(--yellow-500);
+		color: var(--white);
+	}
+	:global(.btn.btn-warning:hover:not(:disabled)) {
+		background: var(--yellow-600);
+	}
+
+	:global(.btn.btn-success) {
+		background: var(--green-500);
+		color: var(--white);
+	}
+	:global(.btn.btn-success:hover:not(:disabled)) {
+		background: var(--green-600);
+	}
+
+	:global(.btn.btn-back) {
+		background: var(--yellow-500);
+		color: var(--white);
+	}
+	:global(.btn.btn-back:hover:not(:disabled)) {
+		background: var(--yellow-500);
+	}
+
+	:global(.btn-icon) {
+		width: 1.25rem;
+		height: 1.25rem;
+		margin-right: 0.5rem;
+	}
+
+	:global(.values-container) {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+		flex-wrap: wrap;
+	}
+
+	:global(.value-item) {
+		display: flex;
+		align-items: baseline;
+		gap: 0.25rem;
+	}
+
+	:global(.value-text) {
+		font: inherit;
+		@include m.dark-theme-color;
+	}
+
+	:global(.value-unit) {
+		font-size: 0.875rem;
+		opacity: 0.75;
+		@include m.dark-theme-color;
+	}
+
+	:global(.edit-button) {
+		border: none;
+		background: none;
+		cursor: pointer;
+		font: inherit;
+		flex-shrink: 0;
+		color: var(--blue-500);
+		padding: 0.25rem;
+		border-radius: calc(var(--border-radius) / 4);
+		transition: var(--transition);
+		@include m.dark-theme-color;
+	}
+	:global(.edit-button:hover) {
+		color: var(--blue-600);
+	}
+
+	/* ===== Поля ввода и лейблы (shared) — семантика DaisyUI ===== */
+	:global(.input-label) {
+		color: oklch(var(--bc));
+		font-size: 0.95rem;
+		cursor: pointer;
+	}
+
+	:global(.input-field),
+	:global(.input-cell),
+	:global(.time-input) {
+		width: 100%;
+		padding: 0.5rem 0.75rem;
+		font-size: 0.875rem;
+		/* Светлая тема: делаем поля явно темнее фона карточек и с более контрастной рамкой */
+		border: 1px solid oklch(var(--bc, 0.25 0 260) / 0.25);
+		border-radius: var(--border-radius);
+		outline: none;
+		transition: var(--transition);
+		background-color: oklch(var(--b3));
+		color: oklch(var(--bc));
+	}
+	@media (prefers-color-scheme: dark) {
+		:global(.input-field),
+		:global(.input-cell),
+		:global(.time-input) {
+			background-color: var(--dark-step-inactive-bg, #5a6575);
+			border-color: var(--dark-border-color, #4a5568);
+		}
+	}
+	:global(.input-field:focus),
+	:global(.input-cell:focus),
+	:global(.time-input:focus) {
+		border-color: oklch(var(--p));
+		box-shadow: 0 0 0 3px oklch(var(--p) / 0.2);
+	}
+
+	:global(.input-wrapper) {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	:global(.input-wrapper .btn) {
+		padding: 0.5rem;
+		font-size: 1.125rem;
+	}
+
+	:global(.modal-actions) {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.75rem;
+		margin-top: 1.5rem;
+	}
+
+	:global(.info-text) {
+		font-size: 0.8rem;
+		color: var(--red-300);
+		margin-top: 0.25rem;
+		text-align: center;
+		@include m.dark-theme-color;
+	}
+</style>

@@ -33,14 +33,19 @@ void TelegramSettingsService::setInstance(TelegramSettingsService* instance) {
     _instance = instance;
 }
 
-TelegramSettingsService::TelegramSettingsService(PsychicHttpServer* server, ESP32SvelteKit* esp32sveltekit) :
+TelegramSettingsService::TelegramSettingsService(AsyncWebServer* server, ESP32SvelteKit* esp32sveltekit) :
     StatefulService<TelegramSettings>(),
-    _fsPersistence(readTelegramSettings, updateTelegramSettings, this, esp32sveltekit->getFS(), "/config/telegram.json"),
+    _fsPersistence(
+        readTelegramSettings,
+        [](JsonObject& root, TelegramSettings& s, const String&) { return updateTelegramSettings(root, s); },
+        this,
+        esp32sveltekit->getFS(),
+        "/config/telegram.json"),
     _esp32sveltekit(esp32sveltekit)
 {
     HttpEndpoint<TelegramSettings>* httpEndpoint = new HttpEndpoint<TelegramSettings>(
         readTelegramSettings,
-        updateTelegramSettings,
+        [](JsonObject& root, TelegramSettings& s, const String&) { return updateTelegramSettings(root, s); },
         this,
         server,
         "/api/telegram/config",

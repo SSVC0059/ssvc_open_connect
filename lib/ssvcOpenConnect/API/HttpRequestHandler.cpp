@@ -1,6 +1,6 @@
 #include "HttpRequestHandler.h"
 
-HttpRequestHandler::HttpRequestHandler(PsychicHttpServer& server,
+HttpRequestHandler::HttpRequestHandler(AsyncWebServer& server,
                                      SecurityManager* securityManager,
                                      ProfileService* profileService,
                                      FS* fs)

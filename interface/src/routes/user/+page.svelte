@@ -13,7 +13,6 @@
 	import SettingsCard from '$lib/components/SettingsCard.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import EditUser from './EditUser.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
 	import Delete from '~icons/tabler/trash';
 	import AddUser from '~icons/tabler/user-plus';
 	import Edit from '~icons/tabler/pencil';
@@ -160,7 +159,9 @@
 				<span>Управление пользователями</span>
 			{/snippet}
 			{#await getSecuritySettings()}
-				<Spinner />
+				<div class="flex flex-col items-center justify-center gap-2 py-6">
+					<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+				</div>
 			{:then nothing}
 				<div class="relative w-full overflow-visible">
 					<button

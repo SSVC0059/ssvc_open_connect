@@ -19,36 +19,35 @@
 
 SubsystemHandler::SubsystemHandler() = default;
 
-esp_err_t SubsystemHandler::getStatus(PsychicRequest* request)
+void SubsystemHandler::getStatus(AsyncWebServerRequest* request)
 {
-    PsychicJsonResponse response(request, false);
-    const JsonObject root = response.getRoot();
-    // JsonArray _subsystems = root["subsystem"].to<JsonArray>();
+    AsyncJsonResponse* response = new AsyncJsonResponse();
+    JsonObject root = response->getRoot();
     const std::unordered_map<std::string, bool> subsystems = SubsystemManager::instance().getSubsystemsStatus();
 
     for (const auto& pair : subsystems) {
         const auto& fst = pair.first;
         const auto& snd = pair.second;
-        root[fst] = snd;
+        root[fst.c_str()] = snd;
     }
 
-    return response.send();
+    response->setLength();
+    request->send(response);
 }
 
-esp_err_t SubsystemHandler::state(PsychicRequest* request) {
-    JsonDocument doc;
-    auto response = PsychicJsonResponse(request, false);
-
-    if (deserializeJson(doc, request->body()) != DeserializationError::Ok) {
+void SubsystemHandler::state(AsyncWebServerRequest* request, JsonVariant& json) {
+    if (!json.is<JsonObject>()) {
         ESP_LOGE("SubsystemHandler", "Invalid JSON received");
-        return request->reply(400);
+        request->send(400);
+        return;
     }
 
-    JsonObject root = response.getRoot();
+    AsyncJsonResponse* response = new AsyncJsonResponse();
+    JsonObject root = response->getRoot();
     bool allSuccess = true;
     auto errors = root["errors"].to<JsonArray>();
 
-    for (JsonPair kv : doc.as<JsonObject>()) {
+    for (JsonPair kv : json.as<JsonObject>()) {
         const std::string subsystem = kv.key().c_str();
         bool enable = kv.value().as<bool>();
 
@@ -61,29 +60,30 @@ esp_err_t SubsystemHandler::state(PsychicRequest* request) {
 
         if (!result) {
             allSuccess = false;
-            auto error = errors.add<JsonObject>(); // Замена createNestedObject
-            error["subsystem"] = subsystem;
+            auto error = errors.add<JsonObject>();
+            error["subsystem"] = subsystem.c_str();
             error["message"] = enable ? "Enable failed" : "Disable failed";
             ESP_LOGW("SubsystemHandler", "Failed to change state for %s", subsystem.c_str());
         }
     }
 
     root["success"] = allSuccess;
-    return response.send();
+    response->setLength();
+    request->send(response);
 }
 
-esp_err_t SubsystemHandler::disable(PsychicRequest* request)
+void SubsystemHandler::disable(AsyncWebServerRequest* request)
 {
     ESP_LOGI("SubsystemHandler", "Disable subsystem request received");
 
-    auto response = PsychicJsonResponse(request, false);
-    const JsonObject root = response.getRoot();
+    AsyncJsonResponse* response = new AsyncJsonResponse();
+    JsonObject root = response->getRoot();
 
-    // Проверка обязательных параметров
     if (!request->hasParam("name")) {
         ESP_LOGE("SubsystemHandler", "Missing 'name' parameter in disable request");
-        root["error"] = "Missing 'name' parameter";
-        return response.send();
+        request->send(400, "application/json", R"({"error":"Missing 'name' parameter"})");
+        delete response;
+        return;
     }
 
     const std::string name = request->getParam("name")->value().c_str();
@@ -98,21 +98,22 @@ esp_err_t SubsystemHandler::disable(PsychicRequest* request)
         ESP_LOGW("SubsystemHandler", "Failed to disable subsystem: %s", name.c_str());
     }
 
-    return response.send();
+    response->setLength();
+    request->send(response);
 }
 
-esp_err_t SubsystemHandler::enable(PsychicRequest* request)
+void SubsystemHandler::enable(AsyncWebServerRequest* request)
 {
     ESP_LOGI("SubsystemHandler", "Enable subsystem request received");
 
-    auto response = PsychicJsonResponse(request, false);
-    const JsonObject root = response.getRoot();
+    AsyncJsonResponse* response = new AsyncJsonResponse();
+    JsonObject root = response->getRoot();
 
-    // Проверка обязательных параметров
     if (!request->hasParam("name")) {
         ESP_LOGE("SubsystemHandler", "Missing 'name' parameter in enable request");
-        root["error"] = "Missing 'name' parameter";
-        return response.send();
+        request->send(400, "application/json", R"({"error":"Missing 'name' parameter"})");
+        delete response;
+        return;
     }
 
     const std::string name = request->getParam("name")->value().c_str();
@@ -127,5 +128,6 @@ esp_err_t SubsystemHandler::enable(PsychicRequest* request)
         ESP_LOGW("SubsystemHandler", "Failed to enable subsystem: %s", name.c_str());
     }
 
-    return response.send();
+    response->setLength();
+    request->send(response);
 }

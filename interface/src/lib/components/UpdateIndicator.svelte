@@ -21,8 +21,13 @@
 	let firmwareVersion: string = $state('');
 	let firmwareDownloadLink: string;
 
+	/** Проверяет, что тег — семантическая версия (v1.2.3 или 1.2.3), не nightly. */
+	function isStableTag(tag: string): boolean {
+		return tag !== 'nightly' && /^v?\d+\.\d+\.\d+/.test(tag);
+	}
+
 	async function getGithubAPI() {
-		const githubUrl = `https://api.github.com/repos/${page.data.github}/releases/latest`;
+		const githubUrl = `https://api.github.com/repos/${page.data.github}/releases`;
 		try {
 			const response = await fetch(githubUrl, {
 				method: 'GET',
@@ -32,27 +37,34 @@
 				}
 			});
 			if (response.status !== 200) {
-				notifications.error('Failed to fetch latest release from GitHub.', 5000);
-				throw new Error(`Failed to fetch latest release from ${githubUrl}`);
+				throw new Error(`Failed to fetch releases from ${githubUrl}`);
 			}
-			const results = await response.json();
+			const releases: { tag_name: string; assets: { name: string; browser_download_url: string }[] }[] =
+				await response.json();
 
 			update = false;
 			firmwareVersion = '';
 
-			if (compareVersions(results.tag_name, page.data.features.firmware_version) === 1) {
-				// iterate over assets and find the correct one
-				for (let i = 0; i < results.assets.length; i++) {
-					// check if the asset is of type *.bin
-					if (
-						results.assets[i].name.includes('.bin') &&
-						results.assets[i].name.includes(page.data.features.firmware_built_target)
-					) {
-						update = true;
-						firmwareVersion = results.tag_name;
-						firmwareDownloadLink = results.assets[i].browser_download_url;
-						notifications.info('Firmware update available.', 5000);
-					}
+			// Только стабильные релизы (v*), без nightly; сортировка по версии, новый первый
+			const stableReleases = releases
+				.filter((r) => isStableTag(r.tag_name))
+				.sort((a, b) => compareVersions(b.tag_name, a.tag_name));
+
+			const latestStable = stableReleases[0];
+			if (!latestStable || compareVersions(latestStable.tag_name, page.data.features.firmware_version) <= 0) {
+				return;
+			}
+
+			for (let i = 0; i < latestStable.assets.length; i++) {
+				if (
+					latestStable.assets[i].name.includes('.bin') &&
+					latestStable.assets[i].name.includes(page.data.features.firmware_built_target)
+				) {
+					update = true;
+					firmwareVersion = latestStable.tag_name;
+					firmwareDownloadLink = latestStable.assets[i].browser_download_url;
+					notifications.info('Доступно новое обновление.', 5000);
+					break;
 				}
 			}
 		} catch (error) {

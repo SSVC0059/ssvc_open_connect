@@ -19,9 +19,7 @@
 #include "esp_partition.h"
 #include "esp_flash.h"
 
-#define MIN(a, b) ({ __typeof__ (a) _a = (a); __typeof__ (b) _b = (b); _a < _b ? _a : _b; })
-
-CoreDump::CoreDump(PsychicHttpServer *server,
+CoreDump::CoreDump(AsyncWebServer *server,
                    SecurityManager *securityManager) : _server(server),
                                                        _securityManager(securityManager)
 {
@@ -37,32 +35,33 @@ void CoreDump::begin()
     ESP_LOGV("CoreDump", "Registered GET endpoint: %s", CORE_DUMP_SERVICE_PATH);
 }
 
-esp_err_t CoreDump::coreDump(PsychicRequest* request) {
-    httpd_resp_set_status(request->request(), "200 OK");
-    PsychicResponse response(request);
-    response.setCode(200);
-    response.setContentType("application/octet-stream");
-    response.addHeader("Content-Disposition", "attachment;filename=core.bin");
-    response.sendHeaders();
-
-    esp_partition_iterator_t partition_iterator = esp_partition_find(
-        ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, "coredump");
-
-    const esp_partition_t* partition = esp_partition_get(partition_iterator);
-
-    int file_size = 65536;
-    int chunk_size = 1024;
-    int i = 0;
-    for (i = 0; i < (file_size / chunk_size); i++) {
-        uint8_t store_data[chunk_size];
-        ESP_ERROR_CHECK(esp_partition_read(partition, i * chunk_size, store_data, chunk_size));
-        response.sendChunk(store_data, chunk_size);
+void CoreDump::coreDump(AsyncWebServerRequest *request)
+{
+    size_t coredump_addr;
+    size_t coredump_size;
+    esp_err_t err = esp_core_dump_image_get(&coredump_addr, &coredump_size);
+    if (err != ESP_OK)
+    {
+        request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"core dump not available\"}");
+        return;
     }
-    uint16_t pending_size = file_size - (i * chunk_size);
-    uint8_t pending_data[pending_size];
-    if (pending_size > 0) {
-        ESP_ERROR_CHECK(esp_partition_read(partition, i * chunk_size, pending_data, pending_size));
-        response.sendChunk(pending_data, pending_size);
+    ESP_LOGI(SVK_TAG, "Coredump is %u bytes", coredump_size);
+
+    uint8_t *buffer = (uint8_t *)malloc(coredump_size);
+    if (!buffer)
+    {
+        request->send(500, "text/plain", "coredump alloc failed");
+        return;
     }
-    return response.finishChunking();
+    err = esp_flash_read(esp_flash_default_chip, buffer, coredump_addr, coredump_size);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(SVK_TAG, "Coredump read failed");
+        free(buffer);
+        request->send(500, "text/plain", "coredump read failed");
+        return;
+    }
+    AsyncWebServerResponse *response = request->beginResponse(200, "application/octet-stream", buffer, coredump_size);
+    request->send(response);
+    free(buffer);
 }

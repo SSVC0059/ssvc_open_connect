@@ -1,0 +1,86 @@
+/*
+ * Одна внешняя карточка на узком экране (SettingsMobileScroll и т.п.).
+ * На md+ не применяется — десктоп остаётся с вложенными .settings-container / секциями как раньше.
+ */
+@use "$lib/styles/base/variables" as v;
+
+$max-md: v.$breakpoint-md - 1px;
+
+@media (max-width: $max-md) {
+	.settings-stack-card {
+		> .settings-container {
+			background: transparent !important;
+			border: none !important;
+			box-shadow: none !important;
+			padding: 0 !important;
+		}
+
+		.settings-grid .settings-panel .settings-section {
+			margin: 0 !important;
+			padding: 0 !important;
+			border: none !important;
+			border-radius: 0;
+			overflow: visible;
+			box-shadow: none;
+		}
+
+		.settings-grid .settings-panel .settings-section:not(:last-child) {
+			border-bottom: 1px solid oklch(var(--bc, 0.25 0 260) / 0.12) !important;
+			padding-bottom: 0.75rem !important;
+			margin-bottom: 0.5rem;
+		}
+
+		.settings-grid .settings-panel .settings-section:first-child {
+			margin-top: 0;
+		}
+
+		.settings-grid .settings-panel .settings-section:last-child {
+			margin-bottom: 0;
+		}
+
+		.profile-list-panel {
+			margin: 0 !important;
+			padding: 0.75rem !important;
+			border: none !important;
+			box-shadow: none !important;
+		}
+
+		.applied-profile-summary {
+			margin-left: 0.25rem !important;
+			margin-right: 0.25rem !important;
+		}
+
+		.profile-manager-layout {
+			gap: 0.5rem;
+		}
+
+		.profile-settings-panel {
+			padding: 0 !important;
+			background: transparent !important;
+			border-radius: 0 !important;
+			box-shadow: none !important;
+		}
+
+		.sensors-main-container {
+			gap: 0.75rem !important;
+		}
+
+		.zone-title {
+			padding: 0.5rem 0.75rem !important;
+		}
+
+		.sensors-grid {
+			padding: 0.25rem !important;
+			gap: 0.75rem !important;
+		}
+
+		.sensor-card {
+			margin-bottom: 0.5rem !important;
+			padding: 0.75rem !important;
+		}
+
+		.sensor-card:last-child {
+			margin-bottom: 0 !important;
+		}
+	}
+}

@@ -5,6 +5,8 @@ on:
       - master
       - main
       - edit_docs
+  workflow_dispatch:
+    # Ручной запуск: Actions → Deploy MkDocs → Run workflow → выбрать ветку
 
 permissions:
   contents: write
@@ -15,7 +17,16 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build calculator
+        run: npm install && npm run build:calculator
+        working-directory: interface
       
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -24,8 +35,7 @@ jobs:
           
       - name: Install dependencies
         run: |
-          pip install mkdocs-material
-          pip install mkdocs-git-committers-plugin-2
+          pip install "mkdocs<2" mkdocs-material mkdocs-autorefs mkdocs-literate-nav mkdocstrings-python mkdocs-git-committers-plugin-2
           
       - name: Build and Deploy
         run: |

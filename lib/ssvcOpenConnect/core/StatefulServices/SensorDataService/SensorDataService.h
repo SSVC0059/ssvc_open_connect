@@ -46,6 +46,8 @@ struct SensorDataState {
      */
     std::map<SensorZone, std::map<std::string, float>> readings_by_zone;
 
+    std::map<std::string, std::string> units_by_address;
+
     /**
      * @brief Сериализация состояния в JSON для HTTP GET, MQTT PUB и WebSocket.
      */
@@ -67,7 +69,7 @@ struct SensorDataState {
 class SensorDataService final : public StatefulService<SensorDataState> {
 public:
 
-    explicit SensorDataService(PsychicHttpServer *server,
+    explicit SensorDataService(AsyncWebServer *server,
                                ESP32SvelteKit* sveltekit);
     ~SensorDataService() = default;
 

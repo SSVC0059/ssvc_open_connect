@@ -1,6 +1,7 @@
 <script lang="ts">
 	import EditNumbersModal from '$lib/components/SsvcSettings/EditNumbersModal.svelte';
 	import EditTimeModal from '$lib/components/SsvcSettings/EditTimeModal.svelte';
+	import Toggle from '$lib/components/Toggle.svelte';
 
 	import type { SsvcSettings } from '$lib/types/ssvc';
 
@@ -94,34 +95,22 @@
 				<h3 class="settings-section-title">Настройки реле и Signal</h3>
 				<div class="settings-item">
 					<span class="input-label">Реле инвертировано</span>
-					<label class="toggle-container">
-						<input type="checkbox" class="toggle-input" checked="{settings.relay_inverted}" disabled>
-						<div class="toggle-slider"></div>
-					</label>
+					<Toggle checked={settings.relay_inverted} disabled />
 				</div>
 
 				<div class="settings-item">
 					<span class="input-label">Автовключение реле</span>
-					<label class="toggle-container">
-						<input type="checkbox" class="toggle-input" checked="{settings.relay_autostart}" disabled>
-						<div class="toggle-slider"></div>
-					</label>
+					<Toggle checked={settings.relay_autostart} disabled />
 				</div>
 
 				<div class="settings-item">
 					<span class="input-label">Контроль ТД1 для выхода SIGNAL</span>
-					<label class="toggle-container">
-						<input type="checkbox" class="toggle-input" checked="{settings.signal_tp1_control}" disabled>
-						<div class="toggle-slider"></div>
-					</label>
+					<Toggle checked={settings.signal_tp1_control} disabled />
 				</div>
 
 				<div class="settings-item">
 					<span class="input-label">Инвертировать SIGNAL</span>
-					<label class="toggle-container">
-						<input type="checkbox" class="toggle-input" checked="{settings.signal_inverted}" disabled>
-						<div class="toggle-slider"></div>
-					</label>
+					<Toggle checked={settings.signal_inverted} disabled />
 				</div>
 
 				<div class="settings-item">
@@ -131,10 +120,7 @@
 
 				<div class="settings-item">
 					<span class="input-label">Старт по ТД1 при контроле ТД1 для выхода SIGNAL.</span>
-					<label class="toggle-container">
-						<input type="checkbox" class="toggle-input" checked="{settings.tp1_control_start}" disabled>
-						<div class="toggle-slider"></div>
-					</label>
+					<Toggle checked={settings.tp1_control_start} disabled />
 				</div>
 
 			</div>
@@ -144,18 +130,12 @@
 
 				<div class="settings-item">
 					<span class="input-label">Звук</span>
-					<label class="toggle-container">
-						<input type="checkbox" class="toggle-input" checked="{settings.sound}" disabled>
-						<div class="toggle-slider"></div>
-					</label>
+					<Toggle checked={settings.sound} disabled />
 				</div>
 
 				<div class="settings-item">
 					<span class="input-label">Барометр</span>
-					<label class="toggle-container">
-						<input type="checkbox" class="toggle-input" checked="{settings.pressure}" disabled>
-						<div class="toggle-slider"></div>
-					</label>
+					<Toggle checked={settings.pressure} disabled />
 				</div>
 
 				<div class="settings-item">
@@ -223,31 +203,20 @@
 
 				<div class="settings-item">
 					<span class="input-label">Сдвиг температуры отбора тела на 0.07°С</span>
-					<label class="toggle-container">
-						<input type="checkbox" class="toggle-input" checked="{settings.hearts_temp_shift}" disabled>
-						<div class="toggle-slider"></div>
-					</label>
+					<Toggle checked={settings.hearts_temp_shift} disabled />
 				</div>
 
 				<div class="settings-item">
 					<span class="input-label">Пауза "на себя"</span>
-					<label class="toggle-container">
-						<input type="checkbox" class="toggle-input" checked="{settings.hearts_pause}" disabled>
-						<div class="toggle-slider"></div>
-					</label>
+					<Toggle checked={settings.hearts_pause} disabled />
 				</div>
 
 				<div class="settings-item">
 					<span class="input-label">Формула</span>
-					<label class="toggle-container">
-						<input type="checkbox" class="toggle-input"
-									 bind:checked={settings.formula}
-									 onchange={() => {
-										 onSave('formula', settings.formula);
-									 }}
-						>
-						<div class="toggle-slider"></div>
-					</label>
+					<Toggle
+						bind:checked={settings.formula}
+						onchange={() => onSave('formula', settings.formula)}
+					/>
 				</div>
 
 				<div class="settings-item">
@@ -272,18 +241,12 @@
 
 				<div class="settings-item">
 					<span class="input-label">Лимит стабилизации</span>
-					<label class="toggle-container">
-						<input type="checkbox" class="toggle-input" checked="{settings.tp1_control_start}" disabled>
-						<div class="toggle-slider"></div>
-					</label>
+					<Toggle checked={settings.tp1_control_start} disabled />
 				</div>
 
 				<div class="settings-item">
 					<span class="input-label">Завершить этап при превышении лимита стабилизации</span>
-					<label class="toggle-container">
-						<input type="checkbox" class="toggle-input" checked="{settings.stab_limit_finish}" disabled>
-						<div class="toggle-slider"></div>
-					</label>
+					<Toggle checked={settings.stab_limit_finish} disabled />
 				</div>
 			</div>
 

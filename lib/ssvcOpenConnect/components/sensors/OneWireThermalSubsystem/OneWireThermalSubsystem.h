@@ -23,7 +23,8 @@
 #include "components/sensors/PollingSubsystem/PollingSubsystem.h"
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include "components/sensors/DS18B20Sensor/DS18B20Sensor.h"
+
+class DS18B20Sensor;
 
 /**
  * @brief Подсистема, управляющая 1-Wire опросом (DS18B20).
@@ -39,7 +40,7 @@ public:
     bool initialize() override;
     void poll() override; // Здесь будет вызываться requestTemperatures и считывание
 
-    const char* getName() const override;
+    const std::string& getName() const override;
 
 private:
     // Константы для конструктора родителя
@@ -57,6 +58,7 @@ private:
 
     // Вспомогательная функция, специфичная для 1-Wire
     void discoverAndRegisterSensors();
+    const std::string _subsystemName = "OneWireThermalSubsystem";
 
     static constexpr auto TAG = "ONEWIRE_SUB";
 };

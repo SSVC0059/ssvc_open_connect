@@ -145,7 +145,7 @@
         }
 
         // Находим максимальную температуру в SensorMap
-        const maxTemp = Math.max(...sensorEntries.map(([, temp]) => temp));
+				const maxTemp = Math.max(...sensorEntries.map(([, details]) => details.v));
 
         return Number(maxTemp.toFixed(2));
 	}
@@ -161,16 +161,15 @@
     });
 
 </script>
-
 <svg id="Layer_2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 280 470" class="svg-column">
 	<defs>
 		<linearGradient id="linear-gradient" x1="121.01" y1="301.03" x2="121.01" y2="40.04" gradientUnits="userSpaceOnUse">
-			<stop offset={columnGradientOffsets.redOffset} stop-color="#ff6a6e"/>
-			<stop offset={columnGradientOffsets.blueOffset} stop-color="#00d4ef"/>
+			<stop class="gradient-stop-warm" offset={columnGradientOffsets.redOffset}/>
+			<stop class="gradient-stop-cold" offset={columnGradientOffsets.blueOffset}/>
 		</linearGradient>
 		<linearGradient id="linear-gradient-water" x1="121.01" y1="301.03" x2="121.01" y2="40.04" gradientUnits="userSpaceOnUse">
-			<stop offset={1-WaterGradientOffsets.blueOffset} stop-color="#00d4ef"/>
-			<stop offset={1+WaterGradientOffsets.redOffset} stop-color="#ff6a6e"/>
+			<stop class="gradient-stop-cold" offset={1-WaterGradientOffsets.blueOffset}/>
+			<stop class="gradient-stop-warm" offset={1+WaterGradientOffsets.redOffset}/>
 		</linearGradient>
 	</defs>
 	<rect class="cls-2" x="241.56" y="228.75" width="37.53" height="18.26"/>
@@ -246,11 +245,11 @@
 						class="sensor-text">{tankThermalValue}</text>
 		</g>
 	</g>
-	{#if telemetry.common.mmhg}
+	{#if telemetry.tank_mmhg}
 		<g>
 			<g>
 				<text x="125.5" y="377"
-							class="sensor-text">{telemetry.common.mmhg}ммРс</text>
+							class="sensor-text">{telemetry.tank_mmhg}ммРс</text>
 			</g>
 		</g>
 	{/if}
@@ -323,7 +322,8 @@
 	<circle class="cls-8" cx="217.18" cy="159.1" r="4.81"/>
 </svg>
 
-<style>
+<style lang="scss">
+    @use "$lib/styles/base/variables" as v;
 
     .sensor-text {
         font-family: Arial, sans-serif;
@@ -365,7 +365,7 @@
     }
 
     .critical-temp {
-        stroke: #ff0000;
+        stroke: var(--red-600);
         stroke-width: 4px;
         animation: criticalPulse 1s infinite;
     }
@@ -376,7 +376,7 @@
     }
 
     .heating-off {
-        stroke: #000000;
+        stroke: var(--black);
         stroke-width: 2px;
     }
 
@@ -392,13 +392,13 @@
 
     @keyframes heatingPulse {
         0% {
-						stroke-width: 1px;
-            stroke: var(--color-red-500)
-				}
+            stroke-width: 1px;
+            stroke: var(--red-500);
+        }
         100% {
-						stroke-width: 2px;
-            stroke: var(--red-700)
-				}
+            stroke-width: 2px;
+            stroke: var(--red-700);
+        }
     }
 
     .svg-column {
@@ -417,24 +417,24 @@
         filter: drop-shadow(-10px -10px 15px rgb(0 0 0 / 40%));
 
         /* Адаптивность для мобильных */
-        @media (max-width: 768px) {
+        @media (max-width: v.$breakpoint-md) {
             max-width: 90vw;
             max-height: 70vh;
         }
 
         /* Для очень маленьких экранов */
-        @media (max-width: 480px) {
+        @media (max-width: v.$breakpoint-xs) {
             max-width: 95vw;
             max-height: 60vh;
         }
     }
 
     .cls-1 {
-        fill: #64ff00;
+        fill: var(--green-400);
     }
 
     .cls-2, .cls-3 {
-        fill: #fff;
+        fill: var(--white);
     }
 
     .cls-4 {
@@ -451,7 +451,8 @@
 
 
     .cls-8 {
-        stroke: #ff0013;
+        stroke: var(--red-600);
+        fill: var(--red-600);
     }
 
     .cls-5 {
@@ -466,20 +467,23 @@
     }
 
     .cls-5, .cls-3, .cls-9, .cls-10 {
-        stroke: #000;
+        stroke: var(--black);
+    }
+
+    .gradient-stop-warm {
+        stop-color: var(--red-400);
+    }
+
+    .gradient-stop-cold {
+        stop-color: var(--cyan-500);
     }
 
     .cls-6 {
-        stroke: #00d4ef;
+        stroke: var(--cyan-500);
     }
 
     .cls-6, .cls-10 {
-        fill: #00d4ef;
-    }
-
-
-    .cls-8 {
-        fill: #ff0013;
+        fill: var(--cyan-500);
     }
 
 </style>

@@ -7,7 +7,7 @@
 #include <ESP32SvelteKit.h>
 #include "core/profiles/IProfileObserver.h"
 
-class PsychicHttpServer;
+class AsyncWebServer;
 
 struct TelegramSettings {
     String botToken;
@@ -24,7 +24,7 @@ public:
 
     void begin();
 
-    TelegramSettingsService(PsychicHttpServer* server, ESP32SvelteKit* esp32sveltekit);
+    TelegramSettingsService(AsyncWebServer* server, ESP32SvelteKit* esp32sveltekit);
 
     // IProfileObserver implementation
     const char* getProfileKey() const override;

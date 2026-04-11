@@ -6,14 +6,21 @@ export type Zones = {
 	[K in ZoneName]?: string[];
 };
 
+export type SensorDetails = {
+	v: number; // Значение (Value)
+	u: string; // Единица измерения (Unit), например "°C" или "mmHg"
+	type: string; // Тип измерения, например "thermal" или "pressure"
+};
+
 export type SensorMap = {
-	[address: string]: number;
-}
+	[address: string]: SensorDetails;
+};
 
 export type SensorReading = {
 	address: string;
-	temp: number;
-}
+	data: SensorDetails;
+	zone?: string;
+};
 
 export type TemperatureResponse = {
 	[zoneName: string]: SensorMap // Имя зоны (string) -> SensorMap

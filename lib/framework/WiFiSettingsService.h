@@ -24,12 +24,8 @@
 #include <HttpEndpoint.h>
 #include <JsonUtils.h>
 #include <SecurityManager.h>
-#include <PsychicHttp.h>
+#include <ESPAsyncWebServer.h>
 #include <vector>
-
-// 🟥 🟥 🟥 БЛОК IMPROV WIFI 🟥 🟥 🟥
-#include <ImprovWiFiLibrary.h>
-// 🟥 🟥 🟥 КОНЕЦ БЛОКА IMPROV WIFI 🟥 🟥 🟥
 
 #ifndef FACTORY_WIFI_SSID
 #define FACTORY_WIFI_SSID ""
@@ -50,9 +46,9 @@
 #define WIFI_SETTINGS_FILE "/config/wifiSettings.json"
 #define WIFI_SETTINGS_SERVICE_PATH "/rest/wifiSettings"
 
-#define WIFI_RECONNECTION_DELAY 1000 * 30
+#define WIFI_RECONNECTION_DELAY 1000 * 5
 #define RSSI_EVENT_DELAY 500
-#define DELAYED_RECONNECT_MS 5000
+#define DELAYED_RECONNECT_MS 1000
 
 #define EVENT_RSSI "rssi"
 #define EVENT_RECONNECT "reconnect"
@@ -118,7 +114,7 @@ public:
         ESP_LOGV(SVK_TAG, "WiFi Settings read");
     }
 
-    static StateUpdateResult update(JsonObject &root, WiFiSettings &settings)
+    static StateUpdateResult update(JsonObject &root, WiFiSettings &settings, const String &originId)
     {
         settings.hostname = root["hostname"] | SettingValue::format(FACTORY_WIFI_HOSTNAME);
         settings.staConnectionMode = root["connection_mode"] | 1;
@@ -216,7 +212,7 @@ public:
 class WiFiSettingsService : public StatefulService<WiFiSettings>
 {
 public:
-    WiFiSettingsService(PsychicHttpServer *server, FS *fs, SecurityManager *securityManager, EventSocket *socket);
+    WiFiSettingsService(AsyncWebServer *server, FS *fs, SecurityManager *securityManager, EventSocket *socket);
 
     void initWiFi();
     void begin();
@@ -226,7 +222,7 @@ public:
     String getIP();
 
 private:
-    PsychicHttpServer *_server;
+    AsyncWebServer *_server;
     SecurityManager *_securityManager;
     HttpEndpoint<WiFiSettings> _httpEndpoint;
     FSPersistence<WiFiSettings> _fsPersistence;
@@ -245,21 +241,6 @@ private:
     void connectToWiFi();
     void configureNetwork(wifi_settings_t &network);
     void updateRSSI();
-
-    // Объявление экземпляра ImprovWiFi
-    ImprovWiFi _improvSerial;
-
-    // Статический callback-метод для обработки настроек Wi-Fi,
-    // регистрируется в ImprovWiFi. Он вызывает метод экземпляра.
-    static bool staticConnectToWiFiCallback(const char *ssid, const char *password);
-
-    // Метод экземпляра, реализующий логику сохранения настроек
-    bool connectToWiFiCallback(const char *ssid, const char *password);
-
-    // Статический callback-метод для обработки ошибок (опционально)
-    static void staticOnErrorCallback(ImprovTypes::Error err);
-
-
 };
 
 #endif // end WiFiSettingsService_h

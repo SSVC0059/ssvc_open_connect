@@ -18,7 +18,8 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
-#include "PsychicHttp.h"
+#include <ESPAsyncWebServer.h>
+#include <AsyncJson.h>
 #include "core/SsvcSettings/SettingsSetterHandlers.h"
 #include "core/SsvcCommandsQueue.h"
 #include <vector>
@@ -28,8 +29,8 @@ class SettingsHandler {
 public:
     SettingsHandler();
 
-    static esp_err_t getSettings(PsychicRequest* request);
-    static esp_err_t updateSettings(PsychicRequest* request);
+    static void getSettings(AsyncWebServerRequest* request);
+    static void updateSettings(AsyncWebServerRequest* request, JsonVariant& json);
 
 private:
     static void parseQueryParams(const String& query,

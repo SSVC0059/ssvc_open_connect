@@ -18,14 +18,15 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
-#include "PsychicHttp.h"
+#include <ESPAsyncWebServer.h>
+#include <AsyncJson.h>
 #include <utility>
 
 class OpenConnectHandler
 {
     public:
         OpenConnectHandler();
-        static esp_err_t getInfo(PsychicRequest* request);
+        static void getInfo(AsyncWebServerRequest* request);
 };
 
 

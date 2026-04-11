@@ -47,8 +47,53 @@
  * ============================================================================
  */
 
-import type { Profile } from '$lib/types/ssvc';
+import type { Profile, SsvcSettings } from '$lib/types/ssvc';
 
+/** Полный объект SSVC по умолчанию для редактора профилей и normalizeProfile (без «дыр» в ключах). */
+function defaultSsvcSettingsForProfile(): SsvcSettings & { valve_bw_tails?: number } {
+	return {
+		valve_bw: [7000, 12000, 7000],
+		heads: [0, 120],
+		late_heads: [0, 60],
+		hearts: [0, 10],
+		tails: [0, 2],
+		hyst: 0.06,
+		decrement: 0,
+		sound: 0,
+		pressure: 0,
+		relay_inverted: 0,
+		relay_autostart: 0,
+		autoresume: 0,
+		auto_mode: 0,
+		heads_timer: 0,
+		late_heads_timer: 0,
+		hearts_timer: 0,
+		tails_temp: 0,
+		start_delay: 0,
+		hearts_finish_temp: 0,
+		parallel_v3: [],
+		parallel_v1: [0, 0],
+		parallel: [0, 0],
+		hearts_temp_shift: false,
+		hearts_pause: false,
+		formula: false,
+		formula_start_temp: 0,
+		tank_mmhg: 0,
+		tp2_shift: 0,
+		tp_filter: false,
+		signal_tp1_control: 0,
+		signal_inverted: 0,
+		tp1_control_temp: 0,
+		tp1_control_start: 0,
+		stab_limit_time: 0,
+		stab_limit_finish: 0,
+		backlight: 'off',
+		release_speed: 0,
+		release_timer: 0,
+		heads_final: 0,
+		valve_bw_tails: 15000
+	};
+}
 
 /**
  * Создает конфигурацию UI со значениями по умолчанию.
@@ -84,15 +129,7 @@ export function createDefaultProfile(): any {
 			enabled: false,
 			targetFlowMlh: 2500
 		},
-		ssvcSettings: {
-			valve_bw: [7000, 12000, 7000], // Дефолтные значения пропускной способности
-			heads: [0, 120],
-			late_heads: [0, 60],
-			hearts: [0, 10],
-			tails: [0, 2],
-			valve_bw_tails: 15000,
-			hyst: 0.06
-		}
+		ssvcSettings: defaultSsvcSettingsForProfile()
 	};
 }
 
@@ -288,13 +325,14 @@ export class DistillationCycleModel {
 		const physicsHeads = this.getVaporPhysics(currentStrengthVol, netPowerWatts);
 		const totalHeadsVolMl = (initialTotalAS * profile.heads.percent) / 100;
 
+		const rawReleaseTimer = profile.ssvcSettings.release_timer;
 		const rTimer = Number(
-			profile.ssvcSettings.release_timer < 0 ? 0 : profile.ssvcSettings.release_timer
+			rawReleaseTimer != null && rawReleaseTimer >= 0 ? rawReleaseTimer : 0
 		);
-		const rOpen = Number(
-			profile.ssvcSettings.release_speed < 0 ? 0 : profile.ssvcSettings.release_speed
-		);
-		const hFinal = profile.ssvcSettings.heads_final > 0 ? profile.ssvcSettings.heads_final : 0;
+		const rawReleaseSpeed = profile.ssvcSettings.release_speed;
+		const rOpen = Number(rawReleaseSpeed != null && rawReleaseSpeed >= 0 ? rawReleaseSpeed : 0);
+		const rawHeadsFinal = profile.ssvcSettings.heads_final;
+		const hFinal = rawHeadsFinal != null && rawHeadsFinal > 0 ? rawHeadsFinal : 0;
 		const headsCyclePeriod = profile.ssvcSettings.heads[1] || 10;
 
 		// Расчет времени одного цикла переиспарения (oneCycleTime)

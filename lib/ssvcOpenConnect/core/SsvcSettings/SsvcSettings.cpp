@@ -38,7 +38,9 @@ bool SsvcSettings::load(const std::string &json) {
 
   SsvcMqttSettingsService* settingsService = SsvcMqttSettingsService::getInstance();
   auto jsonObject = doc.as<JsonObject>();
-  settingsService->update(jsonObject, ssvcMqttSettings::update, "settings");
+  settingsService->update(jsonObject,
+      [](JsonObject& root, ssvcMqttSettings& s, const String&) { return ssvcMqttSettings::update(root, s); },
+      "settings");
 
   if (error) {
     ESP_LOGE("SssvcController", "ошибка десериализации настроек: %s",
@@ -170,7 +172,7 @@ std::array<int, 3> SsvcSettings::getValveBw() const { return valve_bw; }
 float SsvcSettings::getHysteresis() const { return hyst; }
 unsigned char SsvcSettings::getDecrement() const { return decrement; }
 bool SsvcSettings::getFormula() const { return formula; }
-unsigned char SsvcSettings::getTank_mmhg() const { return tank_mmhg; }
+float SsvcSettings::getTank_mmhg() const { return tank_mmhg; }
 unsigned int SsvcSettings::getHeadsTimer() const { return heads_timer; }
 unsigned int SsvcSettings::getLateHeadsTimer() const { return late_heads_timer; }
 unsigned int SsvcSettings::getHeartsTimer() const { return hearts_timer; }
@@ -405,12 +407,12 @@ SsvcSettings::Builder &SsvcSettings::Builder::formulaEnable(const bool enable) {
 //- Пример:
 //"tank_mmhg=50"
 SsvcSettings::Builder &
-SsvcSettings::Builder::setTank_mmhg(unsigned char _tank_mmhg) {
-  const unsigned char prevTank_mmhg = settings.tank_mmhg;
-  settings.tank_mmhg = std::min(std::max(_tank_mmhg, static_cast<unsigned char>(0)), static_cast<unsigned char>(50));
+SsvcSettings::Builder::setTank_mmhg(float _tank_mmhg) {
+  const float prevTank_mmhg = settings.tank_mmhg;
+  settings.tank_mmhg = std::min(std::max(_tank_mmhg, static_cast<float>(0)), static_cast<float>(50));
   if (settings.tank_mmhg != prevTank_mmhg) {
     char buffer[50];
-    std::snprintf(buffer, sizeof(buffer), "tank_mmhg=%d", settings.tank_mmhg);
+    std::snprintf(buffer, sizeof(buffer), "tank_mmhg=%f", settings.tank_mmhg);
     ESP_LOGD("SsvcSettings", "tank_mmhg: %s", buffer);
     if (_isBatchMode) {
       
@@ -851,6 +853,19 @@ SsvcSettings::Builder &SsvcSettings::Builder::setStepTimer(const unsigned int _t
       SsvcCommandsQueue::getQueue().set(buffer);
     }
   return *this;
+}
+
+SsvcSettings::Builder& SsvcSettings::Builder::setTankPressureActual(const float pressure) {
+    char buffer[50];
+    snprintf(buffer, sizeof(buffer), "tank_mmhg_act=%.1f", std::min(std::max(pressure, 0.0f), 50.0f));
+    if (_isBatchMode) {
+        _pendingCommands.emplace_back(buffer);
+        ESP_LOGI("SsvcSettings", "Batch queued: %s", buffer);
+    } else {
+        ESP_LOGI("SsvcSettings", "Single send: %s", buffer);
+        SsvcCommandsQueue::getQueue().set(buffer);
+    }
+    return *this;
 }
 
 SsvcSettings SsvcSettings::Builder::build() const { return settings; }

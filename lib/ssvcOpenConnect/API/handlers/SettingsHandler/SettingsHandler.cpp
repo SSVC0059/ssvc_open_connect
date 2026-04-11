@@ -19,40 +19,26 @@
 
 SettingsHandler::SettingsHandler() = default;
 
-esp_err_t SettingsHandler::getSettings(PsychicRequest *request) {
-    auto response = PsychicJsonResponse(request, false);
-    const auto root = response.getRoot();
-
+void SettingsHandler::getSettings(AsyncWebServerRequest* request) {
+    AsyncJsonResponse* response = new AsyncJsonResponse();
+    JsonObject root = response->getRoot();
     const auto ssvcSettings = root["ssvcSettings"].to<JsonVariant>();
     SsvcSettings::init().fillSettings(ssvcSettings);
-    return response.send();
+    response->setLength();
+    request->send(response);
 }
 
-esp_err_t SettingsHandler::updateSettings(PsychicRequest* request)
+void SettingsHandler::updateSettings(AsyncWebServerRequest* request, JsonVariant& json)
 {
     ESP_LOGD(TAG, "Received updateSettings request.");
     JsonDocument jsonBuffer;
     bool hasErrors = false;
     auto errors = jsonBuffer.to<JsonObject>();
 
-    // Проверяем, есть ли данные в теле запроса (JSON)
-    if (request->contentLength() > 0) {
+    if (json.is<JsonObject>()) {
         SsvcSettings::Builder builder;
-        // Парсим JSON из тела запроса
-        ESP_LOGD(TAG, "Request has body. Length: %d", request->contentLength());
-        ESP_LOGV(TAG, "Request body: %s", request->body().c_str());
-
-        JsonDocument bodyDoc;
-        DeserializationError err = deserializeJson(bodyDoc, request->body());
-
-        if (err) {
-            ESP_LOGE(TAG, "Failed to parse JSON body: %s", err.c_str());
-            return request->reply(400, "application/json", R"({"error": "Invalid JSON in request body"})");
-        }
-
-        // Обрабатываем JSON объект из тела
-        ESP_LOGD(TAG, "Successfully parsed JSON body.");
-        auto bodyObj = bodyDoc.as<JsonObject>();
+        ESP_LOGD(TAG, "Request has JSON body.");
+        JsonObject bodyObj = json.as<JsonObject>();
         for (JsonPair kv : bodyObj) {
             const String& key = kv.key().c_str();
             JsonVariant value = kv.value();
@@ -76,7 +62,8 @@ esp_err_t SettingsHandler::updateSettings(PsychicRequest* request)
     if (hasErrors) {
         String errorMsg;
         serializeJson(errors, errorMsg);
-        return request->reply(400, "application/json", errorMsg.c_str());
+        request->send(400, "application/json", errorMsg.c_str());
+        return;
     }
 
     SsvcCommandsQueue::getQueue().getSettings();
@@ -86,7 +73,7 @@ esp_err_t SettingsHandler::updateSettings(PsychicRequest* request)
     successResponse["message"] = "Settings updated successfully";
     String successMsg;
     serializeJson(successResponse, successMsg);
-    return request->reply(200, "application/json", successMsg.c_str());
+    request->send(200, "application/json", successMsg.c_str());
 }
 
 void SettingsHandler::parseQueryParams(const String& query,

@@ -1,4 +1,5 @@
 // file: layout/_settings-grid.scss
+@use "$lib/styles/base/variables" as v;
 @use "$lib/styles/base/mixins" as m;
 
 /* ===== КОМПОНЕНТ НАСТРОЕК (СЕТКА) ===== */
@@ -8,19 +9,15 @@
   grid-template-columns: 1fr;
   gap: 1rem;
   width: 100%;
-  max-height: 80vh;
-  overflow: auto;
   padding: 1rem;
   border-radius: var(--border-radius);
 }
 
+/* Внутренняя обёртка — без своей тени/рамки, только компоновка (issue #119) */
 .settings-panel {
-  background: var(--glass-background);
-  border: var(--glass-border);
+  background: transparent;
   border-radius: var(--border-radius);
-  backdrop-filter: blur(8px);
   overflow: hidden;
-  box-shadow: var(--glass-shadow);
 }
 
 .settings-section {
@@ -33,7 +30,7 @@
 }
 
 .settings-grid {
-  @include m.glassmorphism;
+
   position: relative;
   width: auto;
   margin: 0;
@@ -42,7 +39,7 @@
   grid-template-columns: 1fr;
   gap: 1rem;
 
-  @media (min-width: 768px) {
+  @media (min-width: v.$breakpoint-md) {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -55,11 +52,47 @@
       .settings-section-title {
         font-size: 1.125rem;
         font-weight: 600;
-        color: var(--primary-800);
+        color: oklch(var(--bc));
         margin-bottom: 1rem;
-        @include m.dark-theme-color;
       }
 
     }
   }
+}
+
+/* Скругление и отступ секций — для светлой и тёмной темы */
+.settings-container,
+.settings-panel,
+.settings-grid {
+  border-radius: 1rem;
+}
+
+/* Контур панелей — семантика DaisyUI (тема corporate/business переключается по prefers-color-scheme) */
+
+.settings-grid .settings-panel .settings-section {
+  border-radius: 1rem;
+  margin: 0.5rem;
+}
+
+/* Тёмная тема: фон контейнера настроек как у карточек */
+@media (prefers-color-scheme: dark) {
+  .settings-container {
+    background-color: var(--dark-surface-color);
+  }
+}
+
+/* ===== ЗАГОЛОВКИ И ОПИСАНИЯ НАСТРОЕК ===== */
+.settings-title,
+.valve-card .settings-title {
+  font-size: calc(1rem + 0.3vw);
+  font-weight: 600;
+  text-align: center;
+  color: oklch(var(--bc));
+  margin-bottom: 0.75rem;
+}
+
+.settings-description {
+  font-size: 0.875rem;
+  color: oklch(var(--bc) / 0.8);
+  margin: 0.25rem 0 0 0;
 }

@@ -85,27 +85,30 @@ public:
 class AlarmThresholdService : public StatefulService<AlarmThresholdsState> {
 public:
     // Конструктор
-    AlarmThresholdService(PsychicHttpServer* server, ESP32SvelteKit* sveltekit) :
+    AlarmThresholdService(AsyncWebServer* server, ESP32SvelteKit* sveltekit) :
         _httpEndpoint(
-            AlarmThresholdsState::read,
-            AlarmThresholdsState::update,
+            [](AlarmThresholdsState& state, JsonObject& root) { AlarmThresholdsState::read(state, root); },
+            [](JsonObject& root, AlarmThresholdsState& state, const String&) { return AlarmThresholdsState::update(root, state); },
             this,
             server,
             ALARM_SETTINGS_ENDPOINT,
             sveltekit->getSecurityManager()
             ),
-        _fsPersistence(AlarmThresholdsState::read,
-            AlarmThresholdsState::update,
+        _fsPersistence(
+            [](AlarmThresholdsState& state, JsonObject& root) { AlarmThresholdsState::read(state, root); },
+            [](JsonObject& root, AlarmThresholdsState& state, const String&) { return AlarmThresholdsState::update(root, state); },
             this,
             sveltekit->getFS(),
             ALARM_SETTINGS_FILE),
         _mqttEndpoint(
-            AlarmThresholdsState::read,
-            AlarmThresholdsState::update,
+            [](AlarmThresholdsState& state, JsonObject& root) { AlarmThresholdsState::read(state, root); },
+            [](JsonObject& root, AlarmThresholdsState& state, const String&) { return AlarmThresholdsState::update(root, state); },
             this,
             sveltekit->getMqttClient(),
             MQTT_TOPIC_THRESHOLD_PUB,
-            MQTT_TOPIC_THRESHOLD_STATE
+            MQTT_TOPIC_THRESHOLD_STATE,
+            0,
+            false
         )
     {
     }

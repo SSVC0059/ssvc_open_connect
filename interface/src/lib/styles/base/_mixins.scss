@@ -1,3 +1,5 @@
+@use "$lib/styles/base/variables" as v;
+
 @mixin glassmorphism {
   background: var(--glass-background);
   border: var(--glass-border);
@@ -20,7 +22,7 @@
     color: var(--primary-200);
 
     .border {
-      background-color: rgba(var(--black), 0.25);
+      background-color: color-mix(in srgb, var(--black) 25%, transparent);
     }
 
     &.active {
@@ -89,7 +91,7 @@
     }
 
     // Адаптация для мобильных
-    @media (max-width: 768px) {
+    @media (max-width: v.$breakpoint-md) {
       grid-template-columns: 1fr 1fr 1fr;
       gap: 0.25rem;
       padding: 0.5rem 0.75rem;
@@ -110,7 +112,7 @@
     }
 
     // Адаптация для мобильных
-    @media (max-width: 768px) {
+    @media (max-width: v.$breakpoint-md) {
       grid-template-columns: 1fr 1fr 1fr;
       gap: 0.25rem;
       padding: 0.2rem 0.2rem;
@@ -143,9 +145,9 @@
 
 
         &:focus {
-          outline: none;
           border-color: var(--blue-500);
-          box-shadow: var(--glass-shadow);
+          /* Видимый индикатор фокуса для доступности */
+          box-shadow: var(--glass-shadow), 0 0 0 2px color-mix(in srgb, var(--blue-500) 25%, transparent);
         }
       }
       .point-info {
@@ -153,18 +155,18 @@
       }
 
       // Десктоп
-      @media (min-width: 1024px) {
+      @media (min-width: v.$breakpoint-lg) {
         max-width: 120px;
       }
 
       // Планшет
-      @media (max-width: 1023px) and (min-width: 769px) {
+      @media (max-width: v.$breakpoint-lg - 1) and (min-width: v.$breakpoint-md) {
         max-width: 100px;
         padding: 0.375rem 0.5rem;
       }
 
       // Мобильные
-      @media (max-width: 768px) {
+      @media (max-width: v.$breakpoint-md) {
         max-width: none;
         min-width: 60px;
         padding: 0.5rem 0.25rem;
@@ -172,7 +174,7 @@
       }
 
       // Очень маленькие экраны
-      @media (max-width: 480px) {
+      @media (max-width: v.$breakpoint-xs) {
         min-width: 50px;
         padding: 0.375rem 0.125rem;
         font-size: 12px;
@@ -181,7 +183,7 @@
   }
 
   // Дополнительная адаптация для очень маленьких экранов
-  @media (max-width: 480px) {
+  @media (max-width: v.$breakpoint-xs) {
     .points-header,
     .point-row {
       grid-template-columns: 1fr 1fr 1fr;

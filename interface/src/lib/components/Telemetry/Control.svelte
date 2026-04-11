@@ -266,7 +266,7 @@
         align-items: center;
         justify-content: center;
 
-        svg {
+        :global(svg) {
           height: 100%;
           width: 100%;
         }
@@ -307,11 +307,12 @@
     }
   }
 
-  button[disabled] {
+  /* Специфичность .power-controls .control-btn[disabled] перебивает .control-btn.power-btn color */
+  .power-controls .control-btn[disabled] {
     cursor: not-allowed;
     opacity: 0.4;
     filter: grayscale(0.3);
     border: 2px dashed var(--gray-400);
-    color: var(--gray-500) !important;
+    color: var(--gray-500);
   }
 </style>

@@ -21,15 +21,16 @@ def arg_auto_int(x):
     return int(x, 0)
 
 def setup_esp_idf_environment(ps_profile_path):
-    """Настраивает окружение ESP-IDF с помощью PowerShell профиля"""
+    """Configures ESP-IDF environment using PowerShell profile (Windows only)."""
+    if sys.platform != 'win32':
+        return False
     if not ps_profile_path or not os.path.exists(ps_profile_path):
-        print(f"ВНИМАНИЕ: Файл профиля PowerShell не найден: {ps_profile_path}")
+        print(f"WARNING: PowerShell profile file not found: {ps_profile_path}")
         return False
 
-    print(f"Инициализация ESP-IDF с помощью профиля: {ps_profile_path}")
+    print(f"Initializing ESP-IDF using profile: {ps_profile_path}")
 
     try:
-        # Запускаем PowerShell скрипт для настройки окружения
         cmd = [
             "powershell.exe",
             "-NoProfile",
@@ -41,109 +42,106 @@ def setup_esp_idf_environment(ps_profile_path):
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
 
         if result.returncode == 0:
-            print("✓ Окружение ESP-IDF успешно инициализировано")
+            print("✓ ESP-IDF environment initialized successfully")
 
-            # Обновляем PATH в текущем процессе Python
             path_lines = result.stdout.strip().split('\n')
             if path_lines:
-                # Последняя строка обычно содержит обновленный PATH
                 new_path = path_lines[-1]
                 os.environ['PATH'] = new_path
-                print(f"✓ PATH обновлен ({len(new_path.split(';'))} элементов)")
+                print(f"✓ PATH updated ({len(new_path.split(';'))} entries)")
 
             return True
         else:
-            print(f"✗ Ошибка при инициализации ESP-IDF: {result.stderr}")
+            print(f"✗ Error initializing ESP-IDF: {result.stderr}")
             return False
 
     except subprocess.TimeoutExpired:
-        print("✗ Таймаут при инициализации ESP-IDF")
+        print("✗ Timeout while initializing ESP-IDF")
         return False
     except Exception as e:
-        print(f"✗ Ошибка при запуске PowerShell: {e}")
+        print(f"✗ Error running PowerShell: {e}")
         return False
 
 def find_elf_by_partial_hash(partial_hash, search_dirs=None):
-    """Ищет ELF файл по частичному хэшу SHA256 в имени файла"""
+    """Finds an ELF file by partial SHA256 hash in the filename."""
     if search_dirs is None:
         search_dirs = ['.', 'build', 'build/elf', 'build/elf/esp32-s3-devkitc-1-16m']
 
     all_elf_files = []
 
-    # Ищем все ELF файлы в указанных директориях
     for search_dir in search_dirs:
         if os.path.isdir(search_dir):
-            # Рекурсивный поиск
             pattern = os.path.join(search_dir, "**", "*.elf")
             elf_files = glob.glob(pattern, recursive=True)
             all_elf_files.extend(elf_files)
 
-            # Не рекурсивный поиск
             pattern = os.path.join(search_dir, "*.elf")
             elf_files = glob.glob(pattern, recursive=False)
             all_elf_files.extend(elf_files)
 
-    # Удаляем дубликаты
     all_elf_files = list(set(all_elf_files))
 
-    print(f"Найдено {len(all_elf_files)} ELF файлов")
+    print(f"Found {len(all_elf_files)} ELF files")
 
-    # Ищем файлы, содержащие частичный хэш в имени
     matching_files = []
     for elf_file in all_elf_files:
         filename = os.path.basename(elf_file)
         filename_no_ext = os.path.splitext(filename)[0]
 
-        # Проверяем, содержит ли имя файла наш частичный хэш
         if partial_hash.lower() in filename_no_ext.lower():
             matching_files.append(elf_file)
 
     return matching_files
 
 def find_gdb_in_esp_idf():
-    """Автоматически ищет GDB в типичных местах установки ESP-IDF"""
-    possible_paths = [
-        # Windows типичные пути ESP-IDF
-        "C:\\Espressif\\tools\\xtensa-esp32s3-elf\\esp-*\\xtensa-esp32s3-elf\\bin\\xtensa-esp32s3-elf-gdb.exe",
-        "C:\\Espressif\\tools\\riscv32-esp-elf\\esp-*\\riscv32-esp-elf\\bin\\riscv32-esp-elf-gdb.exe",
-        os.path.expanduser("~/.espressif/tools/**/*gdb*.exe"),
-
-        # Также ищем в PATH
-        "gdb", "xtensa-esp32s3-elf-gdb", "riscv32-esp-elf-gdb"
-    ]
+    """Finds GDB in typical ESP-IDF installation paths (Windows and Linux)."""
+    if sys.platform == 'win32':
+        possible_paths = [
+            "C:\\Espressif\\tools\\xtensa-esp32s3-elf\\esp-*\\xtensa-esp32s3-elf\\bin\\xtensa-esp32s3-elf-gdb.exe",
+            "C:\\Espressif\\tools\\riscv32-esp-elf\\esp-*\\riscv32-esp-elf\\bin\\riscv32-esp-elf-gdb.exe",
+            os.path.expanduser("~/.espressif/tools/**/*gdb*.exe"),
+            "gdb", "xtensa-esp32s3-elf-gdb", "riscv32-esp-elf-gdb"
+        ]
+    else:
+        possible_paths = [
+            os.path.expanduser("~/.espressif/tools/xtensa-esp-elf/*/xtensa-esp-elf/bin/xtensa-esp-elf-gdb"),
+            os.path.expanduser("~/.espressif/tools/xtensa-esp32s3-elf/*/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-gdb"),
+            os.path.expanduser("~/.espressif/tools/riscv32-esp-elf/*/riscv32-esp-elf/bin/riscv32-esp-elf-gdb"),
+            "/opt/esp/tools/xtensa-esp32s3-elf/*/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-gdb",
+            "xtensa-esp32s3-elf-gdb", "riscv32-esp-elf-gdb", "gdb"
+        ]
 
     for pattern in possible_paths:
         try:
             files = glob.glob(pattern, recursive=True)
             for file in files:
                 if 'gdb' in os.path.basename(file).lower() and os.path.isfile(file):
-                    print(f"Найден GDB: {file}")
+                    print(f"Found GDB: {file}")
                     return file
-        except:
+        except Exception:
             continue
 
     return None
 
-# ====== ИНИЦИАЛИЗАЦИЯ ESP-IDF В САМОМ НАЧАЛЕ ======
+# ====== ESP-IDF ENVIRONMENT INITIALIZATION (Windows only) ======
+PS_PROFILE_PATH = "C:\\Espressif\\tools\\Microsoft.v5.5.2.PowerShell_profile.ps1" if sys.platform == 'win32' else ""
+
 print("=" * 60)
-print("ИНИЦИАЛИЗАЦИЯ ESP-IDF ОКРУЖЕНИЯ")
+print("ESP-IDF ENVIRONMENT INITIALIZATION")
 print("=" * 60)
 
-# Стандартный путь к профилю PowerShell ESP-IDF
-PS_PROFILE_PATH = "C:\\Espressif\\tools\\Microsoft.v5.5.2.PowerShell_profile.ps1"
-
-# Проверяем существование профиля
-if not os.path.exists(PS_PROFILE_PATH):
-    print(f"⚠ ВНИМАНИЕ: Файл профиля не найден: {PS_PROFILE_PATH}")
-    print("  Убедитесь, что ESP-IDF правильно установлен.")
-    print("  Вы можете указать другой путь с помощью --ps-profile")
+if sys.platform == 'win32':
+    if not os.path.exists(PS_PROFILE_PATH):
+        print(f"WARNING: Profile file not found: {PS_PROFILE_PATH}")
+        print("  Ensure ESP-IDF is installed correctly.")
+        print("  You can specify another path with --ps-profile")
+    else:
+        setup_success = setup_esp_idf_environment(PS_PROFILE_PATH)
+        if not setup_success:
+            print("\nWARNING: Continuing without full ESP-IDF initialization...")
+            print("  Some features may be unavailable.")
 else:
-    # Выполняем инициализацию ESP-IDF
-    setup_success = setup_esp_idf_environment(PS_PROFILE_PATH)
-
-    if not setup_success:
-        print("\n⚠ Продолжаю без полной инициализации ESP-IDF...")
-        print("  Некоторые функции могут быть недоступны.")
+    print("Linux/macOS: ESP-IDF PowerShell setup skipped (use 'source export.sh' in your shell if needed).")
 
 print("\n" + "=" * 60)
 
@@ -154,8 +152,8 @@ parser.add_argument('--baud', '-b', type=int, default=115200, help='Serial port 
 parser.add_argument('--prog', help='Path to application ELF file')
 parser.add_argument('--gdb', '-g', help='Path to GDB executable')
 parser.add_argument('--elf-dir', '-e', action='append', help='Additional directories to search for ELF files')
-parser.add_argument('--ps-profile', default=PS_PROFILE_PATH,
-                    help='Path to ESP-IDF PowerShell profile (default: %(default)s)')
+parser.add_argument('--ps-profile', default=PS_PROFILE_PATH or None,
+                    help='Path to ESP-IDF PowerShell profile (Windows only)')
 parser.add_argument('--skip-esp-setup', action='store_true',
                     help='Skip ESP-IDF environment setup')
 parser.add_argument('core-dump-file', help='Path to core dump file')
@@ -164,29 +162,32 @@ args = parser.parse_args()
 kwargs = {k: v for k, v in vars(args).items() if v is not None}
 kwargs["core"] = kwargs.pop('core-dump-file')
 
-# ====== 1. ПОВТОРНАЯ ИНИЦИАЛИЗАЦИЯ ESP-IDF (если указан другой профиль) ======
-if not kwargs.get('skip_esp_setup'):
-    ps_profile_path = kwargs.get('ps_profile')
-
-    # Если пользователь указал другой профиль или нам не удалось инициализироваться ранее
-    if ps_profile_path != PS_PROFILE_PATH or 'PATH' not in os.environ or 'Espressif' not in os.environ.get('PATH', ''):
+# ====== 1. RE-INITIALIZE ESP-IDF (if user specified another profile) ======
+if not kwargs.get('skip_esp_setup') and sys.platform == 'win32':
+    ps_profile_path = kwargs.get('ps_profile') or PS_PROFILE_PATH
+    if ps_profile_path != PS_PROFILE_PATH or 'Espressif' not in os.environ.get('PATH', ''):
         if ps_profile_path and os.path.exists(ps_profile_path):
-            print(f"\nИспользование пользовательского профиля: {ps_profile_path}")
+            print(f"\nUsing custom profile: {ps_profile_path}")
             setup_esp_idf_environment(ps_profile_path)
-        elif not os.path.exists(PS_PROFILE_PATH):
-            print(f"⚠ ВНИМАНИЕ: Файл профиля не найден: {PS_PROFILE_PATH}")
-            print("  Попробую найти GDB без настройки окружения...")
+        elif not os.path.exists(PS_PROFILE_PATH or ''):
+            print(f"WARNING: Profile file not found: {PS_PROFILE_PATH}")
+            print("  Trying to find GDB without environment setup...")
 
-# ====== 2. ПОИСК GDB ======
+# ====== 2. FIND GDB ======
 if 'gdb' not in kwargs or not kwargs['gdb']:
-    print("\nАвтоматический поиск GDB...")
+    print("\nSearching for GDB...")
 
-    # Сначала проверяем стандартные пути ESP-IDF
-    espressif_paths = [
-        "C:\\Espressif\\tools\\xtensa-esp32s3-elf\\esp-*\\xtensa-esp32s3-elf\\bin\\xtensa-esp32s3-elf-gdb.exe",
-        "C:\\Espressif\\tools\\riscv32-esp-elf\\esp-*\\riscv32-esp-elf\\bin\\riscv32-esp-elf-gdb.exe",
-        "C:\\Espressif\\frameworks\\esp-idf-v*\\tools\\**\\*gdb*.exe"
-    ]
+    if sys.platform == 'win32':
+        espressif_paths = [
+            "C:\\Espressif\\tools\\xtensa-esp32s3-elf\\esp-*\\xtensa-esp32s3-elf\\bin\\xtensa-esp32s3-elf-gdb.exe",
+            "C:\\Espressif\\tools\\riscv32-esp-elf\\esp-*\\riscv32-esp-elf\\bin\\riscv32-esp-elf-gdb.exe",
+            "C:\\Espressif\\frameworks\\esp-idf-v*\\tools\\**\\*gdb*.exe"
+        ]
+    else:
+        espressif_paths = [
+            os.path.expanduser("~/.espressif/tools/xtensa-esp32s3-elf/*/xtensa-esp32s3-elf/bin/xtensa-esp32s3-elf-gdb"),
+            os.path.expanduser("~/.espressif/tools/riscv32-esp-elf/*/riscv32-esp-elf/bin/riscv32-esp-elf-gdb"),
+        ]
 
     for pattern in espressif_paths:
         try:
@@ -194,50 +195,45 @@ if 'gdb' not in kwargs or not kwargs['gdb']:
             for file in files:
                 if os.path.isfile(file):
                     kwargs['gdb'] = file
-                    print(f"Найден GDB в ESP-IDF: {file}")
+                    print(f"Found GDB in ESP-IDF: {file}")
                     break
-            if 'gdb' in kwargs:
+            if kwargs.get('gdb'):
                 break
-        except:
+        except Exception:
             continue
 
-    # Если не нашли, ищем в системе
-    if 'gdb' not in kwargs:
+    if not kwargs.get('gdb'):
         found_gdb = find_gdb_in_esp_idf()
         if found_gdb:
             kwargs['gdb'] = found_gdb
 
-    # Если всё ещё не нашли, пытаемся найти в PATH
-    if 'gdb' not in kwargs:
+    if not kwargs.get('gdb'):
         gdb_names = ['xtensa-esp32s3-elf-gdb', 'riscv32-esp-elf-gdb', 'gdb']
+        which_cmd = 'where' if sys.platform == 'win32' else 'which'
         for gdb_name in gdb_names:
             try:
-                result = subprocess.run(['where', gdb_name], capture_output=True, text=True)
+                result = subprocess.run([which_cmd, gdb_name], capture_output=True, text=True)
                 if result.returncode == 0 and result.stdout.strip():
-                    kwargs['gdb'] = result.stdout.strip().split('\n')[0]
-                    print(f"Найден GDB в PATH: {kwargs['gdb']}")
+                    kwargs['gdb'] = result.stdout.strip().split('\n')[0].strip()
+                    print(f"Found GDB in PATH: {kwargs['gdb']}")
                     break
-            except:
+            except Exception:
                 continue
 
-# Проверяем, что GDB существует
-if 'gdb' in kwargs and kwargs['gdb']:
+if kwargs.get('gdb'):
     if not os.path.exists(kwargs['gdb']):
-        print(f"ОШИБКА: GDB не найден по пути: {kwargs['gdb']}")
-
-        # Предлагаем варианты решения
-        print("\nПожалуйста, укажите путь к GDB одним из способов:")
-        print("1. Установите ESP-IDF toolchain")
-        print("2. Укажите путь к GDB явно: --gdb \"C:\\Espressif\\tools\\...\\xtensa-esp32s3-elf-gdb.exe\"")
-        print("3. Установите отдельно GDB для Windows")
+        print(f"ERROR: GDB not found at: {kwargs['gdb']}")
+        print("\nPlease specify GDB path in one of these ways:")
+        print("1. Install ESP-IDF toolchain")
+        print("2. Specify GDB explicitly: --gdb /path/to/xtensa-esp32s3-elf-gdb")
         sys.exit(1)
-    print(f"Используется GDB: {kwargs['gdb']}")
+    print(f"Using GDB: {kwargs['gdb']}")
 else:
-    print("ВНИМАНИЕ: GDB не найден!")
-    print("Анализ может завершиться ошибкой.")
+    print("WARNING: GDB not found!")
+    print("Analysis may fail.")
 
-# ====== 3. ОБРАБАТЫВАЕМ CORE DUMP ======
-print(f"\nЗагрузка core dump: {kwargs['core']}")
+# ====== 3. LOAD CORE DUMP ======
+print(f"\nLoading core dump: {kwargs['core']}")
 loader = ESPCoreDumpFileLoader(kwargs["core"])
 loader._load_core_src()
 
@@ -256,7 +252,7 @@ for seg in core_elf.note_segments:
             core_sha_trimmed = coredump_sha256.sha256.rstrip(b'\x00').decode()
             print(f'Core dump SHA256: {core_sha_trimmed}')
 
-# ====== 4. ПОИСК ELF ФАЙЛА ======
+# ====== 4. FIND ELF FILE ======
 if 'prog' not in kwargs or not kwargs['prog']:
     search_dirs = ['.', 'build', 'build/elf', 'build/elf/esp32-s3-devkitc-1-16m', '../build', '../../build']
 
@@ -266,26 +262,23 @@ if 'prog' not in kwargs or not kwargs['prog']:
         else:
             search_dirs.append(kwargs['elf_dir'])
 
-    # Ищем ELF файлы по частичному хэшу
     if core_sha_trimmed:
-        print(f"\nПоиск ELF файла с частичным хэшем: {core_sha_trimmed}")
+        print(f"\nSearching for ELF file with partial hash: {core_sha_trimmed}")
         matching_files = find_elf_by_partial_hash(core_sha_trimmed, search_dirs)
 
         if matching_files:
             if len(matching_files) == 1:
                 kwargs["prog"] = matching_files[0]
-                print(f"Найден ELF файл: {matching_files[0]}")
+                print(f"Found ELF file: {matching_files[0]}")
             else:
-                print(f"Найдено несколько подходящих ELF файлов:")
+                print(f"Found multiple matching ELF files:")
                 for i, elf_file in enumerate(matching_files):
                     print(f"  {i+1}. {elf_file}")
 
-                # Выбираем первый (самый вероятный)
                 kwargs["prog"] = matching_files[0]
-                print(f"Используется: {matching_files[0]}")
+                print(f"Using: {matching_files[0]}")
         else:
-            # Если не нашли по хэшу, ищем стандартные имена
-            print("\nНе найдено ELF файлов с указанным хэшем, ищем стандартные имена...")
+            print("\nNo ELF files with this hash found, searching for standard names...")
 
             standard_elf_names = [
                 "ssvc_open_connect.elf",
@@ -294,21 +287,19 @@ if 'prog' not in kwargs or not kwargs['prog']:
                 "app.elf"
             ]
 
-            # Проверяем стандартные имена во всех директориях
             for search_dir in search_dirs:
                 if os.path.isdir(search_dir):
                     for elf_name in standard_elf_names:
                         elf_path = os.path.join(search_dir, elf_name)
                         if os.path.exists(elf_path):
                             kwargs["prog"] = elf_path
-                            print(f"Найден стандартный ELF: {elf_path}")
+                            print(f"Found standard ELF: {elf_path}")
                             break
                     if 'prog' in kwargs:
                         break
 
             if 'prog' not in kwargs:
-                # Последняя попытка: ищем любой ELF файл
-                print("\nПоиск любого ELF файла в проекте...")
+                print("\nSearching for any ELF file in project...")
                 all_elf_files = []
                 for search_dir in search_dirs:
                     if os.path.isdir(search_dir):
@@ -317,34 +308,35 @@ if 'prog' not in kwargs or not kwargs['prog']:
                         all_elf_files.extend(elf_files)
 
                 if all_elf_files:
-                    # Сортируем по дате изменения (новые первыми)
                     all_elf_files.sort(key=lambda x: os.path.getmtime(x) if os.path.exists(x) else 0, reverse=True)
 
-                    print(f"Найдено ELF файлов: {len(all_elf_files)}")
-                    print("Последние 5 файлов:")
+                    print(f"Found {len(all_elf_files)} ELF files")
+                    print("Latest 5 files:")
+                    from datetime import datetime
                     for i, elf_file in enumerate(all_elf_files[:5]):
                         mtime = os.path.getmtime(elf_file)
-                        from datetime import datetime
                         mtime_str = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
                         print(f"  {i+1}. {os.path.basename(elf_file)} - {mtime_str}")
 
                     kwargs["prog"] = all_elf_files[0]
-                    print(f"\nИспользуется последний ELF файл: {all_elf_files[0]}")
+                    print(f"\nUsing latest ELF file: {all_elf_files[0]}")
                 else:
-                    print("\nERROR: Не найден ни один ELF файл!")
-                    print("Пожалуйста, укажите ELF файл явно:")
-                    print("  python analyze_dump.py --prog путь/к/файлу.elf coredump.bin")
-                    print("\nИли укажите директории для поиска:")
+                    print("\nERROR: No ELF file found!")
+                    print("Please specify the ELF file explicitly:")
+                    print("  python analyze_dump.py --prog path/to/file.elf coredump.bin")
+                    print("\nOr specify search directories:")
                     print("  python analyze_dump.py --elf-dir build --elf-dir ../build coredump.bin")
                     sys.exit(1)
 
-print(f"\nИспользуется ELF файл: {kwargs['prog']}")
+print(f"\nUsing ELF file: {kwargs['prog']}")
 
-# ====== 5. ЗАПУСК АНАЛИЗА ======
-print("\nЗапуск анализа core dump...")
+# ====== 5. RUN ANALYSIS ======
+print("\nRunning core dump analysis...")
 print("=" * 60)
 
-# Удаляем неиспользуемые аргументы
+final_elf = kwargs.get('prog')
+final_core = kwargs.get('core')
+
 for key in ['elf_dir', 'ps_profile', 'skip_esp_setup']:
     if key in kwargs:
         del kwargs[key]
@@ -360,23 +352,38 @@ try:
             except OSError:
                 pass
 
-    print("\n✓ Анализ завершен успешно!")
+    print("\n✓ Analysis completed successfully!")
+
+    print("\n" + "=" * 60)
+    print("GDB COMMAND (INTERACTIVE DEBUGGING)")
+    print("=" * 60)
+
+    gdb_path = kwargs.get('gdb')
+
+    if gdb_path:
+        debug_cmd = f"python -m esp_coredump dbg_corefile --gdb \"{gdb_path}\" --core {final_core} {final_elf}"
+    else:
+        debug_cmd = f"python -m esp_coredump dbg_corefile --core {final_core} {final_elf}"
+
+    print("To inspect variables and stack in GDB, run:")
+    print(f"\n{debug_cmd}\n")
+    print("Useful GDB commands:")
+    print("  bt full       - show backtrace and all variable values")
+    print("  f 0           - switch to crash frame")
+    print("=" * 60)
 
 except Exception as e:
-    print(f"\n✗ Ошибка при анализе core dump: {e}")
+    print(f"\n✗ Error analyzing core dump: {e}")
 
-    # Проверяем, связана ли ошибка с GDB
     if "GDB executable not found" in str(e):
-        print("\nПроблема с GDB. Попробуйте следующие решения:")
-        print("1. Укажите путь к GDB явно:")
-        print("   python analyze_dump.py --gdb \"C:\\Espressif\\tools\\...\\xtensa-esp32s3-elf-gdb.exe\" coredump.bin")
-        print("\n2. Проверьте установку ESP-IDF:")
-        print("   Убедитесь, что файл существует: C:\\Espressif\\tools\\Microsoft.v5.5.2.PowerShell_profile.ps1")
-        print("\n3. Установите toolchain вручную:")
-        print("   Запустите: C:\\Espressif\\tools\\idf-env.exe")
-        print("   Или установите через ESP-IDF Tools Installer")
+        print("\nGDB issue. Try:")
+        print("1. Specify GDB path: --gdb /path/to/xtensa-esp32s3-elf-gdb")
+        if sys.platform == 'win32':
+            print("2. Ensure ESP-IDF profile exists: C:\\Espressif\\tools\\Microsoft.v5.5.2.PowerShell_profile.ps1")
+            print("3. Run C:\\Espressif\\tools\\idf-env.exe or install via ESP-IDF Tools Installer")
 
-    print(f"\nПопробуйте указать ELF файл явно:")
-    print(f"python analyze_dump.py --prog build\\ssvc_open_connect.elf coredump.bin")
+    print("\nTry specifying the ELF file explicitly:")
+    print(f"  python analyze_dump.py --prog build/ssvc_open_connect.elf coredump.bin")
 
     sys.exit(1)
+

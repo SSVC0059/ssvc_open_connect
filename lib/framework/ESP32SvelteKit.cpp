@@ -14,15 +14,18 @@
 
 #include <ESP32SvelteKit.h>
 
-ESP32SvelteKit::ESP32SvelteKit(PsychicHttpServer *server, unsigned int numberEndpoints) : _server(server),
-                                                                                          _numberEndpoints(numberEndpoints),
-                                                                                          _featureService(server, &_socket),
+ESP32SvelteKit::ESP32SvelteKit(AsyncWebServer *server) : _server(server),
+                                                         _featureService(server, &_socket),
                                                                                           _securitySettingsService(server, &ESPFS),
                                                                                           _wifiSettingsService(server, &ESPFS, &_securitySettingsService, &_socket),
                                                                                           _wifiScanner(server, &_securitySettingsService),
                                                                                           _wifiStatus(server, &_securitySettingsService),
                                                                                           _apSettingsService(server, &ESPFS, &_securitySettingsService),
                                                                                           _apStatus(server, &_securitySettingsService, &_apSettingsService),
+#if FT_ENABLED(FT_ETHERNET)
+                                                                                          _ethernetSettingsService(server, &ESPFS, &_securitySettingsService, &_socket),
+                                                                                          _ethernetStatus(server, &_securitySettingsService),
+#endif
                                                                                           _socket(server, &_securitySettingsService, AuthenticationPredicates::IS_AUTHENTICATED),
                                                                                           _notificationService(&_socket),
 #if FT_ENABLED(FT_NTP)
@@ -65,12 +68,11 @@ void ESP32SvelteKit::begin()
     ESP_LOGV(SVK_TAG, "Loading settings from files system");
     ESPFS.begin(true);
 
-    _wifiSettingsService.initWiFi();
+#if FT_ENABLED(FT_ETHERNET)
+    _ethernetSettingsService.initEthernet();
+#endif
 
-    // SvelteKit uses a lot of handlers, so we need to increase the max_uri_handlers
-    // WWWData has 77 Endpoints, Framework has 27, and Lighstate Demo has 4
-    _server->config.max_uri_handlers = _numberEndpoints;
-    _server->listen(80);
+    _wifiSettingsService.initWiFi();
 
 #ifdef EMBED_WWW
     // Serve static resources from PROGMEM
@@ -78,25 +80,25 @@ void ESP32SvelteKit::begin()
     WWWData::registerRoutes(
         [&](const String &uri, const String &contentType, const uint8_t *content, size_t len)
         {
-            PsychicHttpRequestCallback requestHandler = [contentType, content, len](PsychicRequest *request)
-            {
-                PsychicResponse response(request);
-                response.setCode(200);
-                response.setContentType(contentType.c_str());
-                response.addHeader("Content-Encoding", "gzip");
-                response.addHeader("Cache-Control", "public, immutable, max-age=31536000");
-                response.setContent(content, len);
-                return response.send();
-            };
-            PsychicWebHandler *handler = new PsychicWebHandler();
-            handler->onRequest(requestHandler);
-            _server->on(uri.c_str(), HTTP_GET, handler);
+            _server->on(uri.c_str(), HTTP_GET, [contentType, content, len](AsyncWebServerRequest *request)
+                        {
+                AsyncWebServerResponse *response = request->beginResponse(200, contentType, content, len);
+                response->addHeader("Content-Encoding", "gzip");
+                response->addHeader("Cache-Control", "public, immutable, max-age=31536000");
+                request->send(response); });
 
-            // Set default end-point for all non matching requests
-            // this is easier than using webServer.onNotFound()
             if (uri.equals("/index.html"))
             {
-                _server->defaultEndpoint->setHandler(handler);
+                _server->onNotFound([content, len](AsyncWebServerRequest *request)
+                                    {
+                    if (request->method() == HTTP_GET) {
+                        AsyncWebServerResponse *response = request->beginResponse(200, "text/html", content, len);
+                        response->addHeader("Content-Encoding", "gzip");
+                        response->addHeader("Cache-Control", "public, immutable, max-age=31536000");
+                        request->send(response);
+                    } else {
+                        request->send(404);
+                    } });
             }
         });
 #else
@@ -104,14 +106,12 @@ void ESP32SvelteKit::begin()
     ESP_LOGV(SVK_TAG, "Registering routes from FS /www/ static resources");
     _server->serveStatic("/_app/", ESPFS, "/www/_app/");
     _server->serveStatic("/favicon.png", ESPFS, "/www/favicon.png");
-    //  Serving all other get requests with "/www/index.htm"
-    _server->onNotFound([](PsychicRequest *request)
+    _server->onNotFound([](AsyncWebServerRequest *request)
                         {
         if (request->method() == HTTP_GET) {
-            PsychicFileResponse response(request, ESPFS, "/www/index.html", "text/html");
-            return response.send();
-            // String url = "http://" + request->host() + "/index.html";
-            // request->redirect(url.c_str());
+            request->send(ESPFS, "/www/index.html", "text/html");
+        } else {
+            request->send(404);
         } });
 #endif
 
@@ -150,6 +150,11 @@ void ESP32SvelteKit::begin()
     _wifiSettingsService.begin();
     _wifiScanner.begin();
     _wifiStatus.begin();
+#if FT_ENABLED(FT_ETHERNET)
+    _ethernetSettingsService.begin();
+    _ethernetStatus.begin();
+#endif
+
 
 #if FT_ENABLED(FT_COREDUMP)
     _coreDump.begin();
@@ -182,10 +187,7 @@ void ESP32SvelteKit::begin()
     _sleepService.begin();
     _sleepService.attachOnSleepCallback([&]()
                                         {   ESP_LOGI(SVK_TAG, "Attempting to stop server");
-                                            for (auto client : _server->getClientList())
-                                            {
-                                                client->close();
-                                            }
+                                            _server->end();
                                             vTaskDelete(_loopTaskHandle);
                                             ESP_LOGI(SVK_TAG, "Server stopped"); });
 #if FT_ENABLED(FT_MQTT)
@@ -201,6 +203,8 @@ void ESP32SvelteKit::begin()
 #if FT_ENABLED(FT_ANALYTICS)
     _analyticsService.begin();
 #endif
+
+    _server->begin();
 
     // Start the loop task
     ESP_LOGV(SVK_TAG, "Starting loop task");
@@ -223,9 +227,14 @@ void ESP32SvelteKit::_loop()
     bool ap = false;
     bool event = false;
     bool mqtt = false;
+#if FT_ENABLED(FT_ETHERNET)
+    bool eth = false;
+#endif
+    bool wifi_eth_combined = false;
 
     while (1)
     {
+        wifi_eth_combined = false;
         _wifiSettingsService.loop(); // 30 seconds
         _apSettingsService.loop();   // 10 seconds
 #if FT_ENABLED(FT_MQTT)
@@ -234,21 +243,25 @@ void ESP32SvelteKit::_loop()
 #if FT_ENABLED(FT_ANALYTICS)
         _analyticsService.loop();
 #endif
+#if FT_ENABLED(FT_ETHERNET)
+        _ethernetSettingsService.loop();
+        eth = _ethernetStatus.isConnected();
+        if (eth) { wifi_eth_combined = true; }
+#endif
 
         // Query the connectivity status
         wifi = _wifiStatus.isConnected();
+        if (wifi) { wifi_eth_combined = true; }
         ap = _apStatus.isActive();
         event = _socket.getConnectedClients() > 0;
 #if FT_ENABLED(FT_MQTT)
         mqtt = _mqttStatus.isConnected();
 #endif
-
-        // Update the system status
-        if (wifi && mqtt)
+        if (wifi_eth_combined && mqtt)
         {
             _connectionStatus = ConnectionStatus::STA_MQTT;
         }
-        else if (wifi)
+        else if (wifi_eth_combined)
         {
             _connectionStatus = event ? ConnectionStatus::STA_CONNECTED : ConnectionStatus::STA;
         }

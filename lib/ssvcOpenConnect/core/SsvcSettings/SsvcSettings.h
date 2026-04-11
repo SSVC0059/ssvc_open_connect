@@ -73,7 +73,7 @@ public:
     bool getFormula() const;
 
     // Получает давление в кубе (мм рт. ст.).
-    unsigned char getTank_mmhg() const;
+    float getTank_mmhg() const;
 
     // Получает таймер для отбора голов.
     unsigned int getHeadsTimer() const;
@@ -199,7 +199,7 @@ private:
     float hyst = 0.0;
     unsigned char decrement = 0;
     bool formula = false;
-    unsigned char tank_mmhg = 0;
+    float tank_mmhg = 0;
     unsigned int heads_timer = 0;
     unsigned char hearts_timer = 0;
     unsigned int start_delay = 0;
@@ -304,7 +304,7 @@ public:
         Builder& formulaEnable(bool enable);
 
         // Устанавливает давление в кубе (мм рт. ст.) относительно атмосферного.
-        Builder& setTank_mmhg(unsigned char _tank_mmhg);
+        Builder& setTank_mmhg(float _tank_mmhg);
 
         // Устанавливает таймер для отбора голов.
         Builder& setHeadsTimer(unsigned int _headsTimer);
@@ -353,6 +353,8 @@ public:
         Builder& setStepDecrement(unsigned char _decrement);
 
         Builder& setStepTimer(unsigned int _timer);
+
+        Builder& setTankPressureActual(float pressure);
 
         // Другие методы установки параметров...
         SsvcSettings build() const;

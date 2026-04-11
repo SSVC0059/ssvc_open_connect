@@ -19,41 +19,40 @@
 
 CommandHandler::CommandHandler() = default;
 
-esp_err_t CommandHandler::handleCommand(PsychicRequest* request)
+void CommandHandler::handleCommand(AsyncWebServerRequest* request, JsonVariant& json)
 {
-    JsonDocument jsonBuffer;
-    const DeserializationError error = deserializeJson(jsonBuffer, request->body());
-
-    if (error) {
-        ESP_LOGE("CommandHandler", "JSON parse error: %s", error.c_str());
-        return request->reply(400, "text/plain", "Invalid JSON format");
+    if (!json.is<JsonObject>()) {
+        request->send(400, "text/plain", "Invalid JSON format");
+        return;
     }
 
-    if (!jsonBuffer["commands"].is<std::string>()) {
-        return request->reply(400, "text/plain", "Missing or invalid 'commands' field");
+    if (!json["commands"].is<std::string>()) {
+        request->send(400, "text/plain", "Missing or invalid 'commands' field");
+        return;
     }
 
-    const std::string commandName = jsonBuffer["commands"].as<std::string>();
+    const std::string commandName = json["commands"].as<std::string>();
     ESP_LOGD("CommandHandler", "Received command: %s", commandName.c_str());
 
     const auto it = SsvcCommandsQueue::COMMAND_MAP.find(commandName);
     if (it == SsvcCommandsQueue::COMMAND_MAP.end()) {
         ESP_LOGW("CommandHandler", "Unknown command: %s", commandName.c_str());
-        return request->reply(501, "text/plain", "Command not implemented");
+        request->send(501, "text/plain", "Command not implemented");
+        return;
     }
 
     try {
         std::string params;
-        if (jsonBuffer["parameters"].is<std::string>()) {
-            params = jsonBuffer["parameters"].as<std::string>();
+        if (json["parameters"].is<std::string>()) {
+            params = json["parameters"].as<std::string>();
         }
 
         // Выполняем команду, передавая параметры
         it->second(params);
         ESP_LOGI("CommandHandler", "Command executed: %s", commandName.c_str());
-        return request->reply(200, "text/plain", "Command accepted");
+        request->send(200, "text/plain", "Command accepted");
     } catch (const std::exception& e) {
         ESP_LOGE("CommandHandler", "Command error: %s", e.what());
-        return request->reply(500, "text/plain", "Command execution failed");
+        request->send(500, "text/plain", "Command execution failed");
     }
 }

@@ -17,13 +17,15 @@
 
 #include "SsvcOpenConnect.h"
 
+#include "components/subsystem/AtmosphericSubsystem.h"
+
 
 SsvcOpenConnect& SsvcOpenConnect::getInstance() {
     static SsvcOpenConnect instance;
     return instance;
 }
 
-void SsvcOpenConnect::begin(PsychicHttpServer& server,
+void SsvcOpenConnect::begin(AsyncWebServer& server,
                             ESP32SvelteKit& esp32sveltekit,
                             EventSocket* socket,
                             SecurityManager* securityManager)
@@ -33,6 +35,9 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     _socket = socket;
     _securityManager = securityManager;
     _mqttClient = _esp32sveltekit->getMqttClient();
+
+    _statusLed = std::make_unique<StatusLed>(&esp32sveltekit);
+    _statusLed->begin(NEO_GRB);
 
     _profileService = ProfileService::getInstance();
 
@@ -67,6 +72,7 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     SensorCoordinator::getInstance().registerPollingSubsystem(
         &OneWireThermalSubsystem::getInstance()
     );
+
     SensorCoordinator::getInstance().startPolling(SENSOR_POLL_INTERVAL_MS);
 
     _sensorConfigService->addUpdateHandler([&](const String& originId) {
@@ -102,11 +108,6 @@ void SsvcOpenConnect::begin(PsychicHttpServer& server,
     commandHandler->begin();
 
     this->subsystemManager();
-
-    // Инициализация StatusLed
-    _statusLed = std::make_unique<StatusLed>(&esp32sveltekit);
-    //  uint16_t neoPixelType = _globalSettings.getNeoPixelType();
-    _statusLed->begin(NEO_GRB);
 
 }
 
@@ -154,6 +155,8 @@ void SsvcOpenConnect::subsystemManager()
 
     subsystemManager.registerSubsystem<SettingsSubsystem>();
     subsystemManager.registerSubsystem<ThermalSubsystem>();
+    subsystemManager.registerSingleton<I2CBusSubsystem>();
+    subsystemManager.registerSubsystem<AtmosphericSubsystem>();
 
     #if FT_ENABLED(FT_TELEGRAM_BOT)
         subsystemManager.registerSubsystem<TelegramBotSubsystem>();
@@ -162,9 +165,11 @@ void SsvcOpenConnect::subsystemManager()
 
     subsystemManager.setInitialState("settings", true);
     subsystemManager.setInitialState("thermal", true);
+    subsystemManager.setInitialState("i2c_bus", true);
+    subsystemManager.setInitialState("atm_sensor", true);
 
     #if FT_ENABLED(FT_TELEGRAM_BOT)
-        subsystemManager.setInitialState("telegram_bot", false);
+        subsystemManager.setInitialState("telegram_bot", true);
     #endif
 
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] Starting subsystem manager...");

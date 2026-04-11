@@ -31,8 +31,8 @@ public:
     String getBotToken() const;
     String createControlKeyboard() const;
 
-    void setChatID (int64_t _chatID);
-    int64_t getChatId () const;
+    void setChatID(const String& _chatID);
+    String getChatId() const;
     void setPullMode(int pullMode);
 
     uint32_t sendMessage(const std::string& message);
@@ -73,7 +73,7 @@ private:
 
     int pollMode = 30000;
     String token = "";
-    int64_t chatID = 0;
+    String chatID = "";
 
     uint32_t statusMessageID = 0;
 

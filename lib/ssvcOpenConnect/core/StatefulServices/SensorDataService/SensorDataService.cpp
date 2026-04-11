@@ -40,7 +40,18 @@ void SensorDataState::read(const SensorDataState& state, const JsonObject& root)
             const std::string& address = sensor_pair.first;
             const float value = sensor_pair.second;
 
-            zone_obj[address.c_str()] = value;
+            auto sensorObj = zone_obj[address].to<JsonObject>();
+
+            sensorObj["v"] = value;
+
+            AbstractSensor::Address binAddr;
+            SensorManager::stringToAddress(address, binAddr);
+
+            // 3. Теперь передаем правильный тип в менеджер
+            const AbstractSensor* s = SensorManager::getInstance().getSensorByAddress(binAddr);
+            sensorObj["u"] = s ? s->getUnit() : "";
+            sensorObj["type"] = s ? s->getType() : "undefined";
+
         }
     }
 }
@@ -53,23 +64,25 @@ void SensorDataService::triggerZoneDataRecalculation()
     ESP_LOGI(TAG, "Triggered data recalculation due to zone change.");
 }
 
-SensorDataService::SensorDataService(PsychicHttpServer *server,
+SensorDataService::SensorDataService(AsyncWebServer *server,
                                     ESP32SvelteKit* sveltekit)
-    : _httpEndpoint(
-          SensorDataState::read,
-          SensorDataState::update,
+    :       _httpEndpoint(
+          [](SensorDataState& s, JsonObject& r) { SensorDataState::read(s, r); },
+          [](JsonObject& root, SensorDataState& s, const String&) { return SensorDataState::update(root, s); },
           this,
           server,
           SENSOR_DATA_ENDPOINT, // /rest/data
           sveltekit->getSecurityManager()
       ),
       _mqttEndpoint(
-          SensorDataState::read,
-          SensorDataState::update,
+          [](SensorDataState& s, JsonObject& r) { SensorDataState::read(s, r); },
+          [](JsonObject& root, SensorDataState& s, const String&) { return SensorDataState::update(root, s); },
           this,
           sveltekit->getMqttClient(),
           SENSOR_DATA_PUB_TOPIC,
-          ""
+          "",
+          0,
+          false
           )
 {
     ESP_LOGI(TAG, "SensorDataService initialized (RAM-only, HTTP: %s, MQTT: %s)",

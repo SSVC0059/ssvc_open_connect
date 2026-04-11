@@ -1,27 +1,38 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import ThermalSensorSettings from '$lib/components/OCSettings/ThermalSensorSettings.svelte';
+	import { browser } from '$app/environment';
+	import { tick } from 'svelte';
+	import SensorsSettings from '$lib/components/OCSettings/SensorsSettings.svelte';
 	import TelegramSettings from '$lib/components/OCSettings/TelegramSettings.svelte';
 	import ProfileManager from '$lib/components/profiles/ProfileManager.svelte';
+	import { goto } from '$app/navigation';
 	import { getSubsystemState, setSubsystemState } from '$lib/api/ssvcApi';
 	import type { SubsystemsState } from '$lib/types/ssvc';
+	import SettingsMobileScroll from '$lib/components/settings-layout/SettingsMobileScroll.svelte';
+
+	const MOBILE_MQ = '(max-width: 767px)';
 
 	interface Tab {
-		id: keyof SubsystemsState | 'profiles'; // Allow 'profiles' as a valid ID
+		id: keyof SubsystemsState | 'profiles';
 		title: string;
 		component: any;
-		isStatic?: boolean; // Flag for tabs that don't depend on subsystem state
+		isStatic?: boolean;
+		alwaysShow?: boolean;
+		props?: Record<string, unknown>;
 	}
 
 	let subsystemsState = $state<SubsystemsState>({
+		atm_sensor: false,
+		i2c_bus: false,
+		settings: false,
 		telegram_bot: false,
-		thermal: false,
-		// другие подсистемы
+		thermal: false
 	});
 
 	let error = $state('');
 	let isLoading = $state(true);
 	let filteredTabs = $state<Tab[]>([]);
+	let activeTab = $state(0);
 
 	const availableTabs: Tab[] = [
 		{
@@ -32,15 +43,22 @@
 		},
 		{
 			id: 'thermal',
-			title: 'Термодатчики',
-			component: ThermalSensorSettings
+			title: 'Датчики температуры',
+			component: SensorsSettings,
+			props: { sensorType: 'thermal' }
+		},
+		{
+			id: 'atm_sensor',
+			title: 'Датчики давления',
+			component: SensorsSettings,
+			props: { sensorType: 'pressure' }
 		},
 		{
 			id: 'telegram_bot',
 			title: 'Telegram',
-			component: TelegramSettings
+			component: TelegramSettings,
+			alwaysShow: true
 		}
-		// Здесь можно добавить другие вкладки
 	];
 
 	$effect(() => {
@@ -52,15 +70,15 @@
 			const state = await getSubsystemState();
 			if (state) {
 				subsystemsState = state;
-				// Фильтруем вкладки, оставляя статические и те, которые есть в ответе сервера
-				filteredTabs = availableTabs.filter(tab => tab.isStatic || tab.id in state);
+				filteredTabs = availableTabs.filter(
+					(tab) => tab.isStatic || tab.alwaysShow || state[tab.id as keyof SubsystemsState]
+				);
 			} else {
-				// Fallback if state is not returned, show only static tabs
-				filteredTabs = availableTabs.filter(tab => tab.isStatic);
+				filteredTabs = availableTabs.filter((tab) => tab.isStatic || tab.alwaysShow);
 			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Ошибка загрузки';
-			filteredTabs = availableTabs.filter(tab => tab.isStatic); // Show static tabs on error
+			filteredTabs = availableTabs.filter((tab) => tab.isStatic || tab.alwaysShow);
 		} finally {
 			isLoading = false;
 		}
@@ -92,87 +110,137 @@
 		};
 	};
 
-	let activeTab = $state(0);
-	let isMobileMenuOpen = $state(false);
-
-	$effect(() => {
-		const tabId = $page.url.searchParams.get('tab');
-		if (tabId) {
-			const index = filteredTabs.findIndex((tab) => tab.id === tabId);
-			if (index !== -1) {
-				activeTab = index;
-			}
-		}
-	});
+	const tabFromUrl = $derived($page.url.searchParams.get('tab'));
 
 	function isSubsystemEnabled(id: string): boolean {
-		const tab = availableTabs.find(t => t.id === id);
-		if (tab?.isStatic) return true; // Static tabs are always "enabled"
+		const tab = availableTabs.find((t) => t.id === id);
+		if (tab?.isStatic) return true;
 
 		const key = id as keyof SubsystemsState;
 		return subsystemsState[key] ?? false;
 	}
+
+	const mobileItems = $derived(
+		filteredTabs.map((tab) => ({
+			id: String(tab.id),
+			title: tab.title,
+			component: tab.component,
+			props: {
+				...tab.props,
+				disabled: !isSubsystemEnabled(tab.id),
+				onToggle: tab.isStatic ? undefined : toggleSubsystemHandler(tab.id as keyof SubsystemsState)
+			}
+		}))
+	);
+
+	$effect(() => {
+		const tabId = tabFromUrl;
+		if (filteredTabs.length === 0) return;
+		if (tabId) {
+			const index = filteredTabs.findIndex((t) => String(t.id) === tabId);
+			if (index !== -1) {
+				activeTab = index;
+				return;
+			}
+			goto('/oc/settings', { replaceState: true });
+			return;
+		}
+		if (activeTab >= filteredTabs.length) {
+			activeTab = 0;
+		}
+	});
+
+	$effect(() => {
+		const tabId = tabFromUrl;
+		if (!browser || !tabId || isLoading || error) return;
+		tick().then(() => {
+			try {
+				if (!window.matchMedia(MOBILE_MQ).matches) return;
+			} catch {
+				return;
+			}
+			const el = document.getElementById(`oc-settings-section-${tabId}`);
+			if (el && typeof el.scrollIntoView === 'function') {
+				el.scrollIntoView({ block: 'start', behavior: 'instant' });
+			}
+		});
+	});
+
+	function selectTab(index: number) {
+		activeTab = index;
+		const tab = filteredTabs[index];
+		if (tab) {
+			goto(`/oc/settings?tab=${tab.id}`, { replaceState: true });
+		}
+	}
 </script>
 
-<div class="container">
-	<div class="tabs-container">
-		<!-- Мобильное меню -->
-		<div class="mobile-tabs-header" class:menu-open={isMobileMenuOpen}>
-			<button
-				class="mobile-menu-toggle"
-				onclick={() => isMobileMenuOpen = !isMobileMenuOpen}
-			>
-				<span class="mobile-menu-header">
-					{filteredTabs[activeTab]?.title || 'Меню'}
-				</span>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-					<path d="M7 10l5 5 5-5z"/>
-				</svg>
-			</button>
-
-			<div class="mobile-tabs-dropdown">
-				{#each filteredTabs as tab, index}
-					<button
-						class="mobile-tab {activeTab === index ? 'mobile-tab-active' : ''}"
-						onclick={() => {
-							activeTab = index;
-							isMobileMenuOpen = false;
-						}}
-					>
-						{tab.title}
-					</button>
-				{/each}
+{#if isLoading}
+		<div class="loading-container flex flex-col items-center gap-2 py-6">
+			<p class="loading-text">Загрузка...</p>
+			<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+		</div>
+	{:else if error}
+		<p class="error-text text-error">{error}</p>
+	{:else}
+		<div class="hidden md:block">
+			<div class="container">
+				<div class="tabs-container">
+					<div class="tabs tabs-lift tabs-md w-full" role="tablist" aria-label="Open Connect settings">
+						{#each filteredTabs as tab, index}
+							<input
+								type="radio"
+								name="oc_settings_tabs"
+								role="tab"
+								class="tab flex-1 whitespace-nowrap"
+								aria-label={tab.title}
+								checked={activeTab === index}
+								onchange={() => selectTab(index)}
+							/>
+							<div role="tabpanel" class="tab-content mt-4 w-full">
+								{#if activeTab === index}
+									{@const Component = tab.component}
+									<Component
+										{...tab.props}
+										disabled={!isSubsystemEnabled(tab.id)}
+										onToggle={tab.isStatic ? undefined : toggleSubsystemHandler(tab.id as keyof SubsystemsState)}
+									/>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				</div>
 			</div>
 		</div>
 
-		<!-- Десктопное меню -->
-		<div class="tabs-nav desktop-only">
-			{#each filteredTabs as tab, index}
-				<button
-					class="tab"
-					class:tab-active={activeTab === index}
-					onclick={() => (activeTab = index)}
-				>
-					{tab.title}
-				</button>
-			{/each}
+		<div class="flex min-h-0 flex-1 flex-col md:hidden">
+			<SettingsMobileScroll
+				items={mobileItems}
+				sectionIdPrefix="oc-settings"
+				tabFromUrl={tabFromUrl}
+				pageTitle="Open Connect"
+				denseGrid={true}
+				sectionBodyCard={true}
+			/>
 		</div>
+	{/if}
 
-		<!-- Контент -->
-		{#if isLoading}
-			<p>Загрузка...</p> <!-- Or a spinner component -->
-		{:else if error}
-			<p style="color: red;">{error}</p>
-		{:else}
-			{#each filteredTabs as tab, index}
-				{#if activeTab === index}
-					{@const Component = tab.component}
-					<Component
-						disabled={!isSubsystemEnabled(tab.id)}
-						onToggle={tab.isStatic ? undefined : toggleSubsystemHandler(tab.id as keyof SubsystemsState)}
-					/>
-				{/if}
-			{/each}
-		{/if}
-	</div>
-</div>
+<style lang="scss">
+	.error-text {
+		color: var(--red-600);
+	}
+
+	.tabs-container {
+		display: flex;
+		flex-direction: column;
+	}
+
+	:global(.tabs .tab) {
+		font-size: 1.125rem;
+		font-weight: 600;
+	}
+
+	:global(.tabs .tab:checked) {
+		background-color: var(--color-primary);
+	}
+</style>

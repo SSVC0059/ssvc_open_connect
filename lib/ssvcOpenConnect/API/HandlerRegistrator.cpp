@@ -1,8 +1,9 @@
 #include "HandlerRegistrator.h"
+#include <AsyncJson.h>
 
 #define TAG "HandlerRegistrar"
 
-HandlerRegistrator::HandlerRegistrator(PsychicHttpServer& server,
+HandlerRegistrator::HandlerRegistrator(AsyncWebServer& server,
                                  SecurityManager* securityManager,
                                  SettingsHandler& settingsHandler,
                                  CommandHandler& commandHandler,
@@ -43,16 +44,16 @@ void HandlerRegistrator::registerAllHandlers() const
 void HandlerRegistrator::registerSettingsHandlers() const
 {
     _server.on("/rest/settings", HTTP_PUT,
-              _securityManager->wrapRequest(
-                  [](PsychicRequest* request) {
-                      return SettingsHandler::updateSettings(request);
+              _securityManager->wrapCallback(
+                  [](AsyncWebServerRequest* request, JsonVariant& json) {
+                      SettingsHandler::updateSettings(request, json);
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
 
     _server.on("/rest/settings", HTTP_GET,
       _securityManager->wrapRequest(
-          [](PsychicRequest* request) {
-              return SettingsHandler::getSettings(request);
+          [](AsyncWebServerRequest* request) {
+              SettingsHandler::getSettings(request);
           },
           AuthenticationPredicates::IS_AUTHENTICATED));
 }
@@ -60,9 +61,9 @@ void HandlerRegistrator::registerSettingsHandlers() const
 void HandlerRegistrator::registerCommandHandlers() const
 {
     _server.on("/rest/commands", HTTP_POST,
-              _securityManager->wrapRequest(
-                  [](PsychicRequest* request) {
-                      return CommandHandler::handleCommand(request);
+              _securityManager->wrapCallback(
+                  [](AsyncWebServerRequest* request, JsonVariant& json) {
+                      CommandHandler::handleCommand(request, json);
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
 }
@@ -71,8 +72,8 @@ void HandlerRegistrator::registerSensorHandlers() const
 {
     _server.on("/rest/sensors/zone", HTTP_PUT,
               _securityManager->wrapRequest(
-                  [](PsychicRequest* request) {
-                      return SensorHandler::updateSensorZone(request);
+                  [](AsyncWebServerRequest* request) {
+                      SensorHandler::updateSensorZone(request);
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
 }
@@ -82,17 +83,17 @@ void HandlerRegistrator::registerTelegramBot() const
 {
 
     _server.on("/rest/telegram/config", HTTP_PUT,
-      _securityManager->wrapRequest(
-          [](PsychicRequest* request) {
-              return TelegramBotHandler::updateSettings(request);
+      _securityManager->wrapCallback(
+          [](AsyncWebServerRequest* request, JsonVariant& json) {
+              TelegramBotHandler::updateSettings(request, json);
           },
           AuthenticationPredicates::IS_AUTHENTICATED));
 
 
     _server.on("/rest/telegram/config", HTTP_GET,
     _securityManager->wrapRequest(
-      [](PsychicRequest* request) {
-          return TelegramBotHandler::getSettings(request);
+      [](AsyncWebServerRequest* request) {
+          TelegramBotHandler::getSettings(request);
       },
       AuthenticationPredicates::IS_AUTHENTICATED));
 
@@ -102,15 +103,15 @@ void HandlerRegistrator::registerSubsystemHandler() const
 {
     _server.on("/rest/subsystem", HTTP_GET,
           _securityManager->wrapRequest(
-              [](PsychicRequest* request) {
-                  return SubsystemHandler::getStatus(request);
+              [](AsyncWebServerRequest* request) {
+                  SubsystemHandler::getStatus(request);
               },
               AuthenticationPredicates::IS_AUTHENTICATED));
 
     _server.on("/rest/subsystem", HTTP_PUT,
-      _securityManager->wrapRequest(
-          [](PsychicRequest* request) {
-             return SubsystemHandler::state(request);
+      _securityManager->wrapCallback(
+          [](AsyncWebServerRequest* request, JsonVariant& json) {
+             SubsystemHandler::state(request, json);
           },
           AuthenticationPredicates::IS_AUTHENTICATED
       )
@@ -121,8 +122,8 @@ void HandlerRegistrator::registerTelegramBotHandler() const
 {
     _server.on("/rest/oc/info", HTTP_GET,
               _securityManager->wrapRequest(
-                  [](PsychicRequest* request) {
-                      return OpenConnectHandler::getInfo(request);
+                  [](AsyncWebServerRequest* request) {
+                      OpenConnectHandler::getInfo(request);
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
 
@@ -133,62 +134,63 @@ void HandlerRegistrator::registerProfileHandler() const
     // GET /rest/profiles - Get list of all profiles (metadata)
     _server.on("/rest/profiles", HTTP_GET,
                 _securityManager->wrapRequest(
-                        [](PsychicRequest* request) -> esp_err_t {
-                            return ProfileHandler::handleGetProfiles(request);
+                        [](AsyncWebServerRequest* request) {
+                            ProfileHandler::handleGetProfiles(request);
                         }, AuthenticationPredicates::IS_AUTHENTICATED));
 
     // GET /rest/profiles/active - Get the ID of the active profile
     _server.on("/rest/profiles/active", HTTP_GET,
-                _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
-                    return ProfileHandler::handleGetActiveProfile(request);
+                _securityManager->wrapRequest([](AsyncWebServerRequest* request) {
+                    ProfileHandler::handleGetActiveProfile(request);
         }, AuthenticationPredicates::IS_AUTHENTICATED));
 
     // GET /rest/profiles/content - Get full content of a specific profile (ID in query param)
     _server.on("/rest/profiles/content", HTTP_GET,
-                _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
-                    return ProfileHandler::handleGetProfileContent(request);
+                _securityManager->wrapRequest([](AsyncWebServerRequest* request) {
+                    ProfileHandler::handleGetProfileContent(request);
                 }, AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // POST /rest/profiles/content — регистрируем раньше /rest/profiles, чтобы запросы
+    // обновления содержимого не перехватывались обработчиком создания (некоторые стеки/прокси).
+    _server.on("/rest/profiles/content", HTTP_POST,
+            _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
+                ProfileHandler::handleUpdateProfileContent(request, json);
+            }, AuthenticationPredicates::IS_AUTHENTICATED));
 
     // POST /rest/profiles - Create a profile from current settings
     _server.on("/rest/profiles", HTTP_POST,
-                _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
-                    return ProfileHandler::handleCreateProfile(request);
+                _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
+                    ProfileHandler::handleCreateProfile(request, json);
                 }, AuthenticationPredicates::IS_AUTHENTICATED));
 
     // POST /rest/profiles/copy - Copy a profile (source ID and new name in body)
     _server.on("/rest/profiles/copy", HTTP_POST,
-                _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
-                    return ProfileHandler::handleCopyProfile(request);
+                _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
+                    ProfileHandler::handleCopyProfile(request, json);
                 }, AuthenticationPredicates::IS_AUTHENTICATED));
 
     // PUT /rest/profiles/meta - Update profile metadata (e.g., name) (ID and new name in body)
     _server.on("/rest/profiles/meta", HTTP_PUT,
-        _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
-            return ProfileHandler::handleUpdateProfileMeta(request);
+        _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
+            ProfileHandler::handleUpdateProfileMeta(request, json);
         }, AuthenticationPredicates::IS_AUTHENTICATED));
 
     // POST /rest/profiles/set-active - Set a profile as active and apply it (ID in body)
     _server.on("/rest/profiles/set-active", HTTP_POST,
-        _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
-            return ProfileHandler::handleSetActiveAndApplyProfile(request);
+        _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
+            ProfileHandler::handleSetActiveAndApplyProfile(request, json);
         }, AuthenticationPredicates::IS_AUTHENTICATED));
 
     // POST /rest/profiles/save - Save current settings to a profile (ID in body)
     _server.on("/rest/profiles/save", HTTP_POST,
-        _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
-            return ProfileHandler::handleSaveSettingsToProfile(request);
+        _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
+            ProfileHandler::handleSaveSettingsToProfile(request, json);
         }, AuthenticationPredicates::IS_AUTHENTICATED));
 
     // DELETE /rest/profiles/delete - Delete a profile (ID in body)
     _server.on("/rest/profiles/delete", HTTP_DELETE,
-            _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
-                return ProfileHandler::handleDeleteProfile(request);
-            }, AuthenticationPredicates::IS_AUTHENTICATED));
-
-    // POST /rest/profiles/content - Update profile content
-    _server.on("/rest/profiles/content", HTTP_POST,
-            _securityManager->wrapRequest([](PsychicRequest* request) -> esp_err_t {
-                return ProfileHandler::handleUpdateProfileContent(request);
+            _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
+                ProfileHandler::handleDeleteProfile(request, json);
             }, AuthenticationPredicates::IS_AUTHENTICATED));
 }
 

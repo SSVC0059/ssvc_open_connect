@@ -25,41 +25,36 @@
 // Тип для зоны ответственности датчика
 enum class SensorZone
 {
-    UNKNOWN, // Не назначено
-    INLET_WATER, // Входящая вода
+    UNKNOWN,      // Не назначено
+    INLET_WATER,  // Входящая вода
     OUTLET_WATER, // Исходящая вода
-    ACT, // Трубка связи с атмосферой
-    DELETED, // Удаленные датчики из системы
+    ACT,          // ТСА (Трубка связи с атмосферой)
+    TANK,         // Куб
+    OUTDOOR,      // Атмосфера
+    DELETED,      // Удаленные датчики
 };
 
 // Класс-хелпер для работы с ThermalSensorZone
 class SensorZoneHelper
 {
 public:
-    /**
-     * @brief Получает строковое описание зоны.
-     * @param zone Зона датчика.
-     * @return Описание (например, "INLET_WATER").
-     * @throw std::invalid_argument Если зона неизвестна.
-     */
-    static std::string toString(const SensorZone zone)
+    // SensorZone.h
+
+    static std::string toString(SensorZone zone)
     {
         switch (zone)
         {
-        case SensorZone::UNKNOWN: return "unknown";
-        case SensorZone::INLET_WATER: return "inlet_water";
-        case SensorZone::OUTLET_WATER: return "outlet_water";
-        case SensorZone::ACT: return "act";
-        default: throw std::invalid_argument("Unknown ThermalSensorZone value");
+            case SensorZone::UNKNOWN: return "unknown";
+            case SensorZone::INLET_WATER: return "inlet_water";
+            case SensorZone::OUTLET_WATER: return "outlet_water";
+            case SensorZone::ACT: return "act";
+            case SensorZone::TANK: return "tank";          // Добавлено
+            case SensorZone::OUTDOOR: return "outdoor";    // Добавлено
+            case SensorZone::DELETED: return "deleted";    // Добавлено
+            default: return "unknown"; // Безопасный возврат вместо throw
         }
     }
 
-    /**
-     * @brief Получает зону по её строковому имени.
-     * @param name Название зоны (например, "INLET_WATER").
-     * @return Соответствующая зона ThermalSensorZone.
-     * @throw std::invalid_argument Если имя не распознано.
-     */
     static SensorZone fromString(const std::string& name)
     {
         static const std::unordered_map<std::string, SensorZone> nameToZone = {
@@ -67,6 +62,9 @@ public:
             {"inlet_water", SensorZone::INLET_WATER},
             {"outlet_water", SensorZone::OUTLET_WATER},
             {"act", SensorZone::ACT},
+            {"tank", SensorZone::TANK},       // Добавлено
+            {"outdoor", SensorZone::OUTDOOR}, // Добавлено
+            {"deleted", SensorZone::DELETED}  // Добавлено
         };
 
         const auto it = nameToZone.find(name);
@@ -74,22 +72,20 @@ public:
         {
             return it->second;
         }
-        throw std::invalid_argument("Unknown ThermalSensorZone name: " + name);
+        return SensorZone::UNKNOWN; // Безопасный возврат вместо throw
     }
 
-    static std::string translateZone(std::string zone)
+    static std::string translateZone(const std::string& zone)
     {
-        if (zone == "unknown")
-            return "Без зоны";
-        if (zone == "inlet_water")
-            return "Входящая вода";
-        if (zone == "outlet_water")
-            return "Исходящая вода";
-        if (zone == "act")
-            return "ТСА";
-        else {
-            return zone;
-        }
+        if (zone == "unknown")      return "Без зоны";
+        if (zone == "inlet_water")  return "Входящая вода";
+        if (zone == "outlet_water") return "Исходящая вода";
+        if (zone == "act")          return "ТСА";
+        if (zone == "tank")         return "Куб";
+        if (zone == "outdoor")      return "Атмосфера";
+        if (zone == "deleted")      return "Удален";
+
+        return "Неизвестно";
     }
 };
 

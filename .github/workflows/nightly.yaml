@@ -80,8 +80,23 @@ jobs:
           name: calculator-artifact
           path: docs/calculator
 
+      # Версия прошивки и тег = маска v0.2.6-nightly (три сегмента из platformio.ini, последняя цифра отбрасывается).
+      - name: Set nightly version
+        id: ver
+        run: |
+          BASE=$(grep -E 'APP_VERSION' platformio.ini | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          if [[ -z "$BASE" ]]; then
+            echo "WARNING: Could not read version from platformio.ini, using 0.0.0"
+            BASE="0.0.0"
+          fi
+          FULL="${BASE}-nightly"
+          echo "full=$FULL" >> $GITHUB_OUTPUT
+          echo "Using version: $FULL (tag: v${BASE}-nightly)"
+          sed -i '/APP_VERSION/s/[0-9]\+\.[0-9]\+\(\.[0-9]\+\)*/'"${FULL}"'/' platformio.ini
+          grep APP_VERSION platformio.ini
+
       - name: Build firmware for ${{ matrix.env_name }}
-        run: platformio run --environment ${{ matrix.env_name }} -D APP_VERSION=nightly
+        run: platformio run --environment ${{ matrix.env_name }}
 
       - name: Collect artifacts for ${{ matrix.env_name }}
         run: |
@@ -110,50 +125,50 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v6
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: all-artifacts
 
-      - name: Prepare release assets
+      - name: Prepare assets for release
         run: |
           mkdir -p release-assets
           find all-artifacts -type f \( -name "*.bin" -o -name "*.md5" -o -name "*.zip" \) -exec cp {} release-assets/ \;
-          echo "--- release-assets contents ---"
-          ls -la release-assets/
-          BIN_COUNT=$(find release-assets -maxdepth 1 -name "*.bin" | wc -l)
-          if [ "$BIN_COUNT" -eq 0 ]; then
-            echo "ERROR: No .bin files in release-assets. Check artifact upload paths."
-            exit 1
-          fi
+          ls -R release-assets/
 
       - name: Set build date
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-      # Тег nightly должен существовать для создания/обновления релиза (при первом запуске создаём)
-      - name: Ensure nightly tag exists
+      # Тег v{BASE}-nightly (BASE = три сегмента, без последней цифры). Удаляем старый ночной релиз, затем создаём новый.
+      - name: Set nightly tag and delete old release
+        id: tag
         run: |
-          if ! git rev-parse nightly >/dev/null 2>&1; then
-            git tag nightly ${{ github.sha }}
-            git push origin nightly
-          fi
+          BASE=$(grep -E 'APP_VERSION' platformio.ini | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          [[ -z "$BASE" ]] && BASE="0.0.0"
+          TAG="v${BASE}-nightly"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "base=$BASE" >> $GITHUB_OUTPUT
+          echo "Using tag: $TAG (base: $BASE)"
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
 
-      - name: Update nightly release
+      - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: nightly
+          tag_name: ${{ steps.tag.outputs.tag }}
           name: "Nightly (${{ steps.date.outputs.date }})"
-          prerelease: true
           draft: false
-          update_existing_release: true
+          prerelease: true
+          overwrite_files: true
           body: |
             ⚠️ **Экспериментальная сборка** — может быть нестабильной.
             Обновляется ежедневно. Используйте только если понимаете риски.
+
+            **Собран по версии:** ${{ steps.tag.outputs.base }}
+            **Ветка:** ${{ github.ref_name }}
           files: |
             release-assets/*.bin
             release-assets/*.md5

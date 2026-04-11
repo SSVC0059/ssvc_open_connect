@@ -1,72 +1,95 @@
 #include "ProfileHandler.h"
 #include <ArduinoJson.h>
+#include <string>
 #include "esp_log.h" // Добавить для логирования
 
 static auto TAG_PROFILE_HANDLER = "ProfileHandler"; // Добавить для логирования
 
 ProfileHandler::ProfileHandler(ProfileService* profileService) : _profileService(profileService) {}
 
-esp_err_t ProfileHandler::handleGetProfiles(PsychicRequest *request) {
+void ProfileHandler::handleGetProfiles(AsyncWebServerRequest* request) {
     String jsonResponse;
     ProfileService::getInstance()->getProfileListAsJson(jsonResponse);
-    return request->reply(200, "application/json", jsonResponse.c_str());
+    request->send(200, "application/json", jsonResponse.c_str());
 }
 
-esp_err_t ProfileHandler::handleGetActiveProfile(PsychicRequest *request) {
+void ProfileHandler::handleGetActiveProfile(AsyncWebServerRequest* request) {
     const String activeProfileId = ProfileService::getInstance()->getActiveProfileId();
     if (activeProfileId.isEmpty()) {
-        return request->reply(404, "application/json", R"({"error": "No active profile found"})");
+        request->send(404, "application/json", R"({"error": "No active profile found"})");
+        return;
     }
     JsonDocument doc;
     doc["id"] = activeProfileId;
     String jsonResponse;
     serializeJson(doc, jsonResponse);
-    return request->reply(200, "application/json", jsonResponse.c_str());
+    request->send(200, "application/json", jsonResponse.c_str());
 }
 
-esp_err_t ProfileHandler::handleGetProfileContent(PsychicRequest *request) {
+void ProfileHandler::handleGetProfileContent(AsyncWebServerRequest* request) {
     if (!request->hasParam("id")) {
-        return request->reply(400, "application/json", R"({"error": "Missing 'id' parameter in request"})");
+        request->send(400, "application/json", R"({"error": "Missing 'id' parameter in request"})");
+        return;
     }
 
     const String profileId = request->getParam("id")->value();
 
     if (profileId.isEmpty()) {
-        return request->reply(400, "application/json", R"({"error": "Field 'id' cannot be empty"})");
+        request->send(400, "application/json", R"({"error": "Field 'id' cannot be empty"})");
+        return;
     }
 
     String jsonResponse;
-    if (ProfileService::getInstance()->getProfileContent(profileId, jsonResponse)) { // Вызов getProfileContent
-        return request->reply(200, "application/json", jsonResponse.c_str());
+    if (ProfileService::getInstance()->getProfileContent(profileId, jsonResponse)) {
+        request->send(200, "application/json", jsonResponse.c_str());
     } else {
-        return request->reply(404, "application/json", R"({"error": "Profile content not found or failed to retrieve"})");
+        request->send(404, "application/json", R"({"error": "Profile content not found or failed to retrieve"})");
     }
 }
 
-esp_err_t ProfileHandler::handleCreateProfile(PsychicRequest *request) {
-    JsonDocument doc;
-    const DeserializationError error = deserializeJson(doc, request->body());
-
-    if (error) {
-        return request->reply(400, "application/json", R"({"error": "Invalid JSON in request body"})");
+void ProfileHandler::handleCreateProfile(AsyncWebServerRequest* request, JsonVariant& json) {
+    if (!json.is<JsonObject>()) {
+        request->send(400, "application/json", R"({"error": "Invalid JSON in request body"})");
+        return;
     }
 
-    if (!doc["name"].is<const char*>()) {
-        return request->reply(400, "application/json", R"({"error": "Missing or invalid 'name' field"})");
+    // Тело обновления содержимого { "id", "content" } иногда попадает сюда из‑за порядка
+    // регистрации маршрутов или прокси. Перенаправляем на корректный обработчик.
+    if (json["content"].is<JsonObject>()) {
+        JsonVariant idVar = json["id"];
+        const bool idOk =
+            !idVar.isNull() && !idVar.is<JsonObject>() && !idVar.is<JsonArray>();
+        if (idOk) {
+            JsonVariant nameVar = json["name"];
+            const bool nameOk =
+                nameVar.is<const char*>() || nameVar.is<std::string>();
+            const String nameProbe = nameOk ? nameVar.as<String>() : String();
+            if (!nameOk || nameProbe.isEmpty()) {
+                handleUpdateProfileContent(request, json);
+                return;
+            }
+        }
     }
 
-    const String name = doc["name"].as<String>();
+    if (!json["name"].is<const char*>() && !json["name"].is<std::string>()) {
+        request->send(400, "application/json", R"({"error": "Missing or invalid 'name' field"})");
+        return;
+    }
+
+    const String name = json["name"].as<String>();
 
     if (name.isEmpty()) {
-        return request->reply(400, "application/json", R"({"error": "Field 'name' cannot be empty"})");
+        request->send(400, "application/json", R"({"error": "Field 'name' cannot be empty"})");
+        return;
     }
 
     JsonObject content;
-    if (!doc["content"].isNull()) { // Check if "content" key exists and is not null
-        if (doc["content"].is<JsonObject>()) {
-            content = doc["content"].as<JsonObject>();
+    if (!json["content"].isNull()) {
+        if (json["content"].is<JsonObject>()) {
+            content = json["content"].as<JsonObject>();
         } else {
-            return request->reply(400, "application/json", R"({"error": "Invalid 'content' field, must be a JSON object"})");
+            request->send(400, "application/json", R"({"error": "Invalid 'content' field, must be a JSON object"})");
+            return;
         }
     }
 
@@ -74,197 +97,200 @@ esp_err_t ProfileHandler::handleCreateProfile(PsychicRequest *request) {
     if (!newProfileId.isEmpty()) {
         JsonDocument responseDoc;
         responseDoc["success"] = true;
-        responseDoc["id"] = newProfileId;
+        responseDoc["id"] = newProfileId.c_str();
         String jsonResponse;
         serializeJson(responseDoc, jsonResponse);
-        return request->reply(201, "application/json", jsonResponse.c_str());
+        request->send(201, "application/json", jsonResponse.c_str());
     } else {
-        return request->reply(500, "application/json", R"({"error": "Failed to save profile"})");
+        request->send(500, "application/json", R"({"error": "Failed to save profile"})");
     }
 }
 
-esp_err_t ProfileHandler::handleDeleteProfile(PsychicRequest *request) {
-    JsonDocument doc;
-    const DeserializationError error = deserializeJson(doc, request->body());
-
-    if (error) {
-        return request->reply(400, "application/json", R"({"error": "Invalid JSON in request body"})");
+void ProfileHandler::handleDeleteProfile(AsyncWebServerRequest* request, JsonVariant& json) {
+    if (!json.is<JsonObject>()) {
+        request->send(400, "application/json", R"({"error": "Invalid JSON in request body"})");
+        return;
     }
 
-    if (!doc["id"].is<const char*>()) {
-        return request->reply(400, "application/json", R"({"error": "Missing or invalid 'id' field in request body"})");
+    if (!json["id"].is<const char*>()) {
+        request->send(400, "application/json", R"({"error": "Missing or invalid 'id' field in request body"})");
+        return;
     }
 
-    const String profileId = doc["id"].as<String>();
+    const String profileId = json["id"].as<String>();
 
     if (profileId.isEmpty()) {
-        return request->reply(400, "application/json", R"({"error": "Field 'id' cannot be empty"})");
+        request->send(400, "application/json", R"({"error": "Field 'id' cannot be empty"})");
+        return;
     }
 
     if (ProfileService::getInstance()->deleteProfile(profileId)) {
-        return request->reply(200, "application/json", R"({"success": "Profile deleted"})");
+        request->send(200, "application/json", R"({"success": "Profile deleted"})");
     } else {
-        return request->reply(404, "application/json", R"({"error": "Profile not found or failed to delete"})");
+        request->send(404, "application/json", R"({"error": "Profile not found or failed to delete"})");
     }
 }
 
-esp_err_t ProfileHandler::handleCopyProfile(PsychicRequest *request) {
-    ESP_LOGI(TAG_PROFILE_HANDLER, "handleCopyProfile: Entry"); // Логирование входа
-    JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, request->body());
-
-    if (error) {
-        ESP_LOGE(TAG_PROFILE_HANDLER, "handleCopyProfile: Invalid JSON in request body: %s", error.c_str()); // Логирование ошибки
-        return request->reply(400, "application/json", R"({"error": "Invalid JSON in request body"})");
+void ProfileHandler::handleCopyProfile(AsyncWebServerRequest* request, JsonVariant& json) {
+    ESP_LOGI(TAG_PROFILE_HANDLER, "handleCopyProfile: Entry");
+    if (!json.is<JsonObject>()) {
+        request->send(400, "application/json", R"({"error": "Invalid JSON in request body"})");
+        return;
     }
 
-    if (!doc["sourceId"].is<const char*>()) {
-        ESP_LOGE(TAG_PROFILE_HANDLER, "handleCopyProfile: Missing or invalid 'sourceId' field"); // Логирование ошибки
-        return request->reply(400, "application/json", R"({"error": "Missing or invalid 'sourceId' field in request body"})");
+    if (!json["sourceId"].is<const char*>()) {
+        ESP_LOGE(TAG_PROFILE_HANDLER, "handleCopyProfile: Missing or invalid 'sourceId' field");
+        request->send(400, "application/json", R"({"error": "Missing or invalid 'sourceId' field in request body"})");
+        return;
     }
-    if (!doc["newName"].is<const char*>()) {
-        ESP_LOGE(TAG_PROFILE_HANDLER, "handleCopyProfile: Missing or invalid 'newName' field"); // Логирование ошибки
-        return request->reply(400, "application/json", R"({"error": "Missing or invalid 'newName' field in request body"})");
+    if (!json["newName"].is<const char*>()) {
+        ESP_LOGE(TAG_PROFILE_HANDLER, "handleCopyProfile: Missing or invalid 'newName' field");
+        request->send(400, "application/json", R"({"error": "Missing or invalid 'newName' field in request body"})");
+        return;
     }
 
-    const String sourceProfileId = doc["sourceId"].as<String>();
-    const String newDisplayName = doc["newName"].as<String>();
+    const String sourceProfileId = json["sourceId"].as<String>();
+    const String newDisplayName = json["newName"].as<String>();
 
-    ESP_LOGI(TAG_PROFILE_HANDLER, "handleCopyProfile: sourceId=%s, newName=%s", sourceProfileId.c_str(), newDisplayName.c_str()); // Логирование параметров
+    ESP_LOGI(TAG_PROFILE_HANDLER, "handleCopyProfile: sourceId=%s, newName=%s", sourceProfileId.c_str(), newDisplayName.c_str());
 
     if (sourceProfileId.isEmpty() || newDisplayName.isEmpty()) {
-        ESP_LOGE(TAG_PROFILE_HANDLER, "handleCopyProfile: 'sourceId' or 'newName' cannot be empty"); // Логирование ошибки
-        return request->reply(400, "application/json", R"({"error": "Fields 'sourceId' and 'newName' cannot be empty"})");
+        ESP_LOGE(TAG_PROFILE_HANDLER, "handleCopyProfile: 'sourceId' or 'newName' cannot be empty");
+        request->send(400, "application/json", R"({"error": "Fields 'sourceId' and 'newName' cannot be empty"})");
+        return;
     }
 
     String newProfileId = ProfileService::getInstance()->copyProfile(sourceProfileId, newDisplayName);
-    ESP_LOGI(TAG_PROFILE_HANDLER, "handleCopyProfile: copyProfile returned newProfileId=%s", newProfileId.c_str()); // Логирование результата
+    ESP_LOGI(TAG_PROFILE_HANDLER, "handleCopyProfile: copyProfile returned newProfileId=%s", newProfileId.c_str());
 
     if (!newProfileId.isEmpty()) {
         JsonDocument responseDoc;
         responseDoc["success"] = true;
-        responseDoc["id"] = newProfileId;
+        responseDoc["id"] = newProfileId.c_str();
         String jsonResponse;
         serializeJson(responseDoc, jsonResponse);
-        ESP_LOGI(TAG_PROFILE_HANDLER, "handleCopyProfile: Success, newProfileId=%s", newProfileId.c_str()); // Логирование успеха
-        return request->reply(201, "application/json", jsonResponse.c_str());
+        ESP_LOGI(TAG_PROFILE_HANDLER, "handleCopyProfile: Success, newProfileId=%s", newProfileId.c_str());
+        request->send(201, "application/json", jsonResponse.c_str());
+    } else {
+        ESP_LOGE(TAG_PROFILE_HANDLER, "handleCopyProfile: Failed to copy profile. Source not found or internal error.");
+        request->send(409, "application/json", R"({"error": "Failed to copy profile. source not found "})");
     }
-    ESP_LOGE(TAG_PROFILE_HANDLER, "handleCopyProfile: Failed to copy profile. Source not found or internal error."); // Логирование ошибки
-    return request->reply(409, "application/json", R"({"error": "Failed to copy profile. source not found "})");
 }
 
-esp_err_t ProfileHandler::handleUpdateProfileMeta(PsychicRequest *request) {
-    JsonDocument doc;
-    const DeserializationError error = deserializeJson(doc, request->body());
-
-    if (error) {
-        return request->reply(400, "application/json", R"({"error": "Invalid JSON in request body"})");
+void ProfileHandler::handleUpdateProfileMeta(AsyncWebServerRequest* request, JsonVariant& json) {
+    if (!json.is<JsonObject>()) {
+        request->send(400, "application/json", R"({"error": "Invalid JSON in request body"})");
+        return;
     }
 
-    if (!doc["id"].is<const char*>()) {
-        return request->reply(400, "application/json", R"({"error": "Missing or invalid 'id' field in request body"})");
+    if (!json["id"].is<const char*>()) {
+        request->send(400, "application/json", R"({"error": "Missing or invalid 'id' field in request body"})");
+        return;
     }
-    if (!doc["name"].is<const char*>()) {
-        return request->reply(400, "application/json", R"({"error": "Missing or invalid 'name' field in request body"})");
+    if (!json["name"].is<const char*>() && !json["name"].is<std::string>()) {
+        request->send(400, "application/json", R"({"error": "Missing or invalid 'name' field in request body"})");
+        return;
     }
 
-    const String profileId = doc["id"].as<String>();
-    const String newDisplayName = doc["name"].as<String>();
+    const String profileId = json["id"].as<String>();
+    const String newDisplayName = json["name"].as<String>();
 
     if (profileId.isEmpty() || newDisplayName.isEmpty()) {
-        return request->reply(400, "application/json", R"({"error": "Fields 'id' and 'name' cannot be empty"})");
+        request->send(400, "application/json", R"({"error": "Fields 'id' and 'name' cannot be empty"})");
+        return;
     }
 
     if (ProfileService::getInstance()->updateProfile(profileId, newDisplayName)) {
-        return request->reply(200, "application/json", R"({"success": "Profile updated"})");
+        request->send(200, "application/json", R"({"success": "Profile updated"})");
     } else {
-        return request->reply(404, "application/json", R"({"error": "Profile not found or failed to update"})");
+        request->send(404, "application/json", R"({"error": "Profile not found or failed to update"})");
     }
 }
 
-esp_err_t ProfileHandler::handleSetActiveAndApplyProfile(PsychicRequest *request) {
-    JsonDocument doc;
-    const DeserializationError error = deserializeJson(doc, request->body());
-
-    if (error) {
-        ESP_LOGE(TAG_PROFILE_HANDLER, "handleSetActiveAndApplyProfile: Invalid JSON in request body: %s", error.c_str());
-        return request->reply(400, "application/json", R"({"error": "Invalid JSON in request body"})");
+void ProfileHandler::handleSetActiveAndApplyProfile(AsyncWebServerRequest* request, JsonVariant& json) {
+    if (!json.is<JsonObject>()) {
+        request->send(400, "application/json", R"({"error": "Invalid JSON in request body"})");
+        return;
     }
 
-    if (!doc["id"].is<const char*>()) {
+    if (!json["id"].is<const char*>()) {
         ESP_LOGE(TAG_PROFILE_HANDLER, "handleSetActiveAndApplyProfile: Missing or invalid 'id' field");
-        return request->reply(400, "application/json", R"({"error": "Missing or invalid 'id' field in request body"})");
+        request->send(400, "application/json", R"({"error": "Missing or invalid 'id' field in request body"})");
+        return;
     }
 
-    const String profileId = doc["id"].as<String>();
+    const String profileId = json["id"].as<String>();
 
     if (profileId.isEmpty()) {
         ESP_LOGE(TAG_PROFILE_HANDLER, "handleSetActiveAndApplyProfile: 'id' field cannot be empty");
-        return request->reply(400, "application/json", R"({"error": "Field 'id' cannot be empty"})");
+        request->send(400, "application/json", R"({"error": "Field 'id' cannot be empty"})");
+        return;
     }
 
     if (ProfileService::getInstance()->setActiveAndApplyProfile(profileId)) {
         ESP_LOGI(TAG_PROFILE_HANDLER, "handleSetActiveAndApplyProfile: Profile %s set as active and applied successfully", profileId.c_str());
-        return request->reply(200, "application/json", R"({"success": "Profile set as active and applied"})");
+        request->send(200, "application/json", R"({"success": "Profile set as active and applied"})");
     } else {
         ESP_LOGE(TAG_PROFILE_HANDLER, "handleSetActiveAndApplyProfile: Failed to set profile %s as active and apply it.", profileId.c_str());
-        return request->reply(500, "application/json", R"({"error": "Failed to set active and apply profile"})");
+        request->send(500, "application/json", R"({"error": "Failed to set active and apply profile"})");
     }
 }
 
-esp_err_t ProfileHandler::handleSaveSettingsToProfile(PsychicRequest *request) {
-    JsonDocument doc;
-    const DeserializationError error = deserializeJson(doc, request->body());
-
-    if (error) {
-        return request->reply(400, "application/json", R"({"error": "Invalid JSON in request body"})");
+void ProfileHandler::handleSaveSettingsToProfile(AsyncWebServerRequest* request, JsonVariant& json) {
+    if (!json.is<JsonObject>()) {
+        request->send(400, "application/json", R"({"error": "Invalid JSON in request body"})");
+        return;
     }
 
-    if (!doc["id"].is<const char*>()) {
-        return request->reply(400, "application/json", R"({"error": "Missing or invalid 'id' field in request body"})");
+    if (!json["id"].is<const char*>()) {
+        request->send(400, "application/json", R"({"error": "Missing or invalid 'id' field in request body"})");
+        return;
     }
 
-    const String profileId = doc["id"].as<String>();
+    const String profileId = json["id"].as<String>();
 
     if (profileId.isEmpty()) {
-        return request->reply(400, "application/json", R"({"error": "Field 'id' cannot be empty"})");
+        request->send(400, "application/json", R"({"error": "Field 'id' cannot be empty"})");
+        return;
     }
 
     ESP_LOGI(TAG_PROFILE_HANDLER, "handleSaveSettingsToProfile called for profileId: %s", profileId.c_str());
 
     if (ProfileService::getInstance()->saveCurrentSettingsToProfile(profileId)) {
-        return request->reply(200, "application/json", R"({"success": true, "message": "Current settings saved to profile."})");
+        request->send(200, "application/json", R"({"success": true, "message": "Current settings saved to profile."})");
     } else {
-        return request->reply(404, "application/json", R"({"success": false, "message": "Profile not found or failed to save current settings."})");
+        request->send(404, "application/json", R"({"success": false, "message": "Profile not found or failed to save current settings."})");
     }
 }
 
-esp_err_t ProfileHandler::handleUpdateProfileContent(PsychicRequest *request) {
-    JsonDocument doc;
-    const DeserializationError error = deserializeJson(doc, request->body());
-
-    if (error) {
-        return request->reply(400, "application/json", R"({"error": "Invalid JSON in request body"})");
+void ProfileHandler::handleUpdateProfileContent(AsyncWebServerRequest* request, JsonVariant& json) {
+    if (!json.is<JsonObject>()) {
+        request->send(400, "application/json", R"({"error": "Invalid JSON in request body"})");
+        return;
     }
 
-    if (!doc["id"].is<const char*>()) {
-        return request->reply(400, "application/json", R"({"error": "Missing or invalid 'id' field"})");
+    JsonVariant idVar = json["id"];
+    if (idVar.isNull() || idVar.is<JsonObject>() || idVar.is<JsonArray>()) {
+        request->send(400, "application/json", R"({"error": "Missing or invalid 'id' field"})");
+        return;
     }
 
-    if (!doc["content"].is<JsonObject>()) {
-        return request->reply(400, "application/json", R"({"error": "Missing or invalid 'content' field"})");
+    if (!json["content"].is<JsonObject>()) {
+        request->send(400, "application/json", R"({"error": "Missing or invalid 'content' field"})");
+        return;
     }
 
-    const String profileId = doc["id"].as<String>();
-    const JsonObject content = doc["content"].as<JsonObject>();
+    const String profileId = idVar.as<String>();
+    const JsonObject content = json["content"].as<JsonObject>();
 
     if (profileId.isEmpty()) {
-        return request->reply(400, "application/json", R"({"error": "Field 'id' cannot be empty"})");
+        request->send(400, "application/json", R"({"error": "Field 'id' cannot be empty"})");
+        return;
     }
 
     if (ProfileService::getInstance()->updateProfileContent(profileId, content)) {
-        return request->reply(200, "application/json", R"({"success": "Profile content updated"})");
+        request->send(200, "application/json", R"({"success": "Profile content updated"})");
     } else {
-        return request->reply(404, "application/json", R"({"error": "Profile not found or failed to update content"})");
+        request->send(404, "application/json", R"({"error": "Profile not found or failed to update content"})");
     }
 }

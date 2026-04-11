@@ -20,6 +20,7 @@
 
 #include "Adafruit_NeoPixel.h"
 #include "ESP32SvelteKit.h"
+#include "core/SsvcConnector.h"
 
 #define DEFAULT_STATUS_LED_PIN 48
 
@@ -32,6 +33,9 @@ public:
 private:
   ESP32SvelteKit *_esp32sveltekit;
   Adafruit_NeoPixel *_led = nullptr;
+
+  /** Синхронное обновление ленты + лог (вызывать из begin и из задачи). */
+  void refreshLed(const char *phase);
 
   [[noreturn]] static void checkStatus(void *pvParameters);
 };

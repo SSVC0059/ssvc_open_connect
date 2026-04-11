@@ -1,6 +1,6 @@
 #include "core/SsvcOpenConnect.h"
 #include <ESP32SvelteKit.h>
-#include <PsychicHttpServer.h>
+#include <ESPAsyncWebServer.h>
 #include <esp_task_wdt.h>
 #include <components/Led/StatusLed.h>
 
@@ -12,9 +12,9 @@ portMUX_TYPE ssvcMux = portMUX_INITIALIZER_UNLOCKED;
 SemaphoreHandle_t mutex = xSemaphoreCreateMutex();
 EventGroupHandle_t eventGroup = xEventGroupCreate();
 
-PsychicHttpServer server;
+AsyncWebServer server(80);
 
-ESP32SvelteKit esp32sveltekit(&server, 160);
+ESP32SvelteKit esp32sveltekit(&server);
 
 void setup() {
   // Инициализация последовательного порта
