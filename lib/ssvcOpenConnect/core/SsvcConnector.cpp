@@ -106,6 +106,7 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
     memset(data, 0, sizeof(data));
     int idx = 0;
     TickType_t lastByteTime = xTaskGetTickCount();
+    bool lineReadTimedOut = false;
 
     while (true) {
       // Чтение одного байта за раз
@@ -127,6 +128,7 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
       } else {
         // Таймаут: если долго нет данных — выходим (SSVC выключен)
         if ((xTaskGetTickCount() - lastByteTime) > pdMS_TO_TICKS(UART_READ_TIMEOUT_MS)) {
+          lineReadTimedOut = true;
           break;
         }
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -136,17 +138,27 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, data);
     if (error) {
-      constexpr int errorThreshold = 10;
-      errorCounter++;
+      // Порог — по *подряд* идущим ошибкам; успешный кадр сбрасывает счётчик ниже.
+      // Таймаут чтения строки без единого байта (тишина на RX) учитывается сильнее.
+      constexpr int errorThreshold = 5;
+      if (lineReadTimedOut && idx == 0) {
+        errorCounter += 2;
+      } else {
+        errorCounter++;
+      }
       ESP_LOGE("SsvcConnector", "Ошибка десериализации: %s", error.c_str());
 
       if (errorCounter >= errorThreshold) {
         if (!self->uartCommunicationError) {
+          ESP_LOGW("SsvcConnector",
+                   "uartCommunicationError=true (errors=%d, threshold=%d)",
+                   errorCounter, errorThreshold);
           SsvcCommandsQueue::getQueue().scheduleUartRetryTimer();
         }
         self->uartCommunicationError = true;
       }
     } else {
+      errorCounter = 0;
 
       ESP_LOGV("SsvcConnector", "Начало вывода данных");
       ESP_LOGV("SsvcConnector", "%s", data);

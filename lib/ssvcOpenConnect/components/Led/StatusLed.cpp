@@ -109,7 +109,7 @@ void StatusLed::begin(uint16_t neoPixelType) {
   _led->show();
 
   ESP_LOGI("StatusLed",
-           "begin: pin=%u type=0x%x stack=2048 core=1",
+           "begin: pin=%u type=0x%x stack=4096 core=1",
            static_cast<unsigned>(DEFAULT_STATUS_LED_PIN),
            static_cast<unsigned>(neoPixelType));
 
@@ -118,7 +118,7 @@ void StatusLed::begin(uint16_t neoPixelType) {
   const BaseType_t taskOk = xTaskCreatePinnedToCore(
       StatusLed::checkStatus,
       "StatusLed",
-      2048,
+      4096,
       this,
       (tskIDLE_PRIORITY + 1),
       nullptr,
