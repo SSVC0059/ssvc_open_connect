@@ -36,6 +36,9 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     _securityManager = securityManager;
     _mqttClient = _esp32sveltekit->getMqttClient();
 
+    _statusLed = std::make_unique<StatusLed>(&esp32sveltekit);
+    _statusLed->begin(NEO_GRB);
+
     _profileService = ProfileService::getInstance();
 
     // Инициализируем сервисы, которые являются наблюдателями, и подписываем их на ProfileService
@@ -105,11 +108,6 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     commandHandler->begin();
 
     this->subsystemManager();
-
-    // Инициализация StatusLed
-    _statusLed = std::make_unique<StatusLed>(&esp32sveltekit);
-    //  uint16_t neoPixelType = _globalSettings.getNeoPixelType();
-    _statusLed->begin(NEO_GRB);
 
 }
 

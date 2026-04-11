@@ -35,12 +35,12 @@
 	<div
 		role="dialog"
 		aria-labelledby="nightly-dialog-title"
-		class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4"
+		class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4 max-sm:px-3"
 		transition:fly={{ y: 50 }}
 		use:focusTrap
 	>
 		<div
-			class="rounded-box pointer-events-auto flex max-w-lg flex-col border-2 border-warning bg-base-100 p-5 shadow-2xl"
+			class="rounded-box pointer-events-auto flex max-w-lg flex-col border-2 border-warning bg-base-100 p-5 shadow-2xl max-sm:mx-auto max-sm:min-w-0 max-sm:w-full max-sm:p-4"
 		>
 			<div class="mb-4 flex items-start gap-3">
 				<AlertTriangle class="text-warning h-12 w-12 shrink-0" />
@@ -73,21 +73,22 @@
 				>
 			</label>
 
-			<div class="flex justify-end gap-2">
+			<div class="flex justify-end gap-2 max-sm:flex-col-reverse">
 				<button
-					class="btn btn-ghost"
+					class="btn btn-ghost inline-flex min-h-11 items-center justify-center gap-2 max-sm:w-full sm:min-h-0"
 					onclick={onCancel}
 				>
-					<Cancel class="h-5 w-5" />
+					<Cancel class="h-5 w-5 shrink-0" />
 					<span>Отмена</span>
 				</button>
 				<button
-					class="btn btn-error"
+					class="btn btn-error inline-flex min-h-11 items-center justify-center gap-2 max-sm:w-full sm:min-h-0"
 					disabled={!confirmed}
 					onclick={handleConfirm}
+					title="Подтвердить установку nightly"
 				>
-					<CloudDown class="h-5 w-5" />
-					<span>Установить nightly</span>
+					<CloudDown class="h-5 w-5 shrink-0" />
+					<span class="truncate">Установить nightly</span>
 				</button>
 			</div>
 		</div>

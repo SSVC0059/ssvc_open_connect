@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
+	import { tick } from 'svelte';
 	import type { SsvcSettings } from '$lib/types/ssvc';
 	import { fetchSettings, updateSetting } from '$lib/api/ssvcApi';
 	import { notifications } from '$lib/components/toasts/notifications';
@@ -9,8 +11,12 @@
 	import ParallelValve from '$lib/components/SsvcSettings/ParallelValve.svelte';
 	import Reload from '~icons/tabler/reload';
 	import { goto } from '$app/navigation';
+	import SettingsMobileScroll from '$lib/components/settings-layout/SettingsMobileScroll.svelte';
+
+	const MOBILE_MQ = '(max-width: 767px)';
 
 	let ssvcSettings = $state<SsvcSettings | null>();
+
 	let activeTab = $state(0);
 
 	const loadSsvcSettings = async () => {
@@ -73,23 +79,52 @@
 		];
 	}
 
+	const mobileItems = $derived(
+		availableTabs.map((t) => ({
+			id: t.id,
+			title: t.title,
+			component: t.component,
+			props: t.props
+		}))
+	);
+
+	const tabFromUrl = $derived($page.url.searchParams.get('tab'));
+
 	$effect(() => {
 		loadSsvcSettings();
 	});
 
 	$effect(() => {
-		const tabId = $page.url.searchParams.get('tab');
+		const tabId = tabFromUrl;
+		if (!ssvcSettings || availableTabs.length === 0) return;
 		if (tabId) {
-			const index = availableTabs.findIndex((tab) => tab.id === tabId);
+			const index = availableTabs.findIndex((t) => t.id === tabId);
 			if (index !== -1) {
 				activeTab = index;
 				return;
 			}
+			goto('/oc/ssvc', { replaceState: true });
+			return;
 		}
-
-		if (activeTab >= availableTabs.length && availableTabs.length > 0) {
+		if (activeTab >= availableTabs.length) {
 			activeTab = 0;
 		}
+	});
+
+	$effect(() => {
+		const tabId = tabFromUrl;
+		if (!browser || !tabId || !ssvcSettings) return;
+		tick().then(() => {
+			try {
+				if (!window.matchMedia(MOBILE_MQ).matches) return;
+			} catch {
+				return;
+			}
+			const el = document.getElementById(`oc-ssvc-section-${tabId}`);
+			if (el && typeof el.scrollIntoView === 'function') {
+				el.scrollIntoView({ block: 'start', behavior: 'instant' });
+			}
+		});
 	});
 
 	function setActiveTab(index: number) {
@@ -101,52 +136,64 @@
 	}
 </script>
 
-<div class="container oc-ssvc-settings-root">
-	<div class="tabs-container">
-		{#if !ssvcSettings}
-			<div class="flex flex-col items-center justify-center gap-2 py-6">
-				<p class="loading-text">Загрузка настроек SSVC...</p>
-				<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
-			</div>
-		{:else}
-			<div class="tabs tabs-lift tabs-md w-full" role="tablist" aria-label="SSVC settings tabs">
-				{#each availableTabs as tab, index}
-					<input
-						type="radio"
-						name="oc_ssvc_tabs"
-						role="tab"
-						class="tab flex-1 whitespace-nowrap"
-						aria-label={tab.title}
-						checked={activeTab === index}
-						onchange={() => setActiveTab(index)}
-					/>
-					<div role="tabpanel" class="tab-content w-full mt-4">
-						{#if activeTab === index}
-							{@const Component = tab.component}
-							<div class="settings-container">
-								<Component {...tab.props} />
+{#if !ssvcSettings}
+		<div class="flex flex-col items-center justify-center gap-2 py-6">
+			<p class="loading-text">Загрузка настроек SSVC...</p>
+			<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+		</div>
+	{:else}
+		<div class="hidden md:block">
+			<div class="container oc-ssvc-settings-root">
+				<div class="tabs-container">
+					<div class="tabs tabs-lift tabs-md w-full" role="tablist" aria-label="SSVC settings tabs">
+						{#each availableTabs as tab, index}
+							<input
+								type="radio"
+								name="oc_ssvc_tabs"
+								role="tab"
+								class="tab flex-1 whitespace-nowrap"
+								aria-label={tab.title}
+								checked={activeTab === index}
+								onchange={() => setActiveTab(index)}
+							/>
+							<div role="tabpanel" class="tab-content mt-4 w-full">
+								{#if activeTab === index}
+									{@const Component = tab.component}
+									<div class="settings-container">
+										<Component {...tab.props} />
+									</div>
+								{/if}
 							</div>
-						{/if}
+						{/each}
 					</div>
-				{/each}
-			</div>
-		{/if}
 
-		{#if ssvcSettings}
-			<div class="ssvc-refresh-actions mt-6 flex justify-center">
-				<button
-					type="button"
-					class="btn btn-ssvc-refresh"
-					title="Перезагрузить настройки"
-					onclick={loadSsvcSettings}
-				>
-					<Reload class="h-5 w-5" />
-					<span>Обновить</span>
-				</button>
+					<div class="ssvc-refresh-actions mt-6 flex justify-center">
+						<button
+							type="button"
+							class="btn btn-ssvc-refresh"
+							title="Перезагрузить настройки"
+							onclick={loadSsvcSettings}
+						>
+							<Reload class="h-5 w-5" />
+							<span>Обновить</span>
+						</button>
+					</div>
+				</div>
 			</div>
-		{/if}
-	</div>
-</div>
+		</div>
+
+		<div class="flex min-h-0 flex-1 flex-col md:hidden">
+			<SettingsMobileScroll
+				items={mobileItems}
+				sectionIdPrefix="oc-ssvc"
+				tabFromUrl={tabFromUrl}
+				pageTitle="Настройки SSVC"
+				onRefresh={loadSsvcSettings}
+				denseGrid={true}
+				sectionBodyCard={true}
+			/>
+		</div>
+	{/if}
 
 <style lang="scss">
 	.tabs-container {

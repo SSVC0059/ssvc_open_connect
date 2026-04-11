@@ -1,5 +1,6 @@
 #include "ProfileHandler.h"
 #include <ArduinoJson.h>
+#include <string>
 #include "esp_log.h" // Добавить для логирования
 
 static auto TAG_PROFILE_HANDLER = "ProfileHandler"; // Добавить для логирования
@@ -52,7 +53,25 @@ void ProfileHandler::handleCreateProfile(AsyncWebServerRequest* request, JsonVar
         return;
     }
 
-    if (!json["name"].is<const char*>()) {
+    // Тело обновления содержимого { "id", "content" } иногда попадает сюда из‑за порядка
+    // регистрации маршрутов или прокси. Перенаправляем на корректный обработчик.
+    if (json["content"].is<JsonObject>()) {
+        JsonVariant idVar = json["id"];
+        const bool idOk =
+            !idVar.isNull() && !idVar.is<JsonObject>() && !idVar.is<JsonArray>();
+        if (idOk) {
+            JsonVariant nameVar = json["name"];
+            const bool nameOk =
+                nameVar.is<const char*>() || nameVar.is<std::string>();
+            const String nameProbe = nameOk ? nameVar.as<String>() : String();
+            if (!nameOk || nameProbe.isEmpty()) {
+                handleUpdateProfileContent(request, json);
+                return;
+            }
+        }
+    }
+
+    if (!json["name"].is<const char*>() && !json["name"].is<std::string>()) {
         request->send(400, "application/json", R"({"error": "Missing or invalid 'name' field"})");
         return;
     }
@@ -168,7 +187,7 @@ void ProfileHandler::handleUpdateProfileMeta(AsyncWebServerRequest* request, Jso
         request->send(400, "application/json", R"({"error": "Missing or invalid 'id' field in request body"})");
         return;
     }
-    if (!json["name"].is<const char*>()) {
+    if (!json["name"].is<const char*>() && !json["name"].is<std::string>()) {
         request->send(400, "application/json", R"({"error": "Missing or invalid 'name' field in request body"})");
         return;
     }
@@ -250,7 +269,8 @@ void ProfileHandler::handleUpdateProfileContent(AsyncWebServerRequest* request, 
         return;
     }
 
-    if (!json["id"].is<const char*>()) {
+    JsonVariant idVar = json["id"];
+    if (idVar.isNull() || idVar.is<JsonObject>() || idVar.is<JsonArray>()) {
         request->send(400, "application/json", R"({"error": "Missing or invalid 'id' field"})");
         return;
     }
@@ -260,7 +280,7 @@ void ProfileHandler::handleUpdateProfileContent(AsyncWebServerRequest* request, 
         return;
     }
 
-    const String profileId = json["id"].as<String>();
+    const String profileId = idVar.as<String>();
     const JsonObject content = json["content"].as<JsonObject>();
 
     if (profileId.isEmpty()) {

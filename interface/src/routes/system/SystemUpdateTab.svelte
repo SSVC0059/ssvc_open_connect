@@ -5,7 +5,7 @@
 	import UploadFirmware from './update/UploadFirmware.svelte';
 </script>
 
-<div class="system-update-root">
+<div class="system-update-root system-tab-mobile-flatten">
 	<div class="settings-container">
 		<div class="settings-grid">
 			<div class="settings-panel">

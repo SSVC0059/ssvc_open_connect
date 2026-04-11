@@ -150,6 +150,13 @@ void HandlerRegistrator::registerProfileHandler() const
                     ProfileHandler::handleGetProfileContent(request);
                 }, AuthenticationPredicates::IS_AUTHENTICATED));
 
+    // POST /rest/profiles/content — регистрируем раньше /rest/profiles, чтобы запросы
+    // обновления содержимого не перехватывались обработчиком создания (некоторые стеки/прокси).
+    _server.on("/rest/profiles/content", HTTP_POST,
+            _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
+                ProfileHandler::handleUpdateProfileContent(request, json);
+            }, AuthenticationPredicates::IS_AUTHENTICATED));
+
     // POST /rest/profiles - Create a profile from current settings
     _server.on("/rest/profiles", HTTP_POST,
                 _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
@@ -184,12 +191,6 @@ void HandlerRegistrator::registerProfileHandler() const
     _server.on("/rest/profiles/delete", HTTP_DELETE,
             _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
                 ProfileHandler::handleDeleteProfile(request, json);
-            }, AuthenticationPredicates::IS_AUTHENTICATED));
-
-    // POST /rest/profiles/content - Update profile content
-    _server.on("/rest/profiles/content", HTTP_POST,
-            _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
-                ProfileHandler::handleUpdateProfileContent(request, json);
             }, AuthenticationPredicates::IS_AUTHENTICATED));
 }
 

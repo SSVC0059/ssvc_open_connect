@@ -234,6 +234,7 @@ void ESP32SvelteKit::_loop()
 
     while (1)
     {
+        wifi_eth_combined = false;
         _wifiSettingsService.loop(); // 30 seconds
         _apSettingsService.loop();   // 10 seconds
 #if FT_ENABLED(FT_MQTT)
@@ -256,8 +257,6 @@ void ESP32SvelteKit::_loop()
 #if FT_ENABLED(FT_MQTT)
         mqtt = _mqttStatus.isConnected();
 #endif
-
-        // Update the system status
         if (wifi_eth_combined && mqtt)
         {
             _connectionStatus = ConnectionStatus::STA_MQTT;

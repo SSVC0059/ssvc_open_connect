@@ -17,6 +17,8 @@
 </div>
 
 <style lang="scss">
+	@use "$lib/styles/base/variables" as v;
+
 	.network-column-title {
 		font-size: 1.25rem;
 		font-weight: 700;
@@ -29,9 +31,15 @@
 		gap: 1rem;
 	}
 
-	@media (min-width: 1024px) {
+	@media (min-width: v.$breakpoint-lg) {
 		.network-grid {
 			grid-template-columns: 1fr 1fr;
+		}
+	}
+
+	@media (max-width: (v.$breakpoint-md - 1px)) {
+		:global(.network-page .settings-container) {
+			box-shadow: none;
 		}
 	}
 </style>

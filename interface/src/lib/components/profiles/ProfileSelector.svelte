@@ -56,7 +56,7 @@
 	}
 </script>
 
-<div class="input-wrapper">
+<div class="input-wrapper profile-selector-inline">
 	<label for="profile-select" class="input-label">Профиль</label>
 	<select
 		id="profile-select"
@@ -86,3 +86,29 @@
 		<Fa icon={faCog} />
 	</button>
 </div>
+<style lang="scss">
+	@use '$lib/styles/base/variables' as v;
+
+	/* On small screens global _responsive.scss stacks .input-wrapper; keep label full width, select + actions one row */
+	.profile-selector-inline {
+		@media (max-width: v.$breakpoint-sm) {
+			flex-direction: row;
+			flex-wrap: wrap;
+			align-items: center;
+			column-gap: 0.5rem;
+			row-gap: 0.25rem;
+
+			> :global(label.input-label) {
+				flex: 1 0 100%;
+				width: 100%;
+				max-width: 100%;
+			}
+
+			> :global(select.input-field) {
+				flex: 1 1 0;
+				min-width: 0;
+				width: auto;
+			}
+		}
+	}
+</style>

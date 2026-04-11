@@ -1,0 +1,120 @@
+/* Вертикальные секции настроек только для узкого экрана (< md). Подключается из компонента SettingsMobileScroll.svelte */
+@use "$lib/styles/base/variables" as v;
+
+.settings-page-mobile {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	flex: 1;
+
+	&__header {
+		flex-shrink: 0;
+		padding-bottom: 0.5rem;
+		border-bottom: 1px solid oklch(var(--bc) / 0.12);
+	}
+
+	&__scroll {
+		min-height: 0;
+		flex: 1;
+		overflow-y: auto;
+		overscroll-behavior-y: contain;
+	}
+
+	&__section {
+		padding-bottom: 1.5rem;
+		margin-bottom: 1.5rem;
+		border-bottom: 1px solid oklch(var(--bc) / 0.1);
+		scroll-margin-top: 0.75rem;
+
+		&:last-child {
+			border-bottom: none;
+			margin-bottom: 0;
+		}
+
+		@media (max-width: v.$breakpoint-md - 1px) {
+			padding-bottom: 0.625rem;
+			margin-bottom: 0.625rem;
+			scroll-margin-top: 0.5rem;
+
+			&:last-child {
+				padding-bottom: 0;
+			}
+		}
+	}
+
+	&__section--target {
+		@media (max-width: v.$breakpoint-md - 1px) {
+			border-radius: 0.5rem;
+			outline: 2px solid oklch(var(--p) / 0.45);
+			outline-offset: 0.25rem;
+		}
+	}
+
+	&__section-title {
+		margin: 0 0 0.75rem;
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: oklch(var(--bc));
+		text-align: center;
+		width: 100%;
+
+		@media (max-width: v.$breakpoint-md - 1px) {
+			margin: 0 0 0.375rem;
+		}
+	}
+
+	&__section-body {
+		min-width: 0;
+	}
+
+	&__footer {
+		flex-shrink: 0;
+		border-top: 1px solid oklch(var(--bc) / 0.1);
+		padding-top: 1rem;
+	}
+
+	@media (max-width: v.$breakpoint-md - 1px) {
+		:global(.settings-container) {
+			box-shadow: none;
+		}
+	}
+
+	&--dense-grid {
+		@media (max-width: v.$breakpoint-md - 1px) {
+			:global(.settings-grid) {
+				gap: 0.5rem;
+			}
+
+			:global(.settings-grid .settings-panel .settings-section) {
+				margin: 0.25rem;
+				padding: 0.625rem 0.75rem;
+			}
+
+			:global(.settings-panel .settings-section .settings-section-title) {
+				margin-bottom: 0.5rem;
+			}
+		}
+	}
+
+	/* Как system/update/+page: только отступ между карточками, без линии под каждой секцией */
+	&--section-cards {
+		@media (max-width: v.$breakpoint-md - 1px) {
+			.settings-page-mobile__scroll {
+				display: flex;
+				flex-direction: column;
+				gap: 1rem;
+			}
+
+			.settings-page-mobile__section {
+				border-bottom: none;
+				margin-bottom: 0;
+				padding-bottom: 0;
+				scroll-margin-top: 0.5rem;
+
+				&:last-child {
+					padding-bottom: 0;
+				}
+			}
+		}
+	}
+}

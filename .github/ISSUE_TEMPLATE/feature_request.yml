@@ -1,0 +1,61 @@
+name: ✨ Предложение новой функциональности
+description: Предложить новую функцию или улучшение системы
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо за предложение! Опишите функциональность подробно — это поможет оценить и реализовать её.
+  - type: input
+    id: title
+    attributes:
+      label: Заголовок
+      description: Кратко опишите предлагаемую функциональность одним предложением
+      placeholder: "Например: Добавить экспорт телеметрии в CSV"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Описание
+      description: |
+        Подробно опишите:
+        - Какую задачу решает функциональность?
+        - Как пользователь будет с ней взаимодействовать?
+        - Есть ли аналоги в других системах?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ожидаемое поведение
+      description: Опишите, как должна работать новая функциональность
+      placeholder: "Например: При нажатии кнопки «Экспорт» пользователь получает CSV-файл с данными за выбранный период"
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Альтернативы
+      description: Рассматривали ли вы альтернативные решения? Опишите их и почему выбрали текущий вариант
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Дополнительный контекст
+      description: |
+        - Связано ли с существующими Issue?
+        - Есть ли технические ограничения?
+        - Насколько критична эта функциональность?
+    validations:
+      required: false
+  - type: input
+    id: contact
+    attributes:
+      label: Контактная информация
+      description: Опционально. Telegram или Email для связи
+      placeholder: "@username или email@example.com"
+    validations:
+      required: false

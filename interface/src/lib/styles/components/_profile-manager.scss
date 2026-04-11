@@ -1,5 +1,10 @@
 @use "$lib/styles/base/variables" as v;
 
+/* .settings-panel по умолчанию overflow:hidden — обрезает DaisyUI-dropdown у профилей */
+.settings-panel:has(.profile-manager-layout) {
+  overflow: visible;
+}
+
 .profile-manager-layout {
   display: grid;
   grid-template-columns: 1fr;
@@ -22,13 +27,23 @@
       width: 0;
       pointer-events: none;
     }
+
+    /* < md: список только скрыт opacity — блок всё ещё в потоке и даёт огромный «пустой» зазор */
+    @media (max-width: v.$breakpoint-md - 1px) {
+      .profile-list-panel {
+        display: none;
+      }
+    }
   }
 }
 
 .profile-list-panel {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* visible: иначе overflow:hidden обрезает DaisyUI-dropdown и даёт контекст наложения ниже панели деталей */
+  overflow: visible;
+  position: relative;
+  z-index: 2;
   transition: opacity 0.3s ease-in-out, width 0.3s ease-in-out;
   background: oklch(var(--b1)); /* Light theme: panel surface distinct from page background */
   border-radius: var(--border-radius);
@@ -172,6 +187,9 @@
   padding: 1rem;
   background: oklch(var(--b1));
   border-radius: var(--border-radius);
+  position: relative;
+  /* Ниже панели списка, чтобы выпадающее меню действий рисовалось поверх блока просмотра профиля */
+  z-index: 1;
 }
 
 .profile-editor-grid {
@@ -244,6 +262,11 @@
 }
 
 /* Рамка для выпадающего меню действий профиля (DaisyUI dropdown) */
+.profile-list-item .dropdown:focus-within {
+  /* Открытое меню выше соседних строк списка */
+  z-index: 5;
+}
+
 .profile-list-item .dropdown-content {
   border: 1px solid oklch(var(--bc, 0.25 0 260) / 0.25);
 }

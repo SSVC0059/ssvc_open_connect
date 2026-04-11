@@ -34,6 +34,9 @@ private:
   ESP32SvelteKit *_esp32sveltekit;
   Adafruit_NeoPixel *_led = nullptr;
 
+  /** Синхронное обновление ленты + лог (вызывать из begin и из задачи). */
+  void refreshLed(const char *phase);
+
   [[noreturn]] static void checkStatus(void *pvParameters);
 };
 

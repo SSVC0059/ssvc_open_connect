@@ -8,11 +8,19 @@ import userEvent from '@testing-library/user-event';
 import { createMockSsvcSettings } from '../../lib/createMockSsvcSettings';
 import { SPEED_SETTINGS_EXPECTED_REQUESTS } from '../../lib/speedSettingsExpectedRequests';
 
+const pageUrlRef = vi.hoisted(() => ({ href: 'http://test/oc/ssvc?tab=speed' }));
+
 // Предотвращает загрузку @sveltejs/kit и ошибку "Cannot find package '__sveltekit'"
 vi.mock('$app/stores', () => ({
 	page: {
 		subscribe: (fn: (v: unknown) => void) => {
-			fn({ url: new URL('http://test/'), params: {}, data: {}, status: 200, error: null });
+			fn({
+				url: new URL(pageUrlRef.href),
+				params: {},
+				data: {},
+				status: 200,
+				error: null
+			});
 			return () => {};
 		}
 	},
@@ -22,6 +30,10 @@ vi.mock('$app/stores', () => ({
 
 vi.mock('$app/navigation', () => ({
 	goto: vi.fn()
+}));
+
+vi.mock('$app/environment', () => ({
+	browser: true
 }));
 
 vi.mock('$lib/api/ssvcApi', () => ({
@@ -41,6 +53,7 @@ describe('Settings — Параметры отбора (updateSetting)', () => {
 	const headsSpec = SPEED_SETTINGS_EXPECTED_REQUESTS.heads;
 
 	beforeEach(() => {
+		pageUrlRef.href = 'http://test/oc/ssvc?tab=speed';
 		vi.mocked(updateSetting).mockReset();
 		vi.mocked(updateSetting).mockResolvedValue(true);
 		vi.mocked(fetchSettings).mockReset();
@@ -54,17 +67,11 @@ describe('Settings — Параметры отбора (updateSetting)', () => {
 		render(Settings);
 
 		await waitFor(() => {
-			expect(screen.getByRole('tab', { name: /Параметры отбора/i })).toBeInTheDocument();
+			expect(screen.getAllByText(headsSpec.sectionTitle).length).toBeGreaterThan(0);
 		});
 
-		const speedTab = screen.getByRole('tab', { name: /Параметры отбора/i });
-		await userEvent.setup().click(speedTab);
-
-		await waitFor(() => {
-			expect(screen.getByText(headsSpec.sectionTitle)).toBeInTheDocument();
-		});
-
-		const section = screen.getByText(headsSpec.sectionTitle).closest('.settings-section');
+		// На md+ и max-md оба дерева могут присутствовать в jsdom; берём первый видимый экземпляр
+		const section = screen.getAllByText(headsSpec.sectionTitle)[0].closest('.settings-section');
 		const editButton = section?.querySelector('button.edit-button');
 		expect(editButton).toBeTruthy();
 		await userEvent.setup().click(editButton!);
@@ -86,36 +93,35 @@ describe('Settings — Параметры отбора (updateSetting)', () => {
 	it('при нажатии «Перезагрузить настройки» вызывается fetchSettings снова', async () => {
 		render(Settings);
 		await waitFor(() => {
-			expect(screen.getByTitle(/Перезагрузить настройки/i)).toBeInTheDocument();
+			expect(screen.getAllByTitle(/Перезагрузить настройки/i).length).toBeGreaterThan(0);
 		});
 		const callCount = vi.mocked(fetchSettings).mock.calls.length;
-		const refreshBtn = screen.getByTitle(/Перезагрузить настройки/i);
+		const refreshBtn = screen.getAllByTitle(/Перезагрузить настройки/i)[0];
 		await userEvent.setup().click(refreshBtn);
 		await waitFor(() => {
 			expect(fetchSettings).toHaveBeenCalledTimes(callCount + 1);
 		});
 	});
 
-	it('переключение вкладки на «Параметры отбора» отображает содержимое', async () => {
-		render(Settings);
+	it('без query в URL рендерятся все секции с якорями', async () => {
+		pageUrlRef.href = 'http://test/oc/ssvc';
+		const { container } = render(Settings);
 		await waitFor(() => {
-			expect(screen.getByRole('tab', { name: /Параметры отбора/i })).toBeInTheDocument();
+			expect(screen.getByRole('heading', { level: 1, name: /Настройки SSVC/i })).toBeInTheDocument();
 		});
-		const speedTab = screen.getByRole('tab', { name: /Параметры отбора/i });
-		await userEvent.setup().click(speedTab);
-		await waitFor(() => {
-			expect(screen.getByText(headsSpec.sectionTitle)).toBeInTheDocument();
-		});
+		expect(container.querySelector('#oc-ssvc-section-general')).toBeTruthy();
+		expect(container.querySelector('#oc-ssvc-section-speed')).toBeTruthy();
 	});
 
 	it('при ошибке updateSetting (false) показывается notifications.error', async () => {
 		vi.mocked(updateSetting).mockResolvedValue(false);
+		pageUrlRef.href = 'http://test/oc/ssvc?tab=general';
 		render(Settings);
 
 		await waitFor(() => {
-			expect(screen.getByText('Гистерезис при отборе тела')).toBeInTheDocument();
+			expect(screen.getAllByText('Гистерезис при отборе тела').length).toBeGreaterThan(0);
 		});
-		const hystItem = screen.getByText('Гистерезис при отборе тела').closest('.settings-item');
+		const hystItem = screen.getAllByText('Гистерезис при отборе тела')[0].closest('.settings-item');
 		await userEvent.setup().click(hystItem!.querySelector('button.edit-button')!);
 		await waitFor(() => {
 			expect(screen.getByRole('dialog', { hidden: true })).toBeInTheDocument();

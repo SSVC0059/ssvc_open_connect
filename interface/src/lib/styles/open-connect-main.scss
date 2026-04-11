@@ -17,11 +17,13 @@
 
 // 5. COMPONENTS (global: избегаем Unused CSS selector при импорте в дочерних компонентах)
 @use "$lib/styles/components/setting-containers";
+@use "$lib/styles/components/system-tabs-mobile";
+@use "$lib/styles/components/settings-stack-card";
 @use "$lib/styles/components/valve-table";
 @use "$lib/styles/views/wizard";
 
 // --- Подключаются только в компонентах через @use (не здесь): profile-manager ---
 
-// --- Удалены (стили в +layout.svelte и компонентах): _buttons, _inputs, _modals, _tabs ---
+// --- Удалены (стили в +layout.svelte и компонентах): _buttons, _inputs, _modals ---
 
 // --- Намеренно не подключаются (стили заданы в компонентах): _sensors-view, _sensor-card, _toggles. Подробнее: docs/develop/frontend/styles-cleanup-audit.md, раздел 6 ---

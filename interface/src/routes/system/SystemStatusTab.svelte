@@ -19,40 +19,39 @@
 	import Heap from '~icons/tabler/box-model';
 	import Cancel from '~icons/tabler/x';
 	import Temperature from '~icons/tabler/temperature';
-	import Health from '~icons/tabler/stethoscope';
 	import Stopwatch from '~icons/tabler/24-hours';
 	import SDK from '~icons/tabler/sdk';
 	import type { SystemInformation, Analytics } from '$lib/types/models';
 	import { socket } from '$lib/stores/socket';
 	import { convertSeconds } from '$lib/utils/formatters';
 
-let systemInformation: SystemInformation = $state({
-	esp_platform: '',
-	firmware_version: '',
-	cpu_freq_mhz: 0,
-	cpu_type: '',
-	cpu_rev: 0,
-	cpu_cores: 0,
-	sketch_size: 0,
-	free_sketch_space: 0,
-	sdk_version: '',
-	arduino_version: '',
-	flash_chip_size: 0,
-	flash_chip_speed: 0,
-	cpu_reset_reason: '',
-	max_alloc_heap: 0,
-	psram_size: 0,
-	free_psram: 0,
-	used_psram: 0,
-	free_heap: 0,
-	used_heap: 0,
-	total_heap: 0,
-	min_free_heap: 0,
-	core_temp: 0,
-	fs_total: 0,
-	fs_used: 0,
-	uptime: 0
-});
+	let systemInformation: SystemInformation = $state({
+		esp_platform: '',
+		firmware_version: '',
+		cpu_freq_mhz: 0,
+		cpu_type: '',
+		cpu_rev: 0,
+		cpu_cores: 0,
+		sketch_size: 0,
+		free_sketch_space: 0,
+		sdk_version: '',
+		arduino_version: '',
+		flash_chip_size: 0,
+		flash_chip_speed: 0,
+		cpu_reset_reason: '',
+		max_alloc_heap: 0,
+		psram_size: 0,
+		free_psram: 0,
+		used_psram: 0,
+		free_heap: 0,
+		used_heap: 0,
+		total_heap: 0,
+		min_free_heap: 0,
+		core_temp: 0,
+		fs_total: 0,
+		fs_used: 0,
+		uptime: 0
+	});
 
 	async function getSystemStatus() {
 		try {
@@ -205,7 +204,7 @@ let systemInformation: SystemInformation = $state({
 	});
 </script>
 
-<div class="system-status-root">
+<div class="system-status-root system-tab-mobile-flatten w-full">
 	<div class="settings-container">
 		<div class="settings-grid">
 			<div class="settings-panel">
@@ -217,16 +216,22 @@ let systemInformation: SystemInformation = $state({
 							</div>
 						{:then nothing}
 							<div
-								class="status-grid-wrapper rounded-box border border-base-content/5 p-2"
+								class="status-grid-wrapper rounded-box border border-base-content/10 bg-base-100 p-2 max-md:border-base-content/10 md:border-base-content/5"
 								transition:slide|local={{ duration: 300, easing: cubicOut }}
 							>
-								<div class="status-grid">
+								<div
+									class="status-grid grid max-md:divide-y max-md:divide-base-content/10 max-md:gap-0 md:gap-3 lg:grid-cols-2"
+								>
 									{#each statusRows as row (row.name)}
 										{@const Icon = row.icon}
-										<article class="status-item rounded-box border border-base-content/5 p-3">
+										<article
+											class="status-item max-md:border-0 max-md:bg-transparent max-md:py-3 max-md:pl-0 max-md:pr-1 md:rounded-box md:border md:border-base-content/5 md:bg-base-100 md:p-3"
+										>
 											<div class="status-item-icon">
-												<div class="mask mask-hexagon bg-primary h-10 w-10 flex items-center justify-center">
-													<Icon class="text-primary-content h-5 w-5" />
+												<div
+													class="mask mask-hexagon flex h-10 w-10 items-center justify-center bg-primary"
+												>
+													<Icon class="h-5 w-5 text-primary-content" />
 												</div>
 											</div>
 											<div class="status-item-name">{row.name}</div>
@@ -246,10 +251,10 @@ let systemInformation: SystemInformation = $state({
 										<FactoryReset class="h-5 w-5" />
 										<span>Сброс настроек</span>
 									</button>
-									<button class="btn btn-secondary btn-status-success" type="button" onclick={confirmSleep}>
+									<!-- <button class="btn btn-secondary btn-status-success" type="button" onclick={confirmSleep}>
 										<Sleep class="h-5 w-5" />
 										<span>Спящий режим</span>
-									</button>
+									</button> -->
 								</div>
 							{/if}
 						{/await}
@@ -261,6 +266,8 @@ let systemInformation: SystemInformation = $state({
 </div>
 
 <style lang="scss">
+	@use "$lib/styles/base/variables" as v;
+
 	:global(.system-status-root .settings-container) {
 		width: 100%;
 	}
@@ -285,13 +292,7 @@ let systemInformation: SystemInformation = $state({
 	}
 
 	.status-grid {
-		display: grid;
 		grid-template-columns: 1fr;
-		gap: 0.75rem;
-
-		@media (min-width: 1024px) {
-			grid-template-columns: 1fr 1fr;
-		}
 	}
 
 	.status-item {
@@ -333,4 +334,3 @@ let systemInformation: SystemInformation = $state({
 		background-color: var(--color-success);
 	}
 </style>
-

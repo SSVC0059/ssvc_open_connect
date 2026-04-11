@@ -115,7 +115,12 @@
 		}
 		// Это место для вашей логики обработки.
 		// Вы можете изменить объект 'profile' перед отправкой.
-		const finalProfile = { ...profile, id: profileInfo.id };
+		const finalProfile = {
+			...profile,
+			id: profileInfo.id,
+			name: profileInfo.name,
+			...(profileInfo.createdAt ? { createdAt: profileInfo.createdAt } : {})
+		};
 		console.log('Профиль для сохранения:', finalProfile);
 		onSave(finalProfile);
 	}
@@ -543,7 +548,7 @@
 								<AnalyticsValue label="Объем" value={`${profile.analytics.fractions.tailsMl.toFixed(0)} мл`} />
 								<AnalyticsValue label="Скорость" value={`${profile.analytics.flows.tails} мл/ч`} />
 								<KpnPopover id="kpn-tails" rangeKey="tails" {profile} />
-								AnalyticsValue label="Флегмовое число" value={profile.analytics.phlegmatic.tails} />
+								<AnalyticsValue label="Флегмовое число" value={profile.analytics.phlegmatic.tails} />
 								<AnalyticsValue label="Время этапа" value={formatTime(profile.analytics.timers.tails)} />
 								<AnalyticsValue label="Время" value={profile.ssvcSettings.tails[0]} />
 								<AnalyticsValue label="Период" value={profile.ssvcSettings.tails[1]} />

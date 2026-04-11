@@ -34,7 +34,7 @@
     text-align: left;
   }
 
-  // Лейбл занимает оставшееся место — семантика DaisyUI
+  // Лейбл занимает оставшееся место — семантика DaisyUI (узкий экран: блок max-width sm ниже)
   & > .input-label,
   & > .settings-label {
     flex-grow: 1;
@@ -56,6 +56,35 @@
 
   .checkbox-container {
     flex-shrink: 0;
+  }
+
+  @media (max-width: v.$breakpoint-sm - 1px) {
+    & > .input-label,
+    & > .settings-label {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .settings-value {
+      flex-shrink: 0;
+      align-self: flex-start;
+      white-space: nowrap;
+    }
+
+    .values-container {
+      flex-shrink: 0;
+      align-self: flex-start;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+    }
+
+    .toggle-container {
+      align-self: flex-start;
+    }
+
+    .checkbox-container {
+      align-self: flex-start;
+    }
   }
 
   .text-xs {

@@ -4,11 +4,11 @@ import {
 		faClone,
 		faDownload,
 		faEllipsisV,
+		faFileImport,
 		faPen,
 		faPlay,
 		faPlus,
-		faTrash,
-		faUpload
+		faTrash
 	} from '@fortawesome/free-solid-svg-icons';
 	import type {Profile, Profiles} from '$lib/types/ssvc';
 	import ProfileViewer from '$lib/components/profiles/ProfileViewer.svelte';
@@ -290,10 +290,18 @@ $effect(() => {
 								<button
 									class="icon-button"
 									onclick={() => fileInput.click()}
-									title="Загрузить из файла"
+									title="Импортировать профиль из файла"
 									disabled={editingProfile !== null}
 								>
-									<Fa icon={faUpload} />
+									<Fa icon={faFileImport} />
+								</button>
+								<button
+									class="icon-button"
+									onclick={() => selectedProfile && handleDownload(selectedProfile)}
+									title="Выгрузить выбранный профиль в файл"
+									disabled={editingProfile !== null || !selectedProfile}
+								>
+									<Fa icon={faDownload} />
 								</button>
 							</div>
 						</div>
@@ -330,7 +338,7 @@ $effect(() => {
 											<span class="profile-name">{profile.name}</span>
 										</button>
 										<div class="profile-item-actions">
-											<div class="dropdown dropdown-end">
+											<div class="dropdown dropdown-end max-md:dropdown-top">
 												<button
 													type="button"
 													class="icon-button"
@@ -342,7 +350,7 @@ $effect(() => {
 												</button>
 												<ul
 													tabindex="0"
-													class="menu menu-sm dropdown-content z-[100] mt-2 w-52 rounded-box bg-base-100 p-1 shadow"
+													class="menu menu-sm dropdown-content mt-2 max-md:mt-0 max-md:mb-2 w-52 rounded-box bg-base-100 p-1 shadow-lg"
 												>
 													<li>
 														<button

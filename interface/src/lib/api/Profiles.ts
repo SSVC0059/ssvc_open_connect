@@ -55,7 +55,10 @@ export async function saveCurrentSettingsToProfile(id: string): Promise<boolean>
 }
 
 export async function updateProfileContent(id: string, content: any): Promise<boolean> {
-	const response = await apiFetch(`/rest/profiles/content`, 'POST', { id, content });
+	const response = await apiFetch(`/rest/profiles/content`, 'POST', {
+		id: String(id),
+		content
+	});
 	return response.success;
 }
 

@@ -151,6 +151,85 @@ describe('DistillationCycleModel Process Logic', () => {
 	});
 });
 
+describe('DistillationCycleModel: дефолтный профиль и опциональные поля голов (SSVC)', () => {
+	const model = new DistillationCycleModel();
+
+	it('createDefaultProfile задаёт полный ssvcSettings, включая valve_bw_tails', () => {
+		const p = createDefaultProfile();
+		expect(p.ssvcSettings.valve_bw_tails).toBe(15000);
+		expect(p.ssvcSettings.valve_bw).toEqual([7000, 12000, 7000]);
+		expect(p.ssvcSettings.release_timer).toBe(0);
+		expect(p.ssvcSettings.release_speed).toBe(0);
+		expect(p.ssvcSettings.heads_final).toBe(0);
+		expect(Array.isArray(p.ssvcSettings.parallel_v3)).toBe(true);
+		expect(p.ssvcSettings.parallel_v3).toEqual([]);
+	});
+
+	it('release_timer/release_speed/heads_final: null, undefined и -1 эквивалентны «выключено» (как нули)', () => {
+		const base = createDefaultProfile();
+		base.volumeL = 10;
+		base.strengthVol = 40;
+		const expected = model.calculateProcess(base);
+
+		const pick = (r: (typeof expected)['analytics']) => ({
+			heads_release: r.flows.heads_release,
+			releaseMl: r.fractions.releaseMl,
+			heads_final_flow: r.flows.heads_final,
+			heads_flow: r.flows.heads,
+			heads_timer: r.timers.heads
+		});
+
+		const a = createDefaultProfile();
+		a.volumeL = 10;
+		a.strengthVol = 40;
+		delete (a.ssvcSettings as { release_speed?: number }).release_speed;
+		(a.ssvcSettings as { release_timer: number | null }).release_timer = null;
+		(a.ssvcSettings as { heads_final: number }).heads_final = -1;
+
+		const b = createDefaultProfile();
+		b.volumeL = 10;
+		b.strengthVol = 40;
+		(b.ssvcSettings as { release_timer?: number }).release_timer = undefined as unknown as number;
+		(b.ssvcSettings as { release_speed?: number }).release_speed = undefined as unknown as number;
+		(b.ssvcSettings as { heads_final: number }).heads_final = -1;
+
+		expect(pick(model.calculateProcess(a).analytics)).toEqual(pick(expected.analytics));
+		expect(pick(model.calculateProcess(b).analytics)).toEqual(pick(expected.analytics));
+	});
+
+	it('положительные release_timer и release_speed увеличивают отбор «сброса» (heads_release, releaseMl)', () => {
+		const base = createDefaultProfile();
+		base.volumeL = 10;
+		base.strengthVol = 40;
+		const without = model.calculateProcess(base);
+
+		const withRelease = createDefaultProfile();
+		withRelease.volumeL = 10;
+		withRelease.strengthVol = 40;
+		withRelease.ssvcSettings.release_timer = 3600;
+		withRelease.ssvcSettings.release_speed = 60;
+		// releaseFlowMlh = (60 / heads[1]) * valve_bw[0] = (60/120)*7000 = 3500; releaseMl = 3500 * 3600/3600
+		const withR = model.calculateProcess(withRelease);
+
+		expect(without.analytics.flows.heads_release).toBe(0);
+		expect(without.analytics.fractions.releaseMl).toBe(0);
+		expect(withR.analytics.flows.heads_release).toBe(3500);
+		expect(withR.analytics.fractions.releaseMl).toBeCloseTo(3500, 0);
+	});
+
+	it('heads_final > 0 задаёт финальную скорость отбора голов (heads_final в analytics.flows)', () => {
+		const profile = createDefaultProfile();
+		profile.volumeL = 10;
+		profile.strengthVol = 40;
+		profile.heads.targetFlowMlh = 2000;
+		profile.ssvcSettings.heads_final = 120;
+		// headsCyclePeriod default heads[1] = 120, bw_heads = 7000 -> (120/120)*7000 = 7000
+		const result = model.calculateProcess(profile);
+		expect(result.analytics.flows.heads).toBe(2000);
+		expect(result.analytics.flows.heads_final).toBe(7000);
+	});
+});
+
 describe('DistillationCycleModel Edge Cases', () => {
 	const model = new DistillationCycleModel();
 

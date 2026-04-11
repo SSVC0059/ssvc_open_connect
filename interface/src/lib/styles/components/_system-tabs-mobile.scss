@@ -1,0 +1,24 @@
+// Мобильные табы «Система»: одна внешняя рамка, без матрёшки settings-container + внутренняя карточка.
+@use "$lib/styles/base/variables" as v;
+
+$max-md: v.$breakpoint-md - 1px;
+
+@media (max-width: $max-md) {
+	.system-tab-mobile-flatten .settings-container {
+		background: transparent !important;
+		border: none !important;
+		box-shadow: none !important;
+		padding: 0 !important;
+	}
+
+	.system-tab-mobile-flatten .settings-grid,
+	.system-tab-mobile-flatten .settings-panel {
+		display: contents;
+	}
+
+	.system-tab-mobile-flatten .settings-section {
+		border: none !important;
+		margin: 0 !important;
+		padding: 0 !important;
+	}
+}

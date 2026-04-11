@@ -209,14 +209,16 @@
 </script>
 
 <div
-	class="update-card rounded-box border border-base-content/10 w-full lg:w-3/4 mx-auto flex flex-col gap-4 p-4 sm:p-6"
+	class="update-card rounded-box border border-base-content/10 mx-auto flex w-full flex-col gap-4 p-4 max-md:mx-0 max-md:gap-3 max-md:p-3 sm:p-6 lg:w-3/4"
 >
 	<div class="flex items-center gap-2 text-xl font-medium">
 		<OTA class="h-6 w-6" />
 		<span>Загрузка обновления</span>
 	</div>
 
-	<div class="alert alert-warning shadow-lg">
+	<div
+		class="alert alert-warning shadow-lg max-md:rounded-lg max-md:border-0 max-md:bg-base-200/60 max-md:py-2 max-md:shadow-none"
+	>
 		<Warning class="h-6 w-6 shrink-0" />
 		<span
 			>Загрузка нового файла прошивки (.bin) заменит существующую прошивку. Вы можете сначала

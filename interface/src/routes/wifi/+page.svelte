@@ -17,6 +17,8 @@
 </div>
 
 <style lang="scss">
+	@use "$lib/styles/base/variables" as v;
+
 	.wifi-column-title {
 		font-size: 1.25rem;
 		font-weight: 700;
@@ -29,7 +31,7 @@
 		gap: 1rem;
 	}
 
-	@media (min-width: 1024px) {
+	@media (min-width: v.$breakpoint-lg) {
 		.wifi-grid {
 			grid-template-columns: 1fr 1fr;
 		}

@@ -17,6 +17,7 @@
 	import { compareVersions } from 'compare-versions';
 	import FirmwareUpdateDialog from '$lib/components/FirmwareUpdateDialog.svelte';
 	import InfoDialog from '$lib/components/InfoDialog.svelte';
+	import GithubReleaseMobileCard from './GithubReleaseMobileCard.svelte';
 	import Check from '~icons/tabler/check';
 	import { telemetry } from '$lib/stores/telemetry';
 	import type { SystemInformation } from '$lib/types/models';
@@ -30,17 +31,26 @@
 	}
 
 	const SEMVER_REGEX = /^v?\d+\.\d+\.\d+/;
+	/** На узком экране полностью раскрыты только последние N стабильных релизов; остальные — в сворачиваемом блоке. */
+	const MOBILE_RELEASES_EXPANDED = 3;
 	/** Тег ночной сборки: старый "nightly" или новый v{BASE}-nightly (например v0.2.6.2-nightly). */
 	function isNightly(release: { tag_name: string }) {
 		const tag = release.tag_name;
 		return tag === 'nightly' || tag.endsWith('-nightly');
 	}
 
+	function normalizeSemver(s: string) {
+		return String(s).trim().replace(/^v/i, '');
+	}
+
 	function isCurrentVersion(release: { tag_name: string }) {
 		if (isNightly(release)) return false;
-		if (!SEMVER_REGEX.test(release.tag_name)) return false;
+		const tag = release.tag_name.trim();
+		if (!SEMVER_REGEX.test(tag)) return false;
 		try {
-			return compareVersions(page.data.features.firmware_version, release.tag_name) === 0;
+			const cur = normalizeSemver(page.data.features.firmware_version);
+			const rel = normalizeSemver(tag);
+			return compareVersions(cur, rel) === 0;
 		} catch {
 			return false;
 		}
@@ -259,7 +269,7 @@
 </script>
 
 <div
-	class="update-card rounded-box border border-base-content/10 w-full lg:w-3/4 mx-auto flex flex-col gap-4 p-4 sm:p-6"
+	class="update-card rounded-box border border-base-content/10 mx-auto flex w-full flex-col gap-4 p-4 max-md:mx-0 max-md:gap-3 max-md:p-3 sm:p-6 lg:w-3/4"
 >
 	<div class="flex items-center gap-2 text-xl font-medium">
 		<Github class="h-6 w-6" />
@@ -273,19 +283,64 @@
 	{:then githubReleases}
 		{@const stableReleases = githubReleases.filter((r: { tag_name: string }) => !isNightly(r))}
 		{@const nightlyRelease = githubReleases.find((r: { tag_name: string }) => isNightly(r))}
-		<div class="alert alert-info">
+		{@const mobileRecentReleases = stableReleases.slice(0, MOBILE_RELEASES_EXPANDED)}
+		{@const mobileOlderReleases = stableReleases.slice(MOBILE_RELEASES_EXPANDED)}
+		<div
+			class="alert alert-info max-md:shadow-none md:shadow-sm max-md:rounded-lg max-md:border-0 max-md:bg-base-200/55 max-md:px-3 max-md:py-2"
+		>
 			<div>
 				<span class="font-bold">Текущая версия:</span>
 				v{page.data.features.firmware_version}
 			</div>
 		</div>
 		<div class="relative w-full overflow-visible">
-			<div class="overflow-x-auto" transition:slide|local={{ duration: 300, easing: cubicOut }}>
+			<div
+				class="flex flex-col overflow-hidden rounded-box border border-base-content/10 bg-base-100 max-md:divide-y max-md:divide-base-content/10 md:hidden"
+			>
+				{#each mobileRecentReleases as release (release.id ?? release.tag_name)}
+					<GithubReleaseMobileCard
+						embedded
+						{release}
+						isCurrent={isCurrentVersion(release)}
+						canInstallOnDevice={canInstall(release)}
+						onInstallDevice={() => confirmGithubUpdate(release.assets, false)}
+						onDownloadBrowser={() => confirmInstallViaBrowser(release.assets, false)}
+					/>
+				{/each}
+
+				{#if mobileOlderReleases.length > 0}
+					<div class="px-1 py-1">
+						<details class="collapse-arrow collapse border-0 bg-transparent shadow-none">
+							<summary class="collapse-title min-h-0 py-2.5 text-sm font-medium after:!end-3">
+								Ранее вышедшие релизы ({mobileOlderReleases.length})
+							</summary>
+							<div class="collapse-content !px-1 !pb-2 pt-0">
+								<div class="flex flex-col divide-y divide-base-content/10">
+									{#each mobileOlderReleases as release (release.id ?? release.tag_name)}
+										<GithubReleaseMobileCard
+											embedded
+											{release}
+											isCurrent={isCurrentVersion(release)}
+											canInstallOnDevice={canInstall(release)}
+											onInstallDevice={() => confirmGithubUpdate(release.assets, false)}
+											onDownloadBrowser={() => confirmInstallViaBrowser(release.assets, false)}
+										/>
+									{/each}
+								</div>
+							</div>
+						</details>
+					</div>
+				{/if}
+			</div>
+			<div
+				class="hidden overflow-x-auto md:block"
+				transition:slide|local={{ duration: 300, easing: cubicOut }}
+			>
 				<table class="table w-full table-auto">
 					<thead>
 						<tr class="font-bold">
 							<th align="left">Release</th>
-							<th align="center" class="hidden sm:block">Release Date</th>
+							<th align="center" class="hidden sm:table-cell">Release Date</th>
 							<th align="center">Exp.</th>
 							<th align="center">Установить</th>
 							<th align="center">Скачать релиз</th>
@@ -306,7 +361,7 @@
 										rel="noopener noreferrer">{release.name}</a
 									></td
 								>
-								<td align="center" class="hidden min-h-full align-middl sm:block">
+								<td align="center" class="hidden min-h-full align-middle sm:table-cell">
 									<div class="my-2">
 										{new Intl.DateTimeFormat('en-GB', {
 											dateStyle: 'medium'
@@ -345,51 +400,59 @@
 				</table>
 			</div>
 		</div>
-
 		{#if nightlyRelease}
-			<details class="collapse collapse-arrow mt-4 border border-warning bg-warning/10">
-				<summary class="collapse-title flex items-center gap-2 font-medium">
-					<AlertTriangle class="text-warning h-5 w-5" />
+			<details
+				class="collapse collapse-arrow mt-4 overflow-hidden border border-warning bg-warning/10 max-md:rounded-box"
+			>
+				<summary
+					class="collapse-title min-h-0 items-start gap-2 py-3 text-sm font-medium leading-snug sm:items-center sm:text-base"
+				>
+					<AlertTriangle class="text-warning mt-0.5 h-5 w-5 shrink-0 sm:mt-0" />
 					<span>Экспериментальная ночная сборка (nightly)</span>
 				</summary>
-				<div class="collapse-content">
-					<div class="alert alert-warning mb-3">
-						<p class="text-sm">
-							Ночная сборка обновляется ежедневно и может быть нестабильной. Не рекомендуется для обычных пользователей.
+				<div class="collapse-content max-w-full overflow-x-hidden px-2 pb-2 pt-0 sm:px-3 sm:pb-3">
+					<p class="text-base-content/85 mb-3 text-sm leading-snug">
+						Ночная сборка обновляется ежедневно и может быть нестабильной. Не рекомендуется для обычных
+						пользователей.
+					</p>
+					<div class="min-w-0">
+						<a
+							href={nightlyRelease.html_url}
+							class="link link-hover break-words text-sm font-semibold sm:text-base"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							{nightlyRelease.name}
+						</a>
+						<p class="text-base-content/70 mt-1 text-xs sm:text-sm">
+							{new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' }).format(
+								new Date(nightlyRelease.published_at)
+							)}
 						</p>
 					</div>
-					<div class="flex items-center justify-between rounded-lg bg-base-200 p-3">
-						<div>
-							<a
-								href={nightlyRelease.html_url}
-								class="link link-hover font-semibold"
-								target="_blank"
-								rel="noopener noreferrer"
-							>
-								{nightlyRelease.name}
-							</a>
-							<span class="text-base-content/70 ml-2 text-sm">
-								{new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' }).format(
-									new Date(nightlyRelease.published_at)
-								)}
-							</span>
-						</div>
-						<div class="flex flex-wrap gap-2">
+					<div class="github-nightly-actions mt-3 flex w-full min-w-0 gap-2">
+						<div class="min-w-0 flex-1 basis-0">
 							<button
-								class="btn btn-warning btn-sm"
-								title="Установить с интернета (устройство скачивает)"
+								type="button"
+								class="btn btn-warning btn-sm flex h-11 min-h-11 w-full items-center justify-center gap-2 px-2"
+								title="На устройство: контроллер скачает nightly с GitHub"
+								aria-label="Установить nightly на устройство"
 								onclick={() => confirmGithubUpdate(nightlyRelease.assets, true)}
 							>
-								<CloudDown class="h-5 w-5" />
-								<span>Установить nightly</span>
+								<CloudDown class="h-5 w-5 shrink-0" />
+								<span class="hidden min-w-0 truncate text-sm md:inline">Установить nightly</span>
 							</button>
+						</div>
+						<div class="min-w-0 flex-1 basis-0">
 							<button
-								class="btn btn-outline btn-warning btn-sm"
-								title="Скачать релиз"
+								type="button"
+								class="btn btn-outline btn-warning btn-nightly-download btn-sm flex h-11 min-h-11 w-full items-center justify-center gap-2 px-2"
+								title="Скачать nightly на компьютер"
+								aria-label="Скачать nightly"
 								onclick={() => confirmInstallViaBrowser(nightlyRelease.assets, true)}
 							>
-								<FileUpload class="h-5 w-5" />
-								<span>Скачать релиз</span>
+								<FileUpload class="h-5 w-5 shrink-0" />
+								<span class="hidden min-w-0 truncate text-sm md:inline">Скачать релиз</span>
 							</button>
 						</div>
 					</div>
@@ -403,3 +466,18 @@
 		</div>
 	{/await}
 </div>
+
+<style lang="scss">
+	/* +layout сбрасывает border у .btn — контурная кнопка «Скачать» nightly */
+	:global(.github-nightly-actions .btn.btn-nightly-download) {
+		background: transparent;
+		color: var(--yellow-600);
+		border: 2px solid var(--yellow-500);
+		box-sizing: border-box;
+	}
+
+	:global(.github-nightly-actions .btn.btn-nightly-download:hover:not(:disabled)) {
+		background: color-mix(in srgb, var(--yellow-500) 18%, transparent);
+		border-color: var(--yellow-600);
+	}
+</style>

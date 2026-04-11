@@ -1,7 +1,11 @@
 <script lang="ts">
+	import { DistillationCycleModel } from '$lib/actions/DistillationCycleModel';
 	import type { Profile } from '$lib/types/ssvc';
-	import AnalyticsValue from './AnalyticsValue.svelte';
 	import { getProfileContent } from '$lib/api/Profiles';
+	import { normalizeProfile } from '$lib/utils/deepMerge';
+	import AnalyticsValue from './AnalyticsValue.svelte';
+
+	const cycleModel = new DistillationCycleModel();
 
 	let { profileInfo } = $props<{ profileInfo: Profile }>();
 	let isLoading = $state(true);
@@ -29,11 +33,18 @@
 		error = null;
 		try {
 			const data = await getProfileContent(id);
-			// Проверяем наличие ssvcSettings, так как именно там лежат параметры
-			profile = data;
-			isLoading = true;
+			if (!data) {
+				profile = null;
+				error = new Error('Пустой ответ сервера');
+				return;
+			}
+			const normalized = normalizeProfile(data);
+			const withId = { ...normalized, id: data.id ?? id };
+			// API часто отдаёт JSON без analytics — считаем на клиенте, как в редакторе
+			profile = cycleModel.calculateProcess(withId);
 		} catch (err) {
 			error = err as Error;
+			profile = null;
 			console.error('Ошибка загрузки данных:', err);
 		} finally {
 			isLoading = false;
