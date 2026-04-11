@@ -33,7 +33,7 @@
 			bind:value={settings.decrement}
 			max={100}
 			min={0}
-			unit="°С"
+			unit="%"
 		/>
 	</div>
 
