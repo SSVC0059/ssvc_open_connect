@@ -42,30 +42,39 @@
 	{/if}
 
 	<div class="settings-page-mobile__scroll">
-		{#each items as item (item.id)}
-			{@const C = item.component}
-			<section
-				id="{sectionIdPrefix}-section-{item.id}"
-				class="settings-page-mobile__section"
-				class:settings-page-mobile__section--target={tabFromUrl === item.id}
-				aria-labelledby="{sectionIdPrefix}-heading-{item.id}"
-			>
-				<h2 id="{sectionIdPrefix}-heading-{item.id}" class="settings-page-mobile__section-title">
-					{item.title}
-				</h2>
-				<div class="settings-page-mobile__section-body">
-					{#if sectionBodyCard}
-						<div
-							class="settings-stack-card rounded-box border border-base-content/10 bg-base-100 p-2"
-						>
+		{#snippet sections()}
+			{#each items as item (item.id)}
+				{@const C = item.component}
+				<section
+					id="{sectionIdPrefix}-section-{item.id}"
+					class="settings-page-mobile__section"
+					class:settings-page-mobile__section--target={tabFromUrl === item.id}
+					aria-labelledby="{sectionIdPrefix}-heading-{item.id}"
+				>
+					<h2 id="{sectionIdPrefix}-heading-{item.id}" class="settings-page-mobile__section-title">
+						{item.title}
+					</h2>
+					<div class="settings-page-mobile__section-body">
+						{#if sectionBodyCard}
+							<div
+								class="settings-stack-card rounded-box border border-base-content/10 bg-base-100 p-2"
+							>
+								<C {...(item.props ?? {})} />
+							</div>
+						{:else}
 							<C {...(item.props ?? {})} />
-						</div>
-					{:else}
-						<C {...(item.props ?? {})} />
-					{/if}
-				</div>
-			</section>
-		{/each}
+						{/if}
+					</div>
+				</section>
+			{/each}
+		{/snippet}
+		{#if sectionBodyCard}
+			<div class="settings-page-mobile__scroll-inner">
+				{@render sections()}
+			</div>
+		{:else}
+			{@render sections()}
+		{/if}
 	</div>
 
 	{#if onRefresh}

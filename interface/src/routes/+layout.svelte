@@ -148,12 +148,14 @@
 {:else}
 	<div class="drawer lg:drawer-open">
 		<input id="main-menu" type="checkbox" class="drawer-toggle" bind:checked={menuOpen} />
-		<div class="drawer-content flex flex-col">
+		<div class="drawer-content flex h-dvh min-h-0 flex-col overflow-hidden">
 			<!-- Status bar content here -->
 			<Statusbar />
 
-			<!-- Main page content here -->
-			{@render children?.()}
+			<!-- Main scroll area: одна вертикальная прокрутка под navbar (узлы настроек без вложенного overflow) -->
+			<div class="flex min-h-0 flex-1 touch-pan-y flex-col overflow-y-auto overscroll-y-contain">
+				{@render children?.()}
+			</div>
 		</div>
 		<!-- Side Navigation -->
 		<div class="drawer-side z-30 shadow-lg">

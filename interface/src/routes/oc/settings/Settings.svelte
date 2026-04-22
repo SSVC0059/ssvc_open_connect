@@ -213,7 +213,7 @@
 			</div>
 		</div>
 
-		<div class="flex min-h-0 flex-1 flex-col md:hidden">
+		<div class="flex w-full flex-col md:hidden">
 			<SettingsMobileScroll
 				items={mobileItems}
 				sectionIdPrefix="oc-settings"
