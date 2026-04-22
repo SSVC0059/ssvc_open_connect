@@ -1,0 +1,326 @@
+---
+description: Rules for migrating ESP32-SvelteKit from PsychicHttp to ESPAsyncWebServer
+globs: lib/framework/**/*.{h,cpp}, src/**/*.{h,cpp}, platformio.ini
+alwaysApply: false
+---
+
+# PsychicHttp → ESPAsyncWebServer Migration Rules
+
+## Library Reference
+- Target: ESP32Async/ESPAsyncWebServer v3.10.0 (https://github.com/ESP32Async/ESPAsyncWebServer)
+- Docs: https://esp32async.github.io/ESPAsyncWebServer
+- JSON support via `#include <AsyncJson.h>` and ArduinoJson v7
+
+## Core Type Mapping
+
+| PsychicHttp | ESPAsyncWebServer | Notes |
+|---|---|---|
+| `PsychicHttpServer` | `AsyncWebServer` | Constructor takes port: `AsyncWebServer server(80)` |
+| `PsychicHttpServer*` | `AsyncWebServer*` | Pointer usage stays the same |
+| `PsychicRequest*` | `AsyncWebServerRequest*` | |
+| `PsychicResponse` | `AsyncWebServerResponse*` | Created via `request->beginResponse(...)` |
+| `PsychicJsonResponse` | `AsyncJsonResponse*` | `new AsyncJsonResponse()`, then `request->send(response)` |
+| `PsychicFileResponse` | N/A | Use `request->send(FS, path, contentType)` |
+| `PsychicWebHandler` | N/A | Handlers are lambdas directly |
+| `PsychicWebSocketHandler` | `AsyncWebSocket` | Constructor takes path: `AsyncWebSocket ws("/ws")` |
+| `PsychicWebSocketClient*` | `AsyncWebSocketClient*` | Different API for id/sending |
+| `PsychicWebSocketRequest*` | N/A | Data comes via `onEvent` callback |
+| `PsychicUploadHandler` | N/A | Upload is 3rd param of `server.on()` |
+| `PsychicRequestFilterFunction` | `AsyncWebHandler::FilterFunction` or custom | |
+| `PsychicHttpRequestCallback` | `ArRequestHandlerFunction` | Signature: `void(AsyncWebServerRequest*)` |
+| `PsychicJsonRequestCallback` | Custom typedef needed | Signature: `void(AsyncWebServerRequest*, JsonVariant&)` |
+
+## Critical API Differences
+
+### Return types
+- PsychicHttp handlers return `esp_err_t` → AsyncWebServer handlers return `void`
+- Remove ALL `return ESP_OK`, `return response.send()`, `return request->reply()`
+- Instead: call `request->send(...)` and just `return;`
+
+### Server initialization
+```cpp
+// OLD:
+_server->config.max_uri_handlers = _numberEndpoints;
+_server->listen(80);
+
+// NEW:
+// Port set in constructor: AsyncWebServer server(80);
+_server->begin();
+```
+
+### Simple response
+```cpp
+// OLD:
+return request->reply(200);
+return request->reply(401);
+
+// NEW:
+request->send(200);
+return;
+// or just: request->send(401);
+```
+
+### Response with headers
+```cpp
+// OLD:
+PsychicResponse response(request);
+response.setCode(200);
+response.setContentType(contentType.c_str());
+response.addHeader("Content-Encoding", "gzip");
+response.addHeader("Cache-Control", "public, immutable, max-age=31536000");
+response.setContent(content, len);
+return response.send();
+
+// NEW:
+AsyncWebServerResponse *response = request->beginResponse(200, contentType, content, len);
+response->addHeader("Content-Encoding", "gzip");
+response->addHeader("Cache-Control", "public, immutable, max-age=31536000");
+request->send(response);
+```
+
+### JSON response
+```cpp
+// OLD:
+PsychicJsonResponse response = PsychicJsonResponse(request, false);
+JsonObject root = response.getRoot();
+root["key"] = "value";
+return response.send();
+
+// NEW:
+AsyncJsonResponse *response = new AsyncJsonResponse();
+JsonObject root = response->getRoot();
+root["key"] = "value";
+response->setLength();
+request->send(response);
+```
+
+### JSON request handler (POST with body)
+```cpp
+// OLD:
+_server->on(path, HTTP_POST, callback);
+// where callback is PsychicJsonRequestCallback = std::function<esp_err_t(PsychicRequest*, JsonVariant&)>
+
+// NEW:
+AsyncCallbackJsonWebHandler *handler = new AsyncCallbackJsonWebHandler(path,
+    [](AsyncWebServerRequest *request, JsonVariant &json) {
+        // handle json...
+        request->send(200);
+    });
+_server->addHandler(handler);
+```
+
+### File response
+```cpp
+// OLD:
+PsychicFileResponse response(request, ESPFS, "/www/index.html", "text/html");
+return response.send();
+
+// NEW:
+request->send(ESPFS, "/www/index.html", "text/html");
+```
+
+### Endpoint registration
+```cpp
+// OLD:
+_server->on(path, HTTP_GET, handler);  // handler is PsychicWebHandler* or callback
+
+// NEW:
+_server->on(path, HTTP_GET, handler);  // handler is ArRequestHandlerFunction (lambda)
+```
+
+### File upload
+```cpp
+// OLD:
+PsychicUploadHandler *uploadHandler = new PsychicUploadHandler();
+uploadHandler->onUpload(handleUploadFn);
+uploadHandler->onRequest(handleCompleteFn);
+_server->on(path, HTTP_POST, uploadHandler);
+
+// NEW:
+_server->on(path, HTTP_POST,
+    [this](AsyncWebServerRequest *request) { uploadComplete(request); },
+    [this](AsyncWebServerRequest *request, String filename, size_t index,
+           uint8_t *data, size_t len, bool final) {
+        handleUpload(request, filename, index, data, len, final);
+    });
+// Note: upload handler signature differs - index is size_t, not uint64_t
+```
+
+### Static file serving
+```cpp
+// OLD and NEW are similar:
+_server->serveStatic("/path/", FS, "/dir/");
+```
+
+### Not found handler
+```cpp
+// OLD:
+_server->onNotFound([](PsychicRequest *request) { ... return ...; });
+
+// NEW:
+_server->onNotFound([](AsyncWebServerRequest *request) { ... });
+```
+
+### Default headers / CORS
+```cpp
+// OLD:
+DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", CORS_ORIGIN);
+
+// NEW:
+DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", CORS_ORIGIN);
+// Same API!
+```
+
+## WebSocket Migration
+
+### Handler setup
+```cpp
+// OLD:
+PsychicWebSocketHandler _socket;
+_socket.setFilter(filterFn);
+_socket.onOpen(openFn);
+_socket.onClose(closeFn);
+_socket.onFrame(frameFn);
+_server->on(path, &_socket);
+
+// NEW:
+AsyncWebSocket _socket("/ws/path");  // path in constructor
+_socket.onEvent([this](AsyncWebSocket *server, AsyncWebSocketClient *client,
+                       AwsEventType type, void *arg, uint8_t *data, size_t len) {
+    switch (type) {
+        case WS_EVT_CONNECT: onWSOpen(client); break;
+        case WS_EVT_DISCONNECT: onWSClose(client); break;
+        case WS_EVT_DATA: {
+            AwsFrameInfo *info = (AwsFrameInfo*)arg;
+            if (info->final && info->index == 0 && info->len == len) {
+                onWSFrame(client, info, data, len);
+            }
+            break;
+        }
+    }
+});
+_server->addHandler(&_socket);
+```
+
+### Client identification
+```cpp
+// OLD:
+client->socket()       // int fd
+client->remoteIP()     // IPAddress
+
+// NEW:
+client->id()           // uint32_t
+client->remoteIP()     // IPAddress (same)
+```
+
+### Sending messages
+```cpp
+// OLD:
+client->sendMessage(buffer.c_str());
+client->sendMessage(HTTPD_WS_TYPE_TEXT, output, len);
+client->sendMessage(HTTPD_WS_TYPE_BINARY, output, len);
+_socket.sendAll(buffer.c_str());
+
+// NEW:
+client->text(buffer.c_str());
+client->text(output, len);
+client->binary(output, len);
+_socket.textAll(buffer.c_str());
+_socket.binaryAll(output, len);
+```
+
+### Getting clients
+```cpp
+// OLD:
+_socket.getClient(clientId)         // PsychicWebSocketClient*
+_socket.getClientList()             // std::list<PsychicWebSocketClient*>
+_server->getClientList()            // for all server clients
+
+// NEW:
+_socket.client(clientId)            // AsyncWebSocketClient*
+_socket.getClients()                // LinkedList<AsyncWebSocketClient*>
+_socket.count()                     // number of connected clients
+```
+
+### Frame data access
+```cpp
+// OLD:
+frame->type      // httpd_ws_type_t (HTTPD_WS_TYPE_TEXT, HTTPD_WS_TYPE_BINARY)
+frame->payload   // uint8_t*
+frame->len       // size_t
+
+// NEW:
+// Data comes via onEvent callback:
+AwsFrameInfo *info = (AwsFrameInfo*)arg;
+info->opcode     // WS_TEXT or WS_BINARY
+data             // uint8_t* (parameter)
+len              // size_t (parameter)
+info->final      // bool - is this the final frame?
+info->index      // offset in message
+info->len        // total frame length
+```
+
+## Security wrapper pattern adaptation
+
+### New callback typedefs needed
+```cpp
+typedef std::function<void(AsyncWebServerRequest *request)> AsyncHttpRequestCallback;
+typedef std::function<void(AsyncWebServerRequest *request, JsonVariant &json)> AsyncJsonRequestCallback;
+typedef std::function<bool(AsyncWebServerRequest *request)> AsyncRequestFilterFunction;
+```
+
+### wrapRequest pattern
+```cpp
+// OLD:
+PsychicHttpRequestCallback wrapRequest(PsychicHttpRequestCallback onRequest, AuthenticationPredicate predicate) {
+    return [this, onRequest, predicate](PsychicRequest *request) {
+        Authentication authentication = authenticateRequest(request);
+        if (!predicate(authentication)) { return request->reply(401); }
+        return onRequest(request);
+    };
+}
+
+// NEW:
+AsyncHttpRequestCallback wrapRequest(AsyncHttpRequestCallback onRequest, AuthenticationPredicate predicate) {
+    return [this, onRequest, predicate](AsyncWebServerRequest *request) {
+        Authentication authentication = authenticateRequest(request);
+        if (!predicate(authentication)) { request->send(401); return; }
+        onRequest(request);
+    };
+}
+```
+
+## Request API differences
+```cpp
+// OLD:
+request->method()                    // http_method enum
+request->uri()                       // String
+request->host()                      // String
+request->contentLength()             // size_t
+request->hasHeader("name")           // bool
+request->header("name")              // String
+request->hasParam("name")            // bool
+request->getParam("name")->value()   // String
+request->loadParams()                // void - load query params
+request->_tempObject                 // void* for user data
+
+// NEW:
+request->method()                    // WebRequestMethod enum
+request->url()                       // String (not uri!)
+request->host()                      // String
+request->contentLength()             // size_t
+request->hasHeader("name")           // bool
+request->getHeader("name")->value()  // String (not header()!)
+request->hasParam("name")            // bool
+request->getParam("name")->value()   // String
+// No loadParams needed
+request->_tempObject                 // void* (same)
+```
+
+## Important notes
+- PsychicMqttClient depends on PsychicHttp. It will pull its own PsychicHttp. Keep it as-is for now; MQTT migration is out of scope.
+- `_server->maxUploadSize` does not exist in AsyncWebServer. Size validation must be done in the upload handler.
+- `_server->defaultEndpoint->setHandler(handler)` → use `_server->onNotFound(handler)` instead.
+- `_server->config.max_uri_handlers` → not needed, AsyncWebServer handlers are dynamic.
+- AsyncWebServer response lifecycle: `new AsyncJsonResponse()` is freed by the framework after sending.
+- `PsychicWebHandler` does not exist in AsyncWebServer; use lambdas directly.
