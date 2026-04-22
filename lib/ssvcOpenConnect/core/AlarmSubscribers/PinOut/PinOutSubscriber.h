@@ -18,30 +18,29 @@
 #ifndef SSVC_OPEN_CONNECT_PINOUTSUBSCRIBER_H
 #define SSVC_OPEN_CONNECT_PINOUTSUBSCRIBER_H
 
-
-
 #include <Arduino.h>
 #include "core/IAlarmSubscriber/IAlarmSubscriber.h"
-#include "ESP32SvelteKit.h"
+#include "core/SsvcConnector.h"
 #include "core/AlarmMonitor/AlarmMonitor.h"
-#include "NotificationService.h"
-#include <freertos/timers.h>
 
+#if !PINOUT_USE_GPIO
+#include "core/RelayPortCoordinator/RelayPortCoordinator.h"
+#endif
+
+/**
+ * Alarm level → outputs (two mutually exclusive builds via PINOUT_USE_GPIO):
+ * - 0: PCF8574 — outputs merged via `RelayPortCoordinator` (alarm bits + user rules).
+ * - 1: GPIO only.
+ */
 class PinOutSubscriber final : public IAlarmSubscriber {
 public:
- // Измените конструктор для приема указателя на ESP32SvelteKit
- PinOutSubscriber();
- ~PinOutSubscriber() override;
- void onAlarm(const AlarmEvent& event) override;
- void forceResetAlarm() override;
+  PinOutSubscriber();
+  ~PinOutSubscriber() override;
+  void onAlarm(const AlarmEvent& event) override;
+  void forceResetAlarm() override;
 
 private:
- static constexpr int DANGEROUS_PIN = GPIO_NUM_11;
- static constexpr int CRITICAL_PIN = GPIO_NUM_12;
-
- static constexpr auto TAG = "GPIO_ALARM_LOGGER";
+  static constexpr auto TAG = "PinOutSubscriber";
 };
 
-
-
-#endif //SSVC_OPEN_CONNECT_PINOUTSUBSCRIBER_H
+#endif // SSVC_OPEN_CONNECT_PINOUTSUBSCRIBER_H

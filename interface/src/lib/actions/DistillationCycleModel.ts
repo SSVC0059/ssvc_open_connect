@@ -47,7 +47,8 @@
  * ============================================================================
  */
 
-import type { Profile, SsvcSettings } from '$lib/types/ssvc';
+import type { OpenConnectRelayRules, Profile, SsvcSettings } from '$lib/types/ssvc';
+import { stripNumericKeysAtRoot } from '$lib/utils/profileSanitize';
 
 /** Полный объект SSVC по умолчанию для редактора профилей и normalizeProfile (без «дыр» в ключах). */
 function defaultSsvcSettingsForProfile(): SsvcSettings & { valve_bw_tails?: number } {
@@ -129,7 +130,11 @@ export function createDefaultProfile(): any {
 			enabled: false,
 			targetFlowMlh: 2500
 		},
-		ssvcSettings: defaultSsvcSettingsForProfile()
+		ssvcSettings: defaultSsvcSettingsForProfile(),
+		openConnectRelayRules: {
+			schemaVersion: 1,
+			rules: []
+		} satisfies OpenConnectRelayRules
 	};
 }
 
@@ -506,27 +511,32 @@ export class DistillationCycleModel {
 		const phlegmaticHearts = this.calculatePhlegmatic(netPowerWatts, heartsInitialSpeed);
 		const phlegmaticTails = this.calculatePhlegmatic(netPowerWatts, tailsFlow);
 
+		// Не копируем в результат артефакты {0,1,…} у «профиля» после ошибочного spread массива в объект
+		const profileRoot = stripNumericKeysAtRoot({
+			...(profile as unknown as Record<string, unknown>)
+		}) as Profile;
+
 		return {
-			...profile,
+			...profileRoot,
 			hearts: {
-				...profile.hearts,
+				...profileRoot.hearts,
 				percent:
-					profile.ssvcSettings.hearts_finish_temp > 0
+					profileRoot.ssvcSettings.hearts_finish_temp > 0
 						? calculatedHeartsPercent
-						: profile.hearts.percent
+						: profileRoot.hearts.percent
 			},
 			ssvcSettings: {
-				...profile.ssvcSettings,
+				...profileRoot.ssvcSettings,
 				heads: [Number(headsOpenTime.toFixed(1)), headsCyclePeriod],
-				late_heads: [Number(lateHeadsOpenTime.toFixed(1)), profile.ssvcSettings.late_heads[1]],
-				hearts: [Number(heartsOpenTime.toFixed(1)), profile.ssvcSettings.hearts[1]],
-				tails: [Number(tailsOpenTime.toFixed(1)), profile.ssvcSettings.tails[1]],
+				late_heads: [Number(lateHeadsOpenTime.toFixed(1)), profileRoot.ssvcSettings.late_heads[1]],
+				hearts: [Number(heartsOpenTime.toFixed(1)), profileRoot.ssvcSettings.hearts[1]],
+				tails: [Number(tailsOpenTime.toFixed(1)), profileRoot.ssvcSettings.tails[1]],
 				heads_timer: Math.round(headsTimerSec),
 				late_heads_timer: Math.round(lateHeadsTimerSec)
 			},
 			analytics: {
 				totalAS: Math.round(initialTotalAS),
-				boilingTemp: Number(this.calculateBoilingTemp(profile.strengthVol).toFixed(2)),
+				boilingTemp: Number(this.calculateBoilingTemp(profileRoot.strengthVol).toFixed(2)),
 				residueMl: Math.round(currentVolumeL * 1000),
 				residualFortress: Number(currentStrengthVol.toFixed(1)),
 				oneCycleTime: Math.round(oneCycleSec_heads),
@@ -548,10 +558,10 @@ export class DistillationCycleModel {
 					tailsMl: Math.round(tailsVol)
 				},
 				timers: {
-					heads: profile.heads.enabled ? Math.round(headsTimerSec) : 0,
+					heads: profileRoot.heads.enabled ? Math.round(headsTimerSec) : 0,
 					late_heads: Math.round(lateHeadsTimerSec),
 					hearts: Math.round(heartsTimerSec),
-					tails: profile.tails.enabled ? Math.round(tailsTimerSec) : 0,
+					tails: profileRoot.tails.enabled ? Math.round(tailsTimerSec) : 0,
 					total_process: netPowerWatts > 0 ? Math.round(totalProcessSec) : 0
 				},
 				refluxRatio: {

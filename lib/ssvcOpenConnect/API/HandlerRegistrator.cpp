@@ -127,16 +127,54 @@ void HandlerRegistrator::registerTelegramBotHandler() const
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
 
+    _server.on("/rest/oc/hardware-config", HTTP_GET,
+              _securityManager->wrapRequest(
+                  [](AsyncWebServerRequest* request) {
+                      OpenConnectHandler::getHardwareConfig(request);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/oc/hardware-config", HTTP_PUT,
+              _securityManager->wrapCallback(
+                  [](AsyncWebServerRequest* request, JsonVariant& json) {
+                      OpenConnectHandler::putHardwareConfig(request, json);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/oc/relay/capabilities", HTTP_GET,
+              _securityManager->wrapRequest(
+                  [](AsyncWebServerRequest* request) {
+                      OpenConnectHandler::getRelayCapabilities(request);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/oc/relay/metadata", HTTP_GET,
+              _securityManager->wrapRequest(
+                  [](AsyncWebServerRequest* request) {
+                      OpenConnectHandler::getRelayMetadata(request);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/oc/relay/state", HTTP_GET,
+              _securityManager->wrapRequest(
+                  [](AsyncWebServerRequest* request) {
+                      OpenConnectHandler::getRelayState(request);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/oc/relay/override", HTTP_POST,
+              _securityManager->wrapCallback(
+                  [](AsyncWebServerRequest* request, JsonVariant& json) {
+                      OpenConnectHandler::postRelayOverride(request, json);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
 }
 
 void HandlerRegistrator::registerProfileHandler() const
 {
-    // GET /rest/profiles - Get list of all profiles (metadata)
-    _server.on("/rest/profiles", HTTP_GET,
-                _securityManager->wrapRequest(
-                        [](AsyncWebServerRequest* request) {
-                            ProfileHandler::handleGetProfiles(request);
-                        }, AuthenticationPredicates::IS_AUTHENTICATED));
+    // Важно: более длинные пути ДО /rest/profiles. Иначе ESPAsyncWebServer сопоставляет
+    // GET /rest/profiles первым и запросы к /rest/profiles/content и /rest/profiles/active
+    // попадают в handleGetProfiles (список метаданных как JSON-массив), а не в нужные обработчики.
 
     // GET /rest/profiles/active - Get the ID of the active profile
     _server.on("/rest/profiles/active", HTTP_GET,
@@ -150,30 +188,24 @@ void HandlerRegistrator::registerProfileHandler() const
                     ProfileHandler::handleGetProfileContent(request);
                 }, AuthenticationPredicates::IS_AUTHENTICATED));
 
-    // POST /rest/profiles/content — регистрируем раньше /rest/profiles, чтобы запросы
-    // обновления содержимого не перехватывались обработчиком создания (некоторые стеки/прокси).
+    // GET /rest/profiles - Get list of all profiles (metadata)
+    _server.on("/rest/profiles", HTTP_GET,
+                _securityManager->wrapRequest(
+                        [](AsyncWebServerRequest* request) {
+                            ProfileHandler::handleGetProfiles(request);
+                        }, AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // Важно: все специфические POST-пути /rest/profiles/* регистрируются ДО общего
+    // POST /rest/profiles, потому что AsyncURIMatcher в режиме BackwardCompatible
+    // сопоставляет "/rest/profiles" с любым путём вида "/rest/profiles/*".
+    // Если POST /rest/profiles зарегистрирован раньше, он перехватит запросы к
+    // /rest/profiles/set-active, /rest/profiles/copy и т.д., вызывая ошибку 400.
+
+    // POST /rest/profiles/content - Update profile content
     _server.on("/rest/profiles/content", HTTP_POST,
             _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
                 ProfileHandler::handleUpdateProfileContent(request, json);
             }, AuthenticationPredicates::IS_AUTHENTICATED));
-
-    // POST /rest/profiles - Create a profile from current settings
-    _server.on("/rest/profiles", HTTP_POST,
-                _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
-                    ProfileHandler::handleCreateProfile(request, json);
-                }, AuthenticationPredicates::IS_AUTHENTICATED));
-
-    // POST /rest/profiles/copy - Copy a profile (source ID and new name in body)
-    _server.on("/rest/profiles/copy", HTTP_POST,
-                _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
-                    ProfileHandler::handleCopyProfile(request, json);
-                }, AuthenticationPredicates::IS_AUTHENTICATED));
-
-    // PUT /rest/profiles/meta - Update profile metadata (e.g., name) (ID and new name in body)
-    _server.on("/rest/profiles/meta", HTTP_PUT,
-        _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
-            ProfileHandler::handleUpdateProfileMeta(request, json);
-        }, AuthenticationPredicates::IS_AUTHENTICATED));
 
     // POST /rest/profiles/set-active - Set a profile as active and apply it (ID in body)
     _server.on("/rest/profiles/set-active", HTTP_POST,
@@ -181,10 +213,28 @@ void HandlerRegistrator::registerProfileHandler() const
             ProfileHandler::handleSetActiveAndApplyProfile(request, json);
         }, AuthenticationPredicates::IS_AUTHENTICATED));
 
+    // POST /rest/profiles/copy - Copy a profile (source ID and new name in body)
+    _server.on("/rest/profiles/copy", HTTP_POST,
+                _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
+                    ProfileHandler::handleCopyProfile(request, json);
+                }, AuthenticationPredicates::IS_AUTHENTICATED));
+
     // POST /rest/profiles/save - Save current settings to a profile (ID in body)
     _server.on("/rest/profiles/save", HTTP_POST,
         _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
             ProfileHandler::handleSaveSettingsToProfile(request, json);
+        }, AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // POST /rest/profiles - Create a new profile (generic path — must be LAST among POSTs)
+    _server.on("/rest/profiles", HTTP_POST,
+                _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
+                    ProfileHandler::handleCreateProfile(request, json);
+                }, AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // PUT /rest/profiles/meta - Update profile metadata (e.g., name) (ID and new name in body)
+    _server.on("/rest/profiles/meta", HTTP_PUT,
+        _securityManager->wrapCallback([](AsyncWebServerRequest* request, JsonVariant& json) {
+            ProfileHandler::handleUpdateProfileMeta(request, json);
         }, AuthenticationPredicates::IS_AUTHENTICATED));
 
     // DELETE /rest/profiles/delete - Delete a profile (ID in body)

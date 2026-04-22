@@ -1,5 +1,7 @@
 #include "AtmosphericSubsystem.h"
 #include "core/SubsystemManager/SubsystemManager.h"
+#include "core/StatefulServices/OpenConnectHardwareSettingsService/OpenConnectHardwareConfig.h"
+#include "core/StatefulServices/OpenConnectHardwareSettingsService/OpenConnectHardwareSettingsService.h"
 #include "components/sensors/SensorManager/SensorManager.h"
 #include <esp_log.h>
 
@@ -22,8 +24,11 @@ void AtmosphericSubsystem::enable() {
         return;
     }
 
-    // Создаем датчик, передавая указатель на шину
-    constexpr uint8_t sensorAddr = 0x47;
+    uint8_t sensorAddr = 0x47;
+    OpenConnectHardwareSettingsService::instance().read([&](OpenConnectHardwareConfig& cfg) {
+        sensorAddr = cfg.bmp581I2cAddress;
+    });
+
     _sensor = new BMP581Sensor(sensorAddr, "Давление", &i2cBus);
 
     if (_sensor->initialize()) {

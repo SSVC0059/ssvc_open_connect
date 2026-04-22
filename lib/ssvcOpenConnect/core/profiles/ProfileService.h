@@ -34,6 +34,9 @@ public:
     bool saveCurrentSettingsToProfile(const String& profileId) const;
     bool updateProfileContent(const String& profileId, const JsonObject& content) const;
 
+    /** Re-read active profile file and invoke all IProfileObserver::onProfileApply (e.g. after registering observers at boot). */
+    bool applyActiveProfileObservers() const;
+
 private:
     ProfileService();
 

@@ -4,8 +4,7 @@
 .settings-page-mobile {
 	display: flex;
 	flex-direction: column;
-	min-height: 0;
-	flex: 1;
+	width: 100%;
 
 	&__header {
 		flex-shrink: 0;
@@ -13,11 +12,10 @@
 		border-bottom: 1px solid oklch(var(--bc) / 0.12);
 	}
 
+	/* Прокрутка страницы — у родителя (.drawer-content > … overflow-y-auto), без вложенного scrollport */
 	&__scroll {
-		min-height: 0;
-		flex: 1;
-		overflow-y: auto;
-		overscroll-behavior-y: contain;
+		flex: none;
+		overflow: visible;
 	}
 
 	&__section {
@@ -99,7 +97,8 @@
 	/* Как system/update/+page: только отступ между карточками, без линии под каждой секцией */
 	&--section-cards {
 		@media (max-width: v.$breakpoint-md - 1px) {
-			.settings-page-mobile__scroll {
+			/* gap на внутренней обёртке — не комбинируем display:flex + overflow-y на одном узле */
+			.settings-page-mobile__scroll-inner {
 				display: flex;
 				flex-direction: column;
 				gap: 1rem;

@@ -2,7 +2,6 @@
 	import { DistillationCycleModel } from '$lib/actions/DistillationCycleModel';
 	import type { Profile } from '$lib/types/ssvc';
 	import { getProfileContent } from '$lib/api/Profiles';
-	import { normalizeProfile } from '$lib/utils/deepMerge';
 	import AnalyticsValue from './AnalyticsValue.svelte';
 
 	const cycleModel = new DistillationCycleModel();
@@ -38,9 +37,8 @@
 				error = new Error('Пустой ответ сервера');
 				return;
 			}
-			const normalized = normalizeProfile(data);
-			const withId = { ...normalized, id: data.id ?? id };
-			// API часто отдаёт JSON без analytics — считаем на клиенте, как в редакторе
+			const withId = { ...data, id: data.id ?? id };
+			// getProfileContent уже нормализует; analytics считаем на клиенте, как в редакторе
 			profile = cycleModel.calculateProcess(withId);
 		} catch (err) {
 			error = err as Error;

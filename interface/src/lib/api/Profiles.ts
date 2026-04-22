@@ -1,5 +1,6 @@
 import { apiFetch } from '$lib/api/ssvcApi';
 import type { Profile, Profiles } from '$lib/types/ssvc';
+import { normalizeProfile } from '$lib/utils/deepMerge';
 
 export async function getProfiles(): Promise<Profiles> {
 	const response = await apiFetch<Profiles>('/rest/profiles');
@@ -44,9 +45,11 @@ export async function deleteProfiles(id: string): Promise<boolean> {
 }
 
 export async function getProfileContent(id: string ): Promise<Profile | null> {
-	// Принудительно преобразуем id в строку для консистентности с API
 	const response = await apiFetch<any>(`/rest/profiles/content?id=${id}`);
-	return response.success ? response.data : null;
+	if (!response.success || response.data == null) {
+		return null;
+	}
+	return normalizeProfile(response.data as Partial<Profile>);
 }
 
 export async function saveCurrentSettingsToProfile(id: string): Promise<boolean> {

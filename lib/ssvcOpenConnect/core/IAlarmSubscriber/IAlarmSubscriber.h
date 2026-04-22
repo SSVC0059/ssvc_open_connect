@@ -21,24 +21,38 @@
 #include "components/sensors/AbstractSensor/AbstractSensor.h"
 #include "core/StatefulServices/AlarmThresholdService/AlarmThresholdService.h" // Для AlarmLevel
 
-// Структура, описывающая событие тревоги
-struct AlarmEvent {
-    const AbstractSensor* sensor; // Указатель на сам датчик
-    float current_value;
-    float threshold_value;
-    AlarmLevel level;
-    time_t timestamp;
+enum class AlarmSourceKind : uint8_t {
+  SENSOR = 0,
+  HARDWARE_FAULT = 1,
 };
 
-// Абстрактный класс (интерфейс) для всех подписчиков
+enum class HardwareFaultCode : uint8_t {
+  NONE = 0,
+  I2C_NACK = 1,
+  I2C_BUS_DOWN = 2,
+  DEVICE_NOT_PRESENT = 3,
+  UART_LINK_LOST = 4,
+};
+
+struct AlarmEvent {
+  AlarmSourceKind source_kind = AlarmSourceKind::SENSOR;
+  const AbstractSensor* sensor = nullptr;
+  float current_value = 0.f;
+  float threshold_value = 0.f;
+  AlarmLevel level = AlarmLevel::NORMAL;
+  time_t timestamp = 0;
+  /** Valid when source_kind == HARDWARE_FAULT */
+  HardwareFaultCode hw_code = HardwareFaultCode::NONE;
+  uint8_t hw_i2c_address = 0;
+  const char* hw_device_role = nullptr;
+};
+
 class IAlarmSubscriber {
 public:
-    virtual ~IAlarmSubscriber() = default;
-    // Чистый виртуальный метод, который должен будет реализовать каждый подписчик
-    virtual void onAlarm(const AlarmEvent& event) = 0;
+  virtual ~IAlarmSubscriber() = default;
+  virtual void onAlarm(const AlarmEvent& event) = 0;
 
-    virtual void forceResetAlarm() {}
-
+  virtual void forceResetAlarm() {}
 };
 
 #endif //SSVC_OPEN_CONNECT_IALARMSUBSCRIBER_H

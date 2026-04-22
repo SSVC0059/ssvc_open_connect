@@ -24,6 +24,10 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
+#ifndef SSVC_ONEWIRE_GPIO
+#define SSVC_ONEWIRE_GPIO 2
+#endif
+
 class DS18B20Sensor;
 
 /**
@@ -31,8 +35,7 @@ class DS18B20Sensor;
  */
 class OneWireThermalSubsystem final : public PollingSubsystem {
 public:
-    // Параметры специфичные для этой подсистемы
-    static constexpr uint8_t ONEWIRE_PIN = 2;
+    static constexpr uint8_t ONEWIRE_PIN = SSVC_ONEWIRE_GPIO;
 
     static OneWireThermalSubsystem& getInstance();
 

@@ -8,11 +8,13 @@
 
 class BMP581Sensor final : public AbstractSensor, public PollingSubsystem {
 public:
-    // Новый удобный конструктор
-    BMP581Sensor(const uint8_t i2cAddr, const std::string& name, I2CBusSubsystem* bus)
-        : BMP581Sensor(createAddr(i2cAddr), name, bus) {}
+    /** @param alarmDeviceRole стабильный идентификатор для `AlarmMonitor` (строковый литерал). */
+    BMP581Sensor(const uint8_t i2cAddr, const std::string& name, I2CBusSubsystem* bus,
+                 const char* alarmDeviceRole = "bmp581")
+        : BMP581Sensor(createAddr(i2cAddr), name, bus, alarmDeviceRole) {}
 
-    BMP581Sensor(const Address addr, const std::string& name, I2CBusSubsystem* bus);
+    BMP581Sensor(const Address addr, const std::string& name, I2CBusSubsystem* bus,
+                 const char* alarmDeviceRole = "bmp581");
 
     // Реализация для PollingSubsystem (виртуальный метод)
     // Теперь это "override" виртуальной функции, а не "hiding" статической
@@ -37,6 +39,7 @@ private:
     }
 
     I2CBusSubsystem* _bus;
+    const char* _alarmDeviceRole;
     Adafruit_BMP5xx _bmp;
     float _lastPressure = 0.0f;
     float _filteredPressure = 0.0f;

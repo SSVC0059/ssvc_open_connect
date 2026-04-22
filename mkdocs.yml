@@ -44,7 +44,6 @@ theme:
     - navigation.expand
     - navigation.top
     - toc.follow
-    - toc.integrate
     - navigation.top
     - content.code.copy
 
@@ -66,13 +65,16 @@ nav:
       - usage/get_started.md
   - "Использование":
       - calculator/index.md
-  - "Готовые модули":
-      - ready_made/connect.md
-      - ready_made/din_version.md
-      - ready_made/inside_version.md
+  - "Поддерживаемые контроллеры":
+    - "KC868-A6v3":
+      - "Описание (KinCony)": boards/kc868-a6/KC868-A6v3-KinCony.ru.md
+      - "Распиновка GPIO": boards/kc868-a6/GPIO_Pinout.md
+    - "Готовые модули":
+        - ready_made/connect.md
+        - ready_made/din_version.md
+        - ready_made/inside_version.md
   - Для разработчиков: develop/
-      
-  - "FAQ" : faq/faq.md
+  - "FAQ": faq/faq.md
   - "Прочее" :
       - info/changelog.md
 
@@ -107,6 +109,7 @@ extra:
       - reject
 
 plugins:
+  - mkdocs-pdf
   - search:
       separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
   - autorefs

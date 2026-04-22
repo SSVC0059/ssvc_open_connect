@@ -165,12 +165,103 @@ export type SubsystemsState = {
 	settings:	boolean;
 };
 
+/** Ответ GET/PUT /rest/oc/hardware-config */
+export type OcHardwareCapabilities = {
+	pinoutUseGpio: boolean;
+	relayOptionsAvailable: boolean;
+};
+
+export type OcHardwareConfigResponse = {
+	schemaVersion: number;
+	pressureSensorEnabled: boolean;
+	bmp581I2cAddress: number;
+	/** I²C probe at `bmp581I2cAddress` when `pressureSensorEnabled` (from GET/PUT). */
+	bmp581ProbeOk?: boolean;
+	userRelayPcfEnabled: boolean;
+	/** Ordered I²C addresses (7-bit); index = chip order (first = alarm outputs). */
+	relayPcf8574Addresses: number[];
+	/** Present when firmware probes expanders on GET (PCF8574 builds). */
+	relayPcf8574ProbeOk?: boolean[];
+	relayHardwareOk?: boolean;
+	pendingReboot: boolean;
+	/** Legacy fields; не используются в UI. */
+	rtcEnabled?: boolean;
+	oledEnabled?: boolean;
+	capabilities: OcHardwareCapabilities;
+	needsReboot: boolean;
+};
+
 export type SendCommandResponse = {
 	success: boolean;
 	message: string;
 };
 
 // ==================== Профили ректификации  ===================== //
+
+/** Правила для пользовательских линий PCF8574 (см. прошивку RelayRuleEngine). */
+export type RelayCondition =
+	| { type: 'sensor_alarm'; levels?: number[]; sensorNameContains?: string }
+	| { type: 'hardware_fault'; code?: number; roleContains?: string }
+	| { type: 'rectification'; stageEquals: string }
+	| {
+			type: 'ssvc_setting';
+			key: string;
+			boolEquals?: boolean;
+			intEquals?: number;
+			floatEquals?: number;
+	  };
+
+export type OpenConnectRelayRuleRow = {
+	enabled?: boolean;
+	targetBit: number;
+	actionEnergize?: boolean;
+	priority?: number;
+	condition: RelayCondition;
+};
+
+export type OpenConnectRelayRules = {
+	schemaVersion?: number;
+	rules: OpenConnectRelayRuleRow[];
+};
+
+export type RelayDescriptor = {
+	index: number;
+	label: string;
+	editable: boolean;
+	reason?: string;
+	targetBit: number;
+};
+
+export type FaultCodeDescriptor = {
+	value: number;
+	key: string;
+	label: string;
+};
+
+export type RectificationStageDescriptor = {
+	value: string;
+	label: string;
+};
+
+export type SsvcFieldDescriptor = {
+	key: string;
+	label: string;
+	valueType: 'bool' | 'int' | 'float';
+};
+
+export type RelayRuleMetadata = {
+	supported: boolean;
+	relays: RelayDescriptor[];
+	/** Mirror of hardware: number of PCF8574 relay expanders. */
+	relayChipCount?: number;
+	/** Total user + system lines (chips × 8). */
+	relayLineCount?: number;
+	sensorNames: string[];
+	hardwareFaultCodes: FaultCodeDescriptor[];
+	hardwareRoles: string[];
+	rectificationStages: RectificationStageDescriptor[];
+	ssvcFields: SsvcFieldDescriptor[];
+};
 
 interface FractionSettings {
 	percent: number; // % от АС
@@ -203,6 +294,9 @@ export type Profile = {
 
 	/** Настройки SSVC **/
 	ssvcSettings: SsvcSettings;
+
+	/** Пользовательская логика реле расширителя (только PCF8574 / PINOUT_USE_GPIO=0). */
+	openConnectRelayRules?: OpenConnectRelayRules;
 
 	analytics: Analytics;
 };

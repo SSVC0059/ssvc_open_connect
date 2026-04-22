@@ -572,6 +572,15 @@ bool ProfileService::setActiveAndApplyProfile(const String& profileId) const {
     return true;
 }
 
+bool ProfileService::applyActiveProfileObservers() const {
+    const String id = getActiveProfileId();
+    if (id.isEmpty()) {
+        ESP_LOGW(TAG, "applyActiveProfileObservers: no active profile");
+        return false;
+    }
+    return _applyProfileInternal(id);
+}
+
 bool ProfileService::getProfileContent(const String& profileId, String& dest) const {
     const String filePath = String(_profilesDir) + "/" + profileId + ".json";
     File profileFile = _fs->open(filePath, "r");

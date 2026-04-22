@@ -1,4 +1,5 @@
 mkdocs-material
+mkdocs-pdf
 mkdocs-redirects
 mkdocs-autorefs
 mkdocs-literate-nav

@@ -4,6 +4,110 @@
 
 #include "AlarmMonitor.h"
 
+#include <cstdio>
+
+std::string AlarmMonitor::makeHardwareStateKey(const char* device_role, const uint8_t i2c_addr) {
+  char buf[96];
+  snprintf(buf, sizeof(buf), "hw:%s:0x%02X", device_role ? device_role : "?",
+           static_cast<unsigned>(i2c_addr));
+  return std::string(buf);
+}
+
+void AlarmMonitor::raiseHardwareFault(const HardwareFaultCode code, const uint8_t i2c_addr,
+                                      const char* device_role) {
+  const std::string key = makeHardwareStateKey(device_role, i2c_addr);
+  const AlarmLevel last =
+      _last_hw_alarm_states.count(key) ? _last_hw_alarm_states.at(key) : AlarmLevel::NORMAL;
+  constexpr AlarmLevel new_level = AlarmLevel::CRITICAL;
+  _hw_fault_active_codes[key] = code; // always keep the code up to date
+  if (last == new_level) {
+    return;
+  }
+  _last_hw_alarm_states[key] = new_level;
+
+  AlarmEvent ev{};
+  ev.source_kind = AlarmSourceKind::HARDWARE_FAULT;
+  ev.sensor = nullptr;
+  ev.level = new_level;
+  ev.hw_code = code;
+  ev.hw_i2c_address = i2c_addr;
+  ev.hw_device_role = device_role;
+  ev.timestamp = time(nullptr);
+  ev.current_value = static_cast<float>(static_cast<unsigned>(code));
+  ev.threshold_value = 0.f;
+  notifySubscribers(ev);
+}
+
+void AlarmMonitor::clearHardwareFault(const char* device_role, const uint8_t i2c_addr) {
+  const std::string key = makeHardwareStateKey(device_role, i2c_addr);
+  _hw_fault_active_codes.erase(key);
+  if (!_last_hw_alarm_states.count(key) || _last_hw_alarm_states.at(key) == AlarmLevel::NORMAL) {
+    return;
+  }
+  _last_hw_alarm_states[key] = AlarmLevel::NORMAL;
+
+  AlarmEvent ev{};
+  ev.source_kind = AlarmSourceKind::HARDWARE_FAULT;
+  ev.sensor = nullptr;
+  ev.level = AlarmLevel::NORMAL;
+  ev.hw_code = HardwareFaultCode::NONE;
+  ev.hw_i2c_address = i2c_addr;
+  ev.hw_device_role = device_role;
+  ev.timestamp = time(nullptr);
+  ev.current_value = 0.f;
+  ev.threshold_value = 0.f;
+  notifySubscribers(ev);
+}
+
+std::vector<AlarmMonitor::HardwareFaultEntry> AlarmMonitor::getActiveHardwareFaults() const {
+  std::vector<HardwareFaultEntry> result;
+  for (const auto& kv : _last_hw_alarm_states) {
+    if (kv.second == AlarmLevel::NORMAL) {
+      continue;
+    }
+    const std::string& key = kv.first;
+    // Key format: "hw:{role}:0x{hex_addr}"
+    if (key.size() < 4 || key.compare(0, 3, "hw:") != 0) {
+      continue;
+    }
+    const size_t roleEnd = key.rfind(":0x");
+    if (roleEnd == std::string::npos || roleEnd < 3) {
+      continue;
+    }
+    HardwareFaultEntry entry;
+    entry.role = key.substr(3, roleEnd - 3);
+    const std::string addrHex = key.substr(roleEnd + 3);
+    entry.i2c_addr = static_cast<uint8_t>(strtoul(addrHex.c_str(), nullptr, 16));
+    const auto it = _hw_fault_active_codes.find(key);
+    entry.code = (it != _hw_fault_active_codes.end()) ? it->second : HardwareFaultCode::NONE;
+    result.push_back(std::move(entry));
+  }
+  return result;
+}
+
+std::vector<std::string> AlarmMonitor::getKnownHardwareRoles() const {
+  std::vector<std::string> roles;
+  roles.reserve(_last_hw_alarm_states.size());
+  for (const auto& it : _last_hw_alarm_states) {
+    const std::string& key = it.first;
+    const size_t prefix = key.find("hw:");
+    if (prefix != 0) {
+      continue;
+    }
+    const size_t roleStart = 3;
+    const size_t roleEnd = key.rfind(":0x");
+    if (roleEnd == std::string::npos || roleEnd <= roleStart) {
+      continue;
+    }
+    const std::string role = key.substr(roleStart, roleEnd - roleStart);
+    if (!role.empty() &&
+        std::find(roles.begin(), roles.end(), role) == roles.end()) {
+      roles.push_back(role);
+    }
+  }
+  return roles;
+}
+
 AlarmMonitor& AlarmMonitor::getInstance() {
     ESP_LOGV(TAG, "Singleton instance retrieved.");
     static AlarmMonitor instance;
@@ -23,6 +127,9 @@ void AlarmMonitor::initialize(AlarmThresholdService* service) {
 
         ESP_LOGI(TAG, "AlarmMonitor subscribed to Threshold Service updates (ID: %zu).", _updateHandlerId);
     }
+
+    _last_hw_alarm_states.clear();
+    _hw_fault_active_codes.clear();
 
     ESP_LOGI(TAG, "AlarmMonitor initialized with threshold service.");
 }
@@ -92,19 +199,32 @@ void AlarmMonitor::unsubscribe(IAlarmSubscriber* subscriber) {
 
 void AlarmMonitor::notifySubscribers(const AlarmEvent& event) const
 {
-    // Информационный лог о событии тревоги перед рассылкой
-    ESP_LOGW(TAG, "--- ALARM EVENT TRIGGERED --- Address: %s, Value: %.2f, Level: %d. Notifying %zu subscribers.",
-             SensorManager::addressToString(event.sensor->getAddress()).c_str(),
-             event.current_value,
-             static_cast<int>(event.level),
-             _subscribers.size());
+    if (event.source_kind == AlarmSourceKind::HARDWARE_FAULT) {
+        ESP_LOGW(TAG,
+                 "--- HARDWARE FAULT --- role=%s addr=0x%02X code=%u level=%d. Notifying %zu subscribers.",
+                 event.hw_device_role ? event.hw_device_role : "?",
+                 static_cast<unsigned>(event.hw_i2c_address),
+                 static_cast<unsigned>(event.hw_code), static_cast<int>(event.level),
+                 _subscribers.size());
+    } else {
+        if (event.sensor == nullptr) {
+            ESP_LOGE(TAG, "SENSOR alarm event with null sensor");
+            return;
+        }
+        ESP_LOGW(TAG, "--- ALARM EVENT TRIGGERED --- Address: %s, Value: %.2f, Level: %d. Notifying %zu subscribers.",
+                 SensorManager::addressToString(event.sensor->getAddress()).c_str(),
+                 event.current_value,
+                 static_cast<int>(event.level),
+                 _subscribers.size());
+    }
 
-    // Итерируемся по всем подписчикам и вызываем их метод onAlarmEvent
     for (IAlarmSubscriber* subscriber : _subscribers) {
         if (subscriber) {
-            // Подробный лог о рассылке каждому подписчику
-            ESP_LOGV(TAG, "Notifying subscriber 0x%p about event for sensor %s.",
-                     (void*)subscriber, SensorManager::addressToString(event.sensor->getAddress()).c_str());
+            if (event.source_kind == AlarmSourceKind::SENSOR && event.sensor != nullptr) {
+                ESP_LOGV(TAG, "Notifying subscriber 0x%p about event for sensor %s.",
+                         static_cast<void*>(subscriber),
+                         SensorManager::addressToString(event.sensor->getAddress()).c_str());
+            }
             subscriber->onAlarm(event);
         }
     }
@@ -175,13 +295,13 @@ void AlarmMonitor::checkAllSensors() {
 
                  _last_alarm_states[addr_str] = new_level;
 
-                 const AlarmEvent event = {
-                     sensor,
-                     current_value,
-                     FAILURE_THRESHOLD_VALUE, // <-- Используем символическое значение
-                     new_level,
-                     time(nullptr)
-                 };
+                 AlarmEvent event{};
+                 event.source_kind = AlarmSourceKind::SENSOR;
+                 event.sensor = sensor;
+                 event.current_value = current_value;
+                 event.threshold_value = FAILURE_THRESHOLD_VALUE;
+                 event.level = new_level;
+                 event.timestamp = time(nullptr);
                  notifySubscribers(event);
              }
              continue; // Завершаем обработку
@@ -218,14 +338,13 @@ void AlarmMonitor::checkAllSensors() {
 
                 _last_alarm_states[addr_str] = new_level; // Обновляем состояние
 
-                // Генерируем событие и уведомляем подписчиков
-                AlarmEvent event = {
-                    sensor,
-                    current_value,
-                    threshold_crossed,
-                    new_level,
-                    time(nullptr)
-                };
+                AlarmEvent event{};
+                event.source_kind = AlarmSourceKind::SENSOR;
+                event.sensor = sensor;
+                event.current_value = current_value;
+                event.threshold_value = threshold_crossed;
+                event.level = new_level;
+                event.timestamp = time(nullptr);
                 notifySubscribers(event);
 
             } else {

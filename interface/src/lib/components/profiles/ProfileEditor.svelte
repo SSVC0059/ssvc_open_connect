@@ -5,8 +5,10 @@
 	import AnalyticsValue from './AnalyticsValue.svelte';
 	import { getProfileContent } from '$lib/api/Profiles';
 	import type { Profile } from '$lib/types/ssvc';
-	import { normalizeProfile } from '$lib/utils/deepMerge';
+	import { stripNumericKeysAtRoot } from '$lib/utils/profileSanitize';
 	import KpnPopover from '$lib/components/profiles/KpnPopover.svelte'; // Опционально для иконки
+	import { page } from '$app/state';
+	import ProfileOpenConnectRelayTab from './ProfileOpenConnectRelayTab.svelte';
 
 	let {
 		profileInfo,
@@ -14,7 +16,7 @@
 		onCancel
 	} = $props<{
 		profileInfo: Profile;
-		onSave: (profile: any) => void;
+		onSave: (profile: Profile) => void;
 		onCancel: () => void;
 	}>();
 
@@ -55,13 +57,19 @@
 
 	const isFractionSumInvalid = $derived(totalFractionPercent > 100);
 
+	let editorTab = $state<'process' | 'relays'>('process');
+	const showRelayTab = $derived(!!(page.data as { features?: Record<string, unknown> }).features?.openConnectUserRelays);
 
 	async function loadProfile(id: string) {
 		isLoading = true;
 		try {
 			const rawProfile = await getProfileContent(id);
-			// Загружаем данные в sourceProfile, что автоматически вызовет пересчет 'profile'
-			sourceProfile = normalizeProfile(rawProfile);
+			if (rawProfile) {
+				// getProfileContent уже возвращает normalizeProfile(...)
+				sourceProfile = rawProfile;
+			} else {
+				console.error('Профиль не найден или пустой ответ для id:', id);
+			}
 		} catch (err) {
 			console.error('Ошибка загрузки данных:', err);
 		} finally {
@@ -113,15 +121,15 @@
 			console.error('Сумма фракций превышает 100%');
 			return;
 		}
-		// Это место для вашей логики обработки.
-		// Вы можете изменить объект 'profile' перед отправкой.
-		const finalProfile = {
-			...profile,
+		// Снимок + JSON: убираем прокси; удаляем артефакты {0,1,...} от прошлых битых загрузок (spread массива в объект)
+		const cloned = JSON.parse(JSON.stringify(profile)) as Profile & Record<string, unknown>;
+		const payload = stripNumericKeysAtRoot(cloned) as Profile;
+		const finalProfile: Profile = {
+			...payload,
 			id: profileInfo.id,
 			name: profileInfo.name,
 			...(profileInfo.createdAt ? { createdAt: profileInfo.createdAt } : {})
 		};
-		console.log('Профиль для сохранения:', finalProfile);
 		onSave(finalProfile);
 	}
 
@@ -147,6 +155,27 @@
 	<div class="loader">Загрузка профиля...</div>
 {:else}
 	<div class="editor-layout">
+		<div class="tabs tabs-boxed mb-2 flex-wrap gap-1">
+			<button
+				type="button"
+				class="tab"
+				class:tab-active={editorTab === 'process'}
+				onclick={() => (editorTab = 'process')}
+			>
+				Процесс и фракции
+			</button>
+			{#if showRelayTab}
+				<button
+					type="button"
+					class="tab"
+					class:tab-active={editorTab === 'relays'}
+					onclick={() => (editorTab = 'relays')}
+				>
+					Реле OC
+				</button>
+			{/if}
+		</div>
+		{#if editorTab === 'process'}
 		<!-- ======================================================================= -->
 		<!-- ОБЩИЕ ПАРАМЕТРЫ                                                         -->
 		<!-- ======================================================================= -->
@@ -570,11 +599,14 @@
 				<AnalyticsValue label="Общее время" value={formatTime(profile.analytics.timers.total_process)} isLarge={true} />
 			</div>
 		</div>
+		{:else}
+			<ProfileOpenConnectRelayTab sourceProfile={sourceProfile} />
+		{/if}
 	</div>
 
 	<div class="actions-panel">
 		<button class="btn-secondary" onclick={onCancel}>Отмена</button>
-		<button class="btn-primary" onclick={handleSave} disabled={isFractionSumInvalid}>Сохранить профиль</button>
+		<button type="button" class="btn-primary" onclick={handleSave} disabled={isFractionSumInvalid}>Сохранить профиль</button>
 	</div>
 {/if}
 

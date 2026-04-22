@@ -31,13 +31,59 @@
 #include <vector>
 
 // UART CONFIGS
+//
+// Physical link can be:
+// - Direct TTL UART (legacy): ESP TX/RX ↔ SSVC UART.
+// - RS485 (typical with KinCony KC868-A6): ESP TTL UART ↔ MAX13487 (or external RS485↔TTL) ↔
+//   twisted pair ↔ (SSVC side: RS485↔TTL) ↔ SSVC. Auto-direction transceivers (e.g. MAX13487E)
+//   do not expose DE/RE to the MCU — firmware keeps standard async UART; no uart_set_mode(RS485).
+// See docs/boards/kc868-a6/GPIO_Pinout.md — KC868-A6 v6: RS485 TTL TX=GPIO17 RX=GPIO18 (build_flags).
 
 #define SSVC_OPEN_CONNECT_UART_NUM UART_NUM_1
 #ifndef SSVC_OPEN_CONNECT_UART_TX
 #define SSVC_OPEN_CONNECT_UART_TX GPIO_NUM_17
 #endif
 #ifndef SSVC_OPEN_CONNECT_UART_RX
-#define SSVC_OPEN_CONNECT_UART_RX GPIO_NUM_16
+#define SSVC_OPEN_CONNECT_UART_RX GPIO_NUM_18
+#endif
+
+#ifndef BOARD_KINCONY_KC868_A6
+#define BOARD_KINCONY_KC868_A6 0
+#endif
+
+/**
+ * 1 = alarm line outputs on GPIO only (independent of PCF8574).
+ * 0 = alarm lines driven via I2C PCF8574 (see SSVC_RELAY_PCF8574_*); mutually exclusive compile paths.
+ * Set per board in platformio.ini — do not infer from BOARD_* here.
+ */
+#ifndef PINOUT_USE_GPIO
+#define PINOUT_USE_GPIO 1
+#endif
+
+/** GPIO alarm outputs when PINOUT_USE_GPIO=1; must not clash with other firmware uses (I2C/UART/etc.). */
+#ifndef SSVC_PINOUT_ALARM_GPIO_DANGEROUS
+#define SSVC_PINOUT_ALARM_GPIO_DANGEROUS GPIO_NUM_8
+#endif
+#ifndef SSVC_PINOUT_ALARM_GPIO_CRITICAL
+#define SSVC_PINOUT_ALARM_GPIO_CRITICAL GPIO_NUM_13
+#endif
+
+/** First (or only) PCF8574 relay/output port when PINOUT_USE_GPIO=0. Extra chips: another port + role. */
+#ifndef SSVC_RELAY_PCF8574_I2C_ADDR
+#define SSVC_RELAY_PCF8574_I2C_ADDR 0x24
+#endif
+#ifndef SSVC_RELAY_PCF8574_DEVICE_ROLE
+#define SSVC_RELAY_PCF8574_DEVICE_ROLE "pcf8574_port0"
+#endif
+#ifndef SSVC_RELAY_PCF8574_BIT_DANGEROUS
+#define SSVC_RELAY_PCF8574_BIT_DANGEROUS 0
+#endif
+#ifndef SSVC_RELAY_PCF8574_BIT_CRITICAL
+#define SSVC_RELAY_PCF8574_BIT_CRITICAL 1
+#endif
+/** Outputs per PCF8574 (fixed by chip); several expanders = several ports / roles / addresses. */
+#ifndef SSVC_RELAY_PCF8574_LINES_PER_CHIP
+#define SSVC_RELAY_PCF8574_LINES_PER_CHIP 8
 #endif
 
 constexpr size_t SSVC_OPEN_CONNECT_BUF_SIZE = 4096;

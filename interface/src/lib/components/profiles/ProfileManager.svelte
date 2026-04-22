@@ -98,9 +98,11 @@ $effect(() => {
 	}
 
 	async function handleSaveEditing(updatedProfile: Profile) {
-		if (!updatedProfile || !updatedProfile.id) return;
+		if (!updatedProfile || !updatedProfile.id) {
+			notifications.error('Невозможно сохранить профиль: нет идентификатора.', 5000);
+			return;
+		}
 
-		console.log('Профиль для сохранения:', updatedProfile);
 		try {
 			isLoading = true;
 
