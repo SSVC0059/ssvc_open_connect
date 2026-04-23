@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Pencil from '~icons/tabler/pencil';
-	import { focusTrap } from 'svelte-focus-trap';
+	import { focusTrap } from '$lib/actions/focusTrap';
 	import { fly } from 'svelte/transition';
 	import Cancel from '~icons/tabler/x';
 	import Check from '~icons/tabler/check';

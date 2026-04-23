@@ -53,7 +53,7 @@ describe('StartWizard', () => {
 	beforeEach(() => {
 		vi.mocked(fetchSettings).mockResolvedValue(createMockSsvcSettings());
 		vi.mocked(saveSettings).mockResolvedValue(true);
-		vi.mocked(sendCommand).mockResolvedValue(undefined);
+		vi.mocked(sendCommand).mockResolvedValue({ success: true, message: 'ok' });
 	});
 
 	it('рендерит заголовок мастера при isOpen=true', async () => {

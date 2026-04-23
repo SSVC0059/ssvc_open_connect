@@ -184,8 +184,13 @@ export type OcHardwareConfigResponse = {
 	relayPcf8574ProbeOk?: boolean[];
 	relayHardwareOk?: boolean;
 	pendingReboot: boolean;
-	/** Legacy fields; не используются в UI. */
-	rtcEnabled?: boolean;
+	/** DS3231 real-time clock (I²C, optional). */
+	rtcEnabled: boolean;
+	/** 7-bit I²C address, default 0x68 (104). */
+	ds3231I2cAddress: number;
+	/** I²C probe at `ds3231I2cAddress` when `rtcEnabled` (from GET/PUT). */
+	ds3231ProbeOk?: boolean;
+	/** Резерв (OLED и т.д.). */
 	oledEnabled?: boolean;
 	capabilities: OcHardwareCapabilities;
 	needsReboot: boolean;

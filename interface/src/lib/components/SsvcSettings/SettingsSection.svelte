@@ -1,7 +1,10 @@
 <script lang="ts">
-	const { title, defaultVisible = true } = $props<{
+	import type { Snippet } from 'svelte';
+
+	const { title, defaultVisible = true, children } = $props<{
 		title: string;
 		defaultVisible?: boolean;
+		children?: Snippet;
 	}>();
 
 	let isVisible = $state(defaultVisible);
@@ -21,7 +24,7 @@
 
 	{#if isVisible}
 		<div class="pt-2">
-			<slot />
+			{@render children?.()}
 		</div>
 	{/if}
 </div>

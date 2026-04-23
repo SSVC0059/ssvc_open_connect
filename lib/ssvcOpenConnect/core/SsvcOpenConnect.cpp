@@ -17,6 +17,7 @@
 
 #include "SsvcOpenConnect.h"
 
+#include "components/rtc/Ds3231RtcCoordinator.h"
 #include "components/sensors/OneWireThermalSubsystem/OneWireThermalSubsystem.h"
 #include "components/subsystem/AtmosphericSubsystem.h"
 #include "core/StatefulServices/OpenConnectHardwareSettingsService/OpenConnectHardwareConfig.h"
@@ -231,6 +232,8 @@ void SsvcOpenConnect::subsystemManager()
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] Starting subsystem manager...");
     subsystemManager.begin();
     ESP_LOGI(TAG, "[SUBSYSTEM_MANAGER] Initialization complete");
+
+    Ds3231RtcCoordinator::instance().bootstrapAfterI2c();
 
     {
         SsvcOpenConnect& app = SsvcOpenConnect::getInstance();

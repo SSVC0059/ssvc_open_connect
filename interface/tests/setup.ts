@@ -4,7 +4,12 @@ import { afterEach } from 'vitest';
 
 // jsdom не реализует Element.prototype.animate (svelte/transition, Portal)
 if (typeof Element !== 'undefined' && !Element.prototype.animate) {
-	Element.prototype.animate = () => ({ finish: () => {}, cancel: () => {}, persist: () => {} });
+	Element.prototype.animate = () =>
+		({
+			finish: () => {},
+			cancel: () => {},
+			persist: () => {}
+		}) as unknown as Animation;
 }
 
 afterEach(() => {

@@ -28,15 +28,31 @@
     import Temperature from '~icons/tabler/temperature';
 import { page } from '$app/state';
 import { goto } from '$app/navigation';
+    import { onMount } from 'svelte';
     import { user } from '$lib/stores/user';
     import type { Component } from 'svelte';
 
     let { closeMenu } = $props();
     let isCollapsed = $state(false);
+    let isMobile = $state(false);
 
     const github = { href: 'https://github.com/' + page.data.github, active: true };
 
     const discord = { href: '.', active: false };
+
+    onMount(() => {
+        const mediaQuery = window.matchMedia('(max-width: 1023px)');
+        const updateMobileState = () => {
+            isMobile = mediaQuery.matches;
+        };
+
+        updateMobileState();
+        mediaQuery.addEventListener('change', updateMobileState);
+
+        return () => {
+            mediaQuery.removeEventListener('change', updateMobileState);
+        };
+    });
 
     type menuItem = {
         title: string;
@@ -249,7 +265,7 @@ import { goto } from '$app/navigation';
 </script>
 
 <div
-    class="bg-base-200 text-base-content flex h-full flex-col transition-all duration-200 {isCollapsed
+    class="bg-base-200 text-base-content flex h-full flex-col duration-200 ease-out max-lg:transition-none lg:transition-[width,padding] {isCollapsed
         ? 'w-20 p-2'
         : 'w-80 p-4'}"
 >
@@ -288,7 +304,11 @@ import { goto } from '$app/navigation';
                         <details open={menuItem.submenu.some((subItem) => subItem.active)}>
                             <summary
                                     class="text-lg font-bold"
-                                    onclick={() => openRootDefault(menuItem)}
+                                    onclick={() => {
+                                        if (!isMobile) {
+                                            openRootDefault(menuItem);
+                                        }
+                                    }}
                             >
                                 <menuItem.icon class="h-6 w-6" />
                                 {menuItem.title}
@@ -301,7 +321,11 @@ import { goto } from '$app/navigation';
                                                 <details open={subMenuItem.submenu.some((child) => child.active)}>
                                                     <summary
                                                             class="text-ml font-bold"
-                                                            onclick={() => openParentDefault(subMenuItem)}
+                                                            onclick={() => {
+                                                                if (!isMobile) {
+                                                                    openParentDefault(subMenuItem);
+                                                                }
+                                                            }}
                                                     >
                                                         <subMenuItem.icon class="h-5 w-5" />
                                                         {subMenuItem.title}

@@ -272,6 +272,14 @@ void OpenConnectHandler::getHardwareConfig(AsyncWebServerRequest* request) {
             }
             root["bmp581ProbeOk"] = bmpOk;
         }
+        if (s.rtcEnabled) {
+            bool rtcOk = false;
+            if (w) {
+                w->beginTransmission(s.ds3231I2cAddress);
+                rtcOk = (w->endTransmission() == 0);
+            }
+            root["ds3231ProbeOk"] = rtcOk;
+        }
 #if !PINOUT_USE_GPIO
         JsonArray probeOk = root["relayPcf8574ProbeOk"].to<JsonArray>();
         bool relayHwOk = true;
@@ -328,6 +336,14 @@ void OpenConnectHandler::putHardwareConfig(AsyncWebServerRequest* request, JsonV
                 bmpOk = (w->endTransmission() == 0);
             }
             root["bmp581ProbeOk"] = bmpOk;
+        }
+        if (s.rtcEnabled) {
+            bool rtcOk = false;
+            if (w) {
+                w->beginTransmission(s.ds3231I2cAddress);
+                rtcOk = (w->endTransmission() == 0);
+            }
+            root["ds3231ProbeOk"] = rtcOk;
         }
 #if !PINOUT_USE_GPIO
         JsonArray probeOk = root["relayPcf8574ProbeOk"].to<JsonArray>();

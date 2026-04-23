@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { modals } from 'svelte-modals';
-	import { focusTrap } from 'svelte-focus-trap';
+	import { focusTrap } from '$lib/actions/focusTrap';
 	import { fly } from 'svelte/transition';
 	import Cancel from '~icons/tabler/x';
 	import AlertTriangle from '~icons/tabler/alert-triangle';

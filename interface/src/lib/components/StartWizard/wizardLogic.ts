@@ -3,7 +3,7 @@ import { fetchSettings } from '$lib/api/ssvcApi';
 import type { SsvcSettings } from '$lib/types/ssvc';
 
 export async function loadSettings(): Promise<SsvcSettings | null> {
-	return await fetchSettings();
+	return (await fetchSettings()) ?? null;
 }
 export function secondsToTimeString(sec: number): string {
 	const hours = Math.floor(sec / 3600)

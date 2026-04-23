@@ -24,6 +24,9 @@ struct OpenConnectHardwareConfig {
     bool pendingReboot = false;
 
     bool rtcEnabled = false;
+    /** DS3231 default 7-bit address 0x68; stored UTC in chip. */
+    uint8_t ds3231I2cAddress = 0x68;
+
     bool oledEnabled = false;
 
     static bool isValidI2c7Bit(uint8_t addr) { return addr >= 0x08 && addr <= 0x77; }

@@ -20,15 +20,6 @@
 %dark-theme-base {
   @media (prefers-color-scheme: dark) {
     color: var(--primary-200);
-
-    .border {
-      background-color: color-mix(in srgb, var(--black) 25%, transparent);
-    }
-
-    &.active {
-      color: var(--primary-100);
-      border-bottom: 4px solid var(--primary-100);
-    }
   }
 }
 

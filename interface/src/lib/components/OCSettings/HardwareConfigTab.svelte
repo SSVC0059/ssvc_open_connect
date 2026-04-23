@@ -29,6 +29,14 @@
 			if (cfg && (!cfg.relayPcf8574Addresses || cfg.relayPcf8574Addresses.length === 0)) {
 				cfg.relayPcf8574Addresses = [0x24];
 			}
+			if (cfg) {
+				if (typeof cfg.rtcEnabled !== 'boolean') {
+					cfg.rtcEnabled = false;
+				}
+				if (cfg.ds3231I2cAddress == null || Number.isNaN(Number(cfg.ds3231I2cAddress))) {
+					cfg.ds3231I2cAddress = 104;
+				}
+			}
 		} catch (err) {
 			loadError = err instanceof Error ? err.message : 'Ошибка загрузки';
 		} finally {
@@ -49,7 +57,9 @@
 				pressureSensorEnabled: cfg.pressureSensorEnabled,
 				bmp581I2cAddress: Number(cfg.bmp581I2cAddress),
 				userRelayPcfEnabled: cfg.userRelayPcfEnabled,
-				relayPcf8574Addresses: cfg.relayPcf8574Addresses.map((a) => Number(a))
+				relayPcf8574Addresses: cfg.relayPcf8574Addresses.map((a) => Number(a)),
+				rtcEnabled: cfg.rtcEnabled,
+				ds3231I2cAddress: Number(cfg.ds3231I2cAddress)
 			});
 			if (next) {
 				cfg = next;
@@ -63,8 +73,6 @@
 	}
 
 	function openRestartModal() {
-		// svelte-modals typings vs Svelte 5 components (same pattern as SystemStatus.svelte)
-		// @ts-expect-error ModalComponent mismatch
 		modals.open(ConfirmDialog, {
 			title: 'Перезагрузка устройства',
 			message:
@@ -160,6 +168,52 @@
 							aria-label={cfg.bmp581ProbeOk ? 'Датчик отвечает на I²C' : 'Нет ответа на I²C'}
 						>
 							{#if cfg.bmp581ProbeOk}
+								<CircleCheck class="h-7 w-7 text-success" />
+							{:else}
+								<CircleX class="h-7 w-7 text-error" />
+							{/if}
+						</div>
+					{/if}
+				</div>
+			</section>
+
+			<section class="flex flex-col gap-3 rounded-box border border-base-300/80 bg-base-100 p-4 shadow-sm">
+				<h3 class="text-lg font-semibold">Часы реального времени (DS3231)</h3>
+				<p class="text-sm text-base-content/70">
+					Опциональный модуль на I²C. В часах хранится UTC; локальное время задаётся в настройках NTP (часовой пояс).
+					После синхронизации с интернетом время записывается в DS3231; без сети при старте время берётся из модуля.
+				</p>
+				<label class="flex cursor-pointer items-center gap-3 {!disabled ? '' : 'opacity-60'}">
+					<input
+						type="checkbox"
+						class="toggle toggle-primary"
+						bind:checked={cfg.rtcEnabled}
+						disabled={disabled}
+					/>
+					<span>Включить DS3231 на шине I²C</span>
+				</label>
+				<div class="flex flex-wrap items-end gap-4">
+					<label class="form-control w-full max-w-xs">
+						<span class="label-text">Адрес I²C DS3231 (7-bit)</span>
+						<input
+							type="number"
+							min={8}
+							max={119}
+							class="input input-bordered w-full"
+							bind:value={cfg.ds3231I2cAddress}
+							disabled={disabled}
+						/>
+						<span class="label-text-alt text-base-content/60">По умолчанию 0x68 → 104</span>
+					</label>
+					{#if cfg.rtcEnabled && cfg.ds3231ProbeOk !== undefined}
+						<div
+							class="flex h-12 w-12 shrink-0 items-center justify-center self-end rounded-lg border border-base-300/80 bg-base-200/50"
+							title={cfg.ds3231ProbeOk
+								? 'Часы отвечают на шине I²C'
+								: 'Нет ответа на адресе — проверьте модуль'}
+							aria-label={cfg.ds3231ProbeOk ? 'DS3231 отвечает на I²C' : 'Нет ответа DS3231 на I²C'}
+						>
+							{#if cfg.ds3231ProbeOk}
 								<CircleCheck class="h-7 w-7 text-success" />
 							{:else}
 								<CircleX class="h-7 w-7 text-error" />

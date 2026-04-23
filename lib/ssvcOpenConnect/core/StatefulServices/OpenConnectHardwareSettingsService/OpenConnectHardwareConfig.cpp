@@ -22,7 +22,8 @@ bool relayAddrVecEqual(const std::vector<uint8_t>& a, const std::vector<uint8_t>
 bool rebootFieldsDiffer(const OpenConnectHardwareConfig& a, const OpenConnectHardwareConfig& b) {
     return a.pressureSensorEnabled != b.pressureSensorEnabled || a.bmp581I2cAddress != b.bmp581I2cAddress ||
            a.userRelayPcfEnabled != b.userRelayPcfEnabled || !relayAddrVecEqual(a.relayPcf8574Addresses, b.relayPcf8574Addresses) ||
-           a.rtcEnabled != b.rtcEnabled || a.oledEnabled != b.oledEnabled;
+           a.rtcEnabled != b.rtcEnabled || a.ds3231I2cAddress != b.ds3231I2cAddress ||
+           a.oledEnabled != b.oledEnabled;
 }
 
 void syncSubsystemNvsAtmSensor(bool pressureOn) {
@@ -73,6 +74,7 @@ void OpenConnectHardwareConfig::read(OpenConnectHardwareConfig& s, JsonObject& r
     }
     root["pendingReboot"] = s.pendingReboot;
     root["rtcEnabled"] = s.rtcEnabled;
+    root["ds3231I2cAddress"] = s.ds3231I2cAddress;
     root["oledEnabled"] = s.oledEnabled;
 }
 
@@ -81,14 +83,12 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
     bool changed = false;
 
     // Migrate legacy JSON: single relayPcf8574I2cAddress once (no relayPcf8574Addresses array in file)
-    if (root.containsKey("relayPcf8574I2cAddress") && !root["relayPcf8574Addresses"].is<JsonArray>()) {
-        if (root["relayPcf8574I2cAddress"].is<unsigned int>()) {
-            const uint8_t legacy = static_cast<uint8_t>(root["relayPcf8574I2cAddress"].as<unsigned int>());
-            if (isValidI2c7Bit(legacy)) {
-                s.relayPcf8574Addresses.clear();
-                s.relayPcf8574Addresses.push_back(legacy);
-                changed = true;
-            }
+    if (root["relayPcf8574I2cAddress"].is<unsigned int>() && !root["relayPcf8574Addresses"].is<JsonArray>()) {
+        const uint8_t legacy = static_cast<uint8_t>(root["relayPcf8574I2cAddress"].as<unsigned int>());
+        if (isValidI2c7Bit(legacy)) {
+            s.relayPcf8574Addresses.clear();
+            s.relayPcf8574Addresses.push_back(legacy);
+            changed = true;
         }
     }
 
@@ -146,6 +146,20 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
         const bool v = root["rtcEnabled"].as<bool>();
         if (v != s.rtcEnabled) {
             s.rtcEnabled = v;
+            changed = true;
+        }
+    }
+
+    if (!root["ds3231I2cAddress"].isNull()) {
+        if (!root["ds3231I2cAddress"].is<unsigned int>()) {
+            return StateUpdateResult::ERROR;
+        }
+        const uint8_t addr = static_cast<uint8_t>(root["ds3231I2cAddress"].as<unsigned int>());
+        if (!isValidI2c7Bit(addr)) {
+            return StateUpdateResult::ERROR;
+        }
+        if (addr != s.ds3231I2cAddress) {
+            s.ds3231I2cAddress = addr;
             changed = true;
         }
     }

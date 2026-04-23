@@ -39,7 +39,10 @@
 		users: userSetting[];
 	};
 
-	let securitySettings: SecuritySettings = $state();
+	let securitySettings: SecuritySettings = $state({
+		jwt_secret: '',
+		users: []
+	});
 
 	async function getSecuritySettings() {
 		try {

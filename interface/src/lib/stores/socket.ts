@@ -6,8 +6,8 @@ function createWebSocket() {
 	const { subscribe, set } = writable(false);
 	const socketEvents = ['open', 'close', 'error', 'message', 'unresponsive'] as const;
 	type SocketEvent = (typeof socketEvents)[number];
-	let unresponsiveTimeoutId: number;
-	let reconnectTimeoutId: number;
+	let unresponsiveTimeoutId: ReturnType<typeof setTimeout>;
+	let reconnectTimeoutId: ReturnType<typeof setTimeout>;
 	let ws: WebSocket;
 	let socketUrl: string | URL;
 	let event_use_json = false;

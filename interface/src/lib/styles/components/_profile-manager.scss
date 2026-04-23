@@ -192,16 +192,6 @@
   z-index: 1;
 }
 
-.profile-editor-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-
-    @media (min-width: v.$breakpoint-lg) {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
 .profile-settings-placeholder {
   display: flex;
   flex-direction: column;
@@ -252,7 +242,7 @@
     background-color: oklch(var(--b2));
   }
 
-  &.btn-disabled, &:disabled {
+  &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     &:hover {

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { modals, onBeforeClose } from 'svelte-modals';
-	import { focusTrap } from 'svelte-focus-trap';
+	import { focusTrap } from '$lib/actions/focusTrap';
 	import { fly } from 'svelte/transition';
 	import { telemetry } from '$lib/stores/telemetry';
 	import Cancel from '~icons/tabler/x';

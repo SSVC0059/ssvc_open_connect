@@ -729,13 +729,13 @@
 			flex-shrink: 0;
 		}
 
-		.chevron {
+		:global(.chevron) {
 			transition: transform 0.2s ease-in-out;
 			color: var(--primary-500);
 			font-size: 1.25rem;
 		}
 
-		&[open] > summary .chevron {
+		&[open] > summary :global(.chevron) {
 			transform: rotate(180deg);
 		}
 	}
@@ -984,7 +984,7 @@
 		.summary-content.active {
 			color: var(--text-color);
 		}
-		.chevron {
+		:global(.chevron) {
 			color: var(--text-color);
 		}
 		.col-title {

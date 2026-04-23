@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { fetchRelayRuleMetadata } from '$lib/api/ssvcApi';
+	import ArrowNarrowUp from '~icons/tabler/arrow-narrow-up';
+	import ArrowNarrowDown from '~icons/tabler/arrow-narrow-down';
+	import Copy from '~icons/tabler/copy';
 	import type {
 		FaultCodeDescriptor,
 		OpenConnectRelayRuleRow,
@@ -399,40 +402,54 @@
 							onclick={(e) => e.stopPropagation()}
 							onkeydown={(e) => e.stopPropagation()}
 						>
-							<input
-								type="checkbox"
-								class="toggle toggle-xs toggle-primary"
-								checked={row.enabled ?? true}
-								title={row.enabled ?? true ? 'Активно — нажмите чтобы отключить' : 'Отключено — нажмите чтобы включить'}
-								onchange={(e) => {
-									row.enabled = (e.currentTarget as HTMLInputElement).checked;
-								}}
-							/>
-							<button
-								type="button"
-								class="btn btn-ghost btn-xs"
-								onclick={() => moveRule(idx, -1)}
-								disabled={idx === 0}
-								title="Поднять приоритет"
-							>↑</button>
-							<button
-								type="button"
-								class="btn btn-ghost btn-xs"
-								onclick={() => moveRule(idx, 1)}
-								disabled={idx === ensureRules().rules.length - 1}
-								title="Снизить приоритет"
-							>↓</button>
-							<button
-								type="button"
-								class="btn btn-ghost btn-xs"
-								onclick={() => duplicateRule(idx)}
-								title="Дублировать правило"
-							>⎘</button>
+							<div class="rule-actions-main">
+								<input
+									type="checkbox"
+									class="toggle toggle-xs toggle-primary"
+									checked={row.enabled ?? true}
+									title={row.enabled ?? true ? 'Активно — нажмите чтобы отключить' : 'Отключено — нажмите чтобы включить'}
+									onchange={(e) => {
+										row.enabled = (e.currentTarget as HTMLInputElement).checked;
+									}}
+								/>
+								<span class="rule-enabled-label">{row.enabled ?? true ? 'Вкл' : 'Выкл'}</span>
+							</div>
+							<div class="rule-actions-secondary">
+								<button
+									type="button"
+									class="btn btn-ghost btn-xs rule-action-btn"
+									onclick={() => moveRule(idx, -1)}
+									disabled={idx === 0}
+									title="Поднять приоритет"
+								>
+									<ArrowNarrowUp class="h-4 w-4" />
+									<span>Вверх</span>
+								</button>
+								<button
+									type="button"
+									class="btn btn-ghost btn-xs rule-action-btn"
+									onclick={() => moveRule(idx, 1)}
+									disabled={idx === ensureRules().rules.length - 1}
+									title="Снизить приоритет"
+								>
+									<ArrowNarrowDown class="h-4 w-4" />
+									<span>Вниз</span>
+								</button>
+								<button
+									type="button"
+									class="btn btn-ghost btn-xs rule-action-btn"
+									onclick={() => duplicateRule(idx)}
+									title="Дублировать правило"
+								>
+									<Copy class="h-4 w-4" />
+									<span>Копия</span>
+								</button>
+							</div>
 						</div>
 					</div>
 
 					<div class="rule-card-body">
-						<div class="text-xs opacity-70">{prettyCondition(row.condition)}</div>
+						<div class="rule-condition-title">{prettyCondition(row.condition)}</div>
 						<div class="rule-action-preview">
 							<span
 								class="action-chip"
@@ -846,14 +863,64 @@
 
 	.rule-actions {
 		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.2rem;
+		flex-shrink: 0;
+	}
+
+	.rule-actions-main {
+		display: flex;
 		align-items: center;
-		gap: 0.15rem;
+		gap: 0.35rem;
+	}
+
+	.rule-actions-secondary {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.2rem;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+	}
+
+	.rule-enabled-label {
+		font-size: 0.72rem;
+		font-weight: 600;
+		opacity: 0.65;
+	}
+
+	.rule-action-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.2rem;
+		min-height: 1.45rem;
+		padding: 0.1rem 0.35rem;
+		border: 1px solid oklch(var(--bc) / 0.22);
+		border-radius: 0.35rem;
+		line-height: 1;
+	}
+
+	.rule-action-btn:disabled {
+		opacity: 0.45;
+	}
+
+	.rule-action-btn span {
+		font-size: 0.68rem;
+		font-weight: 600;
+		opacity: 0.9;
 	}
 
 	.rule-card-body {
 		display: grid;
 		gap: 0.25rem;
 		font-size: 0.85rem;
+	}
+
+	.rule-condition-title {
+		font-size: 0.9rem;
+		font-weight: 600;
+		line-height: 1.25;
+		opacity: 0.9;
 	}
 
 	/* Строка действия в карточке */

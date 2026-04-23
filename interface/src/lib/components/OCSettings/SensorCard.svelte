@@ -384,7 +384,7 @@
 		min-width: 0;
 	}
 
-	.sensor-label {
+	.sensor-span {
 		color: var(--primary-600);
 		font-weight: 500;
 		font-size: 0.9rem;

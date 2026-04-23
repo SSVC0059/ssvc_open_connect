@@ -143,7 +143,7 @@
 					<div class="controls-container">
 						<Control {status} />
 						<div class="sensor-readings ">
-							<h3 class="section-title">Данные датчиков</h3>
+							<h3 class="section-title settings-section-title">Данные датчиков</h3>
 							{#if telemetry}
 								<div class="readings-list">
 									<div class="reading-item">
@@ -204,7 +204,7 @@
 						{/if}
 					</div>
 					<div class="parameters-readings parameters-bottom">
-						<h3 class="section-title">Параметры работы</h3>
+						<h3 class="section-title settings-section-title">Параметры работы</h3>
 						{#if telemetry}
 							<div class="readings-list">
 								<div class="reading-item">
@@ -299,9 +299,6 @@
         .label {
           font-weight: 700;
           color: var(--text-color);
-        }
-        .time-value {
-          font-weight: 700;
         }
       }
 
