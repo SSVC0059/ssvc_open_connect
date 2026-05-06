@@ -35,7 +35,7 @@ jobs:
           
       - name: Install dependencies
         run: |
-          pip install "mkdocs<2" mkdocs-material mkdocs-autorefs mkdocs-literate-nav mkdocstrings-python mkdocs-git-committers-plugin-2
+          pip install "mkdocs<2" mkdocs-material mkdocs-autorefs mkdocs-literate-nav mkdocstrings-python mkdocs-git-committers-plugin-2 mkdocs-pdf
           
       - name: Build and Deploy
         run: |
