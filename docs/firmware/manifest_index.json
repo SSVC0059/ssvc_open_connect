@@ -60,9 +60,27 @@
       "isLocal": true
     },
     {
+      "manifestUrl": "/ssvc_open_connect/firmware/SSVC-Open-Connect_esp32-s3-devkitc-1-16m_0-2-8-0_webflash.json",
+      "label": "16MB Flash",
+      "version": "0.2.8.0",
+      "isLocal": true
+    },
+    {
+      "manifestUrl": "/ssvc_open_connect/firmware/SSVC-Open-Connect_esp32-s3-devkitc-1-16m-secure_0-2-8-0_webflash.json",
+      "label": "16MB Flash (Secure)",
+      "version": "0.2.8.0",
+      "isLocal": true
+    },
+    {
       "manifestUrl": "/ssvc_open_connect/firmware/SSVC-Open-Connect_esp32-s3-devkitc-1-16m-secure_0-2-6-2_webflash.json",
       "label": "16MB Flash (Secure)",
       "version": "0.2.6.2",
+      "isLocal": true
+    },
+    {
+      "manifestUrl": "/ssvc_open_connect/firmware/SSVC-Open-Connect_esp32-s3-devkitc-1-8m_0-2-8-0_webflash.json",
+      "label": "8MB Flash",
+      "version": "0.2.8.0",
       "isLocal": true
     },
     {
@@ -75,6 +93,12 @@
       "manifestUrl": "/ssvc_open_connect/firmware/SSVC-Open-Connect_esp32-s3-devkitc-1-8m-secure_0-2-6-2_webflash.json",
       "label": "8MB Flash (Secure)",
       "version": "0.2.6.2",
+      "isLocal": true
+    },
+    {
+      "manifestUrl": "/ssvc_open_connect/firmware/SSVC-Open-Connect_esp32-s3-devkitc-1-8m-secure_0-2-8-0_webflash.json",
+      "label": "8MB Flash (Secure)",
+      "version": "0.2.8.0",
       "isLocal": true
     }
   ]
