@@ -58,6 +58,7 @@ private:
   uint8_t alarmMask() const;
   uint8_t userMaskChip0() const { return static_cast<uint8_t>(~alarmMask() & 0xFF); }
   uint8_t buildAlarmByte(AlarmLevel level) const;
+  uint8_t effectiveShadowChipLocked(unsigned chipIndex) const;
 
   std::vector<Pcf8574RelayPort> _ports;
   std::vector<uint8_t> _addresses;
