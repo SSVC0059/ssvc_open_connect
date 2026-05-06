@@ -252,11 +252,15 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6
         with:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync main
+        run: git pull --ff-only origin main
 
       - uses: actions/download-artifact@v4
         with:
@@ -276,9 +280,24 @@ jobs:
         run: |
           python scripts/docs/update_firmware_docs.py all-artifacts ${{ steps.ver.outputs.dash }}
 
-      - name: Commit and push
+      - name: Open PR for docs/firmware (merge queue)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -e
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/firmware/
-          git diff --staged --quiet || (git commit -m "docs: update firmware for ${{ github.ref_name }}" && git push)
+          if git diff --staged --quiet; then
+            echo "No docs/firmware changes to commit."
+            exit 0
+          fi
+          TAG="${{ github.ref_name }}"
+          BRANCH="bot/docs-firmware-${TAG}-run-${{ github.run_id }}"
+          git checkout -b "$BRANCH"
+          git commit -m "docs: update firmware for $TAG"
+          git push origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "docs: update firmware for $TAG" \
+            --body "Automated update of \`docs/firmware/\` after release [${{ github.ref_name }}](${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}). Workflow run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})."
+          gh pr merge --merge --auto
