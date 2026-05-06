@@ -192,6 +192,13 @@
 		};
 	}
 
+	function cloneRelayCondition(condition: RelayCondition): RelayCondition {
+		if (condition.type === 'sensor_alarm') {
+			return { ...condition, levels: condition.levels ? [...condition.levels] : undefined };
+		}
+		return { ...condition };
+	}
+
 	function addRule() {
 		const r = ensureRules();
 		const nextPriority = r.rules.length + 1;
@@ -206,7 +213,11 @@
 	function duplicateRule(index: number) {
 		const r = ensureRules();
 		const original = r.rules[index];
-		const copy: OpenConnectRelayRuleRow = { ...original, priority: r.rules.length + 1 };
+		const copy: OpenConnectRelayRuleRow = {
+			...original,
+			priority: r.rules.length + 1,
+			condition: cloneRelayCondition(original.condition)
+		};
 		r.rules = [...r.rules, copy];
 		normalizePriorityAndSort();
 		selectedRuleIndex = r.rules.length - 1;

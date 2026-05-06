@@ -33,6 +33,7 @@
 	const MAX_RELAY_CHIPS = 8;
 	const I2C_MIN = 8;
 	const I2C_MAX = 119;
+	const PCF8574_DEFAULT_ADDRESSES = [0x24, 0x25, 0x26, 0x27, 0x20, 0x21, 0x22, 0x23];
 	let bmp581HexInput = $state('');
 	let ds3231HexInput = $state('');
 	let lcd1602HexInput = $state('');
@@ -57,6 +58,28 @@
 			return null;
 		}
 		return parsed;
+	}
+
+	function hasDuplicateAddresses(addresses: number[]): boolean {
+		return new Set(addresses).size !== addresses.length;
+	}
+
+	function chooseNextRelayAddress(): number {
+		const used = new Set(
+			relayHexInputs
+				.map((raw) => parseI2cAddress(raw))
+				.filter((address): address is number => address != null)
+		);
+		const preferred = PCF8574_DEFAULT_ADDRESSES.find((address) => !used.has(address));
+		if (preferred != null) {
+			return preferred;
+		}
+		for (let address = I2C_MIN; address <= I2C_MAX; address += 1) {
+			if (!used.has(address)) {
+				return address;
+			}
+		}
+		return 0x24;
 	}
 
 	$effect(() => {
@@ -124,10 +147,15 @@
 			saveError = 'Проверьте I2C адреса: используйте 0xNN (или число 8..119).';
 			return;
 		}
+		const parsedRelayAddrs = relayAddrs.filter((address): address is number => address != null);
+		if (hasDuplicateAddresses(parsedRelayAddrs)) {
+			saveError = 'Адреса PCF8574 для реле не должны повторяться: каждый чип должен иметь уникальный I2C адрес.';
+			return;
+		}
 		cfg.bmp581I2cAddress = bmpAddr;
 		cfg.ds3231I2cAddress = rtcAddr;
 		cfg.lcd1602I2cAddress = lcdAddr;
-		cfg.relayPcf8574Addresses = relayAddrs as number[];
+		cfg.relayPcf8574Addresses = parsedRelayAddrs;
 		isSaving = true;
 		try {
 			const next = await putHardwareConfig({
@@ -189,8 +217,9 @@
 
 	function addRelayChip() {
 		if (!cfg || cfg.relayPcf8574Addresses.length >= MAX_RELAY_CHIPS) return;
-		cfg.relayPcf8574Addresses = [...cfg.relayPcf8574Addresses, 0x24];
-		relayHexInputs = [...relayHexInputs, formatHexAddress(0x24)];
+		const nextAddress = chooseNextRelayAddress();
+		cfg.relayPcf8574Addresses = [...cfg.relayPcf8574Addresses, nextAddress];
+		relayHexInputs = [...relayHexInputs, formatHexAddress(nextAddress)];
 	}
 
 	function removeRelayChip(idx: number) {
