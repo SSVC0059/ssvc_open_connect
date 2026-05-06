@@ -154,16 +154,17 @@ void Lcd1602Subsystem::enable() {
         _addr = cfg.lcd1602I2cAddress;
     });
 
+    _enabled = true;
     const BaseType_t ok =
         xTaskCreatePinnedToCore(workerTaskEntry, "lcd1602_task", 4096, this, tskIDLE_PRIORITY + 1, &_worker, 1);
     if (ok != pdPASS) {
+        _enabled = false;
         _worker = nullptr;
         ESP_LOGE(TAG, "Failed to create LCD1602 task");
         SubsystemManager::instance().disableSubsystem(getName());
         return;
     }
 
-    _enabled = true;
     ESP_LOGI(TAG, "LCD1602 subsystem enabled (addr=0x%02X)", static_cast<unsigned>(_addr));
 }
 

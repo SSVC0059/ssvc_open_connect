@@ -269,15 +269,16 @@ void RelayRuleEngine::clearAllManualOverrides() {
 #if !PINOUT_USE_GPIO
 void RelayRuleEngine::appendCapabilitiesJson(JsonObject& root) const {
   const auto& coord = RelayPortCoordinator::getInstance();
+  const std::vector<uint8_t> relayAddresses = coord.configuredAddresses();
   root["linesPerChip"] = SSVC_RELAY_PCF8574_LINES_PER_CHIP;
   JsonArray addrArr = root["relayPcf8574Addresses"].to<JsonArray>();
-  for (uint8_t a : coord.configuredAddresses()) {
+  for (uint8_t a : relayAddresses) {
     addrArr.add(a);
   }
   root["relayChipCount"] = coord.relayChipCount();
   root["relayLineCount"] = coord.totalRelayLines();
-  if (!coord.configuredAddresses().empty()) {
-    root["i2cAddress"] = coord.configuredAddresses()[0];
+  if (!relayAddresses.empty()) {
+    root["i2cAddress"] = relayAddresses[0];
   }
   root["alarmBitDangerous"] = SSVC_RELAY_PCF8574_BIT_DANGEROUS;
   root["alarmBitCritical"] = SSVC_RELAY_PCF8574_BIT_CRITICAL;

@@ -227,9 +227,14 @@ void OpenConnectHandler::postRelayOverride(AsyncWebServerRequest* request, JsonV
         request->send(400, "application/json", R"({"error":"Invalid bit"})");
         return;
     }
-    const unsigned total = RelayPortCoordinator::getInstance().totalRelayLines();
+    auto& coord = RelayPortCoordinator::getInstance();
+    const unsigned total = coord.totalRelayLines();
     if (static_cast<unsigned>(bit) >= total) {
         request->send(400, "application/json", R"({"error":"bit out of range"})");
+        return;
+    }
+    if (coord.isAlarmReservedGlobal(static_cast<unsigned>(bit))) {
+        request->send(403, "application/json", R"({"error":"Relay is reserved for AlarmManager"})");
         return;
     }
     const bool enable = o["enable"] | true;

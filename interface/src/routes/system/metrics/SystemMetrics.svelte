@@ -14,7 +14,7 @@
 	let heapChart: Chart;
 
 	let psramChartElement: HTMLCanvasElement | undefined = $state();
-	let psramChart: Chart;
+	let psramChart: Chart | undefined;
 
 	let filesystemChartElement: HTMLCanvasElement | undefined = $state();
 	let filesystemChart: Chart;
@@ -24,6 +24,87 @@
 
 	// Check if PSRAM data is available
 	let hasPsramData = $derived(Math.max(...$analytics.psram_size) > 0);
+
+	$effect(() => {
+		if (hasPsramData && psramChartElement) {
+			initPsramChart();
+		} else if (!hasPsramData && psramChart) {
+			psramChart.destroy();
+			psramChart = undefined;
+		}
+	});
+
+	function initPsramChart() {
+		if (psramChart || !hasPsramData || !psramChartElement) {
+			return;
+		}
+
+		psramChart = new Chart(psramChartElement, {
+			type: 'line',
+			data: {
+				labels: $analytics.uptime,
+				datasets: [
+					{
+						label: 'Used',
+						borderColor: daisyColor('--color-primary'),
+						backgroundColor: daisyColor('--color-primary', 50),
+						borderWidth: 2,
+						data: $analytics.used_psram,
+						yAxisID: 'y'
+					}
+				]
+			},
+			options: {
+				maintainAspectRatio: false,
+				responsive: true,
+				plugins: {
+					legend: {
+						display: true
+					},
+					tooltip: {
+						mode: 'index',
+						intersect: false
+					}
+				},
+				elements: {
+					point: {
+						radius: 1
+					}
+				},
+				scales: {
+					x: {
+						grid: {
+							color: daisyColor('--color-base-content', 10)
+						},
+						ticks: {
+							color: daisyColor('--color-base-content')
+						},
+						display: false
+					},
+					y: {
+						type: 'linear',
+						title: {
+							display: true,
+							text: 'PSRAM [KB]',
+							color: daisyColor('--color-base-content'),
+							font: {
+								size: 16,
+								weight: 'bold'
+							}
+						},
+						position: 'left',
+						min: 0,
+						max: Math.round(Math.max(...$analytics.psram_size)),
+						grid: { color: daisyColor('--color-base-content', 10) },
+						ticks: {
+							color: daisyColor('--color-base-content')
+						},
+						border: { color: daisyColor('--color-base-content', 10) }
+					}
+				}
+			}
+		});
+	}
 
 	onMount(() => {
 		heapChart = new Chart(heapChartElement!, {
@@ -99,76 +180,9 @@
 				}
 			}
 		});
-		
-		// Only create PSRAM chart if PSRAM data is available
-		if (hasPsramData) {
-			psramChart = new Chart(psramChartElement!, {
-			type: 'line',
-			data: {
-				labels: $analytics.uptime,
-				datasets: [
-					{
-						label: 'Used',
-						borderColor: daisyColor('--color-primary'),
-						backgroundColor: daisyColor('--color-primary', 50),
-						borderWidth: 2,
-						data: $analytics.used_psram,
-						yAxisID: 'y'
-					}
-				]
-			},
-			options: {
-				maintainAspectRatio: false,
-				responsive: true,
-				plugins: {
-					legend: {
-						display: true
-					},
-					tooltip: {
-						mode: 'index',
-						intersect: false
-					}
-				},
-				elements: {
-					point: {
-						radius: 1
-					}
-				},
-				scales: {
-					x: {
-						grid: {
-							color: daisyColor('--color-base-content', 10)
-						},
-						ticks: {
-							color: daisyColor('--color-base-content')
-						},
-						display: false
-					},
-					y: {
-						type: 'linear',
-						title: {
-							display: true,
-							text: 'PSRAM [KB]',
-							color: daisyColor('--color-base-content'),
-							font: {
-								size: 16,
-								weight: 'bold'
-							}
-						},
-						position: 'left',
-						min: 0,
-						max: Math.round(Math.max(...$analytics.psram_size)),
-						grid: { color: daisyColor('--color-base-content', 10) },
-						ticks: {
-							color: daisyColor('--color-base-content')
-						},
-						border: { color: daisyColor('--color-base-content', 10) }
-					}
-				}
-			}
-		});
-		}
-		
+
+		initPsramChart();
+
 		filesystemChart = new Chart(filesystemChartElement!, {
 			type: 'line',
 			data: {
@@ -299,9 +313,14 @@
 				}
 			}
 		});
-		setInterval(() => {
-			updateData(), 2000;
-		});
+		const interval = setInterval(updateData, 2000);
+		return () => {
+			clearInterval(interval);
+			heapChart.destroy();
+			psramChart?.destroy();
+			filesystemChart.destroy();
+			temperatureChart.destroy();
+		};
 	});
 
 	function updateData() {
@@ -315,12 +334,15 @@
 		}
 
 		if (hasPsramData) {
-			psramChart.data.labels = $analytics.uptime;
-			psramChart.data.datasets[0].data = $analytics.used_psram;
-			psramChart.update('none');
-			const psramScaleY = psramChart.options.scales?.y;
-			if (psramScaleY && typeof psramScaleY === 'object') {
-				psramScaleY.max = Math.round(Math.max(...$analytics.psram_size));
+			initPsramChart();
+			if (psramChart) {
+				psramChart.data.labels = $analytics.uptime;
+				psramChart.data.datasets[0].data = $analytics.used_psram;
+				psramChart.update('none');
+				const psramScaleY = psramChart.options.scales?.y;
+				if (psramScaleY && typeof psramScaleY === 'object') {
+					psramScaleY.max = Math.round(Math.max(...$analytics.psram_size));
+				}
 			}
 		}
 

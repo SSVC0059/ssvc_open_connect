@@ -21,6 +21,24 @@ static const char* const kRelayChipRoles[OpenConnectHardwareConfig::kMaxRelayChi
     "pcf8574_port7",
 };
 
+class CoordinatorLock {
+public:
+  explicit CoordinatorLock(SemaphoreHandle_t lock) : _lock(lock) {
+    if (_lock != nullptr) {
+      xSemaphoreTakeRecursive(_lock, portMAX_DELAY);
+    }
+  }
+
+  ~CoordinatorLock() {
+    if (_lock != nullptr) {
+      xSemaphoreGiveRecursive(_lock);
+    }
+  }
+
+private:
+  SemaphoreHandle_t _lock;
+};
+
 } // namespace
 
 RelayPortCoordinator& RelayPortCoordinator::getInstance() {
@@ -28,9 +46,10 @@ RelayPortCoordinator& RelayPortCoordinator::getInstance() {
   return instance;
 }
 
-RelayPortCoordinator::RelayPortCoordinator() = default;
+RelayPortCoordinator::RelayPortCoordinator() : _lock(xSemaphoreCreateRecursiveMutex()) {}
 
 void RelayPortCoordinator::configure(const std::vector<uint8_t>& addresses) {
+  CoordinatorLock lock(_lock);
   _ports.clear();
   _addresses.clear();
   _userShadows.clear();
@@ -56,7 +75,18 @@ void RelayPortCoordinator::configure(const std::vector<uint8_t>& addresses) {
 }
 
 unsigned RelayPortCoordinator::totalRelayLines() const {
+  CoordinatorLock lock(_lock);
   return static_cast<unsigned>(_ports.size() * SSVC_RELAY_PCF8574_LINES_PER_CHIP);
+}
+
+size_t RelayPortCoordinator::relayChipCount() const {
+  CoordinatorLock lock(_lock);
+  return _ports.size();
+}
+
+std::vector<uint8_t> RelayPortCoordinator::configuredAddresses() const {
+  CoordinatorLock lock(_lock);
+  return _addresses;
 }
 
 uint8_t RelayPortCoordinator::reservedAlarmBitsMask() const { return alarmMask(); }
@@ -76,9 +106,15 @@ uint8_t RelayPortCoordinator::buildAlarmByte(AlarmLevel level) const {
   return b;
 }
 
-void RelayPortCoordinator::setAlarmLevel(AlarmLevel level) { _alarmByte = buildAlarmByte(level); }
+void RelayPortCoordinator::setAlarmLevel(AlarmLevel level) {
+  CoordinatorLock lock(_lock);
+  _alarmByte = buildAlarmByte(level);
+}
 
-void RelayPortCoordinator::resetAlarmLines() { _alarmByte = 0xFF; }
+void RelayPortCoordinator::resetAlarmLines() {
+  CoordinatorLock lock(_lock);
+  _alarmByte = 0xFF;
+}
 
 bool RelayPortCoordinator::isAlarmReservedGlobal(const unsigned globalBit) const {
   const unsigned chip = globalBit / SSVC_RELAY_PCF8574_LINES_PER_CHIP;
@@ -91,6 +127,7 @@ bool RelayPortCoordinator::isAlarmReservedGlobal(const unsigned globalBit) const
 }
 
 void RelayPortCoordinator::setUserLine(const unsigned globalBitIndex, const bool energized) {
+  CoordinatorLock lock(_lock);
   if (_ports.empty() || globalBitIndex >= totalRelayLines()) {
     return;
   }
@@ -109,6 +146,7 @@ void RelayPortCoordinator::setUserLine(const unsigned globalBitIndex, const bool
 }
 
 uint8_t RelayPortCoordinator::userShadow() const {
+  CoordinatorLock lock(_lock);
   if (_userShadows.empty()) {
     return 0xFF;
   }
@@ -116,6 +154,7 @@ uint8_t RelayPortCoordinator::userShadow() const {
 }
 
 uint8_t RelayPortCoordinator::userShadowChip(const unsigned chipIndex) const {
+  CoordinatorLock lock(_lock);
   if (chipIndex >= _userShadows.size()) {
     return 0xFF;
   }
@@ -129,6 +168,7 @@ const Pcf8574RelayPort& RelayPortCoordinator::portAt(const size_t chipIndex) con
 }
 
 bool RelayPortCoordinator::flush() {
+  CoordinatorLock lock(_lock);
   if (_ports.empty()) {
     return true;
   }

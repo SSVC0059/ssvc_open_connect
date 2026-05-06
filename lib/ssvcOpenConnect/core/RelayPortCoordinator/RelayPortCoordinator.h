@@ -4,6 +4,8 @@
 #include <Arduino.h>
 #include "core/SsvcConnector.h"
 #include <cstdint>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 #include <vector>
 
 #if !PINOUT_USE_GPIO
@@ -36,9 +38,9 @@ public:
   /** @deprecated Use `userShadowChip` / `userShadows` in API; first chip only. */
   uint8_t userShadow() const;
   uint8_t userShadowChip(unsigned chipIndex) const;
-  size_t relayChipCount() const { return _ports.size(); }
+  size_t relayChipCount() const;
   unsigned totalRelayLines() const;
-  const std::vector<uint8_t>& configuredAddresses() const { return _addresses; }
+  std::vector<uint8_t> configuredAddresses() const;
 
   bool isAlarmReservedGlobal(unsigned globalBit) const;
 
@@ -60,6 +62,7 @@ private:
   std::vector<uint8_t> _addresses;
   std::vector<uint8_t> _userShadows;
   uint8_t _alarmByte = 0xFF;
+  mutable SemaphoreHandle_t _lock = nullptr;
 };
 
 #else
