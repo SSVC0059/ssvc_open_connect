@@ -1,13 +1,13 @@
 # I2C bus — KC868-A6 (v6)
 
-Общая шина: **SDA** / **SCL** задаются в сборке (`SSVC_I2C_SDA_GPIO` / `SSVC_I2C_SCL_GPIO`), инициализация — [`I2CBusSubsystem`](../../../lib/ssvcOpenConnect/components/subsystem/I2CBusSubsystem.h) (`Wire` через `getWire()` после `enable`).
+Общая шина: **SDA** / **SCL** задаются в сборке (`SSVC_I2C_SDA_GPIO` / `SSVC_I2C_SCL_GPIO`), инициализация — [`I2CBusSubsystem`](https://github.com/SSVC0059/ssvc_open_connect/blob/main/lib/ssvcOpenConnect/components/subsystem/I2CBusSubsystem.h) (`Wire` через `getWire()` после `enable`).
 
 ## Зарезервированные адреса (пример разводки платы)
 
 | Устройство        | Адрес | Примечание |
 |-------------------|-------|------------|
 | Входы (сухие контакты) | 0x22 | опционально |
-| Реле / выходы (PCF8574) | по умолчанию **0x24** | драйвер [`Pcf8574RelayPort`](../../../lib/ssvcOpenConnect/components/io/Pcf8574RelayPort.h); роль для алармов задаётся макросом `SSVC_RELAY_PCF8574_DEVICE_ROLE` (по умолчанию `pcf8574_port0`). Дополнительные микросхемы — отдельный адрес и роль. |
+| Реле / выходы (PCF8574) | по умолчанию **0x24** | драйвер [`Pcf8574RelayPort`](https://github.com/SSVC0059/ssvc_open_connect/blob/main/lib/ssvcOpenConnect/components/io/Pcf8574RelayPort.h); роль для алармов задаётся макросом `SSVC_RELAY_PCF8574_DEVICE_ROLE` (по умолчанию `pcf8574_port0`). Дополнительные микросхемы — отдельный адрес и роль. |
 | GP8403 DAC        | 0x58  | план |
 | Дисплей / MQ / др.| —     | документировать при добавлении |
 
@@ -19,4 +19,4 @@
 
 См. также [GPIO_Pinout.md](GPIO_Pinout.md).
 
-**Полное описание мониторинга шины, кодов сбоев и подписки на алерты:** [I2C: мониторинг и алерты (прошивка)](../develop/i2c_monitoring.md).
+**Полное описание мониторинга шины, кодов сбоев и подписки на алерты:** [I2C: мониторинг и алерты (прошивка)](../../develop/i2c_monitoring.md).

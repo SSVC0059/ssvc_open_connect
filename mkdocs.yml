@@ -55,12 +55,14 @@ nav:
       - preparation/driver.md
       - preparation/firmware.md
       - preparation/flasher.md
+      - preparation/flasher_manual.md
       - preparation/adafruit_webserial_esptool.md
   - "Интерфейсы и Периферия" : 
       - usage/interfaces/power.md
       - usage/interfaces/uart.md
       - usage/interfaces/ds18b20.md
       - usage/interfaces/rgb_led.md
+      - hardware/ds3231-rtc.md
   - "Начало работы":
       - usage/get_started.md
   - "Использование":
@@ -69,6 +71,7 @@ nav:
     - "KC868-A6v3":
       - "Описание (KinCony)": boards/kc868-a6/KC868-A6v3-KinCony.ru.md
       - "Распиновка GPIO": boards/kc868-a6/GPIO_Pinout.md
+      - "I2C устройства": boards/kc868-a6/I2C_devices.md
     - "Готовые модули":
         - ready_made/connect.md
         - ready_made/din_version.md
@@ -77,6 +80,7 @@ nav:
   - "FAQ": faq/faq.md
   - "Прочее" :
       - info/changelog.md
+      - ssvc serial protocol/develop/Readme.md
 
 
 markdown_extensions:
