@@ -4,6 +4,17 @@
 #include <Wire.h>
 #include <esp_log.h>
 #include "core/SubsystemManager/SubsystemManager.h"
+#include "core/SsvcConnector.h"
+#if !PINOUT_USE_GPIO
+#include "core/AlarmMonitor/AlarmMonitor.h"
+#endif
+
+#ifndef SSVC_I2C_SDA_GPIO
+#define SSVC_I2C_SDA_GPIO 8
+#endif
+#ifndef SSVC_I2C_SCL_GPIO
+#define SSVC_I2C_SCL_GPIO 9
+#endif
 
 class I2CBusSubsystem final : public Subsystem {
 public:
@@ -33,11 +44,16 @@ public:
         }
 
         if (!_enabled) {
-            // Пины 8 (SDA) и 9 (SCL), частота 10кГц для стабильности на длинных проводах
-            if (Wire.begin(8, 9, 10000)) {
+            // Defaults 8/9 (devkit). KinCony KC868-A6 v6: SSVC_I2C_SDA_GPIO=12, SSVC_I2C_SCL_GPIO=11
+            if (Wire.begin(SSVC_I2C_SDA_GPIO, SSVC_I2C_SCL_GPIO, 100000)) {
                 _enabled = true;
-                ESP_LOGI(TAG, "I2C Bus hardware started successfully");
+                ESP_LOGI(TAG, "I2C Bus hardware started (SDA=%d SCL=%d)",
+                         SSVC_I2C_SDA_GPIO, SSVC_I2C_SCL_GPIO);
                 if (scan() == 0) {
+#if !PINOUT_USE_GPIO
+                    AlarmMonitor::getInstance().raiseHardwareFault(
+                        HardwareFaultCode::I2C_BUS_DOWN, 0, "i2c_bus");
+#endif
                     ESP_LOGW(TAG, "No devices found on I2C bus. Disabling subsystem.");
                     SubsystemManager::instance().disableSubsystem(getName());
                 }

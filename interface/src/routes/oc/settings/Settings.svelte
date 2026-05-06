@@ -4,20 +4,24 @@
 	import { tick } from 'svelte';
 	import SensorsSettings from '$lib/components/OCSettings/SensorsSettings.svelte';
 	import TelegramSettings from '$lib/components/OCSettings/TelegramSettings.svelte';
+	import HardwareConfigTab from '$lib/components/OCSettings/HardwareConfigTab.svelte';
 	import ProfileManager from '$lib/components/profiles/ProfileManager.svelte';
 	import { goto } from '$app/navigation';
-	import { getSubsystemState, setSubsystemState } from '$lib/api/ssvcApi';
+	import { fetchHardwareConfig, getSubsystemState, setSubsystemState } from '$lib/api/ssvcApi';
 	import type { SubsystemsState } from '$lib/types/ssvc';
 	import SettingsMobileScroll from '$lib/components/settings-layout/SettingsMobileScroll.svelte';
 
 	const MOBILE_MQ = '(max-width: 767px)';
 
+	type SettingsTabId = keyof SubsystemsState | 'profiles' | 'hardware';
+
 	interface Tab {
-		id: keyof SubsystemsState | 'profiles';
+		id: SettingsTabId;
 		title: string;
 		component: any;
 		isStatic?: boolean;
 		alwaysShow?: boolean;
+		noSubsystemToggle?: boolean;
 		props?: Record<string, unknown>;
 	}
 
@@ -34,12 +38,45 @@
 	let filteredTabs = $state<Tab[]>([]);
 	let activeTab = $state(0);
 
+	async function loadAll() {
+		error = '';
+		try {
+			const [state, hw] = await Promise.all([getSubsystemState(), fetchHardwareConfig()]);
+			if (state) {
+				subsystemsState = state;
+			}
+
+			filteredTabs = availableTabs.filter((tab) => {
+				if (tab.id === 'hardware' || tab.id === 'profiles') return true;
+				if (tab.id === 'atm_sensor') return hw?.pressureSensorEnabled === true;
+				if (tab.alwaysShow) return true;
+				if (!state) return false;
+				return Boolean(state[tab.id as keyof SubsystemsState]);
+			});
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Ошибка загрузки';
+			filteredTabs = availableTabs.filter(
+				(tab) => tab.id === 'hardware' || tab.id === 'profiles' || tab.alwaysShow
+			);
+		} finally {
+			isLoading = false;
+		}
+	}
+
 	const availableTabs: Tab[] = [
 		{
 			id: 'profiles',
 			title: 'Профили',
 			component: ProfileManager,
 			isStatic: true
+		},
+		{
+			id: 'hardware',
+			title: 'Оборудование',
+			component: HardwareConfigTab,
+			alwaysShow: true,
+			noSubsystemToggle: true,
+			props: { onSaved: loadAll }
 		},
 		{
 			id: 'thermal',
@@ -51,6 +88,7 @@
 			id: 'atm_sensor',
 			title: 'Датчики давления',
 			component: SensorsSettings,
+			noSubsystemToggle: true,
 			props: { sensorType: 'pressure' }
 		},
 		{
@@ -62,27 +100,8 @@
 	];
 
 	$effect(() => {
-		loadSubsystemState();
+		void loadAll();
 	});
-
-	async function loadSubsystemState() {
-		try {
-			const state = await getSubsystemState();
-			if (state) {
-				subsystemsState = state;
-				filteredTabs = availableTabs.filter(
-					(tab) => tab.isStatic || tab.alwaysShow || state[tab.id as keyof SubsystemsState]
-				);
-			} else {
-				filteredTabs = availableTabs.filter((tab) => tab.isStatic || tab.alwaysShow);
-			}
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Ошибка загрузки';
-			filteredTabs = availableTabs.filter((tab) => tab.isStatic || tab.alwaysShow);
-		} finally {
-			isLoading = false;
-		}
-	}
 
 	async function toggleSubsystem(subsystem: keyof typeof subsystemsState) {
 		try {
@@ -93,7 +112,7 @@
 
 			if (success) {
 				subsystemsState[subsystem] = newState;
-				await loadSubsystemState();
+				await loadAll();
 			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Ошибка изменения';
@@ -113,11 +132,14 @@
 	const tabFromUrl = $derived($page.url.searchParams.get('tab'));
 
 	function isSubsystemEnabled(id: string): boolean {
-		const tab = availableTabs.find((t) => t.id === id);
-		if (tab?.isStatic) return true;
+		if (id === 'hardware' || id === 'profiles') return true;
 
 		const key = id as keyof SubsystemsState;
 		return subsystemsState[key] ?? false;
+	}
+
+	function tabSupportsSubsystemToggle(tab: Tab): boolean {
+		return !tab.isStatic && tab.id !== 'hardware' && !tab.noSubsystemToggle;
 	}
 
 	const mobileItems = $derived(
@@ -128,7 +150,9 @@
 			props: {
 				...tab.props,
 				disabled: !isSubsystemEnabled(tab.id),
-				onToggle: tab.isStatic ? undefined : toggleSubsystemHandler(tab.id as keyof SubsystemsState)
+				onToggle: tabSupportsSubsystemToggle(tab)
+					? toggleSubsystemHandler(tab.id as keyof SubsystemsState)
+					: undefined
 			}
 		}))
 	);
@@ -176,54 +200,56 @@
 </script>
 
 {#if isLoading}
-		<div class="loading-container flex flex-col items-center gap-2 py-6">
-			<p class="loading-text">Загрузка...</p>
-			<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
-		</div>
-	{:else if error}
-		<p class="error-text text-error">{error}</p>
-	{:else}
-		<div class="hidden md:block">
-			<div class="container">
-				<div class="tabs-container">
-					<div class="tabs tabs-lift tabs-md w-full" role="tablist" aria-label="Open Connect settings">
-						{#each filteredTabs as tab, index}
-							<input
-								type="radio"
-								name="oc_settings_tabs"
-								role="tab"
-								class="tab flex-1 whitespace-nowrap"
-								aria-label={tab.title}
-								checked={activeTab === index}
-								onchange={() => selectTab(index)}
-							/>
-							<div role="tabpanel" class="tab-content mt-4 w-full">
-								{#if activeTab === index}
-									{@const Component = tab.component}
-									<Component
-										{...tab.props}
-										disabled={!isSubsystemEnabled(tab.id)}
-										onToggle={tab.isStatic ? undefined : toggleSubsystemHandler(tab.id as keyof SubsystemsState)}
-									/>
-								{/if}
-							</div>
-						{/each}
-					</div>
+	<div class="loading-container flex flex-col items-center gap-2 py-6">
+		<p class="loading-text">Загрузка...</p>
+		<span class="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
+	</div>
+{:else if error}
+	<p class="error-text text-error">{error}</p>
+{:else}
+	<div class="hidden md:block">
+		<div class="container">
+			<div class="tabs-container">
+				<div class="tabs tabs-lift tabs-md w-full" role="tablist" aria-label="Open Connect settings">
+					{#each filteredTabs as tab, index}
+						<input
+							type="radio"
+							name="oc_settings_tabs"
+							role="tab"
+							class="tab flex-1 whitespace-nowrap"
+							aria-label={tab.title}
+							checked={activeTab === index}
+							onchange={() => selectTab(index)}
+						/>
+						<div role="tabpanel" class="tab-content mt-4 w-full">
+							{#if activeTab === index}
+								{@const Component = tab.component}
+								<Component
+									{...tab.props}
+									disabled={!isSubsystemEnabled(tab.id)}
+									onToggle={tabSupportsSubsystemToggle(tab)
+										? toggleSubsystemHandler(tab.id as keyof SubsystemsState)
+										: undefined}
+								/>
+							{/if}
+						</div>
+					{/each}
 				</div>
 			</div>
 		</div>
+	</div>
 
-		<div class="flex min-h-0 flex-1 flex-col md:hidden">
-			<SettingsMobileScroll
-				items={mobileItems}
-				sectionIdPrefix="oc-settings"
-				tabFromUrl={tabFromUrl}
-				pageTitle="Open Connect"
-				denseGrid={true}
-				sectionBodyCard={true}
-			/>
-		</div>
-	{/if}
+	<div class="flex min-h-0 flex-1 flex-col md:hidden">
+		<SettingsMobileScroll
+			items={mobileItems}
+			sectionIdPrefix="oc-settings"
+			tabFromUrl={tabFromUrl}
+			pageTitle="Open Connect"
+			denseGrid={true}
+			sectionBodyCard={true}
+		/>
+	</div>
+{/if}
 
 <style lang="scss">
 	.error-text {

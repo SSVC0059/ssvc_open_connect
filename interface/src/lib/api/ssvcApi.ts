@@ -3,7 +3,9 @@ import { user } from '$lib/stores/user';
 import { get } from 'svelte/store';
 import type { AlarmThresholdsState, TemperatureResponse } from '$lib/types/Sensors';
 import type {
+	OcHardwareConfigResponse,
 	SendCommandResponse,
+	RelayRuleMetadata,
 	SsvcOpenConnectInfo,
 	SsvcOpenConnectMessage,
 	SsvcSettings,
@@ -165,6 +167,23 @@ export async function getSubsystemState(): Promise<SubsystemsState | null> {
 	return response.success ? response.data : null;
 }
 
+export async function fetchHardwareConfig(): Promise<OcHardwareConfigResponse | null> {
+	const response = await apiFetch<OcHardwareConfigResponse>('/rest/oc/hardware-config', 'GET');
+	return response.success ? response.data : null;
+}
+
+export async function putHardwareConfig(
+	partial: Partial<
+		Omit<OcHardwareConfigResponse, 'capabilities' | 'needsReboot' | 'schemaVersion'>
+	>
+): Promise<OcHardwareConfigResponse | null> {
+	const response = await apiFetch<OcHardwareConfigResponse>(
+		'/rest/oc/hardware-config',
+		'PUT',
+		partial
+	);
+	return response.success ? response.data : null;
+}
 
 /**
  * Отправка команды на сервер
@@ -196,6 +215,11 @@ export async function fetchTelemetry(): Promise<SsvcOpenConnectMessage | null> {
 	if (!response.success) {
 		console.error('Ошибка при получении телеметрии:', response.error);
 	}
+	return response.success ? response.data : null;
+}
+
+export async function fetchRelayRuleMetadata(): Promise<RelayRuleMetadata | null> {
+	const response = await apiFetch<RelayRuleMetadata>('/rest/oc/relay/metadata', 'GET');
 	return response.success ? response.data : null;
 }
 
@@ -262,6 +286,8 @@ export async function apiFetch<T>(url: string, method: string = 'GET', body?: un
 			method,
 			headers: getAuthHeaders(),
 			body: body ? JSON.stringify(body) : undefined,
+			// Свежие данные с контроллера (избегаем устаревшего кэша GET после POST)
+			cache: method === 'GET' ? 'no-store' : 'default'
 		});
 
 		if (!response.ok) {

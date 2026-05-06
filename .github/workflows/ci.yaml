@@ -17,25 +17,25 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '20'
 
       - name: Build calculator
-        run: npm install && npm run build:calculator
+        run: npm ci && npx svelte-kit sync && npm run build:calculator
         working-directory: interface
       
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.11'
           
       - name: Install dependencies
         run: |
-          pip install "mkdocs<2" mkdocs-material mkdocs-autorefs mkdocs-literate-nav mkdocstrings-python mkdocs-git-committers-plugin-2
+          pip install -r requirements.txt
           
       - name: Build and Deploy
         run: |

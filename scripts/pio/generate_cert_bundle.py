@@ -49,22 +49,30 @@ binary_dir = Path("./src/certs")
 quiet = False
 
 def download_cacert_file(source):
+    output_file = os.path.join(certs_dir, "cacert.pem")
+
+    # Skip download if the file already exists (e.g. no internet / firewall blocked)
+    if os.path.isfile(output_file):
+        status('Certificate PEM already exists at %s, skipping download.' % output_file)
+        return
+
     if source == "mozilla":
-        response = requests.get(mozilla_cacert_url)
+        url = mozilla_cacert_url
     elif source == "adafruit":
-        response = requests.get(adafruit_filtered_cacert_url)
+        url = adafruit_filtered_cacert_url
     elif source == "adafruit-full":
-        response = requests.get(adafruit_full_cacert_url)
+        url = adafruit_full_cacert_url
     else:
         raise InputError('Invalid certificate source')
 
-    if response.status_code == 200:
+    try:
+        response = requests.get(url, timeout=15)
+    except Exception as e:
+        raise InputError('Failed to download certificate bundle from %s: %s' % (url, e))
 
+    if response.status_code == 200:
         # Ensure the directory exists, create it if necessary
         os.makedirs(certs_dir, exist_ok=True)
-
-        # Generate the full path to the output file
-        output_file = os.path.join(certs_dir, "cacert.pem")
 
         # Write the certificate bundle to the output file with utf-8 encoding
         with open(output_file, "w", encoding="utf-8") as f:
@@ -72,7 +80,7 @@ def download_cacert_file(source):
 
         status('Certificate bundle downloaded to: %s' % output_file)
     else:
-        status('Failed to fetch the certificate bundle.')
+        raise InputError('Failed to fetch the certificate bundle (HTTP %d).' % response.status_code)
 
 def status(msg):
     """ Print status message to stderr """
@@ -184,17 +192,26 @@ class InputError(RuntimeError):
 
 
 def main():
+    # If the binary bundle already exists and the PEM source is present,
+    # skip the entire generation step to avoid unnecessary network calls.
+    existing_bin = os.path.join(binary_dir, ca_bundle_bin_file)
+    existing_pem = os.path.join(certs_dir, "cacert.pem")
+    if os.path.isfile(existing_bin) and os.path.isfile(existing_pem):
+        status('Certificate bundle %s already exists, skipping generation.' % existing_bin)
+        return
 
     bundle = CertificateBundle()
 
     try:
         cert_source = env.GetProjectOption("board_ssl_cert_source")
 
-        if (cert_source == "mozilla" or cert_source == "adafruit"):
+        if cert_source in ("mozilla", "adafruit", "adafruit-full"):
             download_cacert_file(cert_source)
             bundle.add_from_file(os.path.join(certs_dir, "cacert.pem"))
         elif (cert_source == "folder"):
             bundle.add_from_path(certs_dir)
+        else:
+            raise ValueError("Unknown board_ssl_cert_source: %s" % cert_source)
     except ValueError:
         critical('Invalid configuration option: use \'board_ssl_cert_source\' parameter in platformio.ini' )
         raise InputError('Invalid certificate')

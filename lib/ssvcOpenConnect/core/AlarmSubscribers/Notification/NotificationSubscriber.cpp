@@ -17,21 +17,17 @@
 
 #include "NotificationSubscriber.h"
 
-// Принимаем указатель на SvelteKit и сохраняем его
 NotificationSubscriber::NotificationSubscriber(ESP32SvelteKit* svelteKit)
-    : _sveltekit(svelteKit) // Инициализация члена класса
+    : _sveltekit(svelteKit)
 {
-    // Подписка на AlarmMonitor остается
     AlarmMonitor::getInstance().subscribe(this);
     ESP_LOGI(TAG, "AlarmLogger subscribed to AlarmMonitor events.");
 }
 
 NotificationSubscriber::~NotificationSubscriber() {
-    // Отписка от AlarmMonitor
     AlarmMonitor::getInstance().unsubscribe(this);
 
     if (_reAlarmTimer != nullptr) {
-        // Сначала останавливаем, если активен
         if (xTimerIsTimerActive(_reAlarmTimer) != pdFALSE) {
             xTimerStop(_reAlarmTimer, 0);
         }
@@ -41,14 +37,13 @@ NotificationSubscriber::~NotificationSubscriber() {
     }
 }
 
-// NotificationSubscriber.cpp
 void NotificationSubscriber::forceResetAlarm() {
     if (_reAlarmTimer != nullptr && xTimerIsTimerActive(_reAlarmTimer) != pdFALSE) {
         xTimerStop(_reAlarmTimer, 0);
-        ESP_LOGW(TAG, "Alarm timer FORCIBLY STOPPED due to threshold update."); // <-- Лог
+        ESP_LOGW(TAG, "Alarm timer FORCIBLY STOPPED due to threshold update.");
     }
     _isAlarmActive = false;
-    _lastActiveAlarm = {}; // Очистка кэша (если нужно, но необязательно, т.к. таймер остановлен)
+    _lastActiveAlarm = {};
 }
 
 
@@ -59,6 +54,11 @@ void NotificationSubscriber::reAlarmTimerAction() const
             xTimerStop(_reAlarmTimer, 0);
         }
         ESP_LOGW(TAG, "Re-notification timer fired, but alarm is not active. Timer stopped.");
+        return;
+    }
+
+    if (_lastActiveAlarm.source_kind == AlarmSourceKind::HARDWARE_FAULT) {
+        sendNotification(_lastActiveAlarm);
         return;
     }
 
@@ -73,9 +73,9 @@ void NotificationSubscriber::reAlarmTimerAction() const
     ESP_LOGW(TAG, "reAlarmTimerAction(): [ALARM_LOGGER] Re-notification triggered by timer for sensor %s. Actual value: %.2f C (Cached: %.2f C).",
              sensor->getName().c_str(), current_value, _lastActiveAlarm.current_value);
 
-    AlarmEvent currentEvent = _lastActiveAlarm; // Копируем старое событие
-    currentEvent.current_value = current_value;  // Обновляем только значение на актуальное
-    currentEvent.timestamp = time(nullptr);     // Обновляем время
+    AlarmEvent currentEvent = _lastActiveAlarm;
+    currentEvent.current_value = current_value;
+    currentEvent.timestamp = time(nullptr);
 
     sendNotification(currentEvent);
 }
@@ -83,51 +83,42 @@ void NotificationSubscriber::reAlarmTimerAction() const
 void NotificationSubscriber::onAlarm(const AlarmEvent& event) {
     const bool eventIsAlarm = event.level != AlarmLevel::NORMAL;
 
-    // 1. Инициализация таймера при первом вызове
     if (_reAlarmTimer == nullptr) {
         _reAlarmTimer = xTimerCreate(
             "ReAlarmTimer",
             RE_NOTIFICATION_INTERVAL_MS,
-            pdTRUE, // pdTRUE для периодического
+            pdTRUE,
             (void*)this,
             reAlarmTimerCallback
         );
         ESP_LOGI(TAG, "ReAlarmTimer created.");
     }
 
-    // 2. Логика управления тревогами
     if (eventIsAlarm) {
-        // Тревога активна (CRITICAL/DANGEROUS/MIN)
-
-        // Отправляем первое уведомление немедленно
         sendNotification(event);
 
-        // Сохраняем событие для повторных уведомлений
         _lastActiveAlarm = event;
         _isAlarmActive = true;
 
-        // Запускаем таймер, если он еще не запущен
         if (xTimerIsTimerActive(_reAlarmTimer) == pdFALSE) {
             xTimerStart(_reAlarmTimer, 0);
             ESP_LOGI(TAG, "Alarm timer started for periodic re-notifications.");
         }
 
     } else {
-        // Тревога сброшена (NORMAL)
-
-        // Останавливаем таймер
         if (xTimerIsTimerActive(_reAlarmTimer) != pdFALSE) {
             xTimerStop(_reAlarmTimer, 0);
             ESP_LOGI(TAG, "Alarm timer stopped: alarm level is NORMAL.");
         }
 
         _isAlarmActive = false;
-        // О сбросе тревоги уведомляем только если это был переход из состояния тревоги
         if (_lastActiveAlarm.level != AlarmLevel::NORMAL) {
-            // Здесь можно отправить специальное уведомление о сбросе,
-            // но по ТЗ нужно только периодически уведомлять о превышении,
-            // поэтому просто очищаем состояние.
-            ESP_LOGI(TAG, "Alarm reset for sensor %s.", event.sensor->getName().c_str());
+            if (event.source_kind == AlarmSourceKind::HARDWARE_FAULT) {
+                ESP_LOGI(TAG, "Hardware fault cleared: role=%s",
+                         event.hw_device_role ? event.hw_device_role : "?");
+            } else if (event.sensor != nullptr) {
+                ESP_LOGI(TAG, "Alarm reset for sensor %s.", event.sensor->getName().c_str());
+            }
         }
     }
 }
@@ -136,12 +127,20 @@ void NotificationSubscriber::reAlarmTimerCallback(TimerHandle_t xTimer) {
     auto* self = static_cast<NotificationSubscriber*>(pvTimerGetTimerID(xTimer));
     if (!self || !self->_isAlarmActive) return;
 
+    if (self->_lastActiveAlarm.source_kind == AlarmSourceKind::HARDWARE_FAULT) {
+        self->sendNotification(self->_lastActiveAlarm);
+        return;
+    }
+
+    if (self->_lastActiveAlarm.sensor == nullptr) {
+        ESP_LOGE(self->TAG, "Timer: last alarm has null sensor");
+        return;
+    }
+
     const float current_value = self->_lastActiveAlarm.sensor->getData();
     const float threshold = self->_lastActiveAlarm.threshold_value;
     const AlarmLevel level = self->_lastActiveAlarm.level;
 
-    // Если текущее значение больше не нарушает порог, который вызвал эту тревогу
-    // Проверяем, нарушен ли порог
     const bool still_violating = (
         (level == AlarmLevel::MIN && current_value <= threshold) ||
         ((level == AlarmLevel::DANGEROUS || level == AlarmLevel::CRITICAL) && current_value >= threshold)
@@ -162,6 +161,28 @@ void NotificationSubscriber::reAlarmTimerCallback(TimerHandle_t xTimer) {
 
 void NotificationSubscriber::sendNotification(const AlarmEvent& event) const
 {
+    if (event.source_kind == AlarmSourceKind::HARDWARE_FAULT) {
+        if (event.level == AlarmLevel::NORMAL) {
+            return;
+        }
+        char message_buffer[160];
+        snprintf(message_buffer, sizeof(message_buffer),
+                 "CRITICAL: I2C/аппаратный сбой: %s @ 0x%02X code=%u",
+                 event.hw_device_role ? event.hw_device_role : "?",
+                 static_cast<unsigned>(event.hw_i2c_address),
+                 static_cast<unsigned>(event.hw_code));
+        if (_sveltekit && _sveltekit->getNotificationService()) {
+            _sveltekit->getNotificationService()->pushNotification(message_buffer, PUSHERROR);
+            ESP_LOGW("ALARM_NOTIF", "%s", message_buffer);
+        }
+        return;
+    }
+
+    if (event.sensor == nullptr) {
+        ESP_LOGE("ALARM_NOTIF", "SENSOR notification with null sensor");
+        return;
+    }
+
     const char* level_str;
     pushType push_level;
 
@@ -180,22 +201,18 @@ void NotificationSubscriber::sendNotification(const AlarmEvent& event) const
         break;
     case AlarmLevel::NORMAL:
     default:
-        return; // Не уведомляем о нормальном уровне
+        return;
     }
 
     char message_buffer[128];
 
-    // Проверяем, является ли событие CRITICAL, вызванным СБОЕМ ДАТЧИКА
-    // (на основе символического порога).
     const bool is_sensor_failure = (event.level == AlarmLevel::CRITICAL && event.threshold_value < -998.0f);
 
     if (is_sensor_failure) {
-        // Сообщение о СБОЕ ДАТЧИКА
         snprintf(message_buffer, sizeof(message_buffer),
             "%s: КРИТИЧЕСКИЙ СБОЙ! Датчик '%s' неисправен или отключен. Value: %.2f",
             level_str, event.sensor->getName().c_str(), event.current_value);
     } else {
-        // Стандартное сообщение о ПЕРЕХОДЕ ПОРОГА
         snprintf(message_buffer, sizeof(message_buffer),
                  "%s: Тревога! для датчика '%s'! Value: %.2f, Threshold: %.2f",
                  level_str, event.sensor->getName().c_str(), event.current_value, event.threshold_value);

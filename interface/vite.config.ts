@@ -1,6 +1,5 @@
 ﻿import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, loadEnv } from 'vite';
-import type { UserConfig } from 'vite';
 import Icons from 'unplugin-icons/vite';
 import viteLittleFS from './vite-plugin-littlefs';
 import tailwindcss from '@tailwindcss/vite';
@@ -20,7 +19,7 @@ export default defineConfig(({ mode }) => {
 		wsTarget = withTrailingSlash(wsTarget);
 	}
 
-	const config: UserConfig = {
+	const config = {
 		test: {
 			environment: 'jsdom',
 			include: ['tests/**/*.test.ts', 'src/**/*.test.ts'],
@@ -41,6 +40,13 @@ export default defineConfig(({ mode }) => {
 		// Чтобы в тестах (jsdom) подгружалась браузерная сборка Svelte, а не серверная (mount недоступен на сервере)
 		resolve: {
 			conditions: ['browser', 'import', 'module', 'svelte', 'default']
+		},
+		css: {
+			preprocessorOptions: {
+				scss: {
+					api: 'modern-compiler'
+				}
+			}
 		},
 		plugins: [
 			sveltekit(),

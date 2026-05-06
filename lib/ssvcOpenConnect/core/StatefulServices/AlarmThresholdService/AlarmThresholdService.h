@@ -28,6 +28,7 @@
 #include "StatefulService.h"
 
 #include "components/sensors/SensorManager/SensorManager.h"
+#include "core/profiles/IProfileObserver.h"
 
 #define ALARM_SETTINGS_ENDPOINT "/rest/alarms"
 #define ALARM_SETTINGS_FILE "/config/alarms.json"
@@ -82,7 +83,7 @@ public:
     static StateUpdateResult update(const JsonObject& root, AlarmThresholdsState& state);
 };
 
-class AlarmThresholdService : public StatefulService<AlarmThresholdsState> {
+class AlarmThresholdService : public StatefulService<AlarmThresholdsState>, public IProfileObserver {
 public:
     // Конструктор
     AlarmThresholdService(AsyncWebServer* server, ESP32SvelteKit* sveltekit) :
@@ -118,6 +119,10 @@ public:
         _httpEndpoint.begin();
 
     }
+
+    const char* getProfileKey() const override { return "alarmThresholds"; }
+    void onProfileSave(JsonObject& dest) override;
+    void onProfileApply(const JsonObject& src) override;
 
 private:
     HttpEndpoint<AlarmThresholdsState> _httpEndpoint;

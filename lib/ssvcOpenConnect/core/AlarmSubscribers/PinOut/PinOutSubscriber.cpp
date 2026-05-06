@@ -2,7 +2,7 @@
 *   SSVC Open Connect
  *
  *   A firmware for ESP32 to interface with SSVC 0059 distillation controller
- *   via UART protocol. Features a responsive SvelteKit web interface for
+ *   via UART protocol. Features a responsive Sveltekit web interface for
  *   monitoring and controlling the distillation process.
  *   https://github.com/SSVC0059/ssvc_open_connect
  *
@@ -17,40 +17,65 @@
 
 #include "PinOutSubscriber.h"
 
-// Принимаем указатель на SvelteKit и сохраняем его
-PinOutSubscriber::PinOutSubscriber()
-{
-    // Подписка на AlarmMonitor остается
-    AlarmMonitor::getInstance().subscribe(this);
-    ESP_LOGI(TAG, "AlarmLogger subscribed to AlarmMonitor events.");
-    pinMode(DANGEROUS_PIN, OUTPUT);
-    pinMode(CRITICAL_PIN, OUTPUT);
-    digitalWrite(DANGEROUS_PIN, HIGH);
-    digitalWrite(CRITICAL_PIN, HIGH);
+#if !PINOUT_USE_GPIO
+#include "core/RelayPortCoordinator/RelayPortCoordinator.h"
+#endif
+
+PinOutSubscriber::PinOutSubscriber() {
+  AlarmMonitor::getInstance().subscribe(this);
+  ESP_LOGI(TAG, "subscribed to AlarmMonitor");
+
+#if !PINOUT_USE_GPIO
+  RelayPortCoordinator::getInstance().resetAlarmLines();
+  RelayPortCoordinator::getInstance().flush();
+  ESP_LOGI(TAG,
+           "alarm outputs via PCF8574 @ 0x%02X role=%s bits D=%u C=%u (active-LOW), lines/chip=%u",
+           static_cast<unsigned>(SSVC_RELAY_PCF8574_I2C_ADDR),
+           SSVC_RELAY_PCF8574_DEVICE_ROLE,
+           static_cast<unsigned>(SSVC_RELAY_PCF8574_BIT_DANGEROUS),
+           static_cast<unsigned>(SSVC_RELAY_PCF8574_BIT_CRITICAL),
+           static_cast<unsigned>(SSVC_RELAY_PCF8574_LINES_PER_CHIP));
+#else
+  pinMode(SSVC_PINOUT_ALARM_GPIO_DANGEROUS, OUTPUT);
+  pinMode(SSVC_PINOUT_ALARM_GPIO_CRITICAL, OUTPUT);
+  digitalWrite(SSVC_PINOUT_ALARM_GPIO_DANGEROUS, HIGH);
+  digitalWrite(SSVC_PINOUT_ALARM_GPIO_CRITICAL, HIGH);
+  ESP_LOGI(TAG, "alarm GPIO DANGEROUS=%d CRITICAL=%d (no PCF8574 in this build)",
+           static_cast<int>(SSVC_PINOUT_ALARM_GPIO_DANGEROUS),
+           static_cast<int>(SSVC_PINOUT_ALARM_GPIO_CRITICAL));
+#endif
 }
 
 PinOutSubscriber::~PinOutSubscriber() {
-    // Отписка от AlarmMonitor
-    AlarmMonitor::getInstance().unsubscribe(this);
-
+  AlarmMonitor::getInstance().unsubscribe(this);
 }
 
-// PinOutSubscriber.cpp
 void PinOutSubscriber::forceResetAlarm() {
-    digitalWrite(DANGEROUS_PIN, HIGH);
-    digitalWrite(CRITICAL_PIN, HIGH);
+#if !PINOUT_USE_GPIO
+  RelayPortCoordinator::getInstance().resetAlarmLines();
+  RelayPortCoordinator::getInstance().flush();
+#else
+  digitalWrite(SSVC_PINOUT_ALARM_GPIO_DANGEROUS, HIGH);
+  digitalWrite(SSVC_PINOUT_ALARM_GPIO_CRITICAL, HIGH);
+#endif
 }
-
 
 void PinOutSubscriber::onAlarm(const AlarmEvent& event) {
-    // Сбрасываем оба пина перед установкой нового состояния
-    digitalWrite(DANGEROUS_PIN, HIGH);
-    digitalWrite(CRITICAL_PIN, HIGH);
+  if (event.source_kind == AlarmSourceKind::HARDWARE_FAULT) {
+    return;
+  }
 
-    if (event.level == AlarmLevel::DANGEROUS) {
-        digitalWrite(DANGEROUS_PIN, LOW);
-    } else if (event.level == AlarmLevel::CRITICAL) {
-        digitalWrite(CRITICAL_PIN, LOW);
-    }
+#if !PINOUT_USE_GPIO
+  RelayPortCoordinator::getInstance().setAlarmLevel(event.level);
+  RelayPortCoordinator::getInstance().flush();
+#else
+  digitalWrite(SSVC_PINOUT_ALARM_GPIO_DANGEROUS, HIGH);
+  digitalWrite(SSVC_PINOUT_ALARM_GPIO_CRITICAL, HIGH);
+
+  if (event.level == AlarmLevel::DANGEROUS) {
+    digitalWrite(SSVC_PINOUT_ALARM_GPIO_DANGEROUS, LOW);
+  } else if (event.level == AlarmLevel::CRITICAL) {
+    digitalWrite(SSVC_PINOUT_ALARM_GPIO_CRITICAL, LOW);
+  }
+#endif
 }
-

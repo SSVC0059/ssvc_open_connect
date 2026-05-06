@@ -29,6 +29,7 @@
 #include <ESP32Ping.h>
 
 #include "core/AlarmSubscribers/Notification//NotificationSubscriber.h"
+#include "core/AlarmSubscribers/HardwareFault/HardwareFaultLogSubscriber.h"
 #include "core/AlarmSubscribers/PinOut/PinOutSubscriber.h"
 #include "components/sensors/SensorCoordinator/SensorCoordinator.h"
 #include "external/MqttBridge/MqttBridge.h"
@@ -65,6 +66,7 @@ private:
 
   SsvcConnector& _ssvcConnector = SsvcConnector::getConnector();
   NotificationSubscriber* _notificationSubscriber = nullptr;
+  HardwareFaultLogSubscriber* _hardwareFaultLogSubscriber = nullptr;
   PinOutSubscriber* _pinOutSubscriber = nullptr;
 
   SensorDataService* _sensorDataService = nullptr;

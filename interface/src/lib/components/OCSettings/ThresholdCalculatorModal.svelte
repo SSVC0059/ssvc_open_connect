@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { focusTrap } from 'svelte-focus-trap';
+	import { focusTrap } from '$lib/actions/focusTrap';
 	import { fly } from 'svelte/transition';
 	import Portal from 'svelte-portal';
 

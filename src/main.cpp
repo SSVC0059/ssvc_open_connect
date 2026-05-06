@@ -1,4 +1,5 @@
 #include "core/SsvcOpenConnect.h"
+#include <esp_log.h>
 #include <ESP32SvelteKit.h>
 #include <ESPAsyncWebServer.h>
 #include <esp_task_wdt.h>
@@ -33,6 +34,7 @@ void setup() {
   // Запуск ESP32-SvelteKit
   esp32sveltekit.begin();
 
+  ESP_LOGI("main", "setup: starting SsvcOpenConnect::begin()");
   // Получение экземпляра SsvcOpenConnect и его инициализация
   SsvcOpenConnect::getInstance().begin(
       server,
@@ -40,6 +42,7 @@ void setup() {
       esp32sveltekit.getSocket(),
       esp32sveltekit.getSecurityManager()
   );
+  ESP_LOGI("main", "setup: SsvcOpenConnect::begin() returned");
 }
 
 void loop() {

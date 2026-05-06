@@ -330,7 +330,4 @@
 		background-color: var(--color-error);
 	}
 
-	.btn-status-success {
-		background-color: var(--color-success);
-	}
 </style>

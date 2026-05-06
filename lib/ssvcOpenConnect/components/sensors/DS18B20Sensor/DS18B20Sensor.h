@@ -25,7 +25,7 @@
 #include "components/sensors/SensorManager/SensorManager.h"
 
 /**
- * @brief Конкретный класс для управления датчиком DS18B20.
+ * @brief
  */
 class DS18B20Sensor final : public AbstractSensor {
 public:

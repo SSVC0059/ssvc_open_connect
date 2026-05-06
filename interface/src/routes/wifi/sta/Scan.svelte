@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { modals } from 'svelte-modals';
-	import { focusTrap } from 'svelte-focus-trap';
+	import { focusTrap } from '$lib/actions/focusTrap';
 	import { fly } from 'svelte/transition';
 	import { user } from '$lib/stores/user';
 	import { page } from '$app/state';
@@ -36,7 +36,7 @@
 
 	let scanActive = $state(false);
 
-	let pollingId: number;
+	let pollingId: ReturnType<typeof setInterval> | undefined;
 
 	async function scanNetworks() {
 		scanActive = true;
@@ -66,8 +66,10 @@
 			listOfNetworks = result.networks;
 			if (listOfNetworks.length) {
 				scanActive = false;
-				clearInterval(pollingId);
-				pollingId = 0;
+				if (pollingId) {
+					clearInterval(pollingId);
+				}
+				pollingId = undefined;
 				return true;
 			} else {
 				scanActive = false;
@@ -85,7 +87,7 @@
 	onDestroy(() => {
 		if (pollingId) {
 			clearInterval(pollingId);
-			pollingId = 0;
+			pollingId = undefined;
 		}
 	});
 </script>

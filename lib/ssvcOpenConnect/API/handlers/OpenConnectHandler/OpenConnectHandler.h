@@ -18,6 +18,7 @@
  *   Disclaimer: Use at your own risk. High voltage safety precautions required.
  **/
 
+#include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncJson.h>
 #include <utility>
@@ -27,6 +28,12 @@ class OpenConnectHandler
     public:
         OpenConnectHandler();
         static void getInfo(AsyncWebServerRequest* request);
+        static void getRelayCapabilities(AsyncWebServerRequest* request);
+        static void getRelayMetadata(AsyncWebServerRequest* request);
+        static void getRelayState(AsyncWebServerRequest* request);
+        static void postRelayOverride(AsyncWebServerRequest* request, JsonVariant& json);
+        static void getHardwareConfig(AsyncWebServerRequest* request);
+        static void putHardwareConfig(AsyncWebServerRequest* request, JsonVariant& json);
 };
 
 

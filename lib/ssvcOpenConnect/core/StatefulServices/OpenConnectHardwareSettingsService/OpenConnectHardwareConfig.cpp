@@ -1,0 +1,240 @@
+#include "OpenConnectHardwareConfig.h"
+
+#include "core/GlobalConfig/GlobalConfig.h"
+
+#include <unordered_map>
+#include <unordered_set>
+
+namespace {
+
+bool relayAddrVecEqual(const std::vector<uint8_t>& a, const std::vector<uint8_t>& b) {
+    if (a.size() != b.size()) {
+        return false;
+    }
+    for (size_t i = 0; i < a.size(); ++i) {
+        if (a[i] != b[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool rebootFieldsDiffer(const OpenConnectHardwareConfig& a, const OpenConnectHardwareConfig& b) {
+    return a.pressureSensorEnabled != b.pressureSensorEnabled || a.bmp581I2cAddress != b.bmp581I2cAddress ||
+           a.userRelayPcfEnabled != b.userRelayPcfEnabled || !relayAddrVecEqual(a.relayPcf8574Addresses, b.relayPcf8574Addresses) ||
+           a.rtcEnabled != b.rtcEnabled || a.ds3231I2cAddress != b.ds3231I2cAddress ||
+           a.oledEnabled != b.oledEnabled ||
+           a.lcd1602Enabled != b.lcd1602Enabled || a.lcd1602I2cAddress != b.lcd1602I2cAddress;
+}
+
+void syncSubsystemNvsAtmSensor(bool pressureOn) {
+    std::unordered_map<std::string, bool> map;
+    if (!GlobalConfig::config().getObject("subsystem", "config", map, GlobalConfig::fromJson)) {
+        map.clear();
+    }
+    map["atm_sensor"] = pressureOn;
+    GlobalConfig::config().setObject("subsystem", "config", map, GlobalConfig::toJson);
+}
+
+void syncSubsystemNvsLcd1602(bool lcdOn) {
+    std::unordered_map<std::string, bool> map;
+    if (!GlobalConfig::config().getObject("subsystem", "config", map, GlobalConfig::fromJson)) {
+        map.clear();
+    }
+    map["lcd1602_display"] = lcdOn;
+    GlobalConfig::config().setObject("subsystem", "config", map, GlobalConfig::toJson);
+}
+
+bool validateAddressList(std::vector<uint8_t>& addrs, bool& changed, const std::vector<uint8_t>& beforeVec) {
+    if (addrs.empty()) {
+        return false;
+    }
+    if (addrs.size() > OpenConnectHardwareConfig::kMaxRelayChips) {
+        return false;
+    }
+    std::unordered_set<uint8_t> uniq;
+    for (uint8_t a : addrs) {
+        if (!OpenConnectHardwareConfig::isValidI2c7Bit(a)) {
+            return false;
+        }
+        if (uniq.count(a)) {
+            return false;
+        }
+        uniq.insert(a);
+    }
+    if (!relayAddrVecEqual(addrs, beforeVec)) {
+        changed = true;
+    }
+    return true;
+}
+
+} // namespace
+
+void OpenConnectHardwareConfig::read(OpenConnectHardwareConfig& s, JsonObject& root) {
+    root["schemaVersion"] = s.schemaVersion;
+    root["pressureSensorEnabled"] = s.pressureSensorEnabled;
+    root["bmp581I2cAddress"] = s.bmp581I2cAddress;
+    root["userRelayPcfEnabled"] = s.userRelayPcfEnabled;
+    {
+        JsonArray arr = root["relayPcf8574Addresses"].to<JsonArray>();
+        arr.clear();
+        for (uint8_t a : s.relayPcf8574Addresses) {
+            arr.add(a);
+        }
+    }
+    root["pendingReboot"] = s.pendingReboot;
+    root["rtcEnabled"] = s.rtcEnabled;
+    root["ds3231I2cAddress"] = s.ds3231I2cAddress;
+    root["oledEnabled"] = s.oledEnabled;
+    root["lcd1602Enabled"] = s.lcd1602Enabled;
+    root["lcd1602I2cAddress"] = s.lcd1602I2cAddress;
+}
+
+StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnectHardwareConfig& s, const String& originId) {
+    const OpenConnectHardwareConfig before = s;
+    auto fail = [&]() {
+        s = before;
+        return StateUpdateResult::ERROR;
+    };
+    bool changed = false;
+
+    // Migrate legacy JSON: single relayPcf8574I2cAddress once (no relayPcf8574Addresses array in file)
+    if (root["relayPcf8574I2cAddress"].is<unsigned int>() && !root["relayPcf8574Addresses"].is<JsonArray>()) {
+        const unsigned int legacyRaw = root["relayPcf8574I2cAddress"].as<unsigned int>();
+        if (isValidI2c7Bit(legacyRaw)) {
+            const uint8_t legacy = static_cast<uint8_t>(legacyRaw);
+            s.relayPcf8574Addresses.clear();
+            s.relayPcf8574Addresses.push_back(legacy);
+            changed = true;
+        }
+    }
+
+    if (root["pressureSensorEnabled"].is<bool>()) {
+        const bool v = root["pressureSensorEnabled"].as<bool>();
+        if (v != s.pressureSensorEnabled) {
+            s.pressureSensorEnabled = v;
+            changed = true;
+        }
+    }
+
+    if (!root["bmp581I2cAddress"].isNull()) {
+        if (!root["bmp581I2cAddress"].is<unsigned int>()) {
+            return fail();
+        }
+        const unsigned int rawAddr = root["bmp581I2cAddress"].as<unsigned int>();
+        if (!isValidI2c7Bit(rawAddr)) {
+            return fail();
+        }
+        const uint8_t addr = static_cast<uint8_t>(rawAddr);
+        if (addr != s.bmp581I2cAddress) {
+            s.bmp581I2cAddress = addr;
+            changed = true;
+        }
+    }
+
+    if (root["userRelayPcfEnabled"].is<bool>()) {
+        const bool v = root["userRelayPcfEnabled"].as<bool>();
+        if (v != s.userRelayPcfEnabled) {
+            s.userRelayPcfEnabled = v;
+            changed = true;
+        }
+    }
+
+    if (root["relayPcf8574Addresses"].is<JsonArray>()) {
+        JsonArray ja = root["relayPcf8574Addresses"].as<JsonArray>();
+        std::vector<uint8_t> next;
+        for (JsonVariant v : ja) {
+            if (!v.is<unsigned int>()) {
+                return fail();
+            }
+            const unsigned int rawAddr = v.as<unsigned int>();
+            if (!isValidI2c7Bit(rawAddr)) {
+                return fail();
+            }
+            next.push_back(static_cast<uint8_t>(rawAddr));
+        }
+        std::vector<uint8_t> beforeRelay = s.relayPcf8574Addresses;
+        bool listChanged = false;
+        if (!validateAddressList(next, listChanged, beforeRelay)) {
+            return fail();
+        }
+        s.relayPcf8574Addresses = std::move(next);
+        if (listChanged) {
+            changed = true;
+        }
+    }
+
+    if (root["rtcEnabled"].is<bool>()) {
+        const bool v = root["rtcEnabled"].as<bool>();
+        if (v != s.rtcEnabled) {
+            s.rtcEnabled = v;
+            changed = true;
+        }
+    }
+
+    if (!root["ds3231I2cAddress"].isNull()) {
+        if (!root["ds3231I2cAddress"].is<unsigned int>()) {
+            return fail();
+        }
+        const unsigned int rawAddr = root["ds3231I2cAddress"].as<unsigned int>();
+        if (!isValidI2c7Bit(rawAddr)) {
+            return fail();
+        }
+        const uint8_t addr = static_cast<uint8_t>(rawAddr);
+        if (addr != s.ds3231I2cAddress) {
+            s.ds3231I2cAddress = addr;
+            changed = true;
+        }
+    }
+
+    if (root["oledEnabled"].is<bool>()) {
+        const bool v = root["oledEnabled"].as<bool>();
+        if (v != s.oledEnabled) {
+            s.oledEnabled = v;
+            changed = true;
+        }
+    }
+
+    if (root["lcd1602Enabled"].is<bool>()) {
+        const bool v = root["lcd1602Enabled"].as<bool>();
+        if (v != s.lcd1602Enabled) {
+            s.lcd1602Enabled = v;
+            changed = true;
+        }
+    }
+
+    if (!root["lcd1602I2cAddress"].isNull()) {
+        if (!root["lcd1602I2cAddress"].is<unsigned int>()) {
+            return fail();
+        }
+        const unsigned int rawAddr = root["lcd1602I2cAddress"].as<unsigned int>();
+        if (!isValidI2c7Bit(rawAddr)) {
+            return fail();
+        }
+        const uint8_t addr = static_cast<uint8_t>(rawAddr);
+        if (addr != s.lcd1602I2cAddress) {
+            s.lcd1602I2cAddress = addr;
+            changed = true;
+        }
+    }
+
+    (void)originId;
+
+    if (s.relayPcf8574Addresses.empty()) {
+        s.relayPcf8574Addresses.push_back(0x24);
+        changed = true;
+    }
+
+    if (changed && rebootFieldsDiffer(before, s)) {
+        s.pendingReboot = true;
+    }
+
+    if (changed && before.pressureSensorEnabled != s.pressureSensorEnabled) {
+        syncSubsystemNvsAtmSensor(s.pressureSensorEnabled);
+    }
+    if (changed && before.lcd1602Enabled != s.lcd1602Enabled) {
+        syncSubsystemNvsLcd1602(s.lcd1602Enabled);
+    }
+
+    return changed ? StateUpdateResult::CHANGED : StateUpdateResult::UNCHANGED;
+}

@@ -120,7 +120,7 @@
             const thresholds = alarmThresholds.thresholds;
             for (const [address, temp] of sensorEntries) {
                 const threshold: ThresholdSettings | undefined = thresholds[address];
-                if (threshold && threshold.enabled && temp >= threshold.critical) {
+                if (threshold && threshold.enabled && temp.v >= threshold.critical) {
                     return true;
                 }
             }

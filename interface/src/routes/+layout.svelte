@@ -148,16 +148,20 @@
 {:else}
 	<div class="drawer lg:drawer-open">
 		<input id="main-menu" type="checkbox" class="drawer-toggle" bind:checked={menuOpen} />
-		<div class="drawer-content flex flex-col">
+		<div class="drawer-content bg-base-100 flex h-dvh min-h-0 flex-col overflow-hidden">
 			<!-- Status bar content here -->
 			<Statusbar />
 
-			<!-- Main page content here -->
-			{@render children?.()}
+			<!-- Main scroll area: одна вертикальная прокрутка под navbar (узлы настроек без вложенного overflow) -->
+			<div
+				class="bg-base-100 flex min-h-0 flex-1 touch-pan-y flex-col overflow-y-auto overscroll-y-contain"
+			>
+				{@render children?.()}
+			</div>
 		</div>
 		<!-- Side Navigation -->
 		<div class="drawer-side z-30 shadow-lg">
-			<label for="main-menu" class="drawer-overlay"></label>
+			<label for="main-menu" class="drawer-overlay oc-drawer-overlay"></label>
 			<Menu
 				closeMenu={() => {
 					menuOpen = false;
@@ -169,9 +173,9 @@
 
 <Modals>
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	{#snippet backdrop({ close })}
+	{#snippet backdrop({ close }: { close: () => void })}
 		<div
-			class="fixed inset-0 z-40 max-h-full max-w-full bg-black/20 backdrop-blur-sm"
+			class="modal-backdrop-oc fixed inset-0 z-40 max-h-full max-w-full bg-black/20 backdrop-blur-sm max-lg:bg-black/15 max-lg:backdrop-blur-none"
 			transition:fade|global
 			onclick={() => close()}
 			role="button"
@@ -185,6 +189,15 @@
 
 <style lang="scss">
 	@use "$lib/styles/base/mixins" as m;
+
+	/* Мобильный drawer-overlay: без backdrop-blur — меньше артефактов при смене маршрута */
+	:global(.oc-drawer-overlay) {
+		@media (max-width: 1023px) {
+			background-color: oklch(var(--bc) / 0.28) !important;
+			backdrop-filter: none !important;
+			-webkit-backdrop-filter: none !important;
+		}
+	}
 
 	/* ===== Кнопки (shared) ===== */
 	:global(.btn) {

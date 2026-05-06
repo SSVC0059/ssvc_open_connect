@@ -22,7 +22,9 @@
 #include "ESP32SvelteKit.h"
 #include "core/SsvcConnector.h"
 
-#define DEFAULT_STATUS_LED_PIN 48
+#ifndef DEFAULT_STATUS_LED_PIN
+#define DEFAULT_STATUS_LED_PIN GPIO_NUM_48
+#endif
 
 class StatusLed {
 

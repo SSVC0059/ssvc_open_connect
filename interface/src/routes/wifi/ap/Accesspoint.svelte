@@ -13,8 +13,8 @@
 	import Devices from '~icons/tabler/devices';
 	import type { ApSettings, ApStatus } from '$lib/types/models';
 
-	let apSettings: ApSettings = $state();
-	let apStatus: ApStatus = $state();
+	let apSettings: ApSettings = $state({} as ApSettings);
+	let apStatus: ApStatus = $state({} as ApStatus);
 
 	let formField: any = $state();
 
@@ -176,8 +176,8 @@
 		}
 	}
 
-	function preventDefault(fn) {
-		return function (event) {
+	function preventDefault(fn: (event: Event) => void) {
+		return function (this: unknown, event: Event) {
 			event.preventDefault();
 			fn.call(this, event);
 		};

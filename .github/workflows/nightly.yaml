@@ -63,6 +63,8 @@ jobs:
           - env_name: esp32-s3-devkitc-1-8m-secure
           - env_name: esp32-s3-devkitc-1-16m
           - env_name: esp32-s3-devkitc-1-16m-secure
+          - env_name: kincony-kc868-a6
+          - env_name: kincony-kc868-a6-secure
 
     steps:
       - uses: actions/checkout@v6
@@ -146,6 +148,8 @@ jobs:
       # Тег v{BASE}-nightly (BASE = три сегмента, без последней цифры). Удаляем старый ночной релиз, затем создаём новый.
       - name: Set nightly tag and delete old release
         id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           BASE=$(grep -E 'APP_VERSION' platformio.ini | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
           [[ -z "$BASE" ]] && BASE="0.0.0"

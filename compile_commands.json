@@ -1,0 +1,182 @@
+[
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\APSettingsService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\APSettingsService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\APSettingsService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\APSettingsService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\APStatus.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\APStatus.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\APStatus.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\APStatus.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\ArduinoJsonJWT.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\ArduinoJsonJWT.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\ArduinoJsonJWT.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\ArduinoJsonJWT.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\AuthenticationService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\AuthenticationService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\AuthenticationService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\AuthenticationService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\BatteryService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\BatteryService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\BatteryService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\BatteryService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\CoreDump.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\CoreDump.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\CoreDump.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\CoreDump.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\DownloadFirmwareService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\DownloadFirmwareService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\DownloadFirmwareService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\DownloadFirmwareService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\ESP32SvelteKit.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\ESP32SvelteKit.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\ESP32SvelteKit.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\ESP32SvelteKit.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\EthernetSettingsService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\EthernetSettingsService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\EthernetSettingsService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\EthernetSettingsService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\EthernetStatus.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\EthernetStatus.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\EthernetStatus.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\EthernetStatus.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\EventSocket.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\EventSocket.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\EventSocket.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\EventSocket.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\FactoryResetService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\FactoryResetService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\FactoryResetService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\FactoryResetService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\FeaturesService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\FeaturesService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\FeaturesService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\FeaturesService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\MqttEndpoint.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\MqttEndpoint.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\MqttEndpoint.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\MqttEndpoint.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\MqttSettingsService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\MqttSettingsService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\MqttSettingsService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\MqttSettingsService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\MqttStatus.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\MqttStatus.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\MqttStatus.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\MqttStatus.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\NTPSettingsService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\NTPSettingsService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\NTPSettingsService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\NTPSettingsService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\NTPStatus.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\NTPStatus.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\NTPStatus.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\NTPStatus.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\NotificationService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\NotificationService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\NotificationService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\NotificationService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\RestartService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\RestartService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\RestartService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\RestartService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\SecuritySettingsService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\SecuritySettingsService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\SecuritySettingsService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\SecuritySettingsService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\SettingValue.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\SettingValue.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\SettingValue.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\SettingValue.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\SleepService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\SleepService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\SleepService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\SleepService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\StatefulService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\StatefulService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\StatefulService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\StatefulService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\SystemStatus.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\SystemStatus.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\SystemStatus.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\SystemStatus.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\UploadFirmwareService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\UploadFirmwareService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\UploadFirmwareService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\UploadFirmwareService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\WiFiScanner.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\WiFiScanner.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\WiFiScanner.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\WiFiScanner.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\WiFiSettingsService.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\WiFiSettingsService.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\WiFiSettingsService.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\WiFiSettingsService.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\lib5f3\\framework\\WiFiStatus.o -c -std=gnu++14 -DPLATFORMIO=60119 -Ilib\\framework -Ilib\\ssvcOpenConnect lib\\framework\\WiFiStatus.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "lib\\framework\\WiFiStatus.cpp",
+        "output": ".pio\\build\\native\\lib5f3\\framework\\WiFiStatus.o"
+    },
+    {
+        "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -o .pio\\build\\native\\src\\main.o -c -std=gnu++14 -DPLATFORMIO=60119 -Isrc -Ilib\\framework -Ilib\\ssvcOpenConnect src\\main.cpp",
+        "directory": "D:\\microcontrollers\\esp32\\OpenConnect\\ssvc_open_connect",
+        "file": "src\\main.cpp",
+        "output": ".pio\\build\\native\\src\\main.o"
+    }
+]

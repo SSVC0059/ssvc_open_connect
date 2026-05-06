@@ -28,5 +28,11 @@ def elf_copy(source, target, env):
 
     # Copy the source ELF file to the new destination.
     shutil.copy(str(target[0]), elf_file_path)
+
+    # Stable name for addr2line / debugging when .pio/build/<env>/firmware.elf is missing
+    # (e.g. after clean, or esp32_exception_decoder in monitor cannot resolve addresses).
+    stable_elf_path = os.path.join(output_dir, "firmware.elf")
+    shutil.copy(str(target[0]), stable_elf_path)
+    print(f"Stable ELF copy for decoding: {stable_elf_path}")
         
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.elf", elf_copy)

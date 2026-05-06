@@ -98,9 +98,11 @@ $effect(() => {
 	}
 
 	async function handleSaveEditing(updatedProfile: Profile) {
-		if (!updatedProfile || !updatedProfile.id) return;
+		if (!updatedProfile || !updatedProfile.id) {
+			notifications.error('Невозможно сохранить профиль: нет идентификатора.', 5000);
+			return;
+		}
 
-		console.log('Профиль для сохранения:', updatedProfile);
 		try {
 			isLoading = true;
 
@@ -349,7 +351,7 @@ $effect(() => {
 													<Fa icon={faEllipsisV} />
 												</button>
 												<ul
-													tabindex="0"
+													tabindex="-1"
 													class="menu menu-sm dropdown-content mt-2 max-md:mt-0 max-md:mb-2 w-52 rounded-box bg-base-100 p-1 shadow-lg"
 												>
 													<li>

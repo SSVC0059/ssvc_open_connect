@@ -159,3 +159,21 @@ StateUpdateResult AlarmThresholdsState::update(const JsonObject& root, AlarmThre
              deleted_count, changed ? "CHANGED" : "UNCHANGED");
     return changed ? StateUpdateResult::CHANGED : StateUpdateResult::UNCHANGED;
 }
+
+void AlarmThresholdService::onProfileSave(JsonObject& dest) {
+    read([&](AlarmThresholdsState& state) {
+        AlarmThresholdsState::read(state, dest);
+    });
+}
+
+void AlarmThresholdService::onProfileApply(const JsonObject& src) {
+    JsonDocument copyDoc;
+    copyDoc.set(src);
+    JsonObject copyRoot = copyDoc.as<JsonObject>();
+
+    update(copyRoot,
+           [](JsonObject& root, AlarmThresholdsState& state, const String&) {
+               return AlarmThresholdsState::update(root, state);
+           },
+           "profile");
+}

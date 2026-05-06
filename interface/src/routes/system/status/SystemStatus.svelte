@@ -27,7 +27,7 @@
 	import { socket } from '$lib/stores/socket';
 	import { convertSeconds } from '$lib/utils/formatters';
 
-	let systemInformation: SystemInformation = $state();
+	let systemInformation: SystemInformation = $state({} as SystemInformation);
 
 	async function getSystemStatus() {
 		try {

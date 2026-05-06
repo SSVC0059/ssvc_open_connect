@@ -1,0 +1,71 @@
+Collected 6 tests (embedded/test_stringview_esp32, embedded/test_uart_api, native/test_rectification_parse, native/test_stringview, native/test_uart_api_spec, native/test_utils)
+
+Processing native/test_stringview in native environment
+--------------------------------------------------------------------------------
+Building...
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ strict
+Ignored library D:\microcontrollers\esp32\OpenConnect\ssvc_open_connect\lib\ssvcOpenConnect
+More details about "Library Compatibility Mode": https://docs.platformio.org/page/librarymanager/ldf.html#ldf-compat-mode
+Found 2 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- doctest @ 2.4.12 (License: MIT, Path: D:\microcontrollers\esp32\OpenConnect\ssvc_open_connect\.pio\libdeps\native\doctest)
+Building in test mode
+g++ -o .pio\build\native\test\native\test_stringview\test_main.o -c -std=gnu++14 -DPLATFORMIO=60119 -DPIO_UNIT_TESTING -DUNIT_TEST -DDOCTEST_CONFIG_COLORS_NONE -Isrc -I.pio\libdeps\native\doctest\doctest -I.pio\libdeps\native\doctest -Itest\native\test_stringview -Itest\native -Itest -Ilib\ssvcOpenConnect test\native\test_stringview\test_main.cpp
+*** [.pio\build\native\test\native\test_stringview\test_main.o] Error 1
+Building stage has failed, see errors above. Use `pio test -vvv` option to enable verbose output.
+---------- native:native/test_stringview [ERRORED] Took 0.93 seconds ----------
+
+=================================== SUMMARY ===================================
+Environment                    Test                             Status    Duration
+-----------------------------  -------------------------------  --------  ------------
+esp32-s3-devkitc-1-8m          embedded/test_stringview_esp32   SKIPPED
+esp32-s3-devkitc-1-8m          embedded/test_uart_api           SKIPPED
+esp32-s3-devkitc-1-8m          native/test_rectification_parse  SKIPPED
+esp32-s3-devkitc-1-8m          native/test_stringview           SKIPPED
+esp32-s3-devkitc-1-8m          native/test_uart_api_spec        SKIPPED
+esp32-s3-devkitc-1-8m          native/test_utils                SKIPPED
+esp32-s3-devkitc-1-8m-secure   embedded/test_stringview_esp32   SKIPPED
+esp32-s3-devkitc-1-8m-secure   embedded/test_uart_api           SKIPPED
+esp32-s3-devkitc-1-8m-secure   native/test_rectification_parse  SKIPPED
+esp32-s3-devkitc-1-8m-secure   native/test_stringview           SKIPPED
+esp32-s3-devkitc-1-8m-secure   native/test_uart_api_spec        SKIPPED
+esp32-s3-devkitc-1-8m-secure   native/test_utils                SKIPPED
+esp32-s3-devkitc-1-16m         embedded/test_stringview_esp32   SKIPPED
+esp32-s3-devkitc-1-16m         embedded/test_uart_api           SKIPPED
+esp32-s3-devkitc-1-16m         native/test_rectification_parse  SKIPPED
+esp32-s3-devkitc-1-16m         native/test_stringview           SKIPPED
+esp32-s3-devkitc-1-16m         native/test_uart_api_spec        SKIPPED
+esp32-s3-devkitc-1-16m         native/test_utils                SKIPPED
+esp32-s3-devkitc-1-16m-secure  embedded/test_stringview_esp32   SKIPPED
+esp32-s3-devkitc-1-16m-secure  embedded/test_uart_api           SKIPPED
+esp32-s3-devkitc-1-16m-secure  native/test_rectification_parse  SKIPPED
+esp32-s3-devkitc-1-16m-secure  native/test_stringview           SKIPPED
+esp32-s3-devkitc-1-16m-secure  native/test_uart_api_spec        SKIPPED
+esp32-s3-devkitc-1-16m-secure  native/test_utils                SKIPPED
+kincony-kc868-a6               embedded/test_stringview_esp32   SKIPPED
+kincony-kc868-a6               embedded/test_uart_api           SKIPPED
+kincony-kc868-a6               native/test_rectification_parse  SKIPPED
+kincony-kc868-a6               native/test_stringview           SKIPPED
+kincony-kc868-a6               native/test_uart_api_spec        SKIPPED
+kincony-kc868-a6               native/test_utils                SKIPPED
+kincony-kc868-a6-secure        embedded/test_stringview_esp32   SKIPPED
+kincony-kc868-a6-secure        embedded/test_uart_api           SKIPPED
+kincony-kc868-a6-secure        native/test_rectification_parse  SKIPPED
+kincony-kc868-a6-secure        native/test_stringview           SKIPPED
+kincony-kc868-a6-secure        native/test_uart_api_spec        SKIPPED
+kincony-kc868-a6-secure        native/test_utils                SKIPPED
+native                         embedded/test_stringview_esp32   SKIPPED
+native                         embedded/test_uart_api           SKIPPED
+native                         native/test_rectification_parse  SKIPPED
+native                         native/test_stringview           ERRORED   00:00:00.932
+native                         native/test_uart_api_spec        SKIPPED
+native                         native/test_utils                SKIPPED
+esp32-s3-devkitc-1-16m-test    embedded/test_stringview_esp32   SKIPPED
+esp32-s3-devkitc-1-16m-test    embedded/test_uart_api           SKIPPED
+esp32-s3-devkitc-1-16m-test    native/test_rectification_parse  SKIPPED
+esp32-s3-devkitc-1-16m-test    native/test_stringview           SKIPPED
+esp32-s3-devkitc-1-16m-test    native/test_uart_api_spec        SKIPPED
+esp32-s3-devkitc-1-16m-test    native/test_utils                SKIPPED
+================== 1 test cases: 0 succeeded in 00:00:00.932 ==================

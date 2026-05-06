@@ -8,6 +8,11 @@ on:
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
+    inputs:
+      create_artifacts:
+        description: 'Create and upload firmware artifacts'
+        required: false
+        default: 'false'
 
 permissions:
   packages: write
@@ -32,7 +37,7 @@ jobs:
       - name: Run linter
         run: |
           # Замените на вашу команду линтера
-          platformio check --environment esp32dev || echo "Linter completed with warnings"
+          platformio check --environment esp32-s3-devkitc-1-16m || echo "Linter completed with warnings"
           
       - name: Upload lint results
         uses: actions/upload-artifact@v4
@@ -103,6 +108,8 @@ jobs:
           - env_name: esp32-s3-devkitc-1-8m-secure
           - env_name: esp32-s3-devkitc-1-16m
           - env_name: esp32-s3-devkitc-1-16m-secure
+          - env_name: kincony-kc868-a6
+          - env_name: kincony-kc868-a6-secure
 
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -140,7 +147,7 @@ jobs:
         run: platformio run --environment ${{ matrix.env_name }}
 
       - name: Collect and archive artifacts for ${{ matrix.env_name }}
-        if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_artifacts == 'true')
+        if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_artifacts == 'true')
         run: |
           mkdir -p artifacts/firmware/${{ matrix.env_name }} artifacts/zips
           cp docs/calculator/rectification_calculator.js artifacts/firmware/${{ matrix.env_name }}/
@@ -151,7 +158,7 @@ jobs:
           ls -la artifacts/zips/
 
       - name: Upload zip archive for ${{ matrix.env_name }}
-        if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_artifacts == 'true')
+        if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_artifacts == 'true')
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.env_name }}
@@ -159,7 +166,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload firmware binaries for ${{ matrix.env_name }}
-        if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_artifacts == 'true')
+        if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_artifacts == 'true')
         uses: actions/upload-artifact@v4
         with:
           name: firmware-${{ matrix.env_name }}
@@ -211,7 +218,7 @@ jobs:
           name: Release ${{ github.ref_name }}
           draft: false
           prerelease: true
-          body_path: ${{ github.workspace }}-CHANGELOG.md
+          body_path: ${{ github.workspace }}/CHANGELOG.md
           generate_release_notes: true
           files: |
             release-assets/*.bin
@@ -250,11 +257,15 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6
         with:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync main
+        run: git pull --ff-only origin main
 
       - uses: actions/download-artifact@v4
         with:
@@ -274,9 +285,24 @@ jobs:
         run: |
           python scripts/docs/update_firmware_docs.py all-artifacts ${{ steps.ver.outputs.dash }}
 
-      - name: Commit and push
+      - name: Open PR for docs/firmware (merge queue)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -e
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/firmware/
-          git diff --staged --quiet || (git commit -m "docs: update firmware for ${{ github.ref_name }}" && git push)
+          if git diff --staged --quiet; then
+            echo "No docs/firmware changes to commit."
+            exit 0
+          fi
+          TAG="${{ github.ref_name }}"
+          BRANCH="bot/docs-firmware-${TAG}-run-${{ github.run_id }}"
+          git checkout -b "$BRANCH"
+          git commit -m "docs: update firmware for $TAG"
+          git push origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "docs: update firmware for $TAG" \
+            --body "Automated update of \`docs/firmware/\` after release [${{ github.ref_name }}](${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}). Workflow run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})."
+          gh pr merge --merge --auto

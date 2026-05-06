@@ -1,5 +1,8 @@
-import type { Profile } from '$lib/types/ssvc';
+import type { OpenConnectRelayRules, Profile } from '$lib/types/ssvc';
 import { createDefaultProfile } from '$lib/actions/DistillationCycleModel';
+import { sanitizeIncomingProfileData } from './profileSanitize';
+
+export { sanitizeIncomingProfileData, stripNumericKeysAtRoot } from './profileSanitize';
 
 export function isObject(item: any): item is Record<string, any> {
 	return (item && typeof item === 'object' && !Array.isArray(item));
@@ -24,18 +27,24 @@ export function deepMerge(target: any, source: any): any {
  */
 export function normalizeProfile(savedData: Partial<Profile>): Profile {
 	const base = createDefaultProfile();
+	const incoming = sanitizeIncomingProfileData(savedData as unknown);
 
 	const merged: Profile = {
 		...base,
-		...savedData,
+		...incoming,
 
 		// Гарантируем наличие вложенных объектов фракций
-		heads: mergeWithDefaults(savedData.heads, base.heads),
-		late_heads: mergeWithDefaults(savedData.late_heads, base.late_heads),
-		hearts: mergeWithDefaults(savedData.hearts, base.hearts),
-		tails: mergeWithDefaults(savedData.tails, base.tails),
-		
-		ssvcSettings: mergeWithDefaults(savedData.ssvcSettings, base.ssvcSettings)
+		heads: mergeWithDefaults(incoming.heads, base.heads),
+		late_heads: mergeWithDefaults(incoming.late_heads, base.late_heads),
+		hearts: mergeWithDefaults(incoming.hearts, base.hearts),
+		tails: mergeWithDefaults(incoming.tails, base.tails),
+
+		ssvcSettings: mergeWithDefaults(incoming.ssvcSettings, base.ssvcSettings),
+
+		openConnectRelayRules: normalizeRelayRules(
+			incoming.openConnectRelayRules,
+			base.openConnectRelayRules as OpenConnectRelayRules
+		)
 	};
 
 	// Обработка отключенных фракций для математической модели
@@ -60,6 +69,16 @@ export function normalizeProfile(savedData: Partial<Profile>): Profile {
  * Вспомогательная функция: если значение в объекте 'data' отсутствует,
  * берет значение из 'defaults'.
  */
+function normalizeRelayRules(
+	incoming: Partial<OpenConnectRelayRules> | undefined,
+	base: OpenConnectRelayRules
+): OpenConnectRelayRules {
+	return {
+		schemaVersion: incoming?.schemaVersion ?? base.schemaVersion ?? 1,
+		rules: Array.isArray(incoming?.rules) ? incoming.rules : base.rules ?? []
+	};
+}
+
 function mergeWithDefaults(data: any, defaults: any) {
 	if (!data) return { ...defaults };
 
