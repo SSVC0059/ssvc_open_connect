@@ -5,8 +5,10 @@
 #include "core/SsvcConnector.h"
 #include <ArduinoJson.h>
 #include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 #include <freertos/timers.h>
 #include <cstdint>
+#include <map>
 #include <vector>
 #include <string>
 
@@ -45,10 +47,10 @@ public:
 #endif
 
   void onAlarm(const AlarmEvent& event) override;
-  void forceResetAlarm() override {}
+  void forceResetAlarm() override;
 
 private:
-  RelayRuleEngine() = default;
+  RelayRuleEngine();
 
   void recomputeAndApply();
   static void timerCallback(TimerHandle_t t);
@@ -82,6 +84,11 @@ private:
     float ssvcFloat = 0.f;
   };
 
+  struct SensorAlarmState {
+    AlarmLevel level = AlarmLevel::NORMAL;
+    std::string name;
+  };
+
   bool conditionMatches(const Rule& r) const;
   bool matchSensorAlarm(const Rule& r) const;
   bool matchHardwareFault(const Rule& r) const;
@@ -91,11 +98,11 @@ private:
   std::vector<Rule> _rules;
   int _schemaVersion = 1;
 
-  AlarmEvent _lastSensorEvent{};
-  bool _haveSensorEvent = false;
+  std::map<std::string, SensorAlarmState> _sensorAlarmStates;
 
   uint64_t _manualMask = 0;
   uint64_t _manualEnergized = 0;
+  mutable SemaphoreHandle_t _lock = nullptr;
 
 #if !PINOUT_USE_GPIO
   TimerHandle_t _timer = nullptr;

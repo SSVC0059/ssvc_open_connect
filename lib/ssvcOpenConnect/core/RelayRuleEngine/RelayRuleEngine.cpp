@@ -13,6 +13,24 @@ namespace {
 using FieldType = RelayRuleEngine::SsvcFieldValueType;
 using FieldDesc = RelayRuleEngine::SsvcFieldDescriptor;
 
+class EngineLock {
+public:
+  explicit EngineLock(SemaphoreHandle_t lock) : _lock(lock) {
+    if (_lock != nullptr) {
+      xSemaphoreTakeRecursive(_lock, portMAX_DELAY);
+    }
+  }
+
+  ~EngineLock() {
+    if (_lock != nullptr) {
+      xSemaphoreGiveRecursive(_lock);
+    }
+  }
+
+private:
+  SemaphoreHandle_t _lock;
+};
+
 const FieldDesc kSsvcFieldDescriptors[] = {
     {"formula", "Формула скорости", FieldType::BOOL},
     {"auto_mode", "Автоматический режим", FieldType::BOOL},
@@ -56,6 +74,8 @@ RelayRuleEngine& RelayRuleEngine::getInstance() {
   return instance;
 }
 
+RelayRuleEngine::RelayRuleEngine() : _lock(xSemaphoreCreateRecursiveMutex()) {}
+
 void RelayRuleEngine::timerCallback(TimerHandle_t t) {
   (void)t;
   RelayRuleEngine::getInstance().recomputeAndApply();
@@ -90,6 +110,7 @@ static AlarmLevel levelFromInt(int v) {
 }
 
 void RelayRuleEngine::loadRules(const JsonObject& src) {
+  EngineLock lock(_lock);
   _rules.clear();
   _schemaVersion = src["schemaVersion"] | 1;
 
@@ -175,6 +196,7 @@ void RelayRuleEngine::loadRules(const JsonObject& src) {
 }
 
 void RelayRuleEngine::serializeToJson(JsonObject& dest) const {
+  EngineLock lock(_lock);
   dest["schemaVersion"] = _schemaVersion;
   JsonArray arr = dest["rules"].to<JsonArray>();
   for (const Rule& r : _rules) {
@@ -237,6 +259,7 @@ void RelayRuleEngine::serializeToJson(JsonObject& dest) const {
 
 void RelayRuleEngine::setManualOverride(const unsigned bit, const bool energized, const bool enableOverride) {
 #if !PINOUT_USE_GPIO
+  EngineLock lock(_lock);
   auto& coord = RelayPortCoordinator::getInstance();
   if (bit >= 64 || bit >= coord.totalRelayLines()) {
     return;
@@ -261,6 +284,7 @@ void RelayRuleEngine::setManualOverride(const unsigned bit, const bool energized
 }
 
 void RelayRuleEngine::clearAllManualOverrides() {
+  EngineLock lock(_lock);
   _manualMask = 0;
   _manualEnergized = 0;
   recomputeAndApply();
@@ -308,33 +332,27 @@ void RelayRuleEngine::appendSsvcFieldsJson(JsonArray& arr) const {
 #endif
 
 bool RelayRuleEngine::matchSensorAlarm(const Rule& r) const {
-  if (!_haveSensorEvent || _lastSensorEvent.sensor == nullptr) {
-    return false;
-  }
-  if (_lastSensorEvent.source_kind != AlarmSourceKind::SENSOR) {
-    return false;
-  }
-  const AlarmLevel lv = _lastSensorEvent.level;
-  bool levelOk = false;
-  if (r.wantMin && lv == AlarmLevel::MIN) {
-    levelOk = true;
-  }
-  if (r.wantDanger && lv == AlarmLevel::DANGEROUS) {
-    levelOk = true;
-  }
-  if (r.wantCrit && lv == AlarmLevel::CRITICAL) {
-    levelOk = true;
-  }
-  if (!levelOk) {
-    return false;
-  }
-  if (!r.sensorNameSubstr.empty()) {
-    const std::string name = _lastSensorEvent.sensor->getName();
-    if (name.find(r.sensorNameSubstr) == std::string::npos) {
-      return false;
+  for (const auto& kv : _sensorAlarmStates) {
+    const AlarmLevel lv = kv.second.level;
+    bool levelOk = false;
+    if (r.wantMin && lv == AlarmLevel::MIN) {
+      levelOk = true;
     }
+    if (r.wantDanger && lv == AlarmLevel::DANGEROUS) {
+      levelOk = true;
+    }
+    if (r.wantCrit && lv == AlarmLevel::CRITICAL) {
+      levelOk = true;
+    }
+    if (!levelOk) {
+      continue;
+    }
+    if (!r.sensorNameSubstr.empty() && kv.second.name.find(r.sensorNameSubstr) == std::string::npos) {
+      continue;
+    }
+    return true;
   }
-  return true;
+  return false;
 }
 
 bool RelayRuleEngine::matchHardwareFault(const Rule& r) const {
@@ -371,6 +389,9 @@ bool RelayRuleEngine::matchSsvc(const Rule& r) const {
     return s.getAutoMode() == r.ssvcBool;
   }
   if (r.ssvcKey == "tank_mmhg") {
+    if (r.condKind == Rule::CondKind::SSVC_FLOAT) {
+      return fabsf(s.getTank_mmhg() - r.ssvcFloat) < 0.001f;
+    }
     return static_cast<int>(s.getTank_mmhg() + 0.5f) == r.ssvcInt;
   }
   if (r.ssvcKey == "sound") {
@@ -469,6 +490,7 @@ bool RelayRuleEngine::conditionMatches(const Rule& r) const {
 
 void RelayRuleEngine::recomputeAndApply() {
 #if !PINOUT_USE_GPIO
+  EngineLock lock(_lock);
   auto& coord = RelayPortCoordinator::getInstance();
   const unsigned n = coord.totalRelayLines();
   for (unsigned g = 0; g < n; ++g) {
@@ -505,10 +527,23 @@ void RelayRuleEngine::recomputeAndApply() {
 
 void RelayRuleEngine::onAlarm(const AlarmEvent& event) {
   if (event.source_kind == AlarmSourceKind::SENSOR && event.sensor != nullptr) {
-    _lastSensorEvent = event;
-    _haveSensorEvent = true;
+    EngineLock lock(_lock);
+    const std::string sensorKey = SensorManager::addressToString(event.sensor->getAddress());
+    if (event.level == AlarmLevel::NORMAL) {
+      _sensorAlarmStates.erase(sensorKey);
+    } else {
+      SensorAlarmState& state = _sensorAlarmStates[sensorKey];
+      state.level = event.level;
+      state.name = event.sensor->getName();
+    }
   }
   // Hardware faults are resolved by querying AlarmMonitor live state in matchHardwareFault,
   // so we don't cache hw events here — just trigger re-evaluation.
+  recomputeAndApply();
+}
+
+void RelayRuleEngine::forceResetAlarm() {
+  EngineLock lock(_lock);
+  _sensorAlarmStates.clear();
   recomputeAndApply();
 }

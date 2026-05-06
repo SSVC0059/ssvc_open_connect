@@ -6,6 +6,28 @@
 
 #include <cstdio>
 
+namespace {
+
+class MonitorLock {
+public:
+  explicit MonitorLock(SemaphoreHandle_t lock) : _lock(lock) {
+    if (_lock != nullptr) {
+      xSemaphoreTakeRecursive(_lock, portMAX_DELAY);
+    }
+  }
+
+  ~MonitorLock() {
+    if (_lock != nullptr) {
+      xSemaphoreGiveRecursive(_lock);
+    }
+  }
+
+private:
+  SemaphoreHandle_t _lock;
+};
+
+} // namespace
+
 std::string AlarmMonitor::makeHardwareStateKey(const char* device_role, const uint8_t i2c_addr) {
   char buf[96];
   snprintf(buf, sizeof(buf), "hw:%s:0x%02X", device_role ? device_role : "?",
@@ -13,17 +35,26 @@ std::string AlarmMonitor::makeHardwareStateKey(const char* device_role, const ui
   return std::string(buf);
 }
 
+AlarmMonitor::AlarmMonitor() : _lock(xSemaphoreCreateRecursiveMutex()) {}
+
 void AlarmMonitor::raiseHardwareFault(const HardwareFaultCode code, const uint8_t i2c_addr,
                                       const char* device_role) {
   const std::string key = makeHardwareStateKey(device_role, i2c_addr);
-  const AlarmLevel last =
-      _last_hw_alarm_states.count(key) ? _last_hw_alarm_states.at(key) : AlarmLevel::NORMAL;
   constexpr AlarmLevel new_level = AlarmLevel::CRITICAL;
-  _hw_fault_active_codes[key] = code; // always keep the code up to date
-  if (last == new_level) {
-    return;
+  bool shouldNotify = false;
+  {
+    MonitorLock lock(_lock);
+    const AlarmLevel last =
+        _last_hw_alarm_states.count(key) ? _last_hw_alarm_states.at(key) : AlarmLevel::NORMAL;
+    _hw_fault_active_codes[key] = code; // always keep the code up to date
+    if (last != new_level) {
+      _last_hw_alarm_states[key] = new_level;
+      shouldNotify = true;
+    }
   }
-  _last_hw_alarm_states[key] = new_level;
+  if (!shouldNotify) {
+      return;
+  }
 
   AlarmEvent ev{};
   ev.source_kind = AlarmSourceKind::HARDWARE_FAULT;
@@ -40,11 +71,18 @@ void AlarmMonitor::raiseHardwareFault(const HardwareFaultCode code, const uint8_
 
 void AlarmMonitor::clearHardwareFault(const char* device_role, const uint8_t i2c_addr) {
   const std::string key = makeHardwareStateKey(device_role, i2c_addr);
-  _hw_fault_active_codes.erase(key);
-  if (!_last_hw_alarm_states.count(key) || _last_hw_alarm_states.at(key) == AlarmLevel::NORMAL) {
-    return;
+  bool shouldNotify = false;
+  {
+    MonitorLock lock(_lock);
+    _hw_fault_active_codes.erase(key);
+    if (_last_hw_alarm_states.count(key) && _last_hw_alarm_states.at(key) != AlarmLevel::NORMAL) {
+      _last_hw_alarm_states[key] = AlarmLevel::NORMAL;
+      shouldNotify = true;
+    }
   }
-  _last_hw_alarm_states[key] = AlarmLevel::NORMAL;
+  if (!shouldNotify) {
+      return;
+  }
 
   AlarmEvent ev{};
   ev.source_kind = AlarmSourceKind::HARDWARE_FAULT;
@@ -61,6 +99,7 @@ void AlarmMonitor::clearHardwareFault(const char* device_role, const uint8_t i2c
 
 std::vector<AlarmMonitor::HardwareFaultEntry> AlarmMonitor::getActiveHardwareFaults() const {
   std::vector<HardwareFaultEntry> result;
+  MonitorLock lock(_lock);
   for (const auto& kv : _last_hw_alarm_states) {
     if (kv.second == AlarmLevel::NORMAL) {
       continue;
@@ -87,6 +126,7 @@ std::vector<AlarmMonitor::HardwareFaultEntry> AlarmMonitor::getActiveHardwareFau
 
 std::vector<std::string> AlarmMonitor::getKnownHardwareRoles() const {
   std::vector<std::string> roles;
+  MonitorLock lock(_lock);
   roles.reserve(_last_hw_alarm_states.size());
   for (const auto& it : _last_hw_alarm_states) {
     const std::string& key = it.first;
@@ -115,8 +155,13 @@ AlarmMonitor& AlarmMonitor::getInstance() {
 }
 
 void AlarmMonitor::initialize(AlarmThresholdService* service) {
-    _thresholdService = service;
-    _last_alarm_states.clear();
+    {
+        MonitorLock lock(_lock);
+        _thresholdService = service;
+        _last_alarm_states.clear();
+        _last_hw_alarm_states.clear();
+        _hw_fault_active_codes.clear();
+    }
     if (_thresholdService) {
         // Лямбда-функция для передачи в addUpdateHandler
         auto update_cb = [this](const String& originId) {
@@ -128,9 +173,6 @@ void AlarmMonitor::initialize(AlarmThresholdService* service) {
         ESP_LOGI(TAG, "AlarmMonitor subscribed to Threshold Service updates (ID: %zu).", _updateHandlerId);
     }
 
-    _last_hw_alarm_states.clear();
-    _hw_fault_active_codes.clear();
-
     ESP_LOGI(TAG, "AlarmMonitor initialized with threshold service.");
 }
 
@@ -140,14 +182,23 @@ void AlarmMonitor::subscribe(IAlarmSubscriber* subscriber) {
         return;
     }
 
-    // Проверяем, не подписан ли уже
-    const bool already_subscribed = std::find(_subscribers.begin(), _subscribers.end(), subscriber) != _subscribers.end();
+    size_t subscriberCount = 0;
+    bool added = false;
+    {
+        MonitorLock lock(_lock);
+        // Проверяем, не подписан ли уже
+        const bool already_subscribed = std::find(_subscribers.begin(), _subscribers.end(), subscriber) != _subscribers.end();
 
-    if (!already_subscribed) {
-        _subscribers.push_back(subscriber);
-        // Логируем успешную подписку и общее количество
+        if (!already_subscribed) {
+            _subscribers.push_back(subscriber);
+            added = true;
+        }
+        subscriberCount = _subscribers.size();
+    }
+
+    if (added) {
         ESP_LOGI(TAG, "Subscriber 0x%p successfully added. Total subscribers: %zu.",
-                 static_cast<void*>(subscriber), _subscribers.size());
+                 static_cast<void*>(subscriber), subscriberCount);
     } else {
         ESP_LOGD(TAG, "Subscriber 0x%p is already subscribed. Skipping.", static_cast<void*>(subscriber));
     }
@@ -159,7 +210,12 @@ void AlarmMonitor::subscribe(IAlarmSubscriber* subscriber) {
 void AlarmMonitor::onThresholdsUpdated(const String& originId) {
     ESP_LOGI(TAG, "Threshold settings changed (Origin: %s). Re-checking all sensors immediately.", originId.c_str());
 
-    for (IAlarmSubscriber* subscriber : _subscribers) {
+    std::vector<IAlarmSubscriber*> subscribers;
+    {
+        MonitorLock lock(_lock);
+        subscribers = _subscribers;
+    }
+    for (IAlarmSubscriber* subscriber : subscribers) {
         subscriber->forceResetAlarm(); // <-- ВЫЗЫВАЕМ НОВЫЙ МЕТОД
     }
     // Обнуляем предыдущие состояния, чтобы гарантировать, что НОВЫЙ уровень сработает
@@ -167,7 +223,10 @@ void AlarmMonitor::onThresholdsUpdated(const String& originId) {
     // Если этого не сделать, в _last_alarm_states могут остаться старые уровни,
     // и новый уровень (например, CRITICAL) не сработает, если он уже был CRITICAL
     // до изменения порогов.
-    _last_alarm_states.clear();
+    {
+        MonitorLock lock(_lock);
+        _last_alarm_states.clear();
+    }
 
     // Принудительно запускаем проверку
     checkAllSensors();
@@ -180,17 +239,23 @@ void AlarmMonitor::unsubscribe(IAlarmSubscriber* subscriber) {
         return;
     }
 
-    const size_t old_size = _subscribers.size();
-    // Используем erase-remove idiom для удаления указателя из вектора
-    _subscribers.erase(
-        std::remove(_subscribers.begin(), _subscribers.end(), subscriber),
-        _subscribers.end()
-    );
+    size_t old_size = 0;
+    size_t new_size = 0;
+    {
+        MonitorLock lock(_lock);
+        old_size = _subscribers.size();
+        // Используем erase-remove idiom для удаления указателя из вектора
+        _subscribers.erase(
+            std::remove(_subscribers.begin(), _subscribers.end(), subscriber),
+            _subscribers.end()
+        );
+        new_size = _subscribers.size();
+    }
 
     // Логируем результат отписки
-    if (_subscribers.size() < old_size) {
+    if (new_size < old_size) {
         ESP_LOGI(TAG, "Subscriber 0x%p successfully removed. Total subscribers: %zu.",
-                 static_cast<void*>(subscriber), _subscribers.size());
+                 static_cast<void*>(subscriber), new_size);
     } else {
         ESP_LOGD(TAG, "Subscriber 0x%p was not found in the list.", static_cast<void*>(subscriber));
     }
@@ -199,13 +264,18 @@ void AlarmMonitor::unsubscribe(IAlarmSubscriber* subscriber) {
 
 void AlarmMonitor::notifySubscribers(const AlarmEvent& event) const
 {
+    std::vector<IAlarmSubscriber*> subscribers;
+    {
+        MonitorLock lock(_lock);
+        subscribers = _subscribers;
+    }
     if (event.source_kind == AlarmSourceKind::HARDWARE_FAULT) {
         ESP_LOGW(TAG,
                  "--- HARDWARE FAULT --- role=%s addr=0x%02X code=%u level=%d. Notifying %zu subscribers.",
                  event.hw_device_role ? event.hw_device_role : "?",
                  static_cast<unsigned>(event.hw_i2c_address),
                  static_cast<unsigned>(event.hw_code), static_cast<int>(event.level),
-                 _subscribers.size());
+                 subscribers.size());
     } else {
         if (event.sensor == nullptr) {
             ESP_LOGE(TAG, "SENSOR alarm event with null sensor");
@@ -215,10 +285,10 @@ void AlarmMonitor::notifySubscribers(const AlarmEvent& event) const
                  SensorManager::addressToString(event.sensor->getAddress()).c_str(),
                  event.current_value,
                  static_cast<int>(event.level),
-                 _subscribers.size());
+                 subscribers.size());
     }
 
-    for (IAlarmSubscriber* subscriber : _subscribers) {
+    for (IAlarmSubscriber* subscriber : subscribers) {
         if (subscriber) {
             if (event.source_kind == AlarmSourceKind::SENSOR && event.sensor != nullptr) {
                 ESP_LOGV(TAG, "Notifying subscriber 0x%p about event for sensor %s.",
@@ -274,26 +344,39 @@ void AlarmMonitor::checkAllSensors() {
 
              // Защита от ложной тревоги на старте:
              // Если датчика еще нет в списке _last_alarm_states, это первый цикл.
-             const bool is_first_check = (_last_alarm_states.count(addr_str) == 0);
+             bool is_first_check = false;
+             {
+                 MonitorLock lock(_lock);
+                 is_first_check = (_last_alarm_states.count(addr_str) == 0);
+                 if (is_first_check) {
+                     _last_alarm_states[addr_str] = AlarmLevel::NORMAL;
+                 }
+             }
 
              if (is_first_check) {
                  // Инициализируем состояние как NORMAL, но не генерируем событие.
-                 _last_alarm_states[addr_str] = AlarmLevel::NORMAL;
                  ESP_LOGI(TAG, "Sensor %s is in initial state (non-valid data). Skipping alarm check.", addr_str.c_str());
-                 return; // Пропускаем, чтобы избежать ложной тревоги MINIMUM
+                 continue; // Пропускаем, чтобы избежать ложной тревоги MINIMUM
              }
 
              // Если код дошел сюда, это СБОЙ ВО ВРЕМЯ РАБОТЫ.
              auto new_level = AlarmLevel::CRITICAL;
-             const AlarmLevel last_level = _last_alarm_states.count(addr_str) ?
+             AlarmLevel last_level = AlarmLevel::NORMAL;
+             bool shouldNotify = false;
+             {
+                 MonitorLock lock(_lock);
+                 last_level = _last_alarm_states.count(addr_str) ?
                               _last_alarm_states.at(addr_str) :
                               AlarmLevel::NORMAL;
+                 if (new_level != last_level) {
+                     _last_alarm_states[addr_str] = new_level;
+                     shouldNotify = true;
+                 }
+             }
 
-             if (new_level != last_level) {
+             if (shouldNotify) {
                  ESP_LOGE(TAG, "SENSOR FAILURE DETECTED! Sensor %s transition: %d -> %d. Value: %.2f (Non-valid data)",
                           addr_str.c_str(), static_cast<int>(last_level), static_cast<int>(new_level), current_value);
-
-                 _last_alarm_states[addr_str] = new_level;
 
                  AlarmEvent event{};
                  event.source_kind = AlarmSourceKind::SENSOR;
@@ -327,16 +410,23 @@ void AlarmMonitor::checkAllSensors() {
             // ----------------------------------------
 
             // 5. Проверяем, изменился ли статус тревоги
-            const AlarmLevel last_level = _last_alarm_states.count(addr_str) ?
-                                          _last_alarm_states.at(addr_str) :
-                                          AlarmLevel::NORMAL; // Предполагаем NORMAL, если не было предыдущего состояния
+            AlarmLevel last_level = AlarmLevel::NORMAL; // Предполагаем NORMAL, если не было предыдущего состояния
+            bool shouldNotify = false;
+            {
+                MonitorLock lock(_lock);
+                last_level = _last_alarm_states.count(addr_str) ?
+                             _last_alarm_states.at(addr_str) :
+                             AlarmLevel::NORMAL;
+                if (new_level != last_level) {
+                    _last_alarm_states[addr_str] = new_level; // Обновляем состояние
+                    shouldNotify = true;
+                }
+            }
 
             // Логируем переход состояния
-            if (new_level != last_level) {
+            if (shouldNotify) {
                 ESP_LOGI(TAG, "STATUS CHANGE! Sensor %s transition: %d -> %d. Value: %.2f (Crossed: %.2f)",
                          addr_str.c_str(), static_cast<int>(last_level), static_cast<int>(new_level), current_value, threshold_crossed);
-
-                _last_alarm_states[addr_str] = new_level; // Обновляем состояние
 
                 AlarmEvent event{};
                 event.source_kind = AlarmSourceKind::SENSOR;

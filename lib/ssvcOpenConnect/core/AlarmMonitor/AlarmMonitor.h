@@ -8,8 +8,11 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include <map>
 #include <string>
 #include <Arduino.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 #include "core/IAlarmSubscriber/IAlarmSubscriber.h"
 #include "core/StatefulServices/AlarmThresholdService/AlarmThresholdService.h"
 #include "components/sensors/SensorManager/SensorManager.h"
@@ -47,7 +50,7 @@ public:
     std::vector<HardwareFaultEntry> getActiveHardwareFaults() const;
 
 private:
-    AlarmMonitor() {} // Приватный конструктор
+    AlarmMonitor(); // Приватный конструктор
 
     // Внутреннее состояние каждого датчика, чтобы избежать "дребезга" уведомлений
     std::map<std::string, AlarmLevel> _last_alarm_states;
@@ -62,6 +65,7 @@ private:
     AlarmThresholdService* _thresholdService = nullptr; // Указатель на сервис с настройками
     std::vector<IAlarmSubscriber*> _subscribers;
     update_handler_id_t _updateHandlerId = 0; // ID обработчика для отписки
+    mutable SemaphoreHandle_t _lock = nullptr;
 
     static constexpr auto TAG = "ALARM_MONITOR";
 

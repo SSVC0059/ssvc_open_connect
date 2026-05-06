@@ -92,12 +92,17 @@ void OpenConnectHardwareConfig::read(OpenConnectHardwareConfig& s, JsonObject& r
 
 StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnectHardwareConfig& s, const String& originId) {
     const OpenConnectHardwareConfig before = s;
+    auto fail = [&]() {
+        s = before;
+        return StateUpdateResult::ERROR;
+    };
     bool changed = false;
 
     // Migrate legacy JSON: single relayPcf8574I2cAddress once (no relayPcf8574Addresses array in file)
     if (root["relayPcf8574I2cAddress"].is<unsigned int>() && !root["relayPcf8574Addresses"].is<JsonArray>()) {
-        const uint8_t legacy = static_cast<uint8_t>(root["relayPcf8574I2cAddress"].as<unsigned int>());
-        if (isValidI2c7Bit(legacy)) {
+        const unsigned int legacyRaw = root["relayPcf8574I2cAddress"].as<unsigned int>();
+        if (isValidI2c7Bit(legacyRaw)) {
+            const uint8_t legacy = static_cast<uint8_t>(legacyRaw);
             s.relayPcf8574Addresses.clear();
             s.relayPcf8574Addresses.push_back(legacy);
             changed = true;
@@ -114,12 +119,13 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
 
     if (!root["bmp581I2cAddress"].isNull()) {
         if (!root["bmp581I2cAddress"].is<unsigned int>()) {
-            return StateUpdateResult::ERROR;
+            return fail();
         }
-        const uint8_t addr = static_cast<uint8_t>(root["bmp581I2cAddress"].as<unsigned int>());
-        if (!isValidI2c7Bit(addr)) {
-            return StateUpdateResult::ERROR;
+        const unsigned int rawAddr = root["bmp581I2cAddress"].as<unsigned int>();
+        if (!isValidI2c7Bit(rawAddr)) {
+            return fail();
         }
+        const uint8_t addr = static_cast<uint8_t>(rawAddr);
         if (addr != s.bmp581I2cAddress) {
             s.bmp581I2cAddress = addr;
             changed = true;
@@ -139,14 +145,18 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
         std::vector<uint8_t> next;
         for (JsonVariant v : ja) {
             if (!v.is<unsigned int>()) {
-                return StateUpdateResult::ERROR;
+                return fail();
             }
-            next.push_back(static_cast<uint8_t>(v.as<unsigned int>()));
+            const unsigned int rawAddr = v.as<unsigned int>();
+            if (!isValidI2c7Bit(rawAddr)) {
+                return fail();
+            }
+            next.push_back(static_cast<uint8_t>(rawAddr));
         }
         std::vector<uint8_t> beforeRelay = s.relayPcf8574Addresses;
         bool listChanged = false;
         if (!validateAddressList(next, listChanged, beforeRelay)) {
-            return StateUpdateResult::ERROR;
+            return fail();
         }
         s.relayPcf8574Addresses = std::move(next);
         if (listChanged) {
@@ -164,12 +174,13 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
 
     if (!root["ds3231I2cAddress"].isNull()) {
         if (!root["ds3231I2cAddress"].is<unsigned int>()) {
-            return StateUpdateResult::ERROR;
+            return fail();
         }
-        const uint8_t addr = static_cast<uint8_t>(root["ds3231I2cAddress"].as<unsigned int>());
-        if (!isValidI2c7Bit(addr)) {
-            return StateUpdateResult::ERROR;
+        const unsigned int rawAddr = root["ds3231I2cAddress"].as<unsigned int>();
+        if (!isValidI2c7Bit(rawAddr)) {
+            return fail();
         }
+        const uint8_t addr = static_cast<uint8_t>(rawAddr);
         if (addr != s.ds3231I2cAddress) {
             s.ds3231I2cAddress = addr;
             changed = true;
@@ -194,12 +205,13 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
 
     if (!root["lcd1602I2cAddress"].isNull()) {
         if (!root["lcd1602I2cAddress"].is<unsigned int>()) {
-            return StateUpdateResult::ERROR;
+            return fail();
         }
-        const uint8_t addr = static_cast<uint8_t>(root["lcd1602I2cAddress"].as<unsigned int>());
-        if (!isValidI2c7Bit(addr)) {
-            return StateUpdateResult::ERROR;
+        const unsigned int rawAddr = root["lcd1602I2cAddress"].as<unsigned int>();
+        if (!isValidI2c7Bit(rawAddr)) {
+            return fail();
         }
+        const uint8_t addr = static_cast<uint8_t>(rawAddr);
         if (addr != s.lcd1602I2cAddress) {
             s.lcd1602I2cAddress = addr;
             changed = true;

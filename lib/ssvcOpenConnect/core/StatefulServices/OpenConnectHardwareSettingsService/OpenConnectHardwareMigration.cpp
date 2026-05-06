@@ -58,11 +58,15 @@ bool fileLooksValid(FS* fs, JsonDocument& doc) {
     if (ver < 1) {
         return false;
     }
-    const uint8_t bmp = static_cast<uint8_t>(o["bmp581I2cAddress"] | 0);
+    const unsigned int bmp = o["bmp581I2cAddress"] | 0;
     if (!OpenConnectHardwareConfig::isValidI2c7Bit(bmp)) {
         return false;
     }
-    const uint8_t lcd = static_cast<uint8_t>(o["lcd1602I2cAddress"] | 0x27);
+    const unsigned int rtc = o["ds3231I2cAddress"] | 0x68;
+    if (!OpenConnectHardwareConfig::isValidI2c7Bit(rtc)) {
+        return false;
+    }
+    const unsigned int lcd = o["lcd1602I2cAddress"] | 0x27;
     if (!OpenConnectHardwareConfig::isValidI2c7Bit(lcd)) {
         return false;
     }
@@ -76,10 +80,11 @@ bool fileLooksValid(FS* fs, JsonDocument& doc) {
             if (!v.is<unsigned int>()) {
                 return false;
             }
-            const uint8_t a = static_cast<uint8_t>(v.as<unsigned int>());
-            if (!OpenConnectHardwareConfig::isValidI2c7Bit(a)) {
+            const unsigned int raw = v.as<unsigned int>();
+            if (!OpenConnectHardwareConfig::isValidI2c7Bit(raw)) {
                 return false;
             }
+            const uint8_t a = static_cast<uint8_t>(raw);
             if (seen.count(a)) {
                 return false;
             }
@@ -88,7 +93,7 @@ bool fileLooksValid(FS* fs, JsonDocument& doc) {
         return true;
     }
     if (o["relayPcf8574I2cAddress"].is<unsigned int>()) {
-        const uint8_t legacy = static_cast<uint8_t>(o["relayPcf8574I2cAddress"].as<unsigned int>());
+        const unsigned int legacy = o["relayPcf8574I2cAddress"].as<unsigned int>();
         return OpenConnectHardwareConfig::isValidI2c7Bit(legacy);
     }
     return false;
