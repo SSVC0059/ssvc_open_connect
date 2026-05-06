@@ -109,6 +109,90 @@ static AlarmLevel levelFromInt(int v) {
   }
 }
 
+bool RelayRuleEngine::parseSensorAlarmCondition(const JsonObject& cond, Rule& r) const {
+  r.condKind = Rule::CondKind::SENSOR_ALARM;
+  r.anySensorLevel = false;
+  r.wantMin = r.wantDanger = r.wantCrit = false;
+  if (cond["levels"].is<JsonArray>()) {
+    for (JsonVariant lv : cond["levels"].as<JsonArray>()) {
+      const AlarmLevel al = levelFromInt(lv.as<int>());
+      if (al == AlarmLevel::MIN) {
+        r.wantMin = true;
+      }
+      if (al == AlarmLevel::DANGEROUS) {
+        r.wantDanger = true;
+      }
+      if (al == AlarmLevel::CRITICAL) {
+        r.wantCrit = true;
+      }
+    }
+  } else {
+    r.wantDanger = true;
+    r.wantCrit = true;
+  }
+  if (cond["sensorNameContains"].is<const char*>()) {
+    r.sensorNameSubstr = cond["sensorNameContains"].as<const char*>();
+  }
+  return true;
+}
+
+bool RelayRuleEngine::parseHardwareFaultCondition(const JsonObject& cond, Rule& r) const {
+  r.condKind = Rule::CondKind::HARDWARE_FAULT;
+  r.hwCode = cond["code"] | -1;
+  if (cond["roleContains"].is<const char*>()) {
+    r.roleSubstr = cond["roleContains"].as<const char*>();
+  }
+  return true;
+}
+
+bool RelayRuleEngine::parseRectificationCondition(const JsonObject& cond, Rule& r) const {
+  r.condKind = Rule::CondKind::RECTIFICATION;
+  if (cond["stageEquals"].is<const char*>()) {
+    r.stageEquals = cond["stageEquals"].as<const char*>();
+  }
+  return true;
+}
+
+bool RelayRuleEngine::parseSsvcSettingCondition(const JsonObject& cond, Rule& r) const {
+  if (!cond["key"].is<const char*>()) {
+    return false;
+  }
+  r.ssvcKey = cond["key"].as<const char*>();
+  if (cond["boolEquals"].is<bool>()) {
+    r.condKind = Rule::CondKind::SSVC_BOOL;
+    r.ssvcBool = cond["boolEquals"].as<bool>();
+    return true;
+  }
+  if (cond["intEquals"].is<int>() || cond["intEquals"].is<long>()) {
+    r.condKind = Rule::CondKind::SSVC_INT;
+    r.ssvcInt = cond["intEquals"].as<int>();
+    return true;
+  }
+  if (cond["floatEquals"].is<float>() || cond["floatEquals"].is<double>()) {
+    r.condKind = Rule::CondKind::SSVC_FLOAT;
+    r.ssvcFloat = cond["floatEquals"].as<float>();
+    return true;
+  }
+  return false;
+}
+
+bool RelayRuleEngine::parseCondition(const JsonObject& cond, Rule& r) const {
+  const String t = cond["type"] | "sensor_alarm";
+  if (t == "sensor_alarm") {
+    return parseSensorAlarmCondition(cond, r);
+  }
+  if (t == "hardware_fault") {
+    return parseHardwareFaultCondition(cond, r);
+  }
+  if (t == "rectification") {
+    return parseRectificationCondition(cond, r);
+  }
+  if (t == "ssvc_setting") {
+    return parseSsvcSettingCondition(cond, r);
+  }
+  return false;
+}
+
 void RelayRuleEngine::loadRules(const JsonObject& src) {
   EngineLock lock(_lock);
   _rules.clear();
@@ -132,60 +216,7 @@ void RelayRuleEngine::loadRules(const JsonObject& src) {
     if (cond.isNull()) {
       continue;
     }
-    const String t = cond["type"] | "sensor_alarm";
-    if (t == "sensor_alarm") {
-      r.condKind = Rule::CondKind::SENSOR_ALARM;
-      r.anySensorLevel = false;
-      r.wantMin = r.wantDanger = r.wantCrit = false;
-      if (cond["levels"].is<JsonArray>()) {
-        for (JsonVariant lv : cond["levels"].as<JsonArray>()) {
-          const AlarmLevel al = levelFromInt(lv.as<int>());
-          if (al == AlarmLevel::MIN) {
-            r.wantMin = true;
-          }
-          if (al == AlarmLevel::DANGEROUS) {
-            r.wantDanger = true;
-          }
-          if (al == AlarmLevel::CRITICAL) {
-            r.wantCrit = true;
-          }
-        }
-      } else {
-        r.wantDanger = true;
-        r.wantCrit = true;
-      }
-      if (cond["sensorNameContains"].is<const char*>()) {
-        r.sensorNameSubstr = cond["sensorNameContains"].as<const char*>();
-      }
-    } else if (t == "hardware_fault") {
-      r.condKind = Rule::CondKind::HARDWARE_FAULT;
-      r.hwCode = cond["code"] | -1;
-      if (cond["roleContains"].is<const char*>()) {
-        r.roleSubstr = cond["roleContains"].as<const char*>();
-      }
-    } else if (t == "rectification") {
-      r.condKind = Rule::CondKind::RECTIFICATION;
-      if (cond["stageEquals"].is<const char*>()) {
-        r.stageEquals = cond["stageEquals"].as<const char*>();
-      }
-    } else if (t == "ssvc_setting") {
-      if (!cond["key"].is<const char*>()) {
-        continue;
-      }
-      r.ssvcKey = cond["key"].as<const char*>();
-      if (cond["boolEquals"].is<bool>()) {
-        r.condKind = Rule::CondKind::SSVC_BOOL;
-        r.ssvcBool = cond["boolEquals"].as<bool>();
-      } else if (cond["intEquals"].is<int>() || cond["intEquals"].is<long>()) {
-        r.condKind = Rule::CondKind::SSVC_INT;
-        r.ssvcInt = cond["intEquals"].as<int>();
-      } else if (cond["floatEquals"].is<float>() || cond["floatEquals"].is<double>()) {
-        r.condKind = Rule::CondKind::SSVC_FLOAT;
-        r.ssvcFloat = cond["floatEquals"].as<float>();
-      } else {
-        continue;
-      }
-    } else {
+    if (!parseCondition(cond, r)) {
       continue;
     }
     _rules.push_back(std::move(r));

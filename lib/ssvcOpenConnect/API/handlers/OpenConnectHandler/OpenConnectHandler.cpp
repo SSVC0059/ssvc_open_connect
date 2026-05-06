@@ -31,6 +31,8 @@
 #include "components/subsystem/I2CBusSubsystem.h"
 
 namespace {
+std::vector<uint8_t> normalizedRelayAddresses(const std::vector<uint8_t>& configured);
+
 const char* hardwareFaultCodeKey(const HardwareFaultCode code) {
     switch (code) {
         case HardwareFaultCode::NONE: return "none";
@@ -102,9 +104,7 @@ void OpenConnectHandler::getRelayMetadata(AsyncWebServerRequest* request) {
     OpenConnectHardwareSettingsService::instance().read([&](OpenConnectHardwareConfig& cfg) {
         relayAddrs = cfg.relayPcf8574Addresses;
     });
-    if (relayAddrs.empty()) {
-        relayAddrs.push_back(SSVC_RELAY_PCF8574_I2C_ADDR);
-    }
+    relayAddrs = normalizedRelayAddresses(relayAddrs);
 
     const unsigned chips = static_cast<unsigned>(relayAddrs.size());
     const unsigned lineCount = chips * SSVC_RELAY_PCF8574_LINES_PER_CHIP;
@@ -198,10 +198,10 @@ void OpenConnectHandler::getRelayState(AsyncWebServerRequest* request) {
     JsonObject root = response->getRoot();
     root["supported"] = true;
     auto& coord = RelayPortCoordinator::getInstance();
-    root["userShadow"] = coord.userShadow();
+    root["userShadow"] = coord.effectiveShadowChip(0);
     JsonArray shadows = root["userShadows"].to<JsonArray>();
     for (size_t i = 0; i < coord.relayChipCount(); ++i) {
-        shadows.add(coord.userShadowChip(static_cast<unsigned>(i)));
+        shadows.add(coord.effectiveShadowChip(static_cast<unsigned>(i)));
     }
     response->setLength();
     request->send(response);
@@ -246,6 +246,17 @@ void OpenConnectHandler::postRelayOverride(AsyncWebServerRequest* request, JsonV
 
 namespace {
 
+std::vector<uint8_t> normalizedRelayAddresses(const std::vector<uint8_t>& configured) {
+    std::vector<uint8_t> relayAddrs = configured;
+    if (relayAddrs.empty()) {
+        relayAddrs.push_back(SSVC_RELAY_PCF8574_I2C_ADDR);
+    }
+    if (relayAddrs.size() > OpenConnectHardwareConfig::kMaxRelayChips) {
+        relayAddrs.resize(OpenConnectHardwareConfig::kMaxRelayChips);
+    }
+    return relayAddrs;
+}
+
 void appendHardwareConfigCapabilities(JsonObject root) {
     JsonObject cap = root["capabilities"].to<JsonObject>();
 #if PINOUT_USE_GPIO
@@ -256,6 +267,26 @@ void appendHardwareConfigCapabilities(JsonObject root) {
     cap["relayOptionsAvailable"] = true;
 #endif
 }
+
+#if !PINOUT_USE_GPIO
+void appendRelayProbeStatus(JsonObject root, TwoWire* w, const std::vector<uint8_t>& configured) {
+    const std::vector<uint8_t> relayAddrs = normalizedRelayAddresses(configured);
+    JsonArray probeOk = root["relayPcf8574ProbeOk"].to<JsonArray>();
+    bool relayHwOk = true;
+    for (uint8_t addr : relayAddrs) {
+        bool ok = false;
+        if (w) {
+            w->beginTransmission(addr);
+            ok = (w->endTransmission() == 0);
+        }
+        probeOk.add(ok);
+        if (!ok) {
+            relayHwOk = false;
+        }
+    }
+    root["relayHardwareOk"] = relayHwOk;
+}
+#endif
 
 } // namespace
 
@@ -294,20 +325,7 @@ void OpenConnectHandler::getHardwareConfig(AsyncWebServerRequest* request) {
             root["lcd1602ProbeOk"] = lcdOk;
         }
 #if !PINOUT_USE_GPIO
-        JsonArray probeOk = root["relayPcf8574ProbeOk"].to<JsonArray>();
-        bool relayHwOk = true;
-        for (uint8_t addr : s.relayPcf8574Addresses) {
-            bool ok = false;
-            if (w) {
-                w->beginTransmission(addr);
-                ok = (w->endTransmission() == 0);
-            }
-            probeOk.add(ok);
-            if (!ok) {
-                relayHwOk = false;
-            }
-        }
-        root["relayHardwareOk"] = relayHwOk;
+        appendRelayProbeStatus(root, w, s.relayPcf8574Addresses);
 #endif
     });
     appendHardwareConfigCapabilities(root);
@@ -367,20 +385,7 @@ void OpenConnectHandler::putHardwareConfig(AsyncWebServerRequest* request, JsonV
             root["lcd1602ProbeOk"] = lcdOk;
         }
 #if !PINOUT_USE_GPIO
-        JsonArray probeOk = root["relayPcf8574ProbeOk"].to<JsonArray>();
-        bool relayHwOk = true;
-        for (uint8_t addr : s.relayPcf8574Addresses) {
-            bool ok = false;
-            if (w) {
-                w->beginTransmission(addr);
-                ok = (w->endTransmission() == 0);
-            }
-            probeOk.add(ok);
-            if (!ok) {
-                relayHwOk = false;
-            }
-        }
-        root["relayHardwareOk"] = relayHwOk;
+        appendRelayProbeStatus(root, w, s.relayPcf8574Addresses);
 #endif
     });
     appendHardwareConfigCapabilities(root);

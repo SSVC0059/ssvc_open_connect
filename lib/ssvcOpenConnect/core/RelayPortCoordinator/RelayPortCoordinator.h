@@ -38,6 +38,7 @@ public:
   /** @deprecated Use `userShadowChip` / `userShadows` in API; first chip only. */
   uint8_t userShadow() const;
   uint8_t userShadowChip(unsigned chipIndex) const;
+  uint8_t effectiveShadowChip(unsigned chipIndex) const;
   size_t relayChipCount() const;
   unsigned totalRelayLines() const;
   std::vector<uint8_t> configuredAddresses() const;
@@ -77,7 +78,7 @@ public:
     static RelayPortCoordinator inst;
     return inst;
   }
-  void configure(const std::vector<uint8_t>&) {}
+  void configure(const std::vector<uint8_t>&) { /* no-op: GPIO build bypasses PCF8574 coordination */ }
   unsigned totalRelayLines() const { return 0; }
   size_t relayChipCount() const { return 0; }
 };

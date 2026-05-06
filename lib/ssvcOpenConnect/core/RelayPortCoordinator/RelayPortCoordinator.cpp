@@ -161,10 +161,26 @@ uint8_t RelayPortCoordinator::userShadowChip(const unsigned chipIndex) const {
   return _userShadows[chipIndex];
 }
 
+uint8_t RelayPortCoordinator::effectiveShadowChip(const unsigned chipIndex) const {
+  CoordinatorLock lock(_lock);
+  if (chipIndex >= _userShadows.size()) {
+    return 0xFF;
+  }
+  return effectiveShadowChipLocked(chipIndex);
+}
+
 Pcf8574RelayPort& RelayPortCoordinator::portAt(const size_t chipIndex) { return _ports.at(chipIndex); }
 
 const Pcf8574RelayPort& RelayPortCoordinator::portAt(const size_t chipIndex) const {
   return _ports.at(chipIndex);
+}
+
+uint8_t RelayPortCoordinator::effectiveShadowChipLocked(const unsigned chipIndex) const {
+  uint8_t merged = _userShadows[chipIndex];
+  if (chipIndex == 0) {
+    merged = static_cast<uint8_t>((merged & userMaskChip0()) | (_alarmByte & alarmMask()));
+  }
+  return merged;
 }
 
 bool RelayPortCoordinator::flush() {
@@ -174,10 +190,7 @@ bool RelayPortCoordinator::flush() {
   }
   bool allOk = true;
   for (size_t i = 0; i < _ports.size(); ++i) {
-    uint8_t merged = _userShadows[i];
-    if (i == 0) {
-      merged = static_cast<uint8_t>((merged & userMaskChip0()) | (_alarmByte & alarmMask()));
-    }
+    const uint8_t merged = effectiveShadowChipLocked(static_cast<unsigned>(i));
     _ports[i].setShadowRaw(merged);
     if (!_ports[i].flush()) {
       allOk = false;

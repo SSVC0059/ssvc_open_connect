@@ -169,28 +169,36 @@ void Lcd1602Subsystem::enable() {
 }
 
 void Lcd1602Subsystem::disable() {
-    if (!_enabled) {
+    if (!_enabled && _worker == nullptr) {
         return;
     }
     _enabled = false;
     if (_worker != nullptr) {
         if (_worker == xTaskGetCurrentTaskHandle()) {
-            _worker = nullptr;
-            clearDisplay();
-            ESP_LOGI(TAG, "LCD1602 subsystem disabled");
-            vTaskDelete(nullptr);
+            ESP_LOGI(TAG, "LCD1602 subsystem shutdown requested from worker");
             return;
         }
-        vTaskDelete(_worker);
-        _worker = nullptr;
+        for (int i = 0; i < 50 && _worker != nullptr; ++i) {
+            vTaskDelay(pdMS_TO_TICKS(50));
+        }
+        if (_worker != nullptr) {
+            ESP_LOGW(TAG, "LCD1602 worker did not exit cleanly; forcing delete");
+            vTaskDelete(_worker);
+            _worker = nullptr;
+            clearDisplay();
+        }
+    } else {
+        clearDisplay();
     }
-    clearDisplay();
     ESP_LOGI(TAG, "LCD1602 subsystem disabled");
 }
 
 void Lcd1602Subsystem::workerTaskEntry(void* arg) {
     auto* self = static_cast<Lcd1602Subsystem*>(arg);
     self->workerLoop();
+    self->_worker = nullptr;
+    // Defensive: FreeRTOS task entry functions must not return normally.
+    vTaskDelete(nullptr);
 }
 
 void Lcd1602Subsystem::workerLoop() {
@@ -206,11 +214,13 @@ void Lcd1602Subsystem::workerLoop() {
 
     AlarmMonitor::getInstance().clearHardwareFault("lcd1602", _addr);
     uint32_t page = 0;
-    for (;;) {
+    while (_enabled) {
         writeStatusPage(page);
         page = (page + 1) % 2;
         vTaskDelay(kRefreshInterval);
     }
+    clearDisplay();
+    ESP_LOGI(TAG, "LCD1602 worker stopped");
 }
 
 void Lcd1602Subsystem::writeStatusPage(const uint32_t pageIndex) {

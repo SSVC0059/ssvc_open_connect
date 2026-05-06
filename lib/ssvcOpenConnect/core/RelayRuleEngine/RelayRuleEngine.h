@@ -90,6 +90,11 @@ private:
   };
 
   bool conditionMatches(const Rule& r) const;
+  bool parseSensorAlarmCondition(const JsonObject& cond, Rule& r) const;
+  bool parseHardwareFaultCondition(const JsonObject& cond, Rule& r) const;
+  bool parseRectificationCondition(const JsonObject& cond, Rule& r) const;
+  bool parseSsvcSettingCondition(const JsonObject& cond, Rule& r) const;
+  bool parseCondition(const JsonObject& cond, Rule& r) const;
   bool matchSensorAlarm(const Rule& r) const;
   bool matchHardwareFault(const Rule& r) const;
   bool matchRectification(const Rule& r) const;

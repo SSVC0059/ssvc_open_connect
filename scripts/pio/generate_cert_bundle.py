@@ -205,11 +205,13 @@ def main():
     try:
         cert_source = env.GetProjectOption("board_ssl_cert_source")
 
-        if (cert_source == "mozilla" or cert_source == "adafruit"):
+        if cert_source in ("mozilla", "adafruit", "adafruit-full"):
             download_cacert_file(cert_source)
             bundle.add_from_file(os.path.join(certs_dir, "cacert.pem"))
         elif (cert_source == "folder"):
             bundle.add_from_path(certs_dir)
+        else:
+            raise ValueError("Unknown board_ssl_cert_source: %s" % cert_source)
     except ValueError:
         critical('Invalid configuration option: use \'board_ssl_cert_source\' parameter in platformio.ini' )
         raise InputError('Invalid certificate')
