@@ -20,6 +20,7 @@
 #include "components/rtc/Ds3231RtcCoordinator.h"
 #include "components/sensors/OneWireThermalSubsystem/OneWireThermalSubsystem.h"
 #include "components/subsystem/AtmosphericSubsystem.h"
+#include "components/subsystem/Lcd1602Subsystem.h"
 #include "core/StatefulServices/OpenConnectHardwareSettingsService/OpenConnectHardwareConfig.h"
 #include "core/StatefulServices/OpenConnectHardwareSettingsService/OpenConnectHardwareSettingsService.h"
 #include "core/RelayRuleEngine/RelayRuleEngine.h"
@@ -71,7 +72,7 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     // Если _ssvcMqttSettingsService и _alarmThresholdService также являются IProfileObserver,
     // их тоже нужно подписать здесь.
     // _profileService->subscribe(_ssvcMqttSettingsService); // Раскомментировать, если это наблюдатель
-    // _profileService->subscribe(_alarmThresholdService); // Раскомментировать, если это наблюдатель
+    _profileService->subscribe(_alarmThresholdService);
 
     // Теперь вызываем begin() для ProfileService
     ESP_LOGI(TAG, "begin: ProfileService::begin");
@@ -205,12 +206,17 @@ void SsvcOpenConnect::subsystemManager()
     subsystemManager.registerSingleton<I2CBusSubsystem>();
 
     bool pressureHardwareOn = true;
+    bool lcd1602HardwareOn = false;
     OpenConnectHardwareSettingsService::instance().read([&](OpenConnectHardwareConfig& cfg) {
         pressureHardwareOn = cfg.pressureSensorEnabled;
+        lcd1602HardwareOn = cfg.lcd1602Enabled;
     });
 
     if (pressureHardwareOn) {
         subsystemManager.registerSubsystem<AtmosphericSubsystem>();
+    }
+    if (lcd1602HardwareOn) {
+        subsystemManager.registerSubsystem<Lcd1602Subsystem>();
     }
 
     #if FT_ENABLED(FT_TELEGRAM_BOT)
@@ -223,6 +229,9 @@ void SsvcOpenConnect::subsystemManager()
     subsystemManager.setInitialState("i2c_bus", true);
     if (pressureHardwareOn) {
         subsystemManager.setInitialState("atm_sensor", true);
+    }
+    if (lcd1602HardwareOn) {
+        subsystemManager.setInitialState("lcd1602_display", true);
     }
 
     #if FT_ENABLED(FT_TELEGRAM_BOT)

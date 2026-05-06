@@ -42,15 +42,12 @@
 
 ## WLED (полосы)
 
-В базовом `[env]` заданы `WLED_INTERNAL_PIN` / `WLED_EXTERNAL_PIN`. На этой ревизии **GPIO38 и GPIO40 заняты под SPI CS и nRF24 CE** — для `kincony-kc868-a6` в `platformio.ini` заданы другие пины для WLED (см. комментарии там).
+Пин статусного NeoPixel задаётся в коде через `DEFAULT_STATUS_LED_PIN` (см. `lib/ssvcOpenConnect/components/Led/StatusLed.h`).
 
 ## NeoPixel статус (Open Connect)
 
 `StatusLed` по умолчанию: **GPIO48** (см. `StatusLed.h`).
 
-## KinCony S3 Core (другая плата)
-
-Отладочная плата **KinCony S3 Core** использует другую разводку ([S3-schematic.pdf](https://www.kincony.com/download/S3-schematic.pdf)); не смешивать с KC868-A6.
 
 ## Схема (PDF в репозитории)
 

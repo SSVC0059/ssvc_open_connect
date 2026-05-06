@@ -62,6 +62,10 @@ bool fileLooksValid(FS* fs, JsonDocument& doc) {
     if (!OpenConnectHardwareConfig::isValidI2c7Bit(bmp)) {
         return false;
     }
+    const uint8_t lcd = static_cast<uint8_t>(o["lcd1602I2cAddress"] | 0x27);
+    if (!OpenConnectHardwareConfig::isValidI2c7Bit(lcd)) {
+        return false;
+    }
     if (o["relayPcf8574Addresses"].is<JsonArray>()) {
         const JsonArray ar = o["relayPcf8574Addresses"].as<JsonArray>();
         if (ar.isNull() || ar.size() < 1 || ar.size() > OpenConnectHardwareConfig::kMaxRelayChips) {

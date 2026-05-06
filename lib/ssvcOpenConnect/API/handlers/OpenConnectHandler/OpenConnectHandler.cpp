@@ -280,6 +280,14 @@ void OpenConnectHandler::getHardwareConfig(AsyncWebServerRequest* request) {
             }
             root["ds3231ProbeOk"] = rtcOk;
         }
+        if (s.lcd1602Enabled) {
+            bool lcdOk = false;
+            if (w) {
+                w->beginTransmission(s.lcd1602I2cAddress);
+                lcdOk = (w->endTransmission() == 0);
+            }
+            root["lcd1602ProbeOk"] = lcdOk;
+        }
 #if !PINOUT_USE_GPIO
         JsonArray probeOk = root["relayPcf8574ProbeOk"].to<JsonArray>();
         bool relayHwOk = true;
@@ -344,6 +352,14 @@ void OpenConnectHandler::putHardwareConfig(AsyncWebServerRequest* request, JsonV
                 rtcOk = (w->endTransmission() == 0);
             }
             root["ds3231ProbeOk"] = rtcOk;
+        }
+        if (s.lcd1602Enabled) {
+            bool lcdOk = false;
+            if (w) {
+                w->beginTransmission(s.lcd1602I2cAddress);
+                lcdOk = (w->endTransmission() == 0);
+            }
+            root["lcd1602ProbeOk"] = lcdOk;
         }
 #if !PINOUT_USE_GPIO
         JsonArray probeOk = root["relayPcf8574ProbeOk"].to<JsonArray>();

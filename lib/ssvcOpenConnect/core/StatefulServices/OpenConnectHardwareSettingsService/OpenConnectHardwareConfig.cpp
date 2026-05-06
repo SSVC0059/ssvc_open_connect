@@ -23,7 +23,8 @@ bool rebootFieldsDiffer(const OpenConnectHardwareConfig& a, const OpenConnectHar
     return a.pressureSensorEnabled != b.pressureSensorEnabled || a.bmp581I2cAddress != b.bmp581I2cAddress ||
            a.userRelayPcfEnabled != b.userRelayPcfEnabled || !relayAddrVecEqual(a.relayPcf8574Addresses, b.relayPcf8574Addresses) ||
            a.rtcEnabled != b.rtcEnabled || a.ds3231I2cAddress != b.ds3231I2cAddress ||
-           a.oledEnabled != b.oledEnabled;
+           a.oledEnabled != b.oledEnabled ||
+           a.lcd1602Enabled != b.lcd1602Enabled || a.lcd1602I2cAddress != b.lcd1602I2cAddress;
 }
 
 void syncSubsystemNvsAtmSensor(bool pressureOn) {
@@ -32,6 +33,15 @@ void syncSubsystemNvsAtmSensor(bool pressureOn) {
         map.clear();
     }
     map["atm_sensor"] = pressureOn;
+    GlobalConfig::config().setObject("subsystem", "config", map, GlobalConfig::toJson);
+}
+
+void syncSubsystemNvsLcd1602(bool lcdOn) {
+    std::unordered_map<std::string, bool> map;
+    if (!GlobalConfig::config().getObject("subsystem", "config", map, GlobalConfig::fromJson)) {
+        map.clear();
+    }
+    map["lcd1602_display"] = lcdOn;
     GlobalConfig::config().setObject("subsystem", "config", map, GlobalConfig::toJson);
 }
 
@@ -76,6 +86,8 @@ void OpenConnectHardwareConfig::read(OpenConnectHardwareConfig& s, JsonObject& r
     root["rtcEnabled"] = s.rtcEnabled;
     root["ds3231I2cAddress"] = s.ds3231I2cAddress;
     root["oledEnabled"] = s.oledEnabled;
+    root["lcd1602Enabled"] = s.lcd1602Enabled;
+    root["lcd1602I2cAddress"] = s.lcd1602I2cAddress;
 }
 
 StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnectHardwareConfig& s, const String& originId) {
@@ -172,6 +184,28 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
         }
     }
 
+    if (root["lcd1602Enabled"].is<bool>()) {
+        const bool v = root["lcd1602Enabled"].as<bool>();
+        if (v != s.lcd1602Enabled) {
+            s.lcd1602Enabled = v;
+            changed = true;
+        }
+    }
+
+    if (!root["lcd1602I2cAddress"].isNull()) {
+        if (!root["lcd1602I2cAddress"].is<unsigned int>()) {
+            return StateUpdateResult::ERROR;
+        }
+        const uint8_t addr = static_cast<uint8_t>(root["lcd1602I2cAddress"].as<unsigned int>());
+        if (!isValidI2c7Bit(addr)) {
+            return StateUpdateResult::ERROR;
+        }
+        if (addr != s.lcd1602I2cAddress) {
+            s.lcd1602I2cAddress = addr;
+            changed = true;
+        }
+    }
+
     (void)originId;
 
     if (s.relayPcf8574Addresses.empty()) {
@@ -185,6 +219,9 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
 
     if (changed && before.pressureSensorEnabled != s.pressureSensorEnabled) {
         syncSubsystemNvsAtmSensor(s.pressureSensorEnabled);
+    }
+    if (changed && before.lcd1602Enabled != s.lcd1602Enabled) {
+        syncSubsystemNvsLcd1602(s.lcd1602Enabled);
     }
 
     return changed ? StateUpdateResult::CHANGED : StateUpdateResult::UNCHANGED;

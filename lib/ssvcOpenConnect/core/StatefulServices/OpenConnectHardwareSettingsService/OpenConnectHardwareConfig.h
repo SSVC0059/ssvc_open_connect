@@ -28,6 +28,8 @@ struct OpenConnectHardwareConfig {
     uint8_t ds3231I2cAddress = 0x68;
 
     bool oledEnabled = false;
+    bool lcd1602Enabled = false;
+    uint8_t lcd1602I2cAddress = 0x27;
 
     static bool isValidI2c7Bit(uint8_t addr) { return addr >= 0x08 && addr <= 0x77; }
 

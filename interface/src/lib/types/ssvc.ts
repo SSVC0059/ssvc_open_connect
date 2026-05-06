@@ -190,6 +190,12 @@ export type OcHardwareConfigResponse = {
 	ds3231I2cAddress: number;
 	/** I²C probe at `ds3231I2cAddress` when `rtcEnabled` (from GET/PUT). */
 	ds3231ProbeOk?: boolean;
+	/** LCD1602 (HD44780 with PCF8574 backpack) over I²C, optional. */
+	lcd1602Enabled?: boolean;
+	/** 7-bit I²C address, typical 0x27 (39). */
+	lcd1602I2cAddress?: number;
+	/** I²C probe at `lcd1602I2cAddress` when `lcd1602Enabled` (from GET/PUT). */
+	lcd1602ProbeOk?: boolean;
 	/** Резерв (OLED и т.д.). */
 	oledEnabled?: boolean;
 	capabilities: OcHardwareCapabilities;
