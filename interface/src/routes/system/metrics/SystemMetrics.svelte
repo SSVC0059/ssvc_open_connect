@@ -327,32 +327,32 @@
 		heapChart.data.labels = $analytics.uptime;
 		heapChart.data.datasets[0].data = $analytics.used_heap;
 		heapChart.data.datasets[1].data = $analytics.max_alloc_heap;
-		heapChart.update('none');
 		const heapScaleY = heapChart.options.scales?.y;
 		if (heapScaleY && typeof heapScaleY === 'object') {
 			heapScaleY.max = Math.round(Math.max(...$analytics.total_heap));
 		}
+		heapChart.update('none');
 
 		if (hasPsramData) {
 			initPsramChart();
 			if (psramChart) {
 				psramChart.data.labels = $analytics.uptime;
 				psramChart.data.datasets[0].data = $analytics.used_psram;
-				psramChart.update('none');
 				const psramScaleY = psramChart.options.scales?.y;
 				if (psramScaleY && typeof psramScaleY === 'object') {
 					psramScaleY.max = Math.round(Math.max(...$analytics.psram_size));
 				}
+				psramChart.update('none');
 			}
 		}
 
 		filesystemChart.data.labels = $analytics.uptime;
 		filesystemChart.data.datasets[0].data = $analytics.fs_used;
-		filesystemChart.update('none');
 		const fsScaleY = filesystemChart.options.scales?.y;
 		if (fsScaleY && typeof fsScaleY === 'object') {
 			fsScaleY.max = Math.round(Math.max(...$analytics.fs_total));
 		}
+		filesystemChart.update('none');
 
 		temperatureChart.data.labels = $analytics.uptime;
 		temperatureChart.data.datasets[0].data = $analytics.core_temp;
