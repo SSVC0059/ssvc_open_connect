@@ -33,7 +33,7 @@ function setValueByPath(obj, path, value) {
 
 const formatTime = (s) => {
 	if (!s || s < 0 || isNaN(s)) return '00:00:00';
-	return new Date(s * 1000).toISOString().substr(11, 8);
+	return new Date(s * 1000).toISOString().substring(11, 19);
 };
 
 function buildFreshDefaults() {
@@ -91,7 +91,7 @@ function initCalculator() {
 		try {
 			const profile = model.calculateProcess(currentParams);
 
-			document.querySelectorAll('[data-result]').forEach((el) => {
+			r.querySelectorAll('[data-result]').forEach((el) => {
 				const path = el.dataset.result;
 				const value = getValueByPath(profile, path);
 				if (value !== null && value !== undefined && !isNaN(value)) {
