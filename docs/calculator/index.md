@@ -300,8 +300,7 @@ hide:
                 <div class="settings-col">
                     <h4 class="col-title">Параметры отбора</h4>
                     <div class="input-group"><span class="input-label">% от АС</span><input data-path="heads.percent" class="input-field" type="number" /></div>
-                    <div class="input-group"><span class="input-label">Клапан, мл/ч</span><input data-path="heads.valveMlh" class="input-field" type="number" /></div>
-                    <div class="input-group"><span class="input-label">Период ШИМ</span><input data-path="heads.pwmPeriod" class="input-field" type="number" /></div>
+                    <div class="input-group"><span class="input-label">Клапан, мл/ч</span><input data-path="ssvcSettings.valve_bw.0" class="input-field" type="number" /></div>
                     <div class="sub-settings-grid">
                         <div class="sub-settings-group">
                             <h5 class="sub-settings-title">Режим расчета (укажите одно)</h5>
@@ -310,28 +309,28 @@ hide:
                         </div>
                         <div class="sub-settings-group ssvc-grid">
                             <h5 class="sub-settings-title">Настройки SSVC</h5>
-                            <div id="ssvc-heads" class="input-group"><span class="input-label">Период, с</span><input type="number" data-path="heads.period" class="input-field" step="1"></div>
-                            <div class="input-group"><span class="input-label">Открытие, мс</span><input type="number" data-path="heads.openTime" class="input-field" step="0.1"></div>
+                            <div id="ssvc-heads" class="input-group"><span class="input-label">Период, с</span><input type="number" data-path="ssvcSettings.heads.1" class="input-field" step="1"></div>
+                            <div class="input-group"><span class="input-label">Открытие, мс</span><input type="number" data-path="ssvcSettings.heads.0" class="input-field" step="0.1"></div>
                         </div>
                     </div>
                 </div>
                 <div class="results-col">
                     <h4 class="col-title">Расчетные значения</h4>
-                    <div id="an-fractions-headsMl" class="analytics-item"><span class="analytics-label">Объем</span><div class="value-container"><span class="analytics-value"></span></div></div>
-                    <div id="an-flows-heads" class="analytics-item"><span class="analytics-label">Скорость</span><div class="value-container"><span class="analytics-value"></span><span class="initial-value"></span></div></div>
-                    <div id="an-timers-heads_timer" class="analytics-item"><span class="analytics-label">Время</span><div class="value-container"><span class="analytics-value"></span></div></div>
-                    <div id="an-oneCycleTime" class="analytics-item"><span class="analytics-label">Время переиспарения</span><div class="value-container"><span class="analytics-value"></span></div></div>
+                    <div id="an-fractions-headsMl" class="analytics-item"><span class="analytics-label">Объем</span><div class="value-container"><span class="analytics-value" data-result="analytics.fractions.headsMl"></span></div></div>
+                    <div id="an-flows-heads" class="analytics-item"><span class="analytics-label">Скорость</span><div class="value-container"><span class="analytics-value" data-result="analytics.flows.heads"></span><span class="initial-value" data-result="analytics.flows.heads_final"></span></div></div>
+                    <div id="an-timers-heads_timer" class="analytics-item"><span class="analytics-label">Время</span><div class="value-container"><span class="analytics-value" data-result="analytics.timers.heads"></span></div></div>
+                    <div id="an-oneCycleTime" class="analytics-item"><span class="analytics-label">Время переиспарения</span><div class="value-container"><span class="analytics-value" data-result="analytics.oneCycleTime"></span></div></div>
                 </div>
             </div>
         </details>
 
         <!-- Подголовники -->
-        <details class="fraction-details" id="details-subHeads">
+        <details class="fraction-details" id="details-late_heads">
             <summary>
-                <div class="summary-content" id="summary-subHeads">
+                <div class="summary-content" id="summary-late_heads">
                     <span>Подголовники</span>
                     <div class="summary-controls">
-                        <input type="checkbox" data-path="subHeads.enabled" onclick="event.stopPropagation()" />
+                        <input type="checkbox" data-path="late_heads.enabled" onclick="event.stopPropagation()" />
                         <svg class="chevron" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                     </div>
                 </div>
@@ -339,26 +338,25 @@ hide:
             <div class="fraction-body fraction-settings">
                 <div class="settings-col">
                     <h4 class="col-title">Параметры отбора</h4>
-                    <div class="input-group"><span class="input-label">% от АС</span><input data-path="subHeads.percent" class="input-field" type="number" /></div>
-                    <div class="input-group"><span class="input-label">Клапан, мл/ч</span><input data-path="subHeads.valveMlh" class="input-field" type="number" /></div>
-                    <div class="input-group"><span class="input-label">Период ШИМ</span><input data-path="subHeads.pwmPeriod" class="input-field" type="number" /></div>
+                    <div class="input-group"><span class="input-label">% от АС</span><input data-path="late_heads.percent" class="input-field" type="number" /></div>
+                    <div class="input-group"><span class="input-label">Клапан, мл/ч</span><input data-path="virtual_bw_late" class="input-field" type="number" /></div>
                     <div class="sub-settings-grid">
                         <div class="sub-settings-group">
                             <h5 class="sub-settings-title">Режим расчета</h5>
-                            <div class="input-group"><span class="input-label">Желаемая скорость, мл/ч</span><input data-path="subHeads.targetFlowMlh" class="input-field" type="number" placeholder="Авто" /></div>
+                            <div class="input-group"><span class="input-label">Желаемая скорость, мл/ч</span><input data-path="late_heads.targetFlowMlh" class="input-field" type="number" placeholder="Авто" /></div>
                         </div>
                         <div class="sub-settings-group ssvc-grid">
                             <h5 class="sub-settings-title">Настройки SSVC</h5>
-                            <div id="ssvc-subHeads" class="input-group"><span class="input-label">Период, с</span><input type="number" data-path="subHeads.period" class="input-field" step="1"></div>
-                            <div class="input-group"><span class="input-label">Открытие, мс</span><input type="number" data-path="subHeads.openTime" class="input-field" step="0.1"></div>
+                            <div id="ssvc-late_heads" class="input-group"><span class="input-label">Период, с</span><input type="number" data-path="ssvcSettings.late_heads.1" class="input-field" step="1"></div>
+                            <div class="input-group"><span class="input-label">Открытие, мс</span><input type="number" data-path="ssvcSettings.late_heads.0" class="input-field" step="0.1"></div>
                         </div>
                     </div>
                 </div>
                 <div class="results-col">
                     <h4 class="col-title">Расчетные значения</h4>
-                    <div id="an-fractions-subHeadsMl" class="analytics-item"><span class="analytics-label">Объем</span><div class="value-container"><span class="analytics-value"></span></div></div>
-                    <div id="an-flows-subHeads" class="analytics-item"><span class="analytics-label">Скорость</span><div class="value-container"><span class="analytics-value"></span><span class="initial-value"></span></div></div>
-                    <div id="an-timers-subHeads_timer" class="analytics-item"><span class="analytics-label">Время</span><div class="value-container"><span class="analytics-value"></span></div></div>
+                    <div id="an-fractions-lateHeadsMl" class="analytics-item"><span class="analytics-label">Объем</span><div class="value-container"><span class="analytics-value" data-result="analytics.fractions.lateHeadsMl"></span></div></div>
+                    <div id="an-flows-late_heads" class="analytics-item"><span class="analytics-label">Скорость</span><div class="value-container"><span class="analytics-value" data-result="analytics.flows.late_heads"></span><span class="initial-value" data-result="analytics.refluxRatio.late_heads"></span></div></div>
+                    <div id="an-timers-late_heads_timer" class="analytics-item"><span class="analytics-label">Время</span><div class="value-container"><span class="analytics-value" data-result="analytics.timers.late_heads"></span></div></div>
                 </div>
             </div>
         </details>
@@ -374,27 +372,27 @@ hide:
             <div class="fraction-body fraction-settings">
                 <div class="settings-col">
                     <h4 class="col-title">Параметры отбора</h4>
-                    <div class="input-group"><span class="input-label">Снижение скорости, %</span><input data-path="body.decrementPercent" class="input-field" type="number" /></div>
-                    <div class="input-group"><span class="input-label">Клапан, мл/ч</span><input data-path="body.valveMlh" class="input-field" type="number" /></div>
-                    <div class="input-group"><span class="input-label">Период ШИМ</span><input data-path="body.pwmPeriod" class="input-field" type="number" /></div>
+                    <div class="input-group"><span class="input-label">% от АС</span><input data-path="hearts.percent" class="input-field" type="number" /></div>
+                    <div class="input-group"><span class="input-label">T завершения, °C</span><input data-path="ssvcSettings.hearts_finish_temp" class="input-field" type="number" step="0.1" placeholder="0 = по %" /></div>
+                    <div class="input-group"><span class="input-label">Снижение скорости, %</span><input data-path="ssvcSettings.decrement" class="input-field" type="number" /></div>
+                    <div class="input-group"><span class="input-label">Клапан, мл/ч</span><input data-path="ssvcSettings.valve_bw.1" class="input-field" type="number" /></div>
                     <div class="sub-settings-grid">
                         <div class="sub-settings-group">
-                            <h5 class="sub-settings-title">Начальная скорость (укажите одно)</h5>
-                            <div class="input-group"><span class="input-label">По умолчанию, мл/ч</span><input data-path="body.initialSpeedMlh" class="input-field" type="number" placeholder="1800" oninput="handleBodyInitialSpeedInput(event)" /></div>
-                            <div class="input-group"><span class="input-label">Желаемая, мл/ч</span><input data-path="body.targetFlowMlh" class="input-field" type="number" placeholder="Авто" oninput="handleBodyTargetFlowInput(event)" /></div>
+                            <h5 class="sub-settings-title">Скорость тела</h5>
+                            <div class="input-group"><span class="input-label">Желаемая, мл/ч</span><input data-path="hearts.targetFlowMlh" class="input-field" type="number" placeholder="Авто" /></div>
                         </div>
                         <div class="sub-settings-group ssvc-grid">
                             <h5 class="sub-settings-title">Настройки SSVC</h5>
-                            <div id="ssvc-body" class="input-group"><span class="input-label">Период, с</span><input type="number" data-path="body.period" class="input-field" step="1"></div>
-                            <div class="input-group"><span class="input-label">Открытие, мс</span><input type="number" data-path="body.openTime" class="input-field" step="0.1"></div>
+                            <div id="ssvc-hearts" class="input-group"><span class="input-label">Период, с</span><input type="number" data-path="ssvcSettings.hearts.1" class="input-field" step="1"></div>
+                            <div class="input-group"><span class="input-label">Открытие, мс</span><input type="number" data-path="ssvcSettings.hearts.0" class="input-field" step="0.1"></div>
                         </div>
                     </div>
                 </div>
                 <div class="results-col">
                     <h4 class="col-title">Расчетные значения</h4>
-                    <div id="an-fractions-bodyMl" class="analytics-item"><span class="analytics-label">Объем</span><div class="value-container"><span class="analytics-value"></span></div></div>
-                    <div id="an-flows-body" class="analytics-item"><span class="analytics-label">Скорость</span><div class="value-container"><span class="analytics-value"></span><span class="initial-value"></span></div></div>
-                    <div id="an-timers-body_timer" class="analytics-item"><span class="analytics-label">Время</span><div class="value-container"><span class="analytics-value"></span></div></div>
+                    <div id="an-fractions-heartsMl" class="analytics-item"><span class="analytics-label">Объем</span><div class="value-container"><span class="analytics-value" data-result="analytics.fractions.heartsMl"></span></div></div>
+                    <div id="an-flows-hearts" class="analytics-item"><span class="analytics-label">Скорость</span><div class="value-container"><span class="analytics-value" data-result="analytics.flows.hearts"></span><span class="initial-value" data-result="analytics.flows.hearts_final"></span></div></div>
+                    <div id="an-timers-hearts_timer" class="analytics-item"><span class="analytics-label">Время</span><div class="value-container"><span class="analytics-value" data-result="analytics.timers.hearts"></span></div></div>
                 </div>
             </div>
         </details>
@@ -414,8 +412,7 @@ hide:
                 <div class="settings-col">
                     <h4 class="col-title">Параметры отбора</h4>
                     <div class="input-group"><span class="input-label">% от АС</span><input data-path="tails.percent" class="input-field" type="number" /></div>
-                    <div class="input-group"><span class="input-label">Клапан, мл/ч</span><input data-path="tails.valveMlh" class="input-field" type="number" /></div>
-                    <div class="input-group"><span class="input-label">Период ШИМ</span><input data-path="tails.pwmPeriod" class="input-field" type="number" /></div>
+                    <div class="input-group"><span class="input-label">Клапан, мл/ч</span><input data-path="virtual_bw_tails" class="input-field" type="number" /></div>
                     <div class="sub-settings-grid">
                         <div class="sub-settings-group">
                             <h5 class="sub-settings-title">Режим расчета</h5>
@@ -423,16 +420,16 @@ hide:
                         </div>
                         <div class="sub-settings-group ssvc-grid">
                             <h5 class="sub-settings-title">Настройки SSVC</h5>
-                            <div id="ssvc-tails" class="input-group"><span class="input-label">Период, с</span><input type="number" data-path="tails.period" class="input-field" step="1"></div>
-                            <div class="input-group"><span class="input-label">Открытие, мс</span><input type="number" data-path="tails.openTime" class="input-field" step="0.1"></div>
+                            <div id="ssvc-tails" class="input-group"><span class="input-label">Период, с</span><input type="number" data-path="ssvcSettings.tails.1" class="input-field" step="1"></div>
+                            <div class="input-group"><span class="input-label">Открытие, мс</span><input type="number" data-path="ssvcSettings.tails.0" class="input-field" step="0.1"></div>
                         </div>
                     </div>
                 </div>
                 <div class="results-col">
                     <h4 class="col-title">Расчетные значения</h4>
-                    <div id="an-fractions-tailsMl" class="analytics-item"><span class="analytics-label">Объем</span><div class="value-container"><span class="analytics-value"></span></div></div>
-                    <div id="an-flows-tails" class="analytics-item"><span class="analytics-label">Скорость</span><div class="value-container"><span class="analytics-value"></span><span class="initial-value"></span></div></div>
-                    <div id="an-timers-tails_timer" class="analytics-item"><span class="analytics-label">Время</span><div class="value-container"><span class="analytics-value"></span></div></div>
+                    <div id="an-fractions-tailsMl" class="analytics-item"><span class="analytics-label">Объем</span><div class="value-container"><span class="analytics-value" data-result="analytics.fractions.tailsMl"></span></div></div>
+                    <div id="an-flows-tails" class="analytics-item"><span class="analytics-label">Скорость</span><div class="value-container"><span class="analytics-value" data-result="analytics.flows.tails"></span><span class="initial-value" data-result="analytics.refluxRatio.tails"></span></div></div>
+                    <div id="an-timers-tails_timer" class="analytics-item"><span class="analytics-label">Время</span><div class="value-container"><span class="analytics-value" data-result="analytics.timers.tails"></span></div></div>
                 </div>
             </div>
         </details>
@@ -444,10 +441,10 @@ hide:
     <div class="card final-analytics-card">
         <h3 class="card-title">Итоговая аналитика процесса</h3>
         <div class="final-analytics-grid">
-            <div id="an-totalAS" class="analytics-item"><span class="analytics-label">Общий АС</span><div class="value-container"><span class="analytics-value"></span></div></div>
-            <div id="an-boilingTemp" class="analytics-item"><span class="analytics-label">T° кипения</span><div class="value-container"><span class="analytics-value"></span></div></div>
-            <div id="an-residueMl" class="analytics-item"><span class="analytics-label">Остаток в кубе</span><div class="value-container"><span class="analytics-value"></span></div></div>
-            <div id="an-total_process_timer" class="analytics-item"><span class="analytics-label">Общее время</span><div class="value-container"><span class="analytics-value large"></span></div></div>
+            <div id="an-totalAS" class="analytics-item"><span class="analytics-label">Общий АС</span><div class="value-container"><span class="analytics-value" data-result="analytics.totalAS"></span></div></div>
+            <div id="an-boilingTemp" class="analytics-item"><span class="analytics-label">T° кипения</span><div class="value-container"><span class="analytics-value" data-result="analytics.boilingTemp"></span></div></div>
+            <div id="an-residueMl" class="analytics-item"><span class="analytics-label">Остаток в кубе</span><div class="value-container"><span class="analytics-value" data-result="analytics.residueMl"></span></div></div>
+            <div id="an-total_process_timer" class="analytics-item"><span class="analytics-label">Общее время</span><div class="value-container"><span class="analytics-value large" data-result="analytics.timers.total_process"></span></div></div>
         </div>
     </div>
 </div>
@@ -472,27 +469,6 @@ hide:
             if (targetFlowMlhInput) {
                 targetFlowMlhInput.value = '';
                 targetFlowMlhInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        }
-    }
-
-    // Mutual exclusion handlers for Body
-    function handleBodyInitialSpeedInput(e) {
-        if (e.target.value) {
-            const targetFlowMlhInput = document.querySelector('[data-path="body.targetFlowMlh"]');
-            if (targetFlowMlhInput) {
-                targetFlowMlhInput.value = '';
-                targetFlowMlhInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        }
-    }
-
-    function handleBodyTargetFlowInput(e) {
-        if (e.target.value) {
-            const initialSpeedMlhInput = document.querySelector('[data-path="body.initialSpeedMlh"]');
-            if (initialSpeedMlhInput) {
-                initialSpeedMlhInput.value = '';
-                initialSpeedMlhInput.dispatchEvent(new Event('input', { bubbles: true }));
             }
         }
     }
