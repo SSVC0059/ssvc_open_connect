@@ -5,6 +5,9 @@
 /data/www
 /interface/build
 /interface/node_modules
+e2e/node_modules/
+e2e/test-results/
+e2e/playwright-report/
 /interface/.eslintcache
 .vscode
 node_modules
@@ -25,6 +28,8 @@ site
 scripts/**/__pycache__
 package.json
 package-lock.json
+!e2e/package.json
+!e2e/package-lock.json
 rectification_calculator.js
 tools/coredump.bin
 # Coverage (vitest/v8, Istanbul, etc.)
