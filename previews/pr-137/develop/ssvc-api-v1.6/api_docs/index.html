@@ -1,0 +1,3845 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Модуль расширения функционала автоматики отбора для ректификации  SSVC0059V2,">
+      
+      
+        <meta name="author" content="thedemoncat">
+      
+      
+        <link rel="canonical" href="https://SSVC0059.github.io/ssvc_open_connect/previews/pr-137/develop/ssvc-api-v1.6/api_docs/">
+      
+      
+        <link rel="prev" href="../../api/files/">
+      
+      
+        <link rel="next" href="../../frontend/frontend/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../media/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>UART API SSVC 1.6 - SSVC Open Connect</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ssvc0059_v2-uart-api-documentation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="SSVC Open Connect" class="md-header__button md-logo" aria-label="SSVC Open Connect" data-md-component="logo">
+      
+  <img src="../../../media/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SSVC Open Connect
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              UART API SSVC 1.6
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/SSVC0059/ssvc_open_connect" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SSVC0059/ssvc_open_connect
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Главная
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../preparation/driver/" class="md-tabs__link">
+          
+  
+  
+  Подготовка
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../usage/get_started/" class="md-tabs__link">
+          
+  
+  
+  Первый запуск
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../usage/interfaces/uart/" class="md-tabs__link">
+          
+  
+  
+  Периферия
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../calculator/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Калькулятор ректификации
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../preparation/controller/" class="md-tabs__link">
+          
+  
+  
+  Платы и готовые модули
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../faq/faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../glossary/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Глоссарий
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  
+  Для разработчиков
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="SSVC Open Connect" class="md-nav__button md-logo" aria-label="SSVC Open Connect" data-md-component="logo">
+      
+  <img src="../../../media/logo.png" alt="logo">
+
+    </a>
+    SSVC Open Connect
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/SSVC0059/ssvc_open_connect" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SSVC0059/ssvc_open_connect
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Главная
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подготовка
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Подготовка
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../preparation/driver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Прошивка контроллера под OS Windows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../preparation/firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Скачивание релиза SSVC Open Connect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../preparation/flasher/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Автоматическая установка актуальной версии
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../preparation/flasher_manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Автоматическая установка актуальной версии
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../preparation/adafruit_webserial_esptool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Прошивка через Adafruit WebSerial ESPTool
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Первый запуск
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Первый запуск
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usage/get_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Начало работы с контроллером
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Периферия
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Периферия
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usage/interfaces/uart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение к SSVC по UART
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usage/interfaces/power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Питание контроллера
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usage/interfaces/ds18b20/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Датчик температуры DS18B20
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usage/interfaces/bmp581/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Датчик давления BMP581 (I²C)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usage/interfaces/rgb_led/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение адресного светодиода
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../hardware/ds3231-rtc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Часы реального времени DS3231 (I2C)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../calculator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Калькулятор ректификации
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Платы и готовые модули
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Платы и готовые модули
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../preparation/controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модули ESP32-S3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    KC868-A6v3
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    KC868-A6v3
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../boards/kc868-a6/KC868-A6v3-KinCony.ru/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Описание (KinCony)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../boards/kc868-a6/GPIO_Pinout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Распиновка GPIO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../boards/kc868-a6/I2C_devices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    I2C устройства
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Готовые модули
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Готовые модули
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ready_made/connect/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение модуля
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ready_made/din_version/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модуль для установки на DIN рейку
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ready_made/inside_version/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модуль для установки внутри ящика
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../faq/faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Глоссарий
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Для разработчиков
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Сборка прошивки
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Тестирование
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../i2c_monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Мониторинг I2C и алертинг (прошивка)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_5" id="__nav_9_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    REST API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Документация по REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Настроек
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Команд
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/sensors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Датчики
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/telegram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Telegram Бота
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/subsystem/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Подсистемы
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/openconnect/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API OpenConnect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Профили
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Файлов
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UART API SSVC 1.6
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UART API SSVC 1.6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#version-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.6
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Общий формат обмена
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Общий формат обмена">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ответы и Телеметрия (Сообщения)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Управляющие команды (Requests)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Управляющие команды (Requests)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Общая структура запроса
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Общая структура ответа
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Запросы и их описание
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Запросы и их описание">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-at" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 AT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 NEXT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-pause" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 PAUSE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-resume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 RESUME
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-stop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 STOP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6 START
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#27-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.7 STATUS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#28-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.8 VERSION
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#29-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.9 SET
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.9 SET">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#22-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Перечень принимаемых параметров (все поддерживаемые версиями прошивок 2.2. и 2.3.):
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Оперативные параметры текущего этапа
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Синтаксис параметров.
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#heads-late_heads-hearts-tails-s_speed-parallel_v1-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        heads, late_heads, hearts, tails, s_speed, parallel_v1 - скорость отбора
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hyst" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hyst
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decrement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decrement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#formula" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        formula
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tank_mmhg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tank_mmhg
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#heads_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        heads_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#late_heads_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        late_heads_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hearts_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hearts_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tails_temp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tails_temp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start_delay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        start_delay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hearts_finish_temp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hearts_finish_temp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#formula_start_temp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        formula_start_temp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#valve_bw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        valve_bw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parallel_v3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        parallel_v3
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#release_speed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        release_speed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#release_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        release_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#heads_final" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        heads_final
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Проверка на ошибки:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Примеры корректных команд
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Примеры команд с ошибками
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_7" id="__nav_9_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Фронтенд
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Фронтенд
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../frontend/frontend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    📑 SCSS Классы и Компоненты Пользовательского Интерфейса
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../frontend/styling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Стратегия стилей (Tailwind + DaisyUI)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../frontend/oc-settings-styles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Oc settings styles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_8" id="__nav_9_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Протокол UART SSVC
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Протокол UART SSVC
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ssvc-serial-protocol/develop/Readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Readme
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#version-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.6
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Общий формат обмена
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Общий формат обмена">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ответы и Телеметрия (Сообщения)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Управляющие команды (Requests)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Управляющие команды (Requests)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Общая структура запроса
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Общая структура ответа
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Запросы и их описание
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Запросы и их описание">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-at" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 AT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 NEXT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-pause" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 PAUSE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-resume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 RESUME
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-stop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 STOP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6 START
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#27-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.7 STATUS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#28-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.8 VERSION
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#29-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.9 SET
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.9 SET">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#22-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Перечень принимаемых параметров (все поддерживаемые версиями прошивок 2.2. и 2.3.):
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Оперативные параметры текущего этапа
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Синтаксис параметров.
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#heads-late_heads-hearts-tails-s_speed-parallel_v1-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        heads, late_heads, hearts, tails, s_speed, parallel_v1 - скорость отбора
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hyst" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hyst
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decrement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decrement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#formula" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        formula
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tank_mmhg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tank_mmhg
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#heads_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        heads_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#late_heads_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        late_heads_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hearts_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hearts_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tails_temp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tails_temp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start_delay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        start_delay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hearts_finish_temp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hearts_finish_temp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#formula_start_temp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        formula_start_temp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#valve_bw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        valve_bw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parallel_v3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        parallel_v3
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#release_speed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        release_speed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#release_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        release_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#heads_final" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        heads_final
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Проверка на ошибки:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Примеры корректных команд
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Примеры команд с ошибками
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<div><h1 id="ssvc0059_v2-uart-api-documentation">SSVC0059_V2 UART API Documentation</h1>
+<h2 id="version-16">Version 1.6</h2>
+<p>Документация UART API для SSVC0059_V2
+Данный документ описывает формат обмена данными по UART с контроллером SSVC0059_V2, включая управляющие команды (запросы) и телеметрию (сообщения).</p>
+<h2 id="_1">Общий формат обмена</h2>
+<p>Запросы (Команды)
+Запрос состоит из заглавных латинских букв, цифр и знака подчеркивания. Запрос должен заканчиваться символом \n или \r.</p>
+<h3 id="_2">Ответы и Телеметрия (Сообщения)</h3>
+<p>Все ответы и сообщения телеметрии передаются в формате JSON в одной строке, заканчивающейся символом \n</p>
+<h2 id="1-requests">1. Управляющие команды (Requests)</h2>
+<h3 id="11">1.1 Общая структура запроса</h3>
+<p>Запрос состоит из заглавных латинских букв, цифр и знака подчеркивания. Запросы заканчиваются символом <code>\n</code> или <code>\r</code>.
+Ответы передаются в формате JSON в одной строке, заканчивающейся символом <code>\n.</code>
+Запроы <code>SET</code> и <code>STATUS</code> дополнительно принимают параметры запроса.</p>
+<ul>
+<li>
+<p>Поддерживаемые запросы:</p>
+</li>
+<li>
+<p><a href="#21-at">AT</a></p>
+</li>
+<li><a href="#22-next">NEXT</a></li>
+<li><a href="#23-pause">PAUSE</a></li>
+<li><a href="#24-resume">RESUME</a></li>
+<li><a href="#25-stop">STOP</a></li>
+<li><a href="#26-start">START</a></li>
+<li><a href="#27-status">STATUS</a></li>
+<li><a href="#28-version">VERSION</a></li>
+<li><code>SET</code></li>
+<li><code>GET_SETTINGS</code></li>
+</ul>
+<h3 id="12">1.2 Общая структура ответа</h3>
+<p>Ответы на команды имеют следующую структуру:</p>
+<ul>
+<li><code>type: "response"</code> — Тип сообщения.</li>
+<li><code>request</code> - Полученная команда в кавычках.</li>
+<li><code>result</code> - "OK" — при успешном выполнении команды, "unknown" - неизвестная команда.</li>
+</ul>
+<p>В зависимости от типа запроса, в  ответе могут содержаться дополнительные поля, специфичные запросу</p>
+<h2 id="2">2. Запросы и их описание</h2>
+<h3 id="21-at">2.1 AT</h3>
+<p>Возвращает ответ об успешности соединения по UART</p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>AT
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"AT"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="22-next">2.2 NEXT</h3>
+<p>Переключает на следующий этап ректификации. Команда аналогична нажатию кнопки Далее/Выход на этапах Головы / Тело / Хвосты.
+Доступна только в процессе ректификации. На последнем этапе завершает ректификацию и выводит SSVC в дежурный режим</p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>NEXT
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"NEXT"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="23-pause">2.3 PAUSE</h3>
+<p>Вход в режим ручного управления клапаном текущего этапа, клапан закрыт. Команда доступна только в процессе ректификации.</p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>PAUSE
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PAUSE"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="24-resume">2.4 RESUME</h3>
+<p>Выход из режима ручного управления клапаном. Команда доступна только в процессе ректификации и в режиме паузы.</p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>RESUME
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"RESUME"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="25-stop">2.5 STOP</h3>
+<p>Остановка процесса ректификации на этапах Головы, Тело, Хвосты.</p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>STOP
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"STOP"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="26-start">2.6 START</h3>
+<p>Запуск ректификации, работает только из дежурного режима.
+Для работы необходимо включение опции <code>Удаленный пуск</code> на третьем экране стартовых настроек</p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>START
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"START"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="27-status">2.7 STATUS</h3>
+<p>Отображение информации на экране контроллера в дежурном режиме. Принимается строка 15 символов. </p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>STATUS 192.168.100.200
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"STATUS"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="28-version">2.8 VERSION</h3>
+<p>Возвращает версию прошивки, версию API и наименование производителя</p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>STATUS 192.168.100.200
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"VERSION"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"manufacturer"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SmartModule"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SSVC0059_V2"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.2.37"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"api"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1.0"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="29-set">2.9 SET</h3>
+<p>Команда "SET" используется для задания различных настроек. Команда работает во всех режимах, когда контроллер принимает запросы по UART.
+Команда "SET" имеет следующий общий формат:</p>
+<p></p><div class="highlight"><pre><span></span><code>SET &lt;параметр1&gt;=&lt;значение1&gt;,&lt;параметр2&gt;=&lt;значение2&gt;,...,&lt;параметрN&gt;=&lt;значениеN&gt;
+</code></pre></div>
+Максимальная длина строки - 300 символов, включая завершающие строку \n и нулевой символ.
+<h4 id="22-23">Перечень принимаемых параметров (все поддерживаемые версиями прошивок 2.2.<em> и 2.3.</em>):</h4>
+<ul>
+<li><code>"heads=[&lt;время_включения&gt;,&lt;период&gt;]"</code> - Скорость отбора голов.</li>
+<li><code>"hearts=[&lt;время_включения&gt;,&lt;период&gt;]"</code> - Скорость отбора тела.</li>
+<li><code>"hyst=&lt;значение&gt;"</code> - Гистерезис.</li>
+<li><code>"decrement=&lt;значение&gt;"</code> - Декремент.</li>
+<li><code>"formula=[0|1]"</code> - Формула.</li>
+<li><code>"tank_mmhg=&lt;значение&gt;"</code> - Давление в кубе относительно атмосферного в миллиметрах ртутного столба (мм рт. ст.).</li>
+<li><code>"heads_timer=&lt;время&gt;"</code> - Время отбора голов.</li>
+<li><code>"hearts_timer=&lt;время&gt;"</code> - Таймер фиксации температуры отбора тела.</li>
+<li><code>"start_delay=&lt;время&gt;"</code> - Отложенный пуск.</li>
+<li><code>"hearts_finish_temp=&lt;температура&gt;"</code> - Температура, при которой завершается отбор тела.</li>
+<li><code>"formula_start_temp=&lt;температура&gt;"</code> - Начальная температура для формулы.</li>
+<li><code>"valve_bw=[&lt;скорость1&gt;, &lt;скорость2&gt;, &lt;скорость3&gt;]"</code> - Пропускные способности клапанов в мл/ч.</li>
+<li><code>"tails=[&lt;значение1&gt;, &lt;значение2&gt;]"</code> - Скорость отбора хвостов. Актуально в firmware 2.2.*.</li>
+<li>
+<p><code>"tails_temp=&lt;температура&gt;"</code> - Температура завершения отбора хвостов. Актуально в firmware 2.2.*.</p>
+</li>
+<li>
+<p><code>"late_heads=[&lt;время_включения&gt;,&lt;период&gt;]"</code> - Скорость отбора подголовников. Актуально в firmware 2.3.*.</p>
+</li>
+<li>
+<p><code>"late_heads_timer=&lt;значение&gt;"</code> - Время отбора подголовников, с. Значение должно кратно 300 с (5 минут). Актуально в firmware 2.3.*.</p>
+</li>
+<li>
+<p><code>"parallel=[&lt;время_включения&gt;,&lt;период&gt;]"</code> - Параллельный отбор клапаном 3. Актуально в firmware 2.3.*.</p>
+</li>
+<li><code>"parallel_v1=[&lt;время_включения&gt;,&lt;период&gt;]"</code> - Параллельный отбор клапаном 1. Актуально в firmware 2.2.*.</li>
+<li>
+<p><code>"parallel_v3=[[&lt;температура&gt;,&lt;время_включения&gt;,&lt;период&gt;],
+        [&lt;температура&gt;,&lt;время_включения&gt;,&lt;период&gt;],
+        [&lt;температура&gt;,&lt;время_включения&gt;,&lt;период&gt;],
+        [&lt;температура&gt;,&lt;время_включения&gt;,&lt;период&gt;]]"</code> - Параллельный отбор клапаном 3.  Актуально в firmware 2.2.*.</p>
+</li>
+<li>
+<p><code>"release_speed=&lt;значение&gt;"</code> - Скорость сброса (время открытого клапана). Актуально с опцией "Сброс и снижение".</p>
+</li>
+<li><code>"release_timer=&lt;время&gt;"</code> - Время сброса, с. Актуально с опцией "Сброс и снижение".</li>
+<li><code>"heads_final=&lt;значение&gt;"</code> - Скорость отбора к окончанию голов. Актуально с опцией "Сброс и снижение".</li>
+</ul>
+<h4 id="_3">Оперативные параметры текущего этапа</h4>
+<ul>
+<li><code>"s_temp=&lt;температура&gt;"</code> - Температура, °C. Число с одним знаком после запятой. Максимальное значение - 110.0</li>
+<li><code>"s_hyst=&lt;гистерезис&gt;"</code> - Гистерезис, °C. Число с двумя знаками после запятой. Минимальное значение - 0.06, максимальное - 50.06</li>
+<li><code>"s_speed=[&lt;время_включения&gt;,&lt;период&gt;]"</code> - Скорость отбора. Синтаксис и органичения аналогичные как для "heads".</li>
+<li><code>"s_decrement=&lt;декремент&gt;"</code> - Декремент, %. Целое число. Максимальное значение - 100.</li>
+<li><code>"s_timer=&lt;время&gt;"</code> - Таймер, с. Целое число. Максимальное значение - 86400.</li>
+</ul>
+<h4 id="_4">Синтаксис параметров.</h4>
+<h4 id="heads-late_heads-hearts-tails-s_speed-parallel_v1-">heads, late_heads, hearts, tails, s_speed, parallel_v1 - скорость отбора</h4>
+<pre><code>heads - головы;
+hearts - тело;
+late_heads - подголовники;
+tails - "хвосты";
+s_speed - оперативные параметры;
+parallel_v1 - параллельный отбор клапаном 1. Актуально в firmware 2.2.*.
+parallel - параллельный отбор клапаном 3. Актуально в firmware 2.3.*.
+</code></pre>
+<ul>
+<li><strong>Описание</strong>: Настройки скорости отбора (время открытого клапана и период цикла).</li>
+<li><strong>Синтаксис</strong>:
+  <code>"heads=[&lt;время_включения&gt;,&lt;период&gt;]"</code></li>
+<li><code>"&lt;время_включения&gt;"</code>: вещественное число с одной десятичной цифрой (например, "99.0").</li>
+<li><code>"&lt;период&gt;"</code>: целое число.</li>
+<li><strong>Ограничения</strong>:</li>
+<li>время_включения ≤ 99.9</li>
+<li>период ≤ 999</li>
+<li>время_включения ≤ период</li>
+<li><strong>Пример</strong>:
+  <code>heads=[99.0,100]</code></li>
+</ul>
+<h4 id="hyst">hyst</h4>
+<ul>
+<li><strong>Описание</strong>: Устанавливает значение гистерезиса</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"hyst=&lt;значение&gt;"</code></li>
+<li><code>"&lt;значение&gt;"</code> — число с двумя знаками после запятой (например, 0.25).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть положительным числом но не более 50.0.</li>
+<li><strong>Пример</strong>:<br>
+<code>"hyst=0.25"</code></li>
+</ul>
+<h4 id="decrement">decrement</h4>
+<ul>
+<li><strong>Описание</strong>: Устанавливает величину в процентах, на которую будет уменьшаться скорость отбора тела при "зелете" температуры.</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"decrement=&lt;значение&gt;"</code></li>
+<li><code>"&lt;значение&gt;"</code> — целое число (например, 20).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть целым положительным числом от 0 до 100 включительно.</li>
+<li><strong>Пример</strong>:<br>
+<code>"decrement=20"</code></li>
+</ul>
+<h4 id="formula">formula</h4>
+<ul>
+<li><strong>Описание</strong>: Использовать или нет формулу для снижения скорости отбора тела в зависимости от температуры на ТД2.</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"formula=[0|1]"</code></li>
+<li><code>"[0|1]"</code> — 0 - не использовать формулу, 1 - использовать.</li>
+<li><strong>Пример</strong>:<br>
+<code>"formula=1"</code></li>
+</ul>
+<h4 id="tank_mmhg">tank_mmhg</h4>
+<ul>
+<li><strong>Описание</strong>: Устанавливает давление в кубе в миллиметрах ртутного столба (мм рт. ст.) относительно атмосферного.</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"tank_mmhg=&lt;значение&gt;"</code></li>
+<li><code>"&lt;значение&gt;"</code> — целое число (например, 30).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть положительным не более 50.</li>
+<li><strong>Пример</strong>:<br>
+<code>"tank_mmhg=50"</code></li>
+</ul>
+<h4 id="heads_timer">heads_timer</h4>
+<ul>
+<li><strong>Описание</strong>: Таймер отбора голов (время в секундах).</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"heads_timer=&lt;время&gt;"</code></li>
+<li><code>"&lt;время&gt;"</code> — целое число (например, 36000).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть положительным не более 86400, кратное 300 (соответствует 5 минутам).</li>
+<li><strong>Пример</strong>:<br>
+<code>"heads_timer=36000"</code></li>
+</ul>
+<h4 id="late_heads_timer">late_heads_timer</h4>
+<ul>
+<li><strong>Описание</strong>: Таймер отбора подголовников (время в секундах).</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"late_heads_timer=&lt;время&gt;"</code></li>
+<li><code>"&lt;время&gt;"</code> — целое число (например, 36000).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть положительным не более 86400, кратное 300 (соответствует 5 минутам).</li>
+<li><strong>Пример</strong>:<br>
+<code>"late_heads_timer=36000"</code></li>
+</ul>
+<h4 id="hearts_timer">hearts_timer</h4>
+<ul>
+<li><strong>Описание</strong>: Таймер фиксации температуры отбора тела, мин</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"hearts_timer=&lt;время&gt;"</code></li>
+<li><code>"&lt;время&gt;"</code> — целое число (например, 10).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть положительным не более 30.</li>
+<li><strong>Пример</strong>:<br>
+<code>"hearts_timer=30"</code></li>
+</ul>
+<h4 id="tails_temp">tails_temp</h4>
+<ul>
+<li><strong>Описание</strong>: Устанавливает завершения отбора хвостов, в градусах Цельсия.</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"tails_temp=&lt;температура&gt;"</code></li>
+<li><code>"&lt;температура&gt;"</code> — число с плавающей точкой (например, 109.9).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Температура должна быть положительным числом не более 110.0.</li>
+<li><strong>Пример</strong>:<br>
+<code>"tails_temp=109.9"</code></li>
+</ul>
+<h4 id="start_delay">start_delay</h4>
+<ul>
+<li><strong>Описание</strong>: Отложенный пуск (время в секундах).</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"start_delay=&lt;время&gt;"</code></li>
+<li><code>"&lt;время&gt;"</code> — целое число (например, 6000).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть положительным не более 18000.</li>
+<li><strong>Пример</strong>:<br>
+<code>"start_delay=18000"</code></li>
+</ul>
+<h4 id="hearts_finish_temp">hearts_finish_temp</h4>
+<ul>
+<li><strong>Описание</strong>: Температура на ТД2, при которой завершается отбор тела, в градусах Цельсия.</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"hearts_finish_temp=&lt;температура&gt;"</code></li>
+<li><code>"&lt;температура&gt;"</code> — число с плавающей точкой (например, 93.0).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Температура должна быть положительным числом не более 110.0.</li>
+<li><strong>Пример</strong>:<br>
+<code>"hearts_finish_temp=93.0"</code></li>
+</ul>
+<h4 id="formula_start_temp">formula_start_temp</h4>
+<ul>
+<li><strong>Описание</strong>: Начальная температура для начала работы формулы, в градусах Цельсия.</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"formula_start_temp=&lt;температура&gt;"</code></li>
+<li><code>"&lt;температура&gt;"</code> — число с плавающей точкой (например, 84.0).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Температура должна быть положительным числом не более 100.0 и не менее 84.0.</li>
+<li><strong>Пример</strong>:<br>
+<code>"formula_start_temp=84.0"</code></li>
+</ul>
+<h4 id="valve_bw">valve_bw</h4>
+<ul>
+<li><strong>Описание</strong>: Устанавливает пропускные способности клапанов в мл/ч.</li>
+<li><strong>Синтаксис</strong>:
+  <code>valve_bw=[&lt;скорость1&gt;,&lt;скорость2&gt;,&lt;скорость3&gt;]</code></li>
+<li>Каждая скорость <code>"&lt;скоростьN&gt;"</code> — целое число.</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Все скорости ≤ 20000.</li>
+<li><strong>Пример</strong>:
+  <code>valve_bw=[10000,20000,15000]</code></li>
+</ul>
+<h4 id="parallel_v3">parallel_v3</h4>
+<ul>
+<li><strong>Описание</strong>: Устанавливает параметры параллельного отбора клапаном 3 на этапе отбора тела.
+  Акутально для прошивок 2.2.*</li>
+<li><strong>Синтаксис</strong>:
+  <code>parallel_v3=[[%2d.%1d,%2d.%1d,%3d],[%2d.%1d,%2d.%1d,%3d],[%2d.%1d,%2d.%1d,%3d],[%2d.%1d,%2d.%1d,%3d]]</code>
+  Задается 4 диапазона. В каждом диапазоне передаются три начения</li>
+<li><code>"&lt;температура&gt;"</code> - начало диапазона, вещественное число с одной десятичной цифрой (например, "84.0").
+    (Первый диапазон всегда начинается с 0.0. Полученное значение температуры в первом диапазоне игнорируется).</li>
+<li><code>"&lt;время_включения&gt;"</code>: вещественное число с одной десятичной цифрой (например, "99.0").</li>
+<li><code>"&lt;период&gt;"</code>: целое число.</li>
+<li><strong>Ограничения</strong>:</li>
+<li>время_включения &lt; период</li>
+<li>температура ≤ 99.9</li>
+<li>время_включения ≤ 99.9</li>
+<li>период ≤ 999</li>
+<li><strong>Пример</strong>:
+  <code>SET parallel_v3=[[0.0,0.4,10],[81.1,0.5,50],[86.2,0.6,50],[96.3,1.1,100]]</code></li>
+</ul>
+<h4 id="release_speed">release_speed</h4>
+<ul>
+<li><strong>Описание</strong>: Скорость сброса (время открытого клапана), с.</li>
+<li><strong>Синтаксис</strong>:
+  <code>"release_speed"=&lt;время_включения&gt;</code></li>
+<li><code>"&lt;время_включения&gt;"</code>: вещественное число с одной десятичной цифрой (например, "99.0").</li>
+<li><strong>Ограничения</strong>:</li>
+<li>время_включения ≤ 99.9</li>
+<li><strong>Примечание</strong>: Значение должно быть меньше периода этапа отбора голов. Данный контроль возлагается на передающую сторону.</li>
+<li><strong>Пример</strong>:
+  <code>release_speed=99.0</code></li>
+</ul>
+<h4 id="release_timer">release_timer</h4>
+<ul>
+<li><strong>Описание</strong>: Время сброса, с.  Включается опция "Сброс и снижение" при значении больше 0.</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"release_timer=&lt;время&gt;"</code></li>
+<li><code>"&lt;время&gt;"</code> — целое число (например, 600).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть положительным и не более 1200 (20 минут).</li>
+<li><strong>Пример</strong>:<br>
+<code>release_timer=600</code></li>
+</ul>
+<h4 id="heads_final">heads_final</h4>
+<ul>
+<li><strong>Описание</strong>: Скорость отбора к окончанию голов, с. Включается опция "Сброс и снижение" при любом знаении.</li>
+<li><strong>Синтаксис</strong>:
+  <code>"heads_final"=&lt;время_включения&gt;</code></li>
+<li><code>"&lt;время_включения&gt;"</code>: вещественное число с одной десятичной цифрой (например, "10.5").</li>
+<li><strong>Ограничения</strong>:</li>
+<li>время_включения ≤ 99.9</li>
+<li><strong>Примечание</strong>: Значение должно быть меньше периода этапа отбора голов. Данный контроль возлагается на передающую сторону.</li>
+<li><strong>Пример</strong>:
+  <code>heads_final=10.5</code></li>
+</ul>
+<h3 id="_5">Проверка на ошибки:</h3>
+<ul>
+<li>
+<p>При неверном формате или несоответствии ограничений возвращается сообщение об ошибке:
+  <strong>Пример</strong>:
+</p><div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SET heads=[1,2]"</span><span class="p">,</span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"error: heads=[1,2]"</span><span class="p">}</span>
+</code></pre></div>
+</li>
+<li>
+<p>Для неизвестных параметров возвращается сообщение об ошибке:
+  <strong>Пример</strong>:
+</p><div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ABCD"</span><span class="p">,</span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"unknown"</span><span class="p">}</span>
+</code></pre></div>
+</li>
+</ul>
+<h3 id="_6">Примеры корректных команд</h3>
+<div class="highlight"><pre><span></span><code>SET heads=[30.0,180],hearts=[2.5,5],formula=1
+SET heads=[60.0,360],hearts=[2.0,4],hyst=0.19,formula=0
+SET heads=[20.5,245],hearts=[1.5,3],hyst=0.25,decrement=20,formula=1,tank_mmhg=50,heads_timer=36000,hearts_timer=30,start_delay=18000,hearts_finish_temp=93.0,formula_start_temp=84.0,valve_bw=[10000,11000,12000]
+SET formula=1
+SET formula=0
+SET tank_mmhg=50
+SET heads_timer=36000
+SET heads_timer=86400
+SET hearts_timer=30
+SET start_delay=18000
+SET hearts_finish_temp=110.0
+SET formula_start_temp=84.0
+SET formula_start_temp=100.0
+SET valve_bw=[10000,11000,12000]
+</code></pre></div>
+<h3 id="_7">Примеры команд с ошибками</h3>
+<div class="highlight"><pre><span></span><code>SET heads=[60.0,360],hearts=[2.0,4],hyst=0.19,decrement=30,formula=2
+SET heads=[100.0,180],hearts=[2.5,5],formula=1
+SET heads=[99.9,1000],hearts=[2.5,5]
+SET heads=[99.1,99],hearts=[2.5,5],formula=1
+SET hyst=50.01
+SET decrement=101
+SET tank_mmhg=51
+SET heads_timer=86401
+SET hearts_timer=31
+SET start_delay=18001
+SET hearts_finish_temp=110.1
+SET formula_start_temp=83.9
+SET formula_start_temp=100.1
+SET valve_bw=[10000,11000,21000]
+</code></pre></div></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 by <a href="https://github.com/thedemoncat"  target="_blank" rel="noopener">elims</a> -
+<a href="#__consent">Изменить настройки файлов cookie</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/thedemoncat" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+
+  
+
+<h4>Cookie consent</h4>
+<p>Сайт использует cookie-файлы, чтобы сделать ваше пребывание на нём максимально удобным.  Оставаясь на сайте, вы даёте своё согласие на использование cookie-файлов.</p>
+<input class="md-toggle" type="checkbox" id="__settings" checked>
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+    
+      
+    
+    
+      
+        
+  
+  
+    
+    
+  
+  <li class="task-list-item">
+    <label class="task-list-control">
+      <input type="checkbox" name="github" checked>
+      <span class="task-list-indicator"></span>
+      GitHub
+    </label>
+  </li>
+
+      
+    
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout((function(){document.querySelector("[data-md-component=consent]").hidden=!1}),250);var form=document.forms.consent;for(var action of["submit","reset"])form.addEventListener(action,(function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map((function(e){return[e,!0]})))),location.hash="",location.reload()}))</script>
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "toc.follow", "content.code.copy"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../../calculator/rectification_calculator.js"></script>
+      
+    
+  </body>
+</html>
