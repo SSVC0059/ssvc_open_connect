@@ -5,6 +5,8 @@ hide:
 
 # Калькулятор ректификации
 
+<p style="margin:0 0 1rem;font-size:0.9rem;"><a href="../index.md">Главная</a> · <a href="../faq/faq.md">FAQ</a> · <a href="../glossary.md">Глоссарий</a></p>
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>

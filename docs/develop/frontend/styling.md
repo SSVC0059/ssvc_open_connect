@@ -20,7 +20,7 @@
 - **Разметка и утилиты:** классы Tailwind (`flex`, `gap-4`, `text-base-content`, `rounded-box` и т.д.).
 - **Компоненты UI:** классы DaisyUI (`btn`, `btn-primary`, `card`, `modal`, `menu`, `tabs`, `alert` и т.д.). Темы заданы в `app.css`: **corporate** (светлая по умолчанию), **business** (тёмная по `prefers-color-scheme: dark`).
 - **Цвета и темы:** предпочтительно семантика DaisyUI (`base-content`, `primary`, `secondary` и т.д.). Для графиков/Chart.js можно использовать `$lib/DaisyUiHelper.ts` (получение цветов темы из DOM).
-- **Тёмная тема:** используем **классы и атрибуты темы DaisyUI** (например `data-theme="business"`, семантические классы цветов). Переход с глобальных переопределений в `_dark-theme.scss` на миграцию экранов к теме DaisyUI — по плану аудита ([styles-cleanup-audit.md](./styles-cleanup-audit.md), П.3).
+- **Тёмная тема:** используем **классы и атрибуты темы DaisyUI** (например `data-theme="business"`, семантические классы цветов). Переход с глобальных переопределений в `_dark-theme.scss` на миграцию экранов к теме DaisyUI — постепенно, по мере переноса экранов на DaisyUI.
 
 ### 2.2 Когда допустимы исключения (SCSS / scoped-стили)
 
@@ -53,20 +53,18 @@
 
 ## 4. Flowbite-svelte
 
-**Итог:** зависимости Flowbite **удалены**. Popover заменён на DaisyUI tooltip (ValveParameters, KpnPopover), Spinner — на DaisyUI loading во всех компонентах, иконки — на Tabler (unplugin-icons). Подробности и история задач — в [styles-cleanup-audit.md, п. 5](./styles-cleanup-audit.md#5-flowbite-svelte). Новый функционал реализовывать на DaisyUI/Tailwind/Tabler, без Flowbite.
+**Итог:** зависимости Flowbite **удалены**. Popover заменён на DaisyUI tooltip (ValveParameters, KpnPopover), Spinner — на DaisyUI loading во всех компонентах, иконки — на Tabler (unplugin-icons). Новый функционал реализовывать на DaisyUI/Tailwind/Tabler, без Flowbite.
 
 ---
 
 ## 5. Очищенные/удалённые модули
 
-В рамках [аудита чистки стилей](./styles-cleanup-audit.md) удалены неиспользуемые SCSS-модули (`_buttons.scss`, `_modals.scss`, `_tabs.scss`, `_inputs.scss`). Актуальный перечень задач и выполненных этапов — в [styles-cleanup-audit.md](./styles-cleanup-audit.md).
+Удалены неиспользуемые SCSS-модули (`_buttons.scss`, `_modals.scss`, `_tabs.scss`, `_inputs.scss`); стили кнопок, полей ввода, модалок и вкладок задаются в `+layout.svelte` и в компонентах (см. [frontend.md](./frontend.md)).
 
 ---
 
 ## 6. Документация и ссылки
 
 - **Описание существующих SCSS-классов и миксинов:** [frontend.md](./frontend.md).
-- **Аудит текущего состояния и план:** [styles-audit-and-plan.md](./styles-audit-and-plan.md).
-- **Аудит для будущей чистки (без изменений в коде):** [styles-cleanup-audit.md](./styles-cleanup-audit.md).
 
 Ссылка на эту стратегию добавлена в [frontend.md](./frontend.md) и при необходимости может быть добавлена в README или в общий индекс документации.

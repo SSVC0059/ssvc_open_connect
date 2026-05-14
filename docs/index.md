@@ -36,16 +36,25 @@ Open Connect в первую очередь предназначен для об
 
 ### Документация для разработчиков
 
+- [Обзор раздела для разработчиков](develop/index.md)
 - [Стратегия стилей фронтенда (Tailwind/DaisyUI)](develop/frontend/styling.md)
 
-### Полезные cсылки
+### Быстрый старт
+
+1. [Драйвер USB-UART и подготовка](preparation/driver.md)
+2. [Скачивание и выбор прошивки](preparation/firmware.md)
+3. [Прошивка через браузер](preparation/flasher.md)
+4. [Первый запуск: Wi‑Fi и веб-интерфейс](usage/get_started.md)
+5. [Подключение UART к SSVC](usage/interfaces/uart.md)
+
+### Полезные ссылки
 
 <a href="https://t.me/demoncat_home" target="_blank">
     :simple-telegram: Группа проекта в Telegram
 </a>
 
 <a href="https://github.com/SSVC0059/ssvc_open_connect" target="_blank">
-    :simple-github: Репозитарий Github
+    :simple-github: Репозиторий GitHub
 </a>
 
 <a href="https://rutube.ru/plst/937235/" target="_blank">
@@ -56,4 +65,9 @@ Open Connect в первую очередь предназначен для об
     :simple-telegram: Группа производителя SSVC в Telegram
 </a>
 
+---
+
+## История изменений
+
+Полный список версий и изменений — на странице [Список изменений](info/changelog.md).
 
