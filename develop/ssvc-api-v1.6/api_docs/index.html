@@ -12,13 +12,13 @@
         <meta name="author" content="thedemoncat">
       
       
-        <link rel="canonical" href="https://SSVC0059.github.io/ssvc_open_connect/develop/api/files/">
+        <link rel="canonical" href="https://SSVC0059.github.io/ssvc_open_connect/develop/ssvc-api-v1.6/api_docs/">
       
       
-        <link rel="prev" href="../profiles/">
+        <link rel="prev" href="../../api/files/">
       
       
-        <link rel="next" href="../../ssvc-api-v1.6/api_docs/">
+        <link rel="next" href="../../../ssvc-serial-protocol/develop/Readme/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>API Файлов - SSVC Open Connect</title>
+        <title>UART API SSVC (справка) - SSVC Open Connect</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#api" class="md-skip">
+        <a href="#ssvc0059_v2-uart-api-documentation" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              API Файлов
+              UART API SSVC (справка)
             
           </span>
         </div>
@@ -1653,8 +1653,6 @@
                 
   
   
-    
-  
   
   
     
@@ -1670,11 +1668,13 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_6" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_6" >
         
           
           <label class="md-nav__link" for="__nav_9_6" id="__nav_9_6_label" tabindex="">
@@ -1695,7 +1695,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_9_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1713,7 +1713,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../../api/" class="md-nav__link">
         
   
   
@@ -1741,7 +1741,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../settings/" class="md-nav__link">
+      <a href="../../api/settings/" class="md-nav__link">
         
   
   
@@ -1769,7 +1769,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../commands/" class="md-nav__link">
+      <a href="../../api/commands/" class="md-nav__link">
         
   
   
@@ -1797,7 +1797,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../sensors/" class="md-nav__link">
+      <a href="../../api/sensors/" class="md-nav__link">
         
   
   
@@ -1825,7 +1825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../telegram/" class="md-nav__link">
+      <a href="../../api/telegram/" class="md-nav__link">
         
   
   
@@ -1853,7 +1853,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../subsystem/" class="md-nav__link">
+      <a href="../../api/subsystem/" class="md-nav__link">
         
   
   
@@ -1881,7 +1881,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../openconnect/" class="md-nav__link">
+      <a href="../../api/openconnect/" class="md-nav__link">
         
   
   
@@ -1909,7 +1909,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../profiles/" class="md-nav__link">
+      <a href="../../api/profiles/" class="md-nav__link">
         
   
   
@@ -1925,6 +1925,42 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Файлов
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1953,7 +1989,7 @@
   <span class="md-ellipsis">
     
   
-    API Файлов
+    UART API SSVC (справка)
   
 
     
@@ -1971,7 +2007,7 @@
   <span class="md-ellipsis">
     
   
-    API Файлов
+    UART API SSVC (справка)
   
 
     
@@ -1997,33 +2033,33 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#version-16" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Получение дерева файлов
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Получение дерева файлов">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#curl" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Пример запроса (curl)
+        Version 1.6
       
     </span>
   </a>
   
 </li>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Общий формат обмена
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Общий формат обмена">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ответы
+        Ответы и Телеметрия (Сообщения)
       
     </span>
   </a>
@@ -2036,22 +2072,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
+  <a href="#1-requests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Скачивание файла
+        1. Управляющие команды (Requests)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Скачивание файла">
+    <nav class="md-nav" aria-label="1. Управляющие команды (Requests)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#url" class="md-nav__link">
+  <a href="#11" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Параметры URL
+        1.1 Общая структура запроса
       
     </span>
   </a>
@@ -2059,10 +2095,149 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#curl_1" class="md-nav__link">
+  <a href="#12" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Пример запроса (curl)
+        1.2 Общая структура ответа
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Запросы и их описание
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Запросы и их описание">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-at" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 AT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 NEXT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-pause" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 PAUSE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-resume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 RESUME
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-stop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 STOP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6 START
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#27-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.7 STATUS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#28-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.8 VERSION
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#29-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.9 SET
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.9 SET">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#22-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Перечень принимаемых параметров (все поддерживаемые версиями прошивок 2.2. и 2.3.):
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Оперативные параметры текущего этапа
       
     </span>
   </a>
@@ -2073,7 +2248,194 @@
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ответы
+        Синтаксис параметров.
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#heads-late_heads-hearts-tails-s_speed-parallel_v1-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        heads, late_heads, hearts, tails, s_speed, parallel_v1 - скорость отбора
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hyst" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hyst
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decrement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decrement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#formula" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        formula
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tank_mmhg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tank_mmhg
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#heads_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        heads_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#late_heads_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        late_heads_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hearts_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hearts_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tails_temp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tails_temp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start_delay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        start_delay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hearts_finish_temp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hearts_finish_temp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#formula_start_temp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        formula_start_temp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#valve_bw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        valve_bw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parallel_v3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        parallel_v3
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#release_speed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        release_speed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#release_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        release_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#heads_final" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        heads_final
       
     </span>
   </a>
@@ -2084,35 +2446,12 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Удаление файла
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Удаление файла">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#url_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Параметры URL
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#curl_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Пример запроса (curl)
+        Проверка на ошибки:
       
     </span>
   </a>
@@ -2123,57 +2462,18 @@
   <a href="#_6" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ответы
+        Примеры корректных команд
       
     </span>
   </a>
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
+          <li class="md-nav__item">
   <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Копирование файла
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Копирование файла">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#curl_3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Пример запроса (curl)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Тело запроса
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_9" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Ответы
+        Примеры команд с ошибками
       
     </span>
   </a>
@@ -2189,42 +2489,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ssvc-api-v1.6/api_docs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    UART API SSVC (справка)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -2413,33 +2677,33 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#version-16" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Получение дерева файлов
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Получение дерева файлов">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#curl" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Пример запроса (curl)
+        Version 1.6
       
     </span>
   </a>
   
 </li>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Общий формат обмена
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Общий формат обмена">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ответы
+        Ответы и Телеметрия (Сообщения)
       
     </span>
   </a>
@@ -2452,22 +2716,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
+  <a href="#1-requests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Скачивание файла
+        1. Управляющие команды (Requests)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Скачивание файла">
+    <nav class="md-nav" aria-label="1. Управляющие команды (Requests)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#url" class="md-nav__link">
+  <a href="#11" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Параметры URL
+        1.1 Общая структура запроса
       
     </span>
   </a>
@@ -2475,10 +2739,149 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#curl_1" class="md-nav__link">
+  <a href="#12" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Пример запроса (curl)
+        1.2 Общая структура ответа
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Запросы и их описание
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Запросы и их описание">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-at" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 AT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 NEXT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-pause" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 PAUSE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-resume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 RESUME
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-stop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 STOP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6 START
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#27-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.7 STATUS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#28-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.8 VERSION
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#29-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.9 SET
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.9 SET">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#22-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Перечень принимаемых параметров (все поддерживаемые версиями прошивок 2.2. и 2.3.):
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Оперативные параметры текущего этапа
       
     </span>
   </a>
@@ -2489,7 +2892,194 @@
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ответы
+        Синтаксис параметров.
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#heads-late_heads-hearts-tails-s_speed-parallel_v1-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        heads, late_heads, hearts, tails, s_speed, parallel_v1 - скорость отбора
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hyst" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hyst
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decrement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decrement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#formula" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        formula
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tank_mmhg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tank_mmhg
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#heads_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        heads_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#late_heads_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        late_heads_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hearts_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hearts_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tails_temp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tails_temp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start_delay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        start_delay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hearts_finish_temp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hearts_finish_temp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#formula_start_temp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        formula_start_temp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#valve_bw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        valve_bw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parallel_v3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        parallel_v3
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#release_speed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        release_speed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#release_timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        release_timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#heads_final" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        heads_final
       
     </span>
   </a>
@@ -2500,35 +3090,12 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Удаление файла
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Удаление файла">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#url_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Параметры URL
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#curl_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Пример запроса (curl)
+        Проверка на ошибки:
       
     </span>
   </a>
@@ -2539,57 +3106,18 @@
   <a href="#_6" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ответы
+        Примеры корректных команд
       
     </span>
   </a>
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
+          <li class="md-nav__item">
   <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Копирование файла
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Копирование файла">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#curl_3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Пример запроса (curl)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Тело запроса
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_9" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Ответы
+        Примеры команд с ошибками
       
     </span>
   </a>
@@ -2621,108 +3149,488 @@
   
 
 
-<div><h1 id="api">API Файлов</h1>
-<p>Этот раздел описывает API для управления файлами на устройстве.</p>
-<hr>
-<h2 id="_1">Получение дерева файлов</h2>
-<p>Возвращает структуру файлов и каталогов в виде дерева.</p>
-<p><strong>Эндпоинт:</strong> <code>GET /rest/files</code>
-<strong>Метод:</strong> <code>GET</code>
-<strong>Аутентификация:</strong> Требуется</p>
-<h3 id="curl">Пример запроса (curl)</h3>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span>http://DEVICE_IP/rest/files<span class="w"> </span><span class="se">\</span>
-<span class="w">     </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer YOUR_AUTH_TOKEN"</span>
+<div><h1 id="ssvc0059_v2-uart-api-documentation">SSVC0059_V2 UART API Documentation</h1>
+<h2 id="version-16">Version 1.6</h2>
+<p>Документация UART API для SSVC0059_V2
+Данный документ описывает формат обмена данными по UART с контроллером SSVC0059_V2, включая управляющие команды (запросы) и телеметрию (сообщения).</p>
+<h2 id="_1">Общий формат обмена</h2>
+<p>Запросы (Команды)
+Запрос состоит из заглавных латинских букв, цифр и знака подчеркивания. Запрос должен заканчиваться символом \n или \r.</p>
+<h3 id="_2">Ответы и Телеметрия (Сообщения)</h3>
+<p>Все ответы и сообщения телеметрии передаются в формате JSON в одной строке, заканчивающейся символом \n</p>
+<h2 id="1-requests">1. Управляющие команды (Requests)</h2>
+<h3 id="11">1.1 Общая структура запроса</h3>
+<p>Запрос состоит из заглавных латинских букв, цифр и знака подчеркивания. Запросы заканчиваются символом <code>\n</code> или <code>\r</code>.
+Ответы передаются в формате JSON в одной строке, заканчивающейся символом <code>\n.</code>
+Запроы <code>SET</code> и <code>STATUS</code> дополнительно принимают параметры запроса.</p>
+<ul>
+<li>
+<p>Поддерживаемые запросы:</p>
+</li>
+<li>
+<p><a href="#21-at">AT</a></p>
+</li>
+<li><a href="#22-next">NEXT</a></li>
+<li><a href="#23-pause">PAUSE</a></li>
+<li><a href="#24-resume">RESUME</a></li>
+<li><a href="#25-stop">STOP</a></li>
+<li><a href="#26-start">START</a></li>
+<li><a href="#27-status">STATUS</a></li>
+<li><a href="#28-version">VERSION</a></li>
+<li><code>SET</code></li>
+<li><code>GET_SETTINGS</code></li>
+</ul>
+<h3 id="12">1.2 Общая структура ответа</h3>
+<p>Ответы на команды имеют следующую структуру:</p>
+<ul>
+<li><code>type: "response"</code> — Тип сообщения.</li>
+<li><code>request</code> - Полученная команда в кавычках.</li>
+<li><code>result</code> - "OK" — при успешном выполнении команды, "unknown" - неизвестная команда.</li>
+</ul>
+<p>В зависимости от типа запроса, в  ответе могут содержаться дополнительные поля, специфичные запросу</p>
+<h2 id="2">2. Запросы и их описание</h2>
+<h3 id="21-at">2.1 AT</h3>
+<p>Возвращает ответ об успешности соединения по UART</p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>AT
 </code></pre></div>
-<h3 id="_2">Ответы</h3>
 <ul>
-<li><strong><code>200 OK</code></strong>: Успешный ответ со структурой файлов.
-    <div class="highlight"><pre><span></span><code><span class="p">[</span>
-<span class="w">  </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"config"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"directory"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"children"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"system.json"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"size"</span><span class="p">:</span><span class="w"> </span><span class="mi">1024</span>
-<span class="w">      </span><span class="p">}</span>
-<span class="w">    </span><span class="p">]</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"boot.log"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"size"</span><span class="p">:</span><span class="w"> </span><span class="mi">512</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="p">]</span>
-</code></pre></div></li>
+<li>Пример ответа</li>
 </ul>
-<hr>
-<h2 id="_3">Скачивание файла</h2>
-<p>Позволяет скачать содержимое указанного файла.</p>
-<p><strong>Эндпоинт:</strong> <code>GET /rest/files/*</code>
-<strong>Метод:</strong> <code>GET</code>
-<strong>Аутентификация:</strong> Требуется</p>
-<h3 id="url">Параметры URL</h3>
-<ul>
-<li><code>*</code> (string) - Полный путь к файлу, который нужно скачать (например, <code>/rest/files/config/system.json</code>).</li>
-</ul>
-<h3 id="curl_1">Пример запроса (curl)</h3>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span>http://DEVICE_IP/rest/files/config/system.json<span class="w"> </span><span class="se">\</span>
-<span class="w">     </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer YOUR_AUTH_TOKEN"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">     </span>--output<span class="w"> </span>system.json
-</code></pre></div>
-<h3 id="_4">Ответы</h3>
-<ul>
-<li><strong><code>200 OK</code></strong>: В теле ответа находится содержимое файла.</li>
-<li><strong><code>404 Not Found</code></strong>: Файл не найден.</li>
-</ul>
-<hr>
-<h2 id="_5">Удаление файла</h2>
-<p>Удаляет указанный файл с устройства.</p>
-<p><strong>Эндпоинт:</strong> <code>DELETE /rest/files/*</code>
-<strong>Метод:</strong> <code>DELETE</code>
-<strong>Аутентификация:</strong> Требуется</p>
-<h3 id="url_1">Параметры URL</h3>
-<ul>
-<li><code>*</code> (string) - Полный путь к файлу для удаления.</li>
-</ul>
-<h3 id="curl_2">Пример запроса (curl)</h3>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span>http://DEVICE_IP/rest/files/logs/old.log<span class="w"> </span><span class="se">\</span>
-<span class="w">     </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer YOUR_AUTH_TOKEN"</span>
-</code></pre></div>
-<h3 id="_6">Ответы</h3>
-<ul>
-<li><strong><code>204 No Content</code></strong>: Файл успешно удален.</li>
-<li><strong><code>500 Internal Server Error</code></strong>: Не удалось удалить файл.</li>
-</ul>
-<hr>
-<h2 id="_7">Копирование файла</h2>
-<p>Копирует файл из одного места в другое.</p>
-<p><strong>Эндпоинт:</strong> <code>POST /rest/files/copy</code>
-<strong>Метод:</strong> <code>POST</code>
-<strong>Аутентификация:</strong> Требуется</p>
-<h3 id="curl_3">Пример запроса (curl)</h3>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://DEVICE_IP/rest/files/copy<span class="w"> </span><span class="se">\</span>
-<span class="w">     </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer YOUR_AUTH_TOKEN"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">     </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">     </span>-d<span class="w"> </span><span class="s1">'{</span>
-<span class="s1">           "source": "/path/to/source/file.txt",</span>
-<span class="s1">           "destination": "/path/to/destination/file.txt"</span>
-<span class="s1">         }'</span>
-</code></pre></div>
-<h3 id="_8">Тело запроса</h3>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/path/to/source/file.txt"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"destination"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/path/to/destination/file.txt"</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"AT"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span>
 <span class="p">}</span>
 </code></pre></div>
-<h3 id="_9">Ответы</h3>
+<h3 id="22-next">2.2 NEXT</h3>
+<p>Переключает на следующий этап ректификации. Команда аналогична нажатию кнопки Далее/Выход на этапах Головы / Тело / Хвосты.
+Доступна только в процессе ректификации. На последнем этапе завершает ректификацию и выводит SSVC в дежурный режим</p>
 <ul>
-<li><strong><code>201 Created</code></strong>: Файл успешно скопирован.</li>
-<li><strong><code>400 Bad Request</code></strong>: Отсутствуют необходимые поля в теле запроса.</li>
-<li><strong><code>404 Not Found</code></strong>: Исходный файл не найден.</li>
-<li><strong><code>500 Internal Server Error</code></strong>: Не удалось создать файл назначения.</li>
-</ul></div>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>NEXT
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"NEXT"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="23-pause">2.3 PAUSE</h3>
+<p>Вход в режим ручного управления клапаном текущего этапа, клапан закрыт. Команда доступна только в процессе ректификации.</p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>PAUSE
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PAUSE"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="24-resume">2.4 RESUME</h3>
+<p>Выход из режима ручного управления клапаном. Команда доступна только в процессе ректификации и в режиме паузы.</p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>RESUME
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"RESUME"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="25-stop">2.5 STOP</h3>
+<p>Остановка процесса ректификации на этапах Головы, Тело, Хвосты.</p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>STOP
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"STOP"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="26-start">2.6 START</h3>
+<p>Запуск ректификации, работает только из дежурного режима.
+Для работы необходимо включение опции <code>Удаленный пуск</code> на третьем экране стартовых настроек</p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>START
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"START"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="27-status">2.7 STATUS</h3>
+<p>Отображение информации на экране контроллера в дежурном режиме. Принимается строка 15 символов. </p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>STATUS 192.168.100.200
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"STATUS"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="28-version">2.8 VERSION</h3>
+<p>Возвращает версию прошивки, версию API и наименование производителя</p>
+<ul>
+<li>Пример запроса</li>
+</ul>
+<div class="highlight"><pre><span></span><code>STATUS 192.168.100.200
+</code></pre></div>
+<ul>
+<li>Пример ответа</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"VERSION"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"manufacturer"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SmartModule"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SSVC0059_V2"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.2.37"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"api"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1.0"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="29-set">2.9 SET</h3>
+<p>Команда "SET" используется для задания различных настроек. Команда работает во всех режимах, когда контроллер принимает запросы по UART.
+Команда "SET" имеет следующий общий формат:</p>
+<p></p><div class="highlight"><pre><span></span><code>SET &lt;параметр1&gt;=&lt;значение1&gt;,&lt;параметр2&gt;=&lt;значение2&gt;,...,&lt;параметрN&gt;=&lt;значениеN&gt;
+</code></pre></div>
+Максимальная длина строки - 300 символов, включая завершающие строку \n и нулевой символ.
+<h4 id="22-23">Перечень принимаемых параметров (все поддерживаемые версиями прошивок 2.2.<em> и 2.3.</em>):</h4>
+<ul>
+<li><code>"heads=[&lt;время_включения&gt;,&lt;период&gt;]"</code> - Скорость отбора голов.</li>
+<li><code>"hearts=[&lt;время_включения&gt;,&lt;период&gt;]"</code> - Скорость отбора тела.</li>
+<li><code>"hyst=&lt;значение&gt;"</code> - Гистерезис.</li>
+<li><code>"decrement=&lt;значение&gt;"</code> - Декремент.</li>
+<li><code>"formula=[0|1]"</code> - Формула.</li>
+<li><code>"tank_mmhg=&lt;значение&gt;"</code> - Давление в кубе относительно атмосферного в миллиметрах ртутного столба (мм рт. ст.).</li>
+<li><code>"heads_timer=&lt;время&gt;"</code> - Время отбора голов.</li>
+<li><code>"hearts_timer=&lt;время&gt;"</code> - Таймер фиксации температуры отбора тела.</li>
+<li><code>"start_delay=&lt;время&gt;"</code> - Отложенный пуск.</li>
+<li><code>"hearts_finish_temp=&lt;температура&gt;"</code> - Температура, при которой завершается отбор тела.</li>
+<li><code>"formula_start_temp=&lt;температура&gt;"</code> - Начальная температура для формулы.</li>
+<li><code>"valve_bw=[&lt;скорость1&gt;, &lt;скорость2&gt;, &lt;скорость3&gt;]"</code> - Пропускные способности клапанов в мл/ч.</li>
+<li><code>"tails=[&lt;значение1&gt;, &lt;значение2&gt;]"</code> - Скорость отбора хвостов. Актуально в firmware 2.2.*.</li>
+<li>
+<p><code>"tails_temp=&lt;температура&gt;"</code> - Температура завершения отбора хвостов. Актуально в firmware 2.2.*.</p>
+</li>
+<li>
+<p><code>"late_heads=[&lt;время_включения&gt;,&lt;период&gt;]"</code> - Скорость отбора подголовников. Актуально в firmware 2.3.*.</p>
+</li>
+<li>
+<p><code>"late_heads_timer=&lt;значение&gt;"</code> - Время отбора подголовников, с. Значение должно кратно 300 с (5 минут). Актуально в firmware 2.3.*.</p>
+</li>
+<li>
+<p><code>"parallel=[&lt;время_включения&gt;,&lt;период&gt;]"</code> - Параллельный отбор клапаном 3. Актуально в firmware 2.3.*.</p>
+</li>
+<li><code>"parallel_v1=[&lt;время_включения&gt;,&lt;период&gt;]"</code> - Параллельный отбор клапаном 1. Актуально в firmware 2.2.*.</li>
+<li>
+<p><code>"parallel_v3=[[&lt;температура&gt;,&lt;время_включения&gt;,&lt;период&gt;],
+        [&lt;температура&gt;,&lt;время_включения&gt;,&lt;период&gt;],
+        [&lt;температура&gt;,&lt;время_включения&gt;,&lt;период&gt;],
+        [&lt;температура&gt;,&lt;время_включения&gt;,&lt;период&gt;]]"</code> - Параллельный отбор клапаном 3.  Актуально в firmware 2.2.*.</p>
+</li>
+<li>
+<p><code>"release_speed=&lt;значение&gt;"</code> - Скорость сброса (время открытого клапана). Актуально с опцией "Сброс и снижение".</p>
+</li>
+<li><code>"release_timer=&lt;время&gt;"</code> - Время сброса, с. Актуально с опцией "Сброс и снижение".</li>
+<li><code>"heads_final=&lt;значение&gt;"</code> - Скорость отбора к окончанию голов. Актуально с опцией "Сброс и снижение".</li>
+</ul>
+<h4 id="_3">Оперативные параметры текущего этапа</h4>
+<ul>
+<li><code>"s_temp=&lt;температура&gt;"</code> - Температура, °C. Число с одним знаком после запятой. Максимальное значение - 110.0</li>
+<li><code>"s_hyst=&lt;гистерезис&gt;"</code> - Гистерезис, °C. Число с двумя знаками после запятой. Минимальное значение - 0.06, максимальное - 50.06</li>
+<li><code>"s_speed=[&lt;время_включения&gt;,&lt;период&gt;]"</code> - Скорость отбора. Синтаксис и органичения аналогичные как для "heads".</li>
+<li><code>"s_decrement=&lt;декремент&gt;"</code> - Декремент, %. Целое число. Максимальное значение - 100.</li>
+<li><code>"s_timer=&lt;время&gt;"</code> - Таймер, с. Целое число. Максимальное значение - 86400.</li>
+</ul>
+<h4 id="_4">Синтаксис параметров.</h4>
+<h4 id="heads-late_heads-hearts-tails-s_speed-parallel_v1-">heads, late_heads, hearts, tails, s_speed, parallel_v1 - скорость отбора</h4>
+<pre><code>heads - головы;
+hearts - тело;
+late_heads - подголовники;
+tails - "хвосты";
+s_speed - оперативные параметры;
+parallel_v1 - параллельный отбор клапаном 1. Актуально в firmware 2.2.*.
+parallel - параллельный отбор клапаном 3. Актуально в firmware 2.3.*.
+</code></pre>
+<ul>
+<li><strong>Описание</strong>: Настройки скорости отбора (время открытого клапана и период цикла).</li>
+<li><strong>Синтаксис</strong>:
+  <code>"heads=[&lt;время_включения&gt;,&lt;период&gt;]"</code></li>
+<li><code>"&lt;время_включения&gt;"</code>: вещественное число с одной десятичной цифрой (например, "99.0").</li>
+<li><code>"&lt;период&gt;"</code>: целое число.</li>
+<li><strong>Ограничения</strong>:</li>
+<li>время_включения ≤ 99.9</li>
+<li>период ≤ 999</li>
+<li>время_включения ≤ период</li>
+<li><strong>Пример</strong>:
+  <code>heads=[99.0,100]</code></li>
+</ul>
+<h4 id="hyst">hyst</h4>
+<ul>
+<li><strong>Описание</strong>: Устанавливает значение гистерезиса</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"hyst=&lt;значение&gt;"</code></li>
+<li><code>"&lt;значение&gt;"</code> — число с двумя знаками после запятой (например, 0.25).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть положительным числом но не более 50.0.</li>
+<li><strong>Пример</strong>:<br>
+<code>"hyst=0.25"</code></li>
+</ul>
+<h4 id="decrement">decrement</h4>
+<ul>
+<li><strong>Описание</strong>: Устанавливает величину в процентах, на которую будет уменьшаться скорость отбора тела при "зелете" температуры.</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"decrement=&lt;значение&gt;"</code></li>
+<li><code>"&lt;значение&gt;"</code> — целое число (например, 20).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть целым положительным числом от 0 до 100 включительно.</li>
+<li><strong>Пример</strong>:<br>
+<code>"decrement=20"</code></li>
+</ul>
+<h4 id="formula">formula</h4>
+<ul>
+<li><strong>Описание</strong>: Использовать или нет формулу для снижения скорости отбора тела в зависимости от температуры на ТД2.</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"formula=[0|1]"</code></li>
+<li><code>"[0|1]"</code> — 0 - не использовать формулу, 1 - использовать.</li>
+<li><strong>Пример</strong>:<br>
+<code>"formula=1"</code></li>
+</ul>
+<h4 id="tank_mmhg">tank_mmhg</h4>
+<ul>
+<li><strong>Описание</strong>: Устанавливает давление в кубе в миллиметрах ртутного столба (мм рт. ст.) относительно атмосферного.</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"tank_mmhg=&lt;значение&gt;"</code></li>
+<li><code>"&lt;значение&gt;"</code> — целое число (например, 30).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть положительным не более 50.</li>
+<li><strong>Пример</strong>:<br>
+<code>"tank_mmhg=50"</code></li>
+</ul>
+<h4 id="heads_timer">heads_timer</h4>
+<ul>
+<li><strong>Описание</strong>: Таймер отбора голов (время в секундах).</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"heads_timer=&lt;время&gt;"</code></li>
+<li><code>"&lt;время&gt;"</code> — целое число (например, 36000).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть положительным не более 86400, кратное 300 (соответствует 5 минутам).</li>
+<li><strong>Пример</strong>:<br>
+<code>"heads_timer=36000"</code></li>
+</ul>
+<h4 id="late_heads_timer">late_heads_timer</h4>
+<ul>
+<li><strong>Описание</strong>: Таймер отбора подголовников (время в секундах).</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"late_heads_timer=&lt;время&gt;"</code></li>
+<li><code>"&lt;время&gt;"</code> — целое число (например, 36000).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть положительным не более 86400, кратное 300 (соответствует 5 минутам).</li>
+<li><strong>Пример</strong>:<br>
+<code>"late_heads_timer=36000"</code></li>
+</ul>
+<h4 id="hearts_timer">hearts_timer</h4>
+<ul>
+<li><strong>Описание</strong>: Таймер фиксации температуры отбора тела, мин</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"hearts_timer=&lt;время&gt;"</code></li>
+<li><code>"&lt;время&gt;"</code> — целое число (например, 10).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть положительным не более 30.</li>
+<li><strong>Пример</strong>:<br>
+<code>"hearts_timer=30"</code></li>
+</ul>
+<h4 id="tails_temp">tails_temp</h4>
+<ul>
+<li><strong>Описание</strong>: Устанавливает завершения отбора хвостов, в градусах Цельсия.</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"tails_temp=&lt;температура&gt;"</code></li>
+<li><code>"&lt;температура&gt;"</code> — число с плавающей точкой (например, 109.9).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Температура должна быть положительным числом не более 110.0.</li>
+<li><strong>Пример</strong>:<br>
+<code>"tails_temp=109.9"</code></li>
+</ul>
+<h4 id="start_delay">start_delay</h4>
+<ul>
+<li><strong>Описание</strong>: Отложенный пуск (время в секундах).</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"start_delay=&lt;время&gt;"</code></li>
+<li><code>"&lt;время&gt;"</code> — целое число (например, 6000).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть положительным не более 18000.</li>
+<li><strong>Пример</strong>:<br>
+<code>"start_delay=18000"</code></li>
+</ul>
+<h4 id="hearts_finish_temp">hearts_finish_temp</h4>
+<ul>
+<li><strong>Описание</strong>: Температура на ТД2, при которой завершается отбор тела, в градусах Цельсия.</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"hearts_finish_temp=&lt;температура&gt;"</code></li>
+<li><code>"&lt;температура&gt;"</code> — число с плавающей точкой (например, 93.0).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Температура должна быть положительным числом не более 110.0.</li>
+<li><strong>Пример</strong>:<br>
+<code>"hearts_finish_temp=93.0"</code></li>
+</ul>
+<h4 id="formula_start_temp">formula_start_temp</h4>
+<ul>
+<li><strong>Описание</strong>: Начальная температура для начала работы формулы, в градусах Цельсия.</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"formula_start_temp=&lt;температура&gt;"</code></li>
+<li><code>"&lt;температура&gt;"</code> — число с плавающей точкой (например, 84.0).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Температура должна быть положительным числом не более 100.0 и не менее 84.0.</li>
+<li><strong>Пример</strong>:<br>
+<code>"formula_start_temp=84.0"</code></li>
+</ul>
+<h4 id="valve_bw">valve_bw</h4>
+<ul>
+<li><strong>Описание</strong>: Устанавливает пропускные способности клапанов в мл/ч.</li>
+<li><strong>Синтаксис</strong>:
+  <code>valve_bw=[&lt;скорость1&gt;,&lt;скорость2&gt;,&lt;скорость3&gt;]</code></li>
+<li>Каждая скорость <code>"&lt;скоростьN&gt;"</code> — целое число.</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Все скорости ≤ 20000.</li>
+<li><strong>Пример</strong>:
+  <code>valve_bw=[10000,20000,15000]</code></li>
+</ul>
+<h4 id="parallel_v3">parallel_v3</h4>
+<ul>
+<li><strong>Описание</strong>: Устанавливает параметры параллельного отбора клапаном 3 на этапе отбора тела.
+  Акутально для прошивок 2.2.*</li>
+<li><strong>Синтаксис</strong>:
+  <code>parallel_v3=[[%2d.%1d,%2d.%1d,%3d],[%2d.%1d,%2d.%1d,%3d],[%2d.%1d,%2d.%1d,%3d],[%2d.%1d,%2d.%1d,%3d]]</code>
+  Задается 4 диапазона. В каждом диапазоне передаются три начения</li>
+<li><code>"&lt;температура&gt;"</code> - начало диапазона, вещественное число с одной десятичной цифрой (например, "84.0").
+    (Первый диапазон всегда начинается с 0.0. Полученное значение температуры в первом диапазоне игнорируется).</li>
+<li><code>"&lt;время_включения&gt;"</code>: вещественное число с одной десятичной цифрой (например, "99.0").</li>
+<li><code>"&lt;период&gt;"</code>: целое число.</li>
+<li><strong>Ограничения</strong>:</li>
+<li>время_включения &lt; период</li>
+<li>температура ≤ 99.9</li>
+<li>время_включения ≤ 99.9</li>
+<li>период ≤ 999</li>
+<li><strong>Пример</strong>:
+  <code>SET parallel_v3=[[0.0,0.4,10],[81.1,0.5,50],[86.2,0.6,50],[96.3,1.1,100]]</code></li>
+</ul>
+<h4 id="release_speed">release_speed</h4>
+<ul>
+<li><strong>Описание</strong>: Скорость сброса (время открытого клапана), с.</li>
+<li><strong>Синтаксис</strong>:
+  <code>"release_speed"=&lt;время_включения&gt;</code></li>
+<li><code>"&lt;время_включения&gt;"</code>: вещественное число с одной десятичной цифрой (например, "99.0").</li>
+<li><strong>Ограничения</strong>:</li>
+<li>время_включения ≤ 99.9</li>
+<li><strong>Примечание</strong>: Значение должно быть меньше периода этапа отбора голов. Данный контроль возлагается на передающую сторону.</li>
+<li><strong>Пример</strong>:
+  <code>release_speed=99.0</code></li>
+</ul>
+<h4 id="release_timer">release_timer</h4>
+<ul>
+<li><strong>Описание</strong>: Время сброса, с.  Включается опция "Сброс и снижение" при значении больше 0.</li>
+<li><strong>Синтаксис</strong>:<br>
+<code>"release_timer=&lt;время&gt;"</code></li>
+<li><code>"&lt;время&gt;"</code> — целое число (например, 600).</li>
+<li><strong>Ограничения</strong>:</li>
+<li>Значение должно быть положительным и не более 1200 (20 минут).</li>
+<li><strong>Пример</strong>:<br>
+<code>release_timer=600</code></li>
+</ul>
+<h4 id="heads_final">heads_final</h4>
+<ul>
+<li><strong>Описание</strong>: Скорость отбора к окончанию голов, с. Включается опция "Сброс и снижение" при любом знаении.</li>
+<li><strong>Синтаксис</strong>:
+  <code>"heads_final"=&lt;время_включения&gt;</code></li>
+<li><code>"&lt;время_включения&gt;"</code>: вещественное число с одной десятичной цифрой (например, "10.5").</li>
+<li><strong>Ограничения</strong>:</li>
+<li>время_включения ≤ 99.9</li>
+<li><strong>Примечание</strong>: Значение должно быть меньше периода этапа отбора голов. Данный контроль возлагается на передающую сторону.</li>
+<li><strong>Пример</strong>:
+  <code>heads_final=10.5</code></li>
+</ul>
+<h3 id="_5">Проверка на ошибки:</h3>
+<ul>
+<li>
+<p>При неверном формате или несоответствии ограничений возвращается сообщение об ошибке:
+  <strong>Пример</strong>:
+</p><div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SET heads=[1,2]"</span><span class="p">,</span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"error: heads=[1,2]"</span><span class="p">}</span>
+</code></pre></div>
+</li>
+<li>
+<p>Для неизвестных параметров возвращается сообщение об ошибке:
+  <strong>Пример</strong>:
+</p><div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"response"</span><span class="p">,</span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ABCD"</span><span class="p">,</span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"unknown"</span><span class="p">}</span>
+</code></pre></div>
+</li>
+</ul>
+<h3 id="_6">Примеры корректных команд</h3>
+<div class="highlight"><pre><span></span><code>SET heads=[30.0,180],hearts=[2.5,5],formula=1
+SET heads=[60.0,360],hearts=[2.0,4],hyst=0.19,formula=0
+SET heads=[20.5,245],hearts=[1.5,3],hyst=0.25,decrement=20,formula=1,tank_mmhg=50,heads_timer=36000,hearts_timer=30,start_delay=18000,hearts_finish_temp=93.0,formula_start_temp=84.0,valve_bw=[10000,11000,12000]
+SET formula=1
+SET formula=0
+SET tank_mmhg=50
+SET heads_timer=36000
+SET heads_timer=86400
+SET hearts_timer=30
+SET start_delay=18000
+SET hearts_finish_temp=110.0
+SET formula_start_temp=84.0
+SET formula_start_temp=100.0
+SET valve_bw=[10000,11000,12000]
+</code></pre></div>
+<h3 id="_7">Примеры команд с ошибками</h3>
+<div class="highlight"><pre><span></span><code>SET heads=[60.0,360],hearts=[2.0,4],hyst=0.19,decrement=30,formula=2
+SET heads=[100.0,180],hearts=[2.5,5],formula=1
+SET heads=[99.9,1000],hearts=[2.5,5]
+SET heads=[99.1,99],hearts=[2.5,5],formula=1
+SET hyst=50.01
+SET decrement=101
+SET tank_mmhg=51
+SET heads_timer=86401
+SET hearts_timer=31
+SET start_delay=18001
+SET hearts_finish_temp=110.1
+SET formula_start_temp=83.9
+SET formula_start_temp=100.1
+SET valve_bw=[10000,11000,21000]
+</code></pre></div></div>
 
 
 
