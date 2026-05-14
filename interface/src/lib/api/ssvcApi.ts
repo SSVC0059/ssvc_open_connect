@@ -10,7 +10,8 @@ import type {
 	SsvcOpenConnectMessage,
 	SsvcSettings,
 	SubsystemsState,
-	TelegramConfig
+	TelegramConfig,
+	VkConfig
 } from '$lib/types/ssvc';
 
 
@@ -146,6 +147,23 @@ export async function saveTelegramSettings(settings: TelegramConfig): Promise<bo
 		return false;
 	}
 
+	return true;
+}
+
+export async function getVkSettings(): Promise<VkConfig | null> {
+	const response = await apiFetch<VkConfig>('/rest/vk/config', 'GET');
+	if (!response.success) {
+		return null;
+	}
+	return response.data;
+}
+
+export async function saveVkSettings(settings: VkConfig): Promise<boolean> {
+	const response = await apiFetch<{ result?: boolean }>('/rest/vk/config', 'PUT', settings);
+	if (!response.success) {
+		console.error('Ошибка сохранения VK:', response.error);
+		return false;
+	}
 	return true;
 }
 

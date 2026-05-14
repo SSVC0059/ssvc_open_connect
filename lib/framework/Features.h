@@ -72,4 +72,8 @@
 #define FT_ETHERNET 0
 #endif
 
+#ifndef FT_VK_BOT
+#define FT_VK_BOT 0
+#endif
+
 #endif
