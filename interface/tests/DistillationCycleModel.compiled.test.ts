@@ -15,6 +15,7 @@ function buildCalculatorFixtureHtml(): string {
             <body>
                 <div class="editor-layout" id="app">
                 <h1>Calculator Test</h1>
+                <button type="button" id="reset-all-btn">Сбросить</button>
 
                 <input type="number" data-path="volumeL" value="18">
                 <input type="number" data-path="strengthVol" value="40">
@@ -86,6 +87,20 @@ describe('Compiled DistillationCycleModel Test', () => {
 
 		expect(totalASElement!.textContent).toBe('10000 мл');
 		expect(console.error).not.toHaveBeenCalled();
+	});
+
+	it('should reset to defaults when reset-all-btn is clicked', () => {
+		const volumeInput = document.querySelector<HTMLInputElement>('[data-path="volumeL"]');
+		const totalASElement = document.querySelector('[data-result="analytics.totalAS"]');
+		const resetBtn = document.getElementById('reset-all-btn');
+
+		volumeInput!.value = '25';
+		volumeInput!.dispatchEvent(new window.Event('input', { bubbles: true }));
+		expect(totalASElement!.textContent).toBe('10000 мл');
+
+		resetBtn!.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+		expect(volumeInput!.value).toBe('18');
+		expect(totalASElement!.textContent).toBe('7200 мл');
 	});
 });
 

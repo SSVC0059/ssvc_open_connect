@@ -8,6 +8,10 @@ on:
   workflow_dispatch:
     # Ручной запуск: Actions → Deploy MkDocs → Run workflow → выбрать ветку
 
+concurrency:
+  group: gh-pages-updates
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pages: write
@@ -48,8 +52,20 @@ jobs:
           PYTHONUTF8: '1'
           PYTHONIOENCODING: utf-8
           
-      - name: Build and Deploy
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          mkdocs gh-deploy --force
+      - name: Build MkDocs site
+        run: mkdocs build
+        env:
+          PYTHONUTF8: '1'
+          PYTHONIOENCODING: utf-8
+
+      # keep_files: true — не удалять каталог previews/ от PR (см. docs-preview.yml)
+      - name: Publish site to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./site
+          keep_files: true
+          user_name: github-actions
+          user_email: github-actions@github.com
+          commit_message: 'docs: deploy ${{ github.sha }}'
