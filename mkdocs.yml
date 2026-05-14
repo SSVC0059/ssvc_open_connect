@@ -104,6 +104,7 @@ markdown_extensions:
 extra_javascript:
   # Глобальная загрузка: корректный URL при подкаталоге (GitHub Pages) и срабатывание вместе с document$ при instant navigation
   - calculator/rectification_calculator.js
+  - javascripts/docs-previews-list.js
 
 extra:
   social:
