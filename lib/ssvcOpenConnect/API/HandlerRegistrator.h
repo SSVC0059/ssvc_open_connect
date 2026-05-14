@@ -45,6 +45,7 @@ private:
     void registerCommandHandlers() const;
     void registerSensorHandlers() const;
     void registerTelegramBot() const;
+    void registerVkBot() const;
     void registerSubsystemHandler() const;
     void registerTelegramBotHandler() const;
     void registerProfileHandler() const;

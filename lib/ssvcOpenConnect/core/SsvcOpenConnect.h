@@ -20,6 +20,10 @@
 #include "core/StatefulServices/SensorDataService/SensorDataService.h"
 #include "core/StatefulServices/TelemetryService/TelemetryService.h"
 #include "core/StatefulServices/TelegramSettingsService/TelegramSettingsService.h"
+#if FT_ENABLED(FT_VK_BOT)
+#include "core/StatefulServices/VkSettingsService/VkSettingsService.h"
+#include <components/subsystem/VkBotSubsystem.h>
+#endif
 #include "components/Led/StatusLed.h"
 #include "components/subsystem/I2CBusSubsystem.h"
 
@@ -48,6 +52,9 @@ public:
   ESP32SvelteKit* getESP32SvelteKit() const { return _esp32sveltekit; }
   SensorConfigService* getSensorConfigService() const { return _sensorConfigService; }
   TelegramSettingsService* getTelegramSettingsService() const { return _telegramSettingsService; }
+#if FT_ENABLED(FT_VK_BOT)
+  VkSettingsService* getVkSettingsService() const { return _vkSettingsService; }
+#endif
 
   SsvcOpenConnect(const SsvcOpenConnect&) = delete;
   void operator=(const SsvcOpenConnect&) = delete;
@@ -76,6 +83,9 @@ private:
   TelemetryService* _telemetryService = nullptr;
   ProfileService* _profileService = nullptr;
   TelegramSettingsService* _telegramSettingsService = nullptr;
+#if FT_ENABLED(FT_VK_BOT)
+  VkSettingsService* _vkSettingsService = nullptr;
+#endif
 
   MqttCommandHandler* _mqttCommandHandler = nullptr;
   // AlarmMonitor* _alarmMonitor = nullptr;

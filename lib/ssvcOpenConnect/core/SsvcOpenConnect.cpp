@@ -61,6 +61,10 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     _ssvcMqttSettingsService = new SsvcMqttSettingsService(_server, _esp32sveltekit);
     _telegramSettingsService = new TelegramSettingsService(_server, _esp32sveltekit);
     TelegramSettingsService::setInstance(_telegramSettingsService);
+#if FT_ENABLED(FT_VK_BOT)
+    _vkSettingsService = new VkSettingsService(_server, _esp32sveltekit);
+    VkSettingsService::setInstance(_vkSettingsService);
+#endif
     _alarmThresholdService = new AlarmThresholdService(_server, _esp32sveltekit);
     _sensorDataService = new SensorDataService(_server, _esp32sveltekit);
     SensorDataService::setInstance(_sensorDataService);
@@ -69,6 +73,9 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     // Подписываем наблюдателей до вызова _profileService->begin()
     _profileService->subscribe(&_ssvcSettings);
     _profileService->subscribe(_telegramSettingsService);
+#if FT_ENABLED(FT_VK_BOT)
+    _profileService->subscribe(_vkSettingsService);
+#endif
     _profileService->subscribe(&UserRelayProfileBridge::instance());
     // Если _ssvcMqttSettingsService и _alarmThresholdService также являются IProfileObserver,
     // их тоже нужно подписать здесь.
@@ -91,6 +98,9 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     // Теперь вызываем begin() для остальных сервисов
     ESP_LOGD(TAG, "begin: Telegram/Alarm/SensorData/SensorConfig begin");
     _telegramSettingsService->begin();
+#if FT_ENABLED(FT_VK_BOT)
+    _vkSettingsService->begin();
+#endif
     _alarmThresholdService->begin();
     _sensorDataService->begin();
     _sensorConfigService->begin();
@@ -223,6 +233,9 @@ void SsvcOpenConnect::subsystemManager()
     #if FT_ENABLED(FT_TELEGRAM_BOT)
         subsystemManager.registerSubsystem<TelegramBotSubsystem>();
     #endif
+    #if FT_ENABLED(FT_VK_BOT)
+        subsystemManager.registerSubsystem<VkBotSubsystem>();
+    #endif
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] Subsystems registered");
 
     subsystemManager.setInitialState("settings", true);
@@ -237,6 +250,9 @@ void SsvcOpenConnect::subsystemManager()
 
     #if FT_ENABLED(FT_TELEGRAM_BOT)
         subsystemManager.setInitialState("telegram_bot", true);
+    #endif
+    #if FT_ENABLED(FT_VK_BOT)
+        subsystemManager.setInitialState("vk_bot", true);
     #endif
 
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] Starting subsystem manager...");

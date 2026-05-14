@@ -134,6 +134,12 @@ void FeaturesService::createJSON(JsonObject &root)
     root["ethernet"] = false;
 #endif
 
+#if FT_ENABLED(FT_VK_BOT)
+    root["vk_bot"] = true;
+#else
+    root["vk_bot"] = false;
+#endif
+
     root["firmware_version"] = APP_VERSION;
     root["firmware_name"] = APP_NAME;
     root["firmware_built_target"] = BUILD_TARGET;

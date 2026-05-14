@@ -1,5 +1,7 @@
 #include "HandlerRegistrator.h"
 #include <AsyncJson.h>
+#include <Features.h>
+#include "handlers/VkBot/VkBotHandler.h"
 
 #define TAG "HandlerRegistrar"
 
@@ -33,6 +35,7 @@ void HandlerRegistrator::registerAllHandlers() const
     registerCommandHandlers();
     registerSensorHandlers();
     registerTelegramBot();
+    registerVkBot();
     registerSubsystemHandler();
     registerTelegramBotHandler();
     registerProfileHandler();
@@ -97,6 +100,25 @@ void HandlerRegistrator::registerTelegramBot() const
       },
       AuthenticationPredicates::IS_AUTHENTICATED));
 
+}
+
+void HandlerRegistrator::registerVkBot() const
+{
+#if FT_ENABLED(FT_VK_BOT)
+    _server.on("/rest/vk/config", HTTP_PUT,
+      _securityManager->wrapCallback(
+          [](AsyncWebServerRequest* request, JsonVariant& json) {
+              VkBotHandler::updateSettings(request, json);
+          },
+          AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/vk/config", HTTP_GET,
+    _securityManager->wrapRequest(
+      [](AsyncWebServerRequest* request) {
+          VkBotHandler::getSettings(request);
+      },
+      AuthenticationPredicates::IS_AUTHENTICATED));
+#endif
 }
 
 void HandlerRegistrator::registerSubsystemHandler() const

@@ -58,6 +58,7 @@ nav:
       - preparation/adafruit_webserial_esptool.md
   - "Первый запуск":
       - usage/get_started.md
+      - "Уведомления VK": usage/messengers/vk.md
   - "Периферия":
       - usage/interfaces/uart.md
       - usage/interfaces/power.md

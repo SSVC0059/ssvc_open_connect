@@ -725,6 +725,15 @@ RectificationProcess::Metrics& RectificationProcess::getMetrics()
   return  metric;
 }
 
+int RectificationProcess::getFlowVolumeCollectedMl(const RectificationStage stage) const
+{
+  const auto it = flowVolumeValves.find(stage);
+  if (it == flowVolumeValves.end()) {
+    return 0;
+  }
+  return it->second;
+}
+
 void RectificationProcess::writeTelemetryTo(const JsonVariant telemetry)
 {
 
