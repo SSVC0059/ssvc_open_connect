@@ -15,8 +15,10 @@
         <link rel="canonical" href="https://SSVC0059.github.io/ssvc_open_connect/previews/pr-137/ssvc-serial-protocol/develop/Readme/">
       
       
-        <link rel="prev" href="../../../develop/frontend/oc-settings-styles/">
+        <link rel="prev" href="../../../develop/ssvc-api-v1.6/api_docs/">
       
+      
+        <link rel="next" href="../../../develop/frontend/frontend/">
       
       
         
@@ -27,7 +29,7 @@
     
     
       
-        <title>Readme - SSVC Open Connect</title>
+        <title>Протокол UART — примеры (JSON/TXT) - SSVC Open Connect</title>
       
     
     
@@ -80,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#esp32-s3-wroom-2-n16r8v" class="md-skip">
+        <a href="#uart-ssvc" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Readme
+              Протокол UART — примеры (JSON/TXT)
             
           </span>
         </div>
@@ -1598,6 +1600,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../develop/docs-previews/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Превью документации из pull request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../develop/i2c_monitoring/" class="md-nav__link">
         
   
@@ -1644,10 +1674,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_6" >
         
           
-          <label class="md-nav__link" for="__nav_9_5" id="__nav_9_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_9_6" id="__nav_9_6_label" tabindex="">
             
   
   
@@ -1665,8 +1695,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_9_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1950,7 +1980,7 @@
   <span class="md-ellipsis">
     
   
-    UART API SSVC 1.6
+    UART API SSVC (справка)
   
 
     
@@ -1959,6 +1989,92 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Протокол UART — примеры (JSON/TXT)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Протокол UART — примеры (JSON/TXT)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Файлы в репозитории
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1989,10 +2105,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_9" >
         
           
-          <label class="md-nav__link" for="__nav_9_7" id="__nav_9_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_9_9" id="__nav_9_9_label" tabindex="">
             
   
   
@@ -2010,8 +2126,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_9_7">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2077,181 +2193,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../develop/frontend/oc-settings-styles/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Oc settings styles
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-          
-          
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_8" checked>
-        
-          
-          <label class="md-nav__link" for="__nav_9_8" id="__nav_9_8_label" tabindex="">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Протокол UART SSVC
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_8_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_9_8">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Протокол UART SSVC
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Readme
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Readme
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#esp32-s3-wroom-2-n16r8v" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ESP32-S3-WROOM-2-N16R8V
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -2284,6 +2225,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -2292,10 +2235,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#esp32-s3-wroom-2-n16r8v" class="md-nav__link">
+  <a href="#_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ESP32-S3-WROOM-2-N16R8V
+        Файлы в репозитории
       
     </span>
   </a>
@@ -2322,11 +2265,44 @@
   
 
 
-  <h1>Readme</h1>
-
-<div><h2 id="esp32-s3-wroom-2-n16r8v">ESP32-S3-WROOM-2-N16R8V</h2>
-<p>Документация ESP32-S3-DevKitC-1 v1.1</p>
-<p>https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html</p></div>
+<div><h1 id="uart-ssvc">Протокол UART SSVC — примеры и текстовые материалы</h1>
+<p>Здесь собраны <strong>вспомогательные файлы</strong> (примеры JSON, телеметрии, ответов) для обмена с контроллером SSVC0059_V2 по UART. Полное описание команд, полей и совместимости версий — в справочнике <strong><a href="../../../develop/ssvc-api-v1.6/api_docs/">UART API SSVC</a></strong>.</p>
+<h2 id="_1">Файлы в репозитории</h2>
+<table>
+<thead>
+<tr>
+<th>Файл</th>
+<th>Содержание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../../JSON.requests.txt">JSON.requests.txt</a></td>
+<td>Описание запросов и структура ответов</td>
+</tr>
+<tr>
+<td><a href="../../JSON.telemetry.txt">JSON.telemetry.txt</a></td>
+<td>Формат сообщений телеметрии</td>
+</tr>
+<tr>
+<td><a href="../../response.examples.txt">response.examples.txt</a></td>
+<td>Примеры ответов</td>
+</tr>
+<tr>
+<td><a href="../../telemetry.examples.txt">telemetry.examples.txt</a></td>
+<td>Примеры телеметрии</td>
+</tr>
+<tr>
+<td><a href="../../SET.txt">SET.txt</a></td>
+<td>Примеры запросов SET</td>
+</tr>
+<tr>
+<td><a href="../../version.info">version.info</a></td>
+<td>Сведения о версии материалов</td>
+</tr>
+</tbody>
+</table>
+<p>Открывайте <code>.txt</code> в браузере или в редакторе: они лежат рядом с этой страницей в каталоге <code>docs/ssvc-serial-protocol/</code>.</p></div>
 
 
 
@@ -2470,6 +2446,8 @@
       <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
         <script src="../../../calculator/rectification_calculator.js"></script>
+      
+        <script src="../../../javascripts/docs-previews-list.js"></script>
       
     
   </body>
