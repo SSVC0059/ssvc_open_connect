@@ -33,7 +33,7 @@ START - удаленный запуск ректификации, работае
 STATUS - передача статуса от подключенного устройства. Например: STATUS 192.168.100.200.
 	Принимается строка 15 символов. Полученное строковое значение отображается на дежурном экране.
 VERSION - запрос версии прошивки.
-Пример ответа: {"type": "response", "request": "VERSION", "result": "OK","manufacturer": "SmartModule","model": "SSVC0059_V2", "version": "2.2.37" "api": "1.0"}
+Пример ответа: {"type": "response", "request": "VERSION", "result": "OK","manufacturer": "SmartModule","model": "SSVC0059_V2", "version": "2.2.37", "api": "1.0"}
  
 
 GET_SETTINGS - запрос настроек
