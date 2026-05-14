@@ -62,6 +62,7 @@ nav:
       - usage/interfaces/power.md
       - usage/interfaces/uart.md
       - usage/interfaces/ds18b20.md
+      - usage/interfaces/bmp581.md
       - usage/interfaces/rgb_led.md
       - hardware/ds3231-rtc.md
   - "Начало работы":
