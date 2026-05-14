@@ -257,7 +257,7 @@ hide:
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Параметры процесса</h3>
-            <button id="reset-all-btn" class="reset-all-btn" title="Сбросить все настройки">Сбросить</button>
+            <button type="button" id="reset-all-btn" class="reset-all-btn" title="Сбросить все настройки">Сбросить</button>
         </div>
         <div class="settings-section">
             <div class="input-group">
@@ -449,7 +449,6 @@ hide:
     </div>
 </div>
 
-<script src="rectification_calculator.js"></script>
 <script>
     // Mutual exclusion handlers for Heads
     function handleHeadsFlowInput(e) {

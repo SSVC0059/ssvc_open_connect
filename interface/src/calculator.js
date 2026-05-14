@@ -43,7 +43,35 @@ function buildFreshDefaults() {
 	return p;
 }
 
-let documentSubscribed = false;
+function isCalculatorRoute() {
+	return /\/calculator(\/|$)/i.test(location.pathname);
+}
+
+/**
+ * Material instant navigation не вызывает DOMContentLoaded; инициализация идёт через document$.
+ * На медленных сетях (GitHub Pages) document$ или выполнение скрипта может опережать/отставать от
+ * вставки разметки — даём несколько кадров на появление .editor-layout#app.
+ */
+function deferredInit() {
+	if (getCalcRoot()) {
+		initCalculator();
+		return;
+	}
+	if (!isCalculatorRoute()) return;
+
+	let frames = 0;
+	const maxFrames = 40;
+	const tick = () => {
+		requestAnimationFrame(() => {
+			if (getCalcRoot()) {
+				initCalculator();
+				return;
+			}
+			if (++frames < maxFrames) tick();
+		});
+	};
+	tick();
+}
 
 function initCalculator() {
 	const root = getCalcRoot();
@@ -166,20 +194,36 @@ function bindDelegatedInputOnce() {
 	});
 }
 
+let resetClickBound = false;
+
+function bindResetButtonOnce() {
+	if (resetClickBound) return;
+	resetClickBound = true;
+
+	document.addEventListener('click', (e) => {
+		const btn = e.target?.closest?.('#reset-all-btn');
+		if (!btn) return;
+		const root = getCalcRoot();
+		if (!root?.contains(btn)) return;
+		e.preventDefault();
+		initCalculator();
+	});
+}
+
 function scheduleBoot() {
 	bindDelegatedInputOnce();
+	bindResetButtonOnce();
 
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', () => initCalculator());
-	} else {
-		initCalculator();
+	if (typeof document$ !== 'undefined' && document$.subscribe) {
+		document$.subscribe(() => {
+			deferredInit();
+		});
 	}
 
-	if (!documentSubscribed && typeof document$ !== 'undefined' && document$.subscribe) {
-		documentSubscribed = true;
-		document$.subscribe(() => {
-			initCalculator();
-		});
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', deferredInit);
+	} else {
+		deferredInit();
 	}
 }
 

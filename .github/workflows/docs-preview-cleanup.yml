@@ -1,0 +1,48 @@
+# Удаляет previews/pr-<номер>/ с gh-pages при закрытии PR.
+name: Docs preview cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+concurrency:
+  group: gh-pages-updates
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  remove-preview:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0
+
+      - name: Remove preview directory from gh-pages
+        env:
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if ! git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            echo "No gh-pages branch; skip."
+            exit 0
+          fi
+          git fetch origin gh-pages
+          git checkout -B gh-pages origin/gh-pages
+          DIR="previews/pr-${PR}"
+          if [ ! -d "$DIR" ]; then
+            echo "No ${DIR}; skip."
+            exit 0
+          fi
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git rm -rf "$DIR"
+          if git diff --staged --quiet; then
+            echo "Nothing to commit; skip."
+            exit 0
+          fi
+          git commit -m "chore(docs): remove preview for PR #${PR}"
+          git push origin gh-pages

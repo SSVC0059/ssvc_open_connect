@@ -1,5 +1,6 @@
 site_name: SSVC Open Connect
-site_url: https://SSVC0059.github.io/ssvc_open_connect/
+# Для превью в подкаталоге (CI) задайте SITE_URL, например .../previews/pr-42/
+site_url: !ENV [SITE_URL, "https://SSVC0059.github.io/ssvc_open_connect/"]
 
 site_author: thedemoncat
 site_description: >-
@@ -100,6 +101,10 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
       
+extra_javascript:
+  # Глобальная загрузка: корректный URL при подкаталоге (GitHub Pages) и срабатывание вместе с document$ при instant navigation
+  - calculator/rectification_calculator.js
+
 extra:
   social:
     - icon: fontawesome/brands/github
