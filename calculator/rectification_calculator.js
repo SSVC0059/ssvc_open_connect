@@ -439,7 +439,28 @@ function buildFreshDefaults() {
   p.virtual_bw_tails = 7e3;
   return p;
 }
-let documentSubscribed = false;
+function isCalculatorRoute() {
+  return /\/calculator(\/|$)/i.test(location.pathname);
+}
+function deferredInit() {
+  if (getCalcRoot()) {
+    initCalculator();
+    return;
+  }
+  if (!isCalculatorRoute()) return;
+  let frames = 0;
+  const maxFrames = 40;
+  const tick = () => {
+    requestAnimationFrame(() => {
+      if (getCalcRoot()) {
+        initCalculator();
+        return;
+      }
+      if (++frames < maxFrames) tick();
+    });
+  };
+  tick();
+}
 function initCalculator() {
   const root = getCalcRoot();
   if (!root) return;
@@ -527,18 +548,32 @@ function bindDelegatedInputOnce() {
     runUpdate();
   });
 }
+let resetClickBound = false;
+function bindResetButtonOnce() {
+  if (resetClickBound) return;
+  resetClickBound = true;
+  document.addEventListener("click", (e) => {
+    var _a, _b;
+    const btn = (_b = (_a = e.target) == null ? void 0 : _a.closest) == null ? void 0 : _b.call(_a, "#reset-all-btn");
+    if (!btn) return;
+    const root = getCalcRoot();
+    if (!(root == null ? void 0 : root.contains(btn))) return;
+    e.preventDefault();
+    initCalculator();
+  });
+}
 function scheduleBoot() {
   bindDelegatedInputOnce();
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => initCalculator());
-  } else {
-    initCalculator();
-  }
-  if (!documentSubscribed && typeof document$ !== "undefined" && document$.subscribe) {
-    documentSubscribed = true;
+  bindResetButtonOnce();
+  if (typeof document$ !== "undefined" && document$.subscribe) {
     document$.subscribe(() => {
-      initCalculator();
+      deferredInit();
     });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", deferredInit);
+  } else {
+    deferredInit();
   }
 }
 scheduleBoot();
