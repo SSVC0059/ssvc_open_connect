@@ -1,6 +1,16 @@
-## ESP32-S3-WROOM-2-N16R8V
+# Протокол UART SSVC — примеры и текстовые материалы
 
-Документация ESP32-S3-DevKitC-1 v1.1
+Здесь собраны **вспомогательные файлы** (примеры JSON, телеметрии, ответов) для обмена с контроллером SSVC0059_V2 по UART. Полное описание команд, полей и совместимости версий — в справочнике **[UART API SSVC](../../develop/ssvc-api-v1.6/api_docs.md)**.
 
-https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html
+## Файлы в репозитории
 
+| Файл | Содержание |
+|------|------------|
+| [JSON.requests.txt](../JSON.requests.txt) | Описание запросов и структура ответов |
+| [JSON.telemetry.txt](../JSON.telemetry.txt) | Формат сообщений телеметрии |
+| [response.examples.txt](../response.examples.txt) | Примеры ответов |
+| [telemetry.examples.txt](../telemetry.examples.txt) | Примеры телеметрии |
+| [SET.txt](../SET.txt) | Примеры запросов SET |
+| [version.info](../version.info) | Сведения о версии материалов |
+
+Открывайте `.txt` в браузере или в редакторе: они лежат рядом с этой страницей в каталоге `docs/ssvc-serial-protocol/`.
