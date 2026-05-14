@@ -1,4 +1,4 @@
-// Актуальный список подключаемых файлов — см. docs/develop/frontend/styles-audit-and-plan.md п. 1.2
+// Актуальный список подключаемых файлов — см. docs/develop/frontend/styling.md и docs/develop/frontend/frontend.md
 
 // 1. BASE
 @use "$lib/styles/base/variables";
@@ -26,4 +26,4 @@
 
 // --- Удалены (стили в +layout.svelte и компонентах): _buttons, _inputs, _modals ---
 
-// --- Намеренно не подключаются (стили заданы в компонентах): _sensors-view, _sensor-card, _toggles. Подробнее: docs/develop/frontend/styles-cleanup-audit.md, раздел 6 ---
+// --- Намеренно не подключаются (стили заданы в компонентах): _sensors-view, _sensor-card, _toggles. Подробнее: docs/develop/frontend/styling.md ---

@@ -1,13 +1,14 @@
 # Стратегия стилей (Tailwind + DaisyUI)
 
-**Связано:** [Issue #97](https://github.com/SSVC0059/ssvc_open_connect/issues/97), часть глобального рефакторинга стилей (#70).
+**Контекст:** [Issue #97](https://github.com/SSVC0059/ssvc_open_connect/issues/97), [Issue #70](https://github.com/SSVC0059/ssvc_open_connect/issues/70) — обсуждения рефакторинга стилей (актуальность стека смотрите по версиям в `interface/package.json`).
 
 ---
 
 ## 1. Основной выбор
 
-**Основа интерфейса — Tailwind CSS + DaisyUI.**
+**Основа интерфейса — Tailwind CSS v4 + DaisyUI v5.**
 
+- Сборка стилей: **`@tailwindcss/vite`** в `interface/vite.config.ts`, без отдельного `tailwind.config.js` для базового конвейера. В `interface/src/app.css`: `@import "tailwindcss";` и `@plugin "daisyui" { themes: corporate --default, business --prefersdark; }`.
 - Новый код (страницы, компоненты, виджеты) пишем с использованием **утилит Tailwind** и **компонентов DaisyUI**.
 - Существующий SCSS и кастомные классы остаются до **постепенной миграции**; при доработке старых экранов предпочтительно переводить их на Tailwind/DaisyUI по мере возможности.
 
@@ -18,9 +19,9 @@
 ### 2.1 Что использовать
 
 - **Разметка и утилиты:** классы Tailwind (`flex`, `gap-4`, `text-base-content`, `rounded-box` и т.д.).
-- **Компоненты UI:** классы DaisyUI (`btn`, `btn-primary`, `card`, `modal`, `menu`, `tabs`, `alert` и т.д.). Темы заданы в `app.css`: **corporate** (светлая по умолчанию), **business** (тёмная по `prefers-color-scheme: dark`).
+- **Компоненты UI:** классы DaisyUI (`btn`, `btn-primary`, `card`, `modal`, `menu`, `tabs`, `alert` и т.д.). Темы задаются в `app.css` через `@plugin "daisyui"`: **corporate** (светлая по умолчанию), **business** с модификатором **`--prefersdark`** (тёмная при системной тёмной схеме). Дополнительно в том же файле в `@layer base` заданы кастомные **CSS‑переменные** и блок `@media (prefers-color-scheme: dark)` для старых поверхностей (glass, wizard и т.д.) — их постепенно выравнивают с токенами DaisyUI.
 - **Цвета и темы:** предпочтительно семантика DaisyUI (`base-content`, `primary`, `secondary` и т.д.). Для графиков/Chart.js можно использовать `$lib/DaisyUiHelper.ts` (получение цветов темы из DOM).
-- **Тёмная тема:** используем **классы и атрибуты темы DaisyUI** (например `data-theme="business"`, семантические классы цветов). Переход с глобальных переопределений в `_dark-theme.scss` на миграцию экранов к теме DaisyUI — по плану аудита ([styles-cleanup-audit.md](./styles-cleanup-audit.md), П.3).
+- **Тёмная тема:** в первую очередь **атрибут/классы темы DaisyUI** и `business --prefersdark`. Переход с глобальных переопределений в `interface/src/lib/styles/themes/_dark-theme.scss` на единый слой DaisyUI — постепенно, по мере переноса экранов.
 
 ### 2.2 Когда допустимы исключения (SCSS / scoped-стили)
 
@@ -53,20 +54,18 @@
 
 ## 4. Flowbite-svelte
 
-**Итог:** зависимости Flowbite **удалены**. Popover заменён на DaisyUI tooltip (ValveParameters, KpnPopover), Spinner — на DaisyUI loading во всех компонентах, иконки — на Tabler (unplugin-icons). Подробности и история задач — в [styles-cleanup-audit.md, п. 5](./styles-cleanup-audit.md#5-flowbite-svelte). Новый функционал реализовывать на DaisyUI/Tailwind/Tabler, без Flowbite.
+**Итог:** зависимости Flowbite **удалены**. Popover заменён на DaisyUI tooltip (ValveParameters, KpnPopover), Spinner — на DaisyUI loading во всех компонентах, иконки — на Tabler (unplugin-icons). Новый функционал реализовывать на DaisyUI/Tailwind/Tabler, без Flowbite.
 
 ---
 
 ## 5. Очищенные/удалённые модули
 
-В рамках [аудита чистки стилей](./styles-cleanup-audit.md) удалены неиспользуемые SCSS-модули (`_buttons.scss`, `_modals.scss`, `_tabs.scss`, `_inputs.scss`). Актуальный перечень задач и выполненных этапов — в [styles-cleanup-audit.md](./styles-cleanup-audit.md).
+Удалены неиспользуемые SCSS-модули (`_buttons.scss`, `_modals.scss`, `_tabs.scss`, `_inputs.scss`); стили кнопок, полей ввода, модалок и вкладок задаются в `+layout.svelte` и в компонентах (см. [frontend.md](./frontend.md)).
 
 ---
 
 ## 6. Документация и ссылки
 
 - **Описание существующих SCSS-классов и миксинов:** [frontend.md](./frontend.md).
-- **Аудит текущего состояния и план:** [styles-audit-and-plan.md](./styles-audit-and-plan.md).
-- **Аудит для будущей чистки (без изменений в коде):** [styles-cleanup-audit.md](./styles-cleanup-audit.md).
 
 Ссылка на эту стратегию добавлена в [frontend.md](./frontend.md) и при необходимости может быть добавлена в README или в общий индекс документации.

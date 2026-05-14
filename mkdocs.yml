@@ -45,44 +45,60 @@ theme:
     - navigation.expand
     - navigation.top
     - toc.follow
-    - navigation.top
     - content.code.copy
 
 
 nav:
   - Главная: index.md
   - "Подготовка":
-      - preparation/controller.md
       - preparation/driver.md
       - preparation/firmware.md
       - preparation/flasher.md
       - preparation/flasher_manual.md
       - preparation/adafruit_webserial_esptool.md
-  - "Интерфейсы и Периферия" : 
-      - usage/interfaces/power.md
+  - "Первый запуск":
+      - usage/get_started.md
+  - "Периферия":
       - usage/interfaces/uart.md
+      - usage/interfaces/power.md
       - usage/interfaces/ds18b20.md
       - usage/interfaces/bmp581.md
       - usage/interfaces/rgb_led.md
       - hardware/ds3231-rtc.md
-  - "Начало работы":
-      - usage/get_started.md
-  - "Использование":
-      - calculator/index.md
-  - "Поддерживаемые контроллеры":
-    - "KC868-A6v3":
-      - "Описание (KinCony)": boards/kc868-a6/KC868-A6v3-KinCony.ru.md
-      - "Распиновка GPIO": boards/kc868-a6/GPIO_Pinout.md
-      - "I2C устройства": boards/kc868-a6/I2C_devices.md
-    - "Готовые модули":
-        - ready_made/connect.md
-        - ready_made/din_version.md
-        - ready_made/inside_version.md
-  - Для разработчиков: develop/
+  - "Калькулятор ректификации": calculator/index.md
+  - "Платы и готовые модули":
+      - "Модули ESP32-S3": preparation/controller.md
+      - "KC868-A6v3":
+          - "Описание (KinCony)": boards/kc868-a6/KC868-A6v3-KinCony.ru.md
+          - "Распиновка GPIO": boards/kc868-a6/GPIO_Pinout.md
+          - "I2C устройства": boards/kc868-a6/I2C_devices.md
+      - "Готовые модули":
+          - ready_made/connect.md
+          - ready_made/din_version.md
+          - ready_made/inside_version.md
   - "FAQ": faq/faq.md
-  - "Прочее" :
-      - info/changelog.md
-      - ssvc serial protocol/develop/Readme.md
+  - "Глоссарий": glossary.md
+  - "Для разработчиков":
+      - develop/index.md
+      - develop/build.md
+      - develop/testing.md
+      - develop/docs-previews.md
+      - develop/i2c_monitoring.md
+      - "REST API":
+          - develop/api/index.md
+          - develop/api/settings.md
+          - develop/api/commands.md
+          - develop/api/sensors.md
+          - develop/api/telegram.md
+          - develop/api/subsystem.md
+          - develop/api/openconnect.md
+          - develop/api/profiles.md
+          - develop/api/files.md
+      - "UART API SSVC (справка)": develop/ssvc-api-v1.6/api_docs.md
+      - "Протокол UART — примеры (JSON/TXT)": ssvc-serial-protocol/develop/Readme.md
+      - "Фронтенд":
+          - develop/frontend/frontend.md
+          - develop/frontend/styling.md
 
 
 markdown_extensions:
@@ -104,6 +120,7 @@ markdown_extensions:
 extra_javascript:
   # Глобальная загрузка: корректный URL при подкаталоге (GitHub Pages) и срабатывание вместе с document$ при instant navigation
   - calculator/rectification_calculator.js
+  - javascripts/docs-previews-list.js
 
 extra:
   social:

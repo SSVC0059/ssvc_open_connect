@@ -1,4 +1,4 @@
-# Превью документации в gh-pages подкаталог previews/pr-<номер>/ (вариант B).
+# Превью документации в gh-pages: каталог previews/pr-<номер>/ (один сегмент: pr-42, не pr/42).
 # Работает только для PR из веток этого репозитория (не из fork).
 name: Docs preview
 
@@ -63,7 +63,7 @@ jobs:
         with:
           script: |
             const pr = context.payload.pull_request.number;
-            const url = `https://SSVC0059.github.io/ssvc_open_connect/previews/pr/${pr}/`;
+            const url = `https://SSVC0059.github.io/ssvc_open_connect/previews/pr-${pr}/`;
             const marker = '<!-- docs-preview-bot -->';
             const body = `${marker}\n**Документация (preview):** ${url}`;
             const { data: comments } = await github.rest.issues.listComments({
