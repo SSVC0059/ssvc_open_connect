@@ -36,6 +36,13 @@ private:
   ESP32SvelteKit *_esp32sveltekit;
   Adafruit_NeoPixel *_led = nullptr;
 
+  bool _lastUartErr = false;
+  bool _lastUartErrValid = false;
+  ConnectionStatus _lastConn = ConnectionStatus::OFFLINE;
+  bool _lastConnValid = false;
+  uint32_t _lastRgb = 0;
+  bool _lastRgbValid = false;
+
   /** Синхронное обновление ленты + лог (вызывать из begin и из задачи). */
   void refreshLed(const char *phase);
 

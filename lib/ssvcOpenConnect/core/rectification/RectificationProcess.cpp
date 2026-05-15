@@ -73,20 +73,17 @@ void RectificationProcess::begin(SsvcConnector& connector,
 
     while (true) {
         vTaskDelay(xDelay);
-        ESP_LOGD(TAG, "PressureSenderTask running...");
 
         if (self->currentProcessStatus == ProcessState::RUNNING) {
-            ESP_LOGD(TAG, "Rectification process is running. Checking for pressure sensor.");
+            ESP_LOGD(TAG, "Rectification running, checking pressure sensor.");
             const float relative_pressure = self->metric.common.relative_pressure;
             if (relative_pressure != 0.0f) { // Only send if there's a meaningful relative pressure
                 ESP_LOGD(TAG, "Sending relative pressure to SSVC: %.2f", relative_pressure);
                 SsvcSettings::Builder builder;
                 builder.setTankPressureActual(relative_pressure);
             } else {
-                ESP_LOGD(TAG, "Relative pressure is 0. Not sending.");
+                ESP_LOGV(TAG, "Relative pressure is 0. Not sending.");
             }
-        } else {
-            ESP_LOGD(TAG, "Rectification process is not running.");
         }
     }
 }

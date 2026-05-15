@@ -45,7 +45,7 @@ public:
         info.name = name;
         info.factory = []() { return std::make_shared<T>(); };
         _subsystems_info.push_back(std::move(info));
-        ESP_LOGI(TAG, "[REGISTER] %s registered successfully", name.c_str());
+        ESP_LOGD(TAG, "[REGISTER] %s registered successfully", name.c_str());
     }
 
     template<typename T>
@@ -60,7 +60,7 @@ public:
             return std::shared_ptr<T>(&T::getInstance(), [](T*){});
         };
         _subsystems_info.push_back(std::move(info));
-        ESP_LOGI(TAG, "[REGISTER] %s registered as Singleton", name.c_str());
+        ESP_LOGD(TAG, "[REGISTER] %s registered as Singleton", name.c_str());
     }
     
     void setInitialState(const std::string& name, bool enabled);

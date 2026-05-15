@@ -11,8 +11,13 @@ constexpr time_t kMinValidSystemTime = 1704067200;  // 2024-01-01 UTC
 
 bool waitWifiConnected(uint32_t timeoutMs) {
     const uint32_t deadline = millis() + timeoutMs;
+    uint32_t lastLogMs = 0;
     while (!WiFi.isConnected() && millis() < deadline) {
-        ESP_LOGD("TelegramBotClient", "Waiting for WiFi...");
+        const uint32_t now = millis();
+        if (now - lastLogMs >= 30000) {
+            ESP_LOGV("TelegramBotClient", "Waiting for WiFi...");
+            lastLogMs = now;
+        }
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
     return WiFi.isConnected();
@@ -20,8 +25,13 @@ bool waitWifiConnected(uint32_t timeoutMs) {
 
 bool waitSystemTime(uint32_t timeoutMs) {
     const uint32_t deadline = millis() + timeoutMs;
+    uint32_t lastLogMs = 0;
     while (time(nullptr) < kMinValidSystemTime && millis() < deadline) {
-        ESP_LOGD("TelegramBotClient", "Waiting for SNTP time sync...");
+        const uint32_t now = millis();
+        if (now - lastLogMs >= 30000) {
+            ESP_LOGV("TelegramBotClient", "Waiting for SNTP time sync...");
+            lastLogMs = now;
+        }
         vTaskDelay(pdMS_TO_TICKS(500));
     }
     const bool ok = time(nullptr) >= kMinValidSystemTime;
