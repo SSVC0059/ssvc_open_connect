@@ -155,14 +155,32 @@ export type TelegramConfig = {
 	chat_id: string;
 };
 
+export type VkConfig = {
+	access_token: string;
+	api_version: string;
+	group_id: string;
+	live_enabled: boolean;
+	live_peer_id: string;
+	alerts_enabled: boolean;
+	alerts_peer_id: string;
+	summary_enabled: boolean;
+	summary_peer_id: string;
+	wall_post_enabled: boolean;
+	keyboard_base_url: string;
+	enable?: boolean;
+	subsystem_name?: string;
+	status?: string;
+};
+
 // ==================== Настройки подсистем OpenConnect  ===================== //
 
 export type SubsystemsState = {
 	telegram_bot: boolean;
+	vk_bot: boolean;
 	thermal: boolean;
 	i2c_bus: boolean;
 	atm_sensor: boolean;
-	settings:	boolean;
+	settings: boolean;
 };
 
 /** Ответ GET/PUT /rest/oc/hardware-config */

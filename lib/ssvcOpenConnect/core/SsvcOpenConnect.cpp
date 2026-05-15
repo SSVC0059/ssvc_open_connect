@@ -61,6 +61,10 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     _ssvcMqttSettingsService = new SsvcMqttSettingsService(_server, _esp32sveltekit);
     _telegramSettingsService = new TelegramSettingsService(_server, _esp32sveltekit);
     TelegramSettingsService::setInstance(_telegramSettingsService);
+#if FT_ENABLED(FT_VK_BOT)
+    _vkSettingsService = new VkSettingsService(_server, _esp32sveltekit);
+    VkSettingsService::setInstance(_vkSettingsService);
+#endif
     _alarmThresholdService = new AlarmThresholdService(_server, _esp32sveltekit);
     _sensorDataService = new SensorDataService(_server, _esp32sveltekit);
     SensorDataService::setInstance(_sensorDataService);
@@ -69,6 +73,9 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     // Подписываем наблюдателей до вызова _profileService->begin()
     _profileService->subscribe(&_ssvcSettings);
     _profileService->subscribe(_telegramSettingsService);
+#if FT_ENABLED(FT_VK_BOT)
+    _profileService->subscribe(_vkSettingsService);
+#endif
     _profileService->subscribe(&UserRelayProfileBridge::instance());
     // Если _ssvcMqttSettingsService и _alarmThresholdService также являются IProfileObserver,
     // их тоже нужно подписать здесь.
@@ -91,6 +98,9 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     // Теперь вызываем begin() для остальных сервисов
     ESP_LOGD(TAG, "begin: Telegram/Alarm/SensorData/SensorConfig begin");
     _telegramSettingsService->begin();
+#if FT_ENABLED(FT_VK_BOT)
+    _vkSettingsService->begin();
+#endif
     _alarmThresholdService->begin();
     _sensorDataService->begin();
     _sensorConfigService->begin();
@@ -160,30 +170,6 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     ESP_LOGI(TAG, "begin: done");
 }
 
-bool SsvcOpenConnect::isOnline() const
-{
-    const ConnectionStatus currentStatus =
-      _esp32sveltekit->getConnectionStatus();
-    bool result = false;
-    if (currentStatus == ConnectionStatus::STA ||
-        currentStatus == ConnectionStatus::STA_CONNECTED ||
-        currentStatus == ConnectionStatus::STA_MQTT)
-    {
-        HTTPClient http;
-        const String url = "http://httpbin.org/get";
-        http.begin(url);
-        http.setTimeout(3000);
-        result = (http.sendRequest("HEAD") >= 200);
-        if (result)
-        {
-            ESP_LOGI("SsvcOpenConnect", "HTTP Response status: %d", result);
-        }
-        http.end();
-        return result;
-    }
-  return result;
-}
-
 void SsvcOpenConnect::sendHello() {
     SsvcCommandsQueue::getQueue().status("Привет!");
     const std::string version = SsvcSettings::init().getSsvcVersion();
@@ -223,6 +209,9 @@ void SsvcOpenConnect::subsystemManager()
     #if FT_ENABLED(FT_TELEGRAM_BOT)
         subsystemManager.registerSubsystem<TelegramBotSubsystem>();
     #endif
+    #if FT_ENABLED(FT_VK_BOT)
+        subsystemManager.registerSubsystem<VkBotSubsystem>();
+    #endif
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] Subsystems registered");
 
     subsystemManager.setInitialState("settings", true);
@@ -235,9 +224,7 @@ void SsvcOpenConnect::subsystemManager()
         subsystemManager.setInitialState("lcd1602_display", true);
     }
 
-    #if FT_ENABLED(FT_TELEGRAM_BOT)
-        subsystemManager.setInitialState("telegram_bot", true);
-    #endif
+    // Messengers (telegram_bot, vk_bot): state only from NVS via UI toggle — no setInitialState.
 
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] Starting subsystem manager...");
     subsystemManager.begin();
