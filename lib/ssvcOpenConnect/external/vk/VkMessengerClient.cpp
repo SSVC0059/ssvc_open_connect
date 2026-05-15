@@ -15,7 +15,6 @@
 #include "commons/commons.h"
 #include "commons/JsonSpiRamAllocator.h"
 #include "core/SsvcConnector.h"
-#include "core/SsvcOpenConnect.h"
 #include "core/profiles/ProfileService.h"
 #include "core/StatefulServices/VkSettingsService/VkSettingsService.h"
 #include "core/StatefulServices/SensorDataService/SensorDataService.h"
@@ -27,6 +26,33 @@ namespace {
 constexpr size_t kAlertMsgMax = 144;
 constexpr size_t kAlertQueueDepth = 4;
 constexpr int kLivePeriodTicks = 10;  // 10 * 500ms = 5s
+constexpr uint32_t kVkProbeCacheOkMs = 60000;
+constexpr uint32_t kVkProbeCacheFailMs = 10000;
+
+uint32_t s_vkProbeLastMs = 0;
+bool s_vkProbeLastOk = false;
+
+bool probeVkApiNow() {
+    if (!WiFi.isConnected()) {
+        return false;
+    }
+    HTTPClient http;
+    http.setTimeout(5000);
+    constexpr char kProbeUrl[] = "https://api.vk.com/method/utils.getServerTime?v=5.199";
+    if (!http.begin(kProbeUrl)) {
+        ESP_LOGD("VkMessenger", "VK probe: http.begin failed");
+        return false;
+    }
+    const int code = http.GET();
+    if (code != HTTP_CODE_OK) {
+        ESP_LOGD("VkMessenger", "VK probe: HTTP %d", code);
+        http.end();
+        return false;
+    }
+    const String payload = http.getString();
+    http.end();
+    return payload.indexOf("\"response\"") >= 0;
+}
 
 struct VkAlertMsg {
     char line[kAlertMsgMax];
@@ -427,6 +453,20 @@ VkMessengerClient::VkMessengerClient() = default;
 
 VkMessengerClient::~VkMessengerClient() {
     shutoff();
+}
+
+bool VkMessengerClient::isVkApiReachable() {
+    const uint32_t now = millis();
+    const uint32_t cacheMs = s_vkProbeLastOk ? kVkProbeCacheOkMs : kVkProbeCacheFailMs;
+    if (s_vkProbeLastMs != 0 && (now - s_vkProbeLastMs) < cacheMs) {
+        return s_vkProbeLastOk;
+    }
+    s_vkProbeLastOk = probeVkApiNow();
+    s_vkProbeLastMs = now;
+    if (s_vkProbeLastOk) {
+        ESP_LOGD(TAG, "VK API reachable");
+    }
+    return s_vkProbeLastOk;
 }
 
 void VkMessengerClient::reloadSettingsSnapshot() {
@@ -853,7 +893,7 @@ void VkMessengerClient::workerTask(void* param) {
     auto* self = static_cast<VkMessengerClient*>(param);
     while (self->_initialized) {
         vTaskDelay(pdMS_TO_TICKS(500));
-        if (!SsvcOpenConnect::getInstance().isOnline()) {
+        if (!isVkApiReachable()) {
             continue;
         }
         if (self->_httpMutex == nullptr) {
@@ -876,8 +916,8 @@ bool VkMessengerClient::init(VkSettingsService* settingsService) {
     }
 
     vTaskDelay(pdMS_TO_TICKS(2000));
-    while (!SsvcOpenConnect::getInstance().isOnline()) {
-        ESP_LOGD(TAG, "wait net");
+    while (!isVkApiReachable()) {
+        ESP_LOGD(TAG, "wait VK API");
         vTaskDelay(pdMS_TO_TICKS(3000));
     }
 

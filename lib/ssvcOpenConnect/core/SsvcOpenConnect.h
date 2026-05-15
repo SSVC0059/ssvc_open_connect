@@ -59,7 +59,6 @@ public:
   SsvcOpenConnect(const SsvcOpenConnect&) = delete;
   void operator=(const SsvcOpenConnect&) = delete;
 
-  bool isOnline() const;
   static void sendHello();
 
 private:
