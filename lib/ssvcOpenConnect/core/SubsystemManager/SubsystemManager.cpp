@@ -94,7 +94,7 @@ bool SubsystemManager::enableSubsystem(const std::string& name) {
     it->enabled = true;
     it->instance->enable();
 
-    if (it->enabled) { // Если подсистема не отключила себя
+    if (it->enabled) {
         saveConfig();
     }
 

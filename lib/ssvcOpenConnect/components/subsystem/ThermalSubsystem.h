@@ -18,6 +18,7 @@
  **/
 
 #include <core/SubsystemManager/SubsystemManager.h>
+#include "core/StatefulServices/OpenConnectSettingsService/ssvcMqttSettings.h"
 
 #include "components/sensors/OneWireThermalSubsystem/OneWireThermalSubsystem.h"
 #include "core/AlarmMonitor/AlarmMonitor.h"

@@ -56,8 +56,10 @@ TelegramSettingsService::TelegramSettingsService(AsyncWebServer* server, ESP32Sv
 
 void TelegramSettingsService::begin() {
     if (!_esp32sveltekit->getFS()->exists("/config/telegram.json")) {
+        ESP_LOGI("TelegramSettings", "Config file not found — attempting NVS migration");
         migrateFromNvs();
     } else {
+        ESP_LOGI("TelegramSettings", "Loading settings from /config/telegram.json");
         _fsPersistence.readFromFS();
     }
 }

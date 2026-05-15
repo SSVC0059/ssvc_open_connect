@@ -1,18 +1,34 @@
 //
 // Created by Admin on 23.01.2026.
-//#include "TelegramBotSubsystem.h"
-#include "external/telegramm/TelegramBotClient.h" // Теперь подключаем здесь
+#include "TelegramBotSubsystem.h"
+#include "external/telegramm/TelegramBotClient.h"
+#include "core/SubsystemManager/SubsystemManager.h"
+
+namespace {
+
+void onTelegramBootDone(const bool ok, void* ctx) {
+    auto* self = static_cast<TelegramBotSubsystem*>(ctx);
+    if (!self) return;
+    if (ok) {
+        self->markEnabled();
+        ESP_LOGI("TelegramBotSubsystem", "Telegram Bot ready");
+    } else {
+        ESP_LOGE("TelegramBotSubsystem", "Boot failed — disabling subsystem in NVS");
+        SubsystemManager::instance().disableSubsystem(TelegramBotSubsystem::getName());
+    }
+}
+
+}  // namespace
 
 void TelegramBotSubsystem::initialize() {
     if (!_initialized) {
         ESP_LOGI("TelegramBotSubsystem", "Initializing Telegram Bot subsystem");
         bot = &TelegramBotClient::bot();
-        if (bot == nullptr || !TelegramBotClient::isReadiness()) {
-            _initialized = false;
-            disable();
-            return;
+        // isReadiness проверяется после init() — здесь только регистрируем указатель.
+        _initialized = (bot != nullptr);
+        if (!_initialized) {
+            ESP_LOGE("TelegramBotSubsystem", "TelegramBotClient singleton unavailable");
         }
-        _initialized = true;
     }
 }
 
@@ -22,16 +38,30 @@ void TelegramBotSubsystem::enable() {
         return;
     }
 
-    TelegramSettingsService* settingsService = TelegramSettingsService::getInstance();
-    if (!settingsService) {
-        ESP_LOGE("TelegramBotSubsystem", "Failed to get TelegramSettingsService instance!");
+    if (_enabled && bot->isApiReady()) {
         return;
     }
 
-    bot->init(settingsService);
-    if (!_enabled) {
-        ESP_LOGI("TelegramBotSubsystem", "Enabling Telegram Bot subsystem");
+    TelegramSettingsService* settingsService = TelegramSettingsService::getInstance();
+    if (!settingsService) {
+        ESP_LOGE("TelegramBotSubsystem", "Failed to get TelegramSettingsService instance!");
+        SubsystemManager::instance().disableSubsystem(getName());
+        return;
+    }
+
+    if (bot->isBootInProgress()) {
+        ESP_LOGD("TelegramBotSubsystem", "Boot already in progress");
+        return;
+    }
+
+    if (bot->isApiReady()) {
         _enabled = true;
+        return;
+    }
+
+    ESP_LOGI("TelegramBotSubsystem", "Starting Telegram Bot (background boot)");
+    if (!bot->startBoot(settingsService, onTelegramBootDone, this)) {
+        SubsystemManager::instance().disableSubsystem(getName());
     }
 }
 
