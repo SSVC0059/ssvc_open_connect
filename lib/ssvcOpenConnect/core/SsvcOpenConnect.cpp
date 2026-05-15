@@ -39,7 +39,8 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
                             EventSocket* socket,
                             SecurityManager* securityManager)
 {
-    ESP_LOGI(TAG, "begin: enter (server=%p svelte=%p socket=%p)",
+    ESP_LOGI(TAG, "begin: starting SSVC OpenConnect");
+    ESP_LOGD(TAG, "begin: enter (server=%p svelte=%p socket=%p)",
              static_cast<void*>(&server), static_cast<void*>(&esp32sveltekit),
              static_cast<void*>(socket));
 
@@ -49,14 +50,14 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     _securityManager = securityManager;
     _mqttClient = _esp32sveltekit->getMqttClient();
 
-    ESP_LOGI(TAG, "begin: StatusLed");
+    ESP_LOGD(TAG, "begin: StatusLed");
     _statusLed = std::make_unique<StatusLed>(&esp32sveltekit);
     _statusLed->begin(NEO_GRB);
 
     _profileService = ProfileService::getInstance();
 
     // Инициализируем сервисы, которые являются наблюдателями, и подписываем их на ProfileService
-    ESP_LOGI(TAG, "begin: MQTT/Telegram/Alarm/Sensor services construct");
+    ESP_LOGD(TAG, "begin: MQTT/Telegram/Alarm/Sensor services construct");
     _ssvcMqttSettingsService = new SsvcMqttSettingsService(_server, _esp32sveltekit);
     _telegramSettingsService = new TelegramSettingsService(_server, _esp32sveltekit);
     TelegramSettingsService::setInstance(_telegramSettingsService);
@@ -75,10 +76,10 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     _profileService->subscribe(_alarmThresholdService);
 
     // Теперь вызываем begin() для ProfileService
-    ESP_LOGI(TAG, "begin: ProfileService::begin");
+    ESP_LOGD(TAG, "begin: ProfileService::begin");
     _profileService->begin(_esp32sveltekit->getFS());
 
-    ESP_LOGI(TAG, "begin: OpenConnectHardwareSettingsService");
+    ESP_LOGD(TAG, "begin: OpenConnectHardwareSettingsService");
     OpenConnectHardwareSettingsService::instance().begin(_esp32sveltekit->getFS());
 
 #if !PINOUT_USE_GPIO
@@ -88,13 +89,13 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
 #endif
 
     // Теперь вызываем begin() для остальных сервисов
-    ESP_LOGI(TAG, "begin: Telegram/Alarm/SensorData/SensorConfig begin");
+    ESP_LOGD(TAG, "begin: Telegram/Alarm/SensorData/SensorConfig begin");
     _telegramSettingsService->begin();
     _alarmThresholdService->begin();
     _sensorDataService->begin();
     _sensorConfigService->begin();
 
-    ESP_LOGI(TAG, "begin: AlarmMonitor::initialize");
+    ESP_LOGD(TAG, "begin: AlarmMonitor::initialize");
     AlarmMonitor::getInstance().initialize(_alarmThresholdService);
 
     RelayRuleEngine::getInstance().begin();
@@ -106,13 +107,13 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     _esp32sveltekit->getFeatureService()->addFeature(String("openConnectUserRelays"), true);
 #endif
 
-    ESP_LOGI(TAG, "begin: SensorCoordinator + OneWire (pin=%u)",
+    ESP_LOGD(TAG, "begin: SensorCoordinator + OneWire (pin=%u)",
              static_cast<unsigned>(OneWireThermalSubsystem::ONEWIRE_PIN));
     SensorCoordinator::getInstance().registerPollingSubsystem(
         &OneWireThermalSubsystem::getInstance()
     );
 
-    ESP_LOGI(TAG, "begin: SensorCoordinator::startPolling");
+    ESP_LOGD(TAG, "begin: SensorCoordinator::startPolling");
     SensorCoordinator::getInstance().startPolling(SENSOR_POLL_INTERVAL_MS);
 
     _sensorConfigService->addUpdateHandler([&](const String& originId) {
@@ -125,35 +126,35 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
         AlarmMonitor::getInstance().checkAllSensors();
     });
 
-    ESP_LOGI(TAG, "begin: Notification + hardware-fault log subscribers");
+    ESP_LOGD(TAG, "begin: Notification + hardware-fault log subscribers");
     _notificationSubscriber = new NotificationSubscriber(_esp32sveltekit);
     _hardwareFaultLogSubscriber = new HardwareFaultLogSubscriber();
 
-    ESP_LOGI(TAG, "begin: RectificationProcess::begin");
+    ESP_LOGD(TAG, "begin: RectificationProcess::begin");
     rProcess.begin(
       _ssvcConnector, _ssvcSettings, *_ssvcMqttSettingsService);
 
-    ESP_LOGI(TAG, "begin: TelemetryService");
+    ESP_LOGD(TAG, "begin: TelemetryService");
     _telemetryService = new TelemetryService(_server, _esp32sveltekit, rProcess);
     _telemetryService->begin();
 
-    ESP_LOGI(TAG, "begin: HttpRequestHandler");
+    ESP_LOGD(TAG, "begin: HttpRequestHandler");
     httpRequestHandler = std::make_unique<HttpRequestHandler>(*_server, _securityManager, _profileService, _esp32sveltekit->getFS());
     httpRequestHandler->begin();
 
-    ESP_LOGI(TAG, "begin: delay 2s then SSVC getSettings/version");
+    ESP_LOGD(TAG, "begin: delay 2s then SSVC getSettings/version");
     vTaskDelay(pdMS_TO_TICKS(2000));
     const SsvcCommandsQueue* queue = &SsvcCommandsQueue::getQueue();
     queue->getSettings();
     queue->version();
 
-    ESP_LOGI(TAG, "begin: MqttBridge + MqttCommandHandler");
+    ESP_LOGD(TAG, "begin: MqttBridge + MqttCommandHandler");
     MqttBridge::getInstance(_esp32sveltekit->getMqttSettingsService());
 
     const auto commandHandler = new MqttCommandHandler();
     commandHandler->begin();
 
-    ESP_LOGI(TAG, "begin: subsystemManager() (blocks until WiFi)");
+    ESP_LOGD(TAG, "begin: subsystemManager() (blocks until WiFi)");
     this->subsystemManager();
 
     ESP_LOGI(TAG, "begin: done");

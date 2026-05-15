@@ -120,13 +120,13 @@ String ProfileService::getCurrentTimestamp() {
 
 // Helper methods for metadata management
 bool ProfileService::_readMetadata(JsonDocument& doc) const {
-    ESP_LOGI(TAG, "_readMetadata: Entry. Path=%s", _metadataFilePath); // Логирование входа
+    ESP_LOGD(TAG, "_readMetadata: Entry. Path=%s", _metadataFilePath); // Логирование входа
     File metadataFile = _fs->open(_metadataFilePath, "r");
     if (!metadataFile) {
         ESP_LOGE(TAG, "_readMetadata: Failed to open metadata file for reading: %s", _metadataFilePath); // Логирование ошибки
         return false;
     }
-    ESP_LOGI(TAG, "_readMetadata: Metadata file opened: %s", _metadataFilePath); // Логирование открытия файла
+    ESP_LOGD(TAG, "_readMetadata: Metadata file opened: %s", _metadataFilePath); // Логирование открытия файла
 
     const DeserializationError error = deserializeJson(doc, metadataFile);
     metadataFile.close();
@@ -134,18 +134,18 @@ bool ProfileService::_readMetadata(JsonDocument& doc) const {
         ESP_LOGE(TAG, "_readMetadata: Failed to deserialize metadata file %s: %s", _metadataFilePath, error.c_str()); // Логирование ошибки
         return false;
     }
-    ESP_LOGI(TAG, "_readMetadata: Metadata deserialized successfully."); // Логирование десериализации
+    ESP_LOGD(TAG, "_readMetadata: Metadata deserialized successfully."); // Логирование десериализации
     return true;
 }
 
 bool ProfileService::_writeMetadata(const JsonDocument& doc) const {
-    ESP_LOGI(TAG, "_writeMetadata: Entry. Path=%s", _metadataFilePath); // Логирование входа
+    ESP_LOGD(TAG, "_writeMetadata: Entry. Path=%s", _metadataFilePath); // Логирование входа
     File metadataFile = _fs->open(_metadataFilePath, "w");
     if (!metadataFile) {
         ESP_LOGE(TAG, "_writeMetadata: Failed to open metadata file for writing: %s", _metadataFilePath); // Логирование ошибки
         return false;
     }
-    ESP_LOGI(TAG, "_writeMetadata: Metadata file opened for writing: %s", _metadataFilePath); // Логирование открытия файла
+    ESP_LOGD(TAG, "_writeMetadata: Metadata file opened for writing: %s", _metadataFilePath); // Логирование открытия файла
 
     if (serializeJson(doc, metadataFile) == 0) {
         ESP_LOGE(TAG, "_writeMetadata: Failed to write metadata to file: %s", _metadataFilePath); // Логирование ошибки
@@ -153,7 +153,7 @@ bool ProfileService::_writeMetadata(const JsonDocument& doc) const {
         return false;
     }
     metadataFile.close();
-    ESP_LOGI(TAG, "_writeMetadata: Metadata written successfully."); // Логирование записи
+    ESP_LOGD(TAG, "_writeMetadata: Metadata written successfully."); // Логирование записи
     return true;
 }
 
@@ -174,14 +174,14 @@ bool ProfileService::_getProfileMetadata(const String& profileId, JsonObject& pr
 
 bool ProfileService::_profileFileExists(const String& profileId) const {
     const String filePath = String(_profilesDir) + "/" + profileId + ".json";
-    ESP_LOGI(TAG, "_profileFileExists: Checking path=%s", filePath.c_str()); // Логирование проверки пути
+    ESP_LOGD(TAG, "_profileFileExists: Checking path=%s", filePath.c_str()); // Логирование проверки пути
     const bool exists = _fs->exists(filePath);
-    ESP_LOGI(TAG, "_profileFileExists: File %s exists: %s", filePath.c_str(), exists ? "true" : "false"); // Логирование результата
+    ESP_LOGD(TAG, "_profileFileExists: File %s exists: %s", filePath.c_str(), exists ? "true" : "false"); // Логирование результата
     return exists;
 }
 
 String ProfileService::_generateNewProfileId() const {
-    ESP_LOGI(TAG, "_generateNewProfileId: Entry"); // Логирование входа
+    ESP_LOGD(TAG, "_generateNewProfileId: Entry"); // Логирование входа
     JsonDocument metadataDoc(&s_profileJsonAllocator);
     if (!_readMetadata(metadataDoc)) {
         ESP_LOGW(TAG, "_generateNewProfileId: Failed to read metadata, initializing new array."); // Логирование предупреждения
@@ -226,7 +226,7 @@ String ProfileService::_generateNewProfileId() const {
     }
 
     String newId = String(maxNumericId + 1);
-    ESP_LOGI(TAG, "_generateNewProfileId: Generated new ID: %s", newId.c_str()); // Логирование сгенерированного ID
+    ESP_LOGD(TAG, "_generateNewProfileId: Generated new ID: %s", newId.c_str()); // Логирование сгенерированного ID
     return newId;
 }
 

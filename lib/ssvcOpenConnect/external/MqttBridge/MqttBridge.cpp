@@ -71,7 +71,7 @@ uint16_t MqttBridge::publish(const char *topic, const char *payload, uint8_t qos
 
     if (!_settingsService->isEnabled())
     {
-        ESP_LOGW(TAG, "MQTT is disabled. Not publishing to %s with QoS %d", topic, qos);
+        ESP_LOGV(TAG, "MQTT disabled, skip publish to %s (QoS %d)", topic, qos);
         return 0;
     }
     if (!_settingsService->isConnected())

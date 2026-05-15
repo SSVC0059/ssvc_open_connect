@@ -197,7 +197,7 @@ void AlarmMonitor::subscribe(IAlarmSubscriber* subscriber) {
     }
 
     if (added) {
-        ESP_LOGI(TAG, "Subscriber 0x%p successfully added. Total subscribers: %zu.",
+        ESP_LOGD(TAG, "Subscriber 0x%p successfully added. Total subscribers: %zu.",
                  static_cast<void*>(subscriber), subscriberCount);
     } else {
         ESP_LOGD(TAG, "Subscriber 0x%p is already subscribed. Skipping.", static_cast<void*>(subscriber));
@@ -306,8 +306,7 @@ void AlarmMonitor::checkAllSensors() {
         return;
     }
 
-    // Подробный лог о начале цикла проверки
-    ESP_LOGI(TAG, "Starting sensor check cycle.");
+    ESP_LOGV(TAG, "Starting sensor check cycle.");
 
     // 1. Получаем доступ к текущим настройкам порогов
     _thresholdService->read([&](const AlarmThresholdsState& thresholdsState) {
@@ -315,7 +314,7 @@ void AlarmMonitor::checkAllSensors() {
         // 2. Получаем все датчики
         const SensorManager& sm = SensorManager::getInstance();
         const auto& all_sensors = sm.getAllSensors();
-        ESP_LOGI(TAG, "Processing %zu sensors.", all_sensors.size());
+        ESP_LOGV(TAG, "Processing %zu sensors.", all_sensors.size());
 
         for (const auto& pair : all_sensors) {
             const std::string& addr_str = pair.first;
@@ -323,17 +322,17 @@ void AlarmMonitor::checkAllSensors() {
 
             // 3. Проверяем, есть ли для этого датчика настройки
             if (thresholdsState.sensor_thresholds.count(addr_str) == 0) {
-                ESP_LOGI(TAG, "Sensor %s skipped: No threshold settings found.", addr_str.c_str());
+                ESP_LOGD(TAG, "Sensor %s skipped: No threshold settings found.", addr_str.c_str());
                 continue; // Настроек нет, пропускаем
             }
 
             const ThresholdSettings& settings = thresholdsState.sensor_thresholds.at(addr_str);
             if (!settings.enabled) {
-                ESP_LOGI(TAG, "Sensor %s skipped: Monitoring is disabled.", addr_str.c_str());
+                ESP_LOGD(TAG, "Sensor %s skipped: Monitoring is disabled.", addr_str.c_str());
                 continue; // Мониторинг для датчика выключен
             }
             // Подробный лог с настройками
-            ESP_LOGI(TAG, "Sensor %s: Thresh (Crit:%.2f, Dang:%.2f, Min:%.2f).",
+            ESP_LOGV(TAG, "Sensor %s: Thresh (Crit:%.2f, Dang:%.2f, Min:%.2f).",
                      addr_str.c_str(), settings.critical_threshold, settings.dangerous_threshold, settings.min_threshold);
             // 4. Сравнение
             const float current_value = sensor->getData();
@@ -355,7 +354,7 @@ void AlarmMonitor::checkAllSensors() {
 
              if (is_first_check) {
                  // Инициализируем состояние как NORMAL, но не генерируем событие.
-                 ESP_LOGI(TAG, "Sensor %s is in initial state (non-valid data). Skipping alarm check.", addr_str.c_str());
+                 ESP_LOGD(TAG, "Sensor %s is in initial state (non-valid data). Skipping alarm check.", addr_str.c_str());
                  continue; // Пропускаем, чтобы избежать ложной тревоги MINIMUM
              }
 
@@ -394,7 +393,7 @@ void AlarmMonitor::checkAllSensors() {
             float threshold_crossed = 0.0f;
 
             // Логируем текущее значение
-            ESP_LOGI(TAG, "Sensor %s read value: %.2f.", addr_str.c_str(), current_value);
+            ESP_LOGV(TAG, "Sensor %s read value: %.2f.", addr_str.c_str(), current_value);
 
             // --- Логика определения уровня тревоги ---
             if (current_value >= settings.critical_threshold) {
@@ -439,11 +438,11 @@ void AlarmMonitor::checkAllSensors() {
 
             } else {
                 // Подробный лог, если состояние не изменилось
-                ESP_LOGI(TAG, "Sensor %s: State remains %d (Value: %.2f). No notification sent.",
+                ESP_LOGV(TAG, "Sensor %s: State remains %d (Value: %.2f). No notification sent.",
                          addr_str.c_str(), static_cast<int>(new_level), current_value);
             }
         }
     });
 
-    ESP_LOGD(TAG, "Sensor check cycle finished.");
+    ESP_LOGV(TAG, "Sensor check cycle finished.");
 }
