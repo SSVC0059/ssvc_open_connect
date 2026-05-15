@@ -1,5 +1,92 @@
 #include "TelegramBotClient.h"
 #include "core/SsvcConnector.h"
+#include "core/SubsystemManager/SubsystemManager.h"
+#include "core/StatefulServices/SensorDataService/SensorDataService.h"
+#include "core/rectification/RectificationProcess.h"
+#include "core/SsvcSettings/SsvcSettings.h"
+
+namespace {
+
+constexpr time_t kMinValidSystemTime = 1704067200;  // 2024-01-01 UTC
+
+bool waitWifiConnected(uint32_t timeoutMs) {
+    const uint32_t deadline = millis() + timeoutMs;
+    while (!WiFi.isConnected() && millis() < deadline) {
+        ESP_LOGD("TelegramBotClient", "Waiting for WiFi...");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+    return WiFi.isConnected();
+}
+
+bool waitSystemTime(uint32_t timeoutMs) {
+    const uint32_t deadline = millis() + timeoutMs;
+    while (time(nullptr) < kMinValidSystemTime && millis() < deadline) {
+        ESP_LOGD("TelegramBotClient", "Waiting for SNTP time sync...");
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+    const bool ok = time(nullptr) >= kMinValidSystemTime;
+    if (!ok) {
+        ESP_LOGW("TelegramBotClient", "System time not synced — TLS may still work (setInsecure)");
+    }
+    return ok;
+}
+
+}  // namespace
+
+namespace {
+
+bool waitTelegramSendWindow(FastBot2& bot, uint32_t maxWaitMs) {
+    const uint32_t start = millis();
+    while (bot.isPolling()) {
+        if (millis() - start >= maxWaitMs) {
+            ESP_LOGW("TelegramBotClient",
+                     "Timeout waiting for Telegram HTTP slot (isPolling)");
+            return false;
+        }
+        vTaskDelay(pdMS_TO_TICKS(20));
+    }
+    return true;
+}
+
+void logTelegramSendFailure(const char* ctx, fb::Result& result) {
+    if (result.isError()) {
+        String err;
+        String code;
+        result.getError().toString(err);
+        result.getErrorCode().toString(code);
+        ESP_LOGE("TelegramBotClient", "%s: Telegram API error (code=%s): %s", ctx,
+                 code.length() ? code.c_str() : "?",
+                 err.length() ? err.c_str() : "(no description)");
+    } else {
+        ESP_LOGE(
+            "TelegramBotClient",
+            "%s: no Telegram API payload (TLS/HTTP failure or timeout). WiFi=%d IP=%s",
+            ctx, static_cast<int>(WiFi.status()),
+            WiFi.localIP().toString().c_str());
+    }
+}
+
+}  // namespace
+
+bool TelegramBotClient::probeTelegramApi() {
+    if (token.isEmpty()) {
+        ESP_LOGW("TelegramBotClient", "probeTelegramApi: empty token");
+        return false;
+    }
+
+    if (!waitTelegramSendWindow(_bot, MAX_SEND_TIME_MS)) {
+        ESP_LOGE("TelegramBotClient", "probeTelegramApi: HTTP slot busy");
+        return false;
+    }
+
+    fb::Result result = _bot.sendCommand(tg_cmd::getMe, true);
+    if (result && !result.isError()) {
+        ESP_LOGI("TelegramBotClient", "probeTelegramApi: getMe OK");
+        return true;
+    }
+    logTelegramSendFailure("probeTelegramApi", result);
+    return false;
+}
 
 TelegramBotClient& TelegramBotClient::bot() {
     static TelegramBotClient instance;
@@ -45,44 +132,151 @@ TelegramBotClient::~TelegramBotClient() {
 
 
 bool TelegramBotClient::init(TelegramSettingsService* settingsService) {
+    return startBoot(settingsService);
+}
+
+bool TelegramBotClient::startBoot(TelegramSettingsService* settingsService, BootDoneFn onDone,
+                                  void* onDoneCtx) {
     if (_initialized) {
         ESP_LOGW("TelegramBotClient", "Already initialized");
+        if (onDone) onDone(true, onDoneCtx);
         return true;
+    }
+    if (_bootTaskHandle != nullptr) {
+        ESP_LOGW("TelegramBotClient", "Boot already in progress");
+        if (onDone) onDone(false, onDoneCtx);
+        return false;
     }
 
     _settingsService = settingsService;
     if (!_settingsService) {
         ESP_LOGE("TelegramBotClient", "Settings service is not provided!");
+        if (onDone) onDone(false, onDoneCtx);
         return false;
     }
 
-    vTaskDelay(pdMS_TO_TICKS(10000));
+    _bootDoneFn  = onDone;
+    _bootDoneCtx = onDoneCtx;
+    _bootAbort   = false;
 
-    while (!SsvcOpenConnect::getInstance().isOnline())
-    {
-        ESP_LOGD("TelegramBotClient", "Waiting for connection...");
-        vTaskDelay(pdMS_TO_TICKS(5000));
+    constexpr uint32_t kBootStack = 8192;
+    const BaseType_t   ok         = xTaskCreatePinnedToCore(
+        bootTaskEntry, "tg_boot", kBootStack, this, tskIDLE_PRIORITY + 1, &_bootTaskHandle, 1);
+
+    if (ok != pdPASS) {
+        ESP_LOGE("TelegramBotClient", "Failed to create boot task");
+        _bootTaskHandle = nullptr;
+        _bootDoneFn     = nullptr;
+        _bootDoneCtx    = nullptr;
+        if (onDone) onDone(false, onDoneCtx);
+        return false;
     }
 
-    ESP_LOGI("TelegramBotClient", "Initializing TelegramBotClient");
+    ESP_LOGI("TelegramBotClient", "Boot task started (non-blocking)");
+    return true;
+}
+
+void TelegramBotClient::bootTaskEntry(void* param) {
+    auto* self = static_cast<TelegramBotClient*>(param);
+    const bool ok = self->runBootSequence();
+    self->_bootTaskHandle = nullptr;
+    self->finishBoot(ok);
+    vTaskDelete(nullptr);
+}
+
+void TelegramBotClient::finishBoot(bool ok) {
+    if (_bootDoneFn) {
+        BootDoneFn fn  = _bootDoneFn;
+        void*        ctx = _bootDoneCtx;
+        _bootDoneFn      = nullptr;
+        _bootDoneCtx     = nullptr;
+        fn(ok, ctx);
+    } else if (!ok) {
+        SubsystemManager::instance().disableSubsystem("telegram_bot");
+    }
+}
+
+bool TelegramBotClient::runBootSequence() {
+    if (_bootAbort) {
+        return false;
+    }
+
+    constexpr uint32_t kWifiWaitMs = 30000;
+    if (!waitWifiConnected(kWifiWaitMs)) {
+        ESP_LOGE("TelegramBotClient", "WiFi not connected after %u ms", kWifiWaitMs);
+        return false;
+    }
+
+    // Дать стеку/TCP стабилизироваться после DHCP.
+    vTaskDelay(pdMS_TO_TICKS(3000));
+    if (_bootAbort) return false;
+
+    (void)waitSystemTime(15000);
 
     _settingsService->read([this](const TelegramSettings& settings) {
-        this->token = settings.botToken;
-        this->chatID = settings.chatId;
+        token  = settings.botToken;
+        chatID = settings.chatId;
     });
 
+    if (token.isEmpty()) {
+        ESP_LOGE("TelegramBotClient", "Bot token is empty");
+        return false;
+    }
+
+    ESP_LOGI("TelegramBotClient", "Chat ID: %s, token length: %u chars, heap=%u",
+             chatID.c_str(), static_cast<unsigned>(token.length()),
+             static_cast<unsigned>(ESP.getFreeHeap()));
+
     _bot.setToken(token.c_str());
-    ESP_LOGI("TelegramBotClient", "Chat ID: %s", chatID.c_str());
+    _bot.setTimeout(12000);
 
+    constexpr int kProbeAttempts = 3;
+    bool          probeOk        = false;
+    for (int attempt = 1; attempt <= kProbeAttempts && !probeOk && !_bootAbort; ++attempt) {
+        ESP_LOGI("TelegramBotClient", "Probing Telegram API via FastBot2 (attempt %d/%d)...",
+                 attempt, kProbeAttempts);
+        ESP_LOGI("TelegramBotClient", "Free heap before probe: %u",
+                 static_cast<unsigned>(ESP.getFreeHeap()));
+
+        if (_botMutex != nullptr) {
+            MutexLocker lock(_botMutex);
+            probeOk = probeTelegramApi();
+        } else {
+            probeOk = probeTelegramApi();
+        }
+
+        if (!probeOk && attempt < kProbeAttempts) {
+            vTaskDelay(pdMS_TO_TICKS(2000));
+        }
+    }
+
+    if (_bootAbort || !probeOk) {
+        ESP_LOGE("TelegramBotClient", "Telegram API unreachable, boot aborted");
+        return false;
+    }
+
+    _apiReady = true;
     sendHello();
-
     initTelemetryTaskSender();
     _initialized = true;
+    ESP_LOGI("TelegramBotClient", "Initialized successfully");
     return true;
 }
 
 void TelegramBotClient::shutoff() {
-    if (!_initialized) return;
+    _bootAbort = true;
+
+    if (_bootTaskHandle != nullptr) {
+        ESP_LOGI("TelegramBotClient", "Waiting for boot task to stop...");
+        for (int i = 0; i < 50 && _bootTaskHandle != nullptr; ++i) {
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+    }
+
+    if (!_initialized && !_apiReady && _bootTaskHandle == nullptr) {
+        _bootAbort = false;
+        return;
+    }
 
     ESP_LOGI("TelegramBotClient", "Deinitializing TelegramBotClient");
 
@@ -99,7 +293,11 @@ void TelegramBotClient::shutoff() {
     token = "";
     chatID = "";
     statusMessageID = 0;
+    _apiReady    = false;
     _initialized = false;
+    _bootAbort   = false;
+    _bootDoneFn  = nullptr;
+    _bootDoneCtx = nullptr;
 }
 
 void TelegramBotClient::statusMessageSender(void* params) {
@@ -359,13 +557,17 @@ uint32_t TelegramBotClient::sendMessage(const std::string& message)
     msg.chatID = fb::ID(chatID);
     (void)createControlKeyboard();
 
-    while (!_bot.isPolling())
-    {
-        fb::Result result = _bot.sendMessage(msg);
-        vTaskDelay(pdMS_TO_TICKS(100));
-        return _bot.lastBotMessage();
+    if (!waitTelegramSendWindow(_bot, MAX_SEND_TIME_MS)) {
+        return 0;
     }
-    return 0;
+
+    fb::Result result = _bot.sendMessage(msg);
+    if (!result || result.isError()) {
+        logTelegramSendFailure("sendMessage", result);
+        return 0;
+    }
+    vTaskDelay(pdMS_TO_TICKS(100));
+    return _bot.lastBotMessage();
 }
 
 void TelegramBotClient::updateMessage(const std::string& message, uint32_t messageId)
@@ -397,27 +599,42 @@ void TelegramBotClient::sendHello() {
                     << "    Требуется версия: <b>" << SSVC_SUPPORT_API_VERSION << "</b> или выше.\n"
                     << "    <a href=\"https://smartmodule.ru/portfolio/0059_v2/\">Обновите прошивку на сайте производителя.</a>\n";
         }
-    }else {
-        msgText << "🔌 <b>Версия API не загружена";
+    } else {
+        msgText << "🔌 <b>Версия API не загружена</b>\n";
     }
 
     msgText << "🖥️ <b>Адрес:</b> http://" << WiFi.localIP().toString().c_str() << "\n";
 
+    const std::string helloBody = msgText.str();
+
     fb::Message msg;
     msg.mode = fb::Message::Mode::HTML;
-    msg.text = msgText.str().c_str();
+    msg.text = helloBody.c_str();
     msg.chatID = fb::ID(chatID);
 
-    while (!_bot.isPolling()) {
-        fb::Result result = _bot.sendMessage(msg);
-        if (!result) {
-            ESP_LOGE("TelegramBotClient", "Failed to send hello message");
+    constexpr int kHelloAttempts = 3;
+    for (int attempt = 1; attempt <= kHelloAttempts; ++attempt) {
+        if (!waitTelegramSendWindow(_bot, MAX_SEND_TIME_MS)) {
+            ESP_LOGE("TelegramBotClient",
+                     "sendHello: no HTTP slot after waiting (attempt %d/%d)",
+                     attempt, kHelloAttempts);
+            continue;
         }
-        return;
+        fb::Result result = _bot.sendMessage(msg);
+        if (result && !result.isError()) {
+            if (attempt > 1) {
+                ESP_LOGI("TelegramBotClient", "Hello sent OK on attempt %d", attempt);
+            }
+            return;
+        }
+        logTelegramSendFailure("sendHello", result);
+        if (attempt < kHelloAttempts) {
+            vTaskDelay(pdMS_TO_TICKS(2000));
+        }
     }
 }
 
 bool TelegramBotClient::isReadiness()
 {
-    return true;
+    return bot()._apiReady;
 }
