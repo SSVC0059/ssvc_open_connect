@@ -144,7 +144,8 @@ bool TelegramBotClient::startBoot(TelegramSettingsService* settingsService, Boot
     }
     if (_bootTaskHandle != nullptr) {
         ESP_LOGW("TelegramBotClient", "Boot already in progress");
-        return true;
+        if (onDone) onDone(false, onDoneCtx);
+        return false;
     }
 
     _settingsService = settingsService;
@@ -178,8 +179,8 @@ bool TelegramBotClient::startBoot(TelegramSettingsService* settingsService, Boot
 void TelegramBotClient::bootTaskEntry(void* param) {
     auto* self = static_cast<TelegramBotClient*>(param);
     const bool ok = self->runBootSequence();
-    self->finishBoot(ok);
     self->_bootTaskHandle = nullptr;
+    self->finishBoot(ok);
     vTaskDelete(nullptr);
 }
 
