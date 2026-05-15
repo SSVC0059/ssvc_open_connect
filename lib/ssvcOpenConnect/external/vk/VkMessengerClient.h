@@ -70,6 +70,8 @@ private:
     char _summaryFmtScratch[kFormatDataCap]{};
 
     void reloadSettingsSnapshot();
+    /** Cached HTTPS probe to api.vk.com (utils.getServerTime, no token). */
+    static bool isVkApiReachable();
     bool vkFormPost(const char* method, const char* formBody, char* respBuf, size_t respCap);
     bool sendMessageToPeer(int64_t peer, const char* text, const char* keyboardJson, const char* formatDataJson,
                            uint32_t* outMessageId);

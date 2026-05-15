@@ -36,9 +36,6 @@ void VkBotSubsystem::enable() {
 }
 
 void VkBotSubsystem::disable() {
-    if (!_enabled) {
-        return;
-    }
     ESP_LOGI("VkBotSubsystem", "disable");
     if (_client) {
         _client->shutoff();

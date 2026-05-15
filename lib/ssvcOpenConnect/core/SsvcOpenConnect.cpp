@@ -170,30 +170,6 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     ESP_LOGI(TAG, "begin: done");
 }
 
-bool SsvcOpenConnect::isOnline() const
-{
-    const ConnectionStatus currentStatus =
-      _esp32sveltekit->getConnectionStatus();
-    bool result = false;
-    if (currentStatus == ConnectionStatus::STA ||
-        currentStatus == ConnectionStatus::STA_CONNECTED ||
-        currentStatus == ConnectionStatus::STA_MQTT)
-    {
-        HTTPClient http;
-        const String url = "http://httpbin.org/get";
-        http.begin(url);
-        http.setTimeout(3000);
-        result = (http.sendRequest("HEAD") >= 200);
-        if (result)
-        {
-            ESP_LOGI("SsvcOpenConnect", "HTTP Response status: %d", result);
-        }
-        http.end();
-        return result;
-    }
-  return result;
-}
-
 void SsvcOpenConnect::sendHello() {
     SsvcCommandsQueue::getQueue().status("Привет!");
     const std::string version = SsvcSettings::init().getSsvcVersion();
@@ -248,12 +224,7 @@ void SsvcOpenConnect::subsystemManager()
         subsystemManager.setInitialState("lcd1602_display", true);
     }
 
-    #if FT_ENABLED(FT_TELEGRAM_BOT)
-        subsystemManager.setInitialState("telegram_bot", true);
-    #endif
-    #if FT_ENABLED(FT_VK_BOT)
-        subsystemManager.setInitialState("vk_bot", true);
-    #endif
+    // Messengers (telegram_bot, vk_bot): state only from NVS via UI toggle — no setInitialState.
 
     ESP_LOGD(TAG, "[SUBSYSTEM_MANAGER] Starting subsystem manager...");
     subsystemManager.begin();
