@@ -56,11 +56,23 @@ void StatusLed::refreshLed(const char *phase) {
 
   if (uartErr) {
     const bool blinkOn = (millis() / 300) % 2 == 0;
-    _led->fill(blinkOn ? 0xFF8000 : 0x000000);
-    ESP_LOGI("StatusLed",
-             "[%s] UART error -> blink orange (phase=%s) [conn would be %s]",
-             phase, blinkOn ? "on" : "off",
-             connectionStatusLabel(currentStatus));
+    const uint32_t rgb = blinkOn ? 0xFF8000u : 0x000000u;
+    _led->fill(rgb);
+    const bool stateChanged =
+        !_lastUartErrValid || _lastUartErr != uartErr || !_lastRgbValid ||
+        _lastRgb != rgb;
+    if (stateChanged) {
+      ESP_LOGI("StatusLed",
+               "[%s] UART error -> blink orange (phase=%s) [conn would be %s]",
+               phase, blinkOn ? "on" : "off",
+               connectionStatusLabel(currentStatus));
+      _lastUartErr = uartErr;
+      _lastUartErrValid = true;
+      _lastRgb = rgb;
+      _lastRgbValid = true;
+      _lastConn = currentStatus;
+      _lastConnValid = true;
+    }
   } else {
     const char *mode = "";
     uint32_t rgb = 0;
@@ -86,11 +98,25 @@ void StatusLed::refreshLed(const char *phase) {
       mode = "white fallback";
     }
     _led->fill(rgb);
-    ESP_LOGI("StatusLed",
-             "[%s] connection=%s (%d) -> %s 0x%06lX",
-             phase, connectionStatusLabel(currentStatus),
-             static_cast<int>(currentStatus), mode,
-             static_cast<unsigned long>(rgb));
+    const bool stateChanged =
+        !_lastUartErrValid || _lastUartErr != uartErr || !_lastConnValid ||
+        _lastConn != currentStatus || !_lastRgbValid || _lastRgb != rgb;
+    if (stateChanged) {
+      ESP_LOGI("StatusLed",
+               "[%s] connection=%s (%d) -> %s 0x%06lX",
+               phase, connectionStatusLabel(currentStatus),
+               static_cast<int>(currentStatus), mode,
+               static_cast<unsigned long>(rgb));
+      _lastUartErr = uartErr;
+      _lastUartErrValid = true;
+      _lastConn = currentStatus;
+      _lastConnValid = true;
+      _lastRgb = rgb;
+      _lastRgbValid = true;
+    } else {
+      ESP_LOGV("StatusLed", "[%s] unchanged: %s", phase,
+               connectionStatusLabel(currentStatus));
+    }
   }
 
   _led->show();

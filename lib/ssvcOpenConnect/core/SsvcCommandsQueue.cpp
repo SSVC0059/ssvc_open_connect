@@ -157,7 +157,7 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
 
   while (true) {
     if (xQueueReceive(self->command_queue, &cmd, portMAX_DELAY) == pdPASS) {
-      ESP_LOGI(TAG, "Processing command of type: %d", cmd->type);
+      ESP_LOGD(TAG, "Processing command of type: %d", cmd->type);
       bool command_success = false;
 
       while (cmd->attempt_count != 0) {
@@ -204,7 +204,7 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
               SsvcConnector::sendCommand(oss.str().c_str());
           break;
         }
-        ESP_LOGI(TAG, "Send result: %d", command_success);
+        ESP_LOGD(TAG, "Send result: %d", command_success);
 
         if (!command_success) {
           ESP_LOGE(TAG, "Failed to send command %d",
@@ -373,7 +373,7 @@ void SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
     ESP_LOGE(TAG, "Failed to send command to queue! Queue might be full.");
     delete cmd;
   } else {
-    ESP_LOGI(TAG, "Command type %d enqueued successfully.", static_cast<int>(type));
+    ESP_LOGD(TAG, "Command type %d enqueued successfully.", static_cast<int>(type));
   }
 }
 
@@ -475,7 +475,7 @@ void SsvcCommandsQueue::at(const int attempt_count, const TickType_t timeout) co
 void SsvcCommandsQueue::set(const std::string& parameters, const int attempt_count,
                             const TickType_t timeout) const
 {
-  ESP_LOGI(TAG, "Set command called with parameters: %s", parameters.c_str());
+  ESP_LOGD(TAG, "Set command called with parameters: %s", parameters.c_str());
   pushCommandInQueue(SsvcCommandType::SET, parameters, attempt_count, timeout);
 }
 

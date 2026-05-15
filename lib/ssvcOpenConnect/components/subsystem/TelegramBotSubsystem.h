@@ -3,8 +3,8 @@
 
 #include "core/SubsystemManager/SubsystemManager.h"
 #include "core/StatefulServices/TelegramSettingsService/TelegramSettingsService.h"
+#include "core/StatefulServices/OpenConnectSettingsService/ssvcMqttSettings.h"
 
-// Опережающее объявление вместо #include "TelegramBotClient.h"
 class TelegramBotClient;
 class AsyncWebServer;
 
@@ -15,6 +15,7 @@ public:
     void initialize() override;
     void enable() override;
     void disable() override;
+    void markEnabled() { _enabled = true; }
 
     void setSettingsService(SsvcMqttSettingsService& service) {
         _ssvcMqttSettingsService = &service;

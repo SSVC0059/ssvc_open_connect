@@ -239,11 +239,11 @@ public:
 template<typename T>
 void setObject(const String& ns, const String& key, const T& obj, void (*toJson)(const T&, JsonObject&)) {
     std::lock_guard<std::mutex> lock(_mutex);
-    ESP_LOGD("Preferences", "Setting object in namespace '%s' with key '%s'", ns.c_str(), key.c_str());
+    ESP_LOGV("Preferences", "Setting object in namespace '%s' with key '%s'", ns.c_str(), key.c_str());
 
     Preferences prefs;
     if (!prefs.begin(ns.c_str(), false)) {
-        ESP_LOGD("Preferences", "Failed to begin namespace '%s'", ns.c_str());
+        ESP_LOGV("Preferences", "Failed to begin namespace '%s'", ns.c_str());
         return;
     }
 
@@ -253,18 +253,18 @@ void setObject(const String& ns, const String& key, const T& obj, void (*toJson)
 
     String newJsonStr;
     serializeJson(doc, newJsonStr);
-    ESP_LOGD("Preferences", "Serialized JSON: %s", newJsonStr.c_str());
+    ESP_LOGV("Preferences", "Serialized JSON: %s", newJsonStr.c_str());
 
     const String existing = prefs.getString(key.c_str(), "");
     if (existing != newJsonStr) {
-        ESP_LOGD("Preferences", "Value changed, updating preference");
+        ESP_LOGV("Preferences", "Value changed, updating preference");
         if (prefs.putString(key.c_str(), newJsonStr)) {
-            ESP_LOGD("Preferences", "Successfully saved preference");
+            ESP_LOGV("Preferences", "Successfully saved preference");
         } else {
-            ESP_LOGD("Preferences", "Failed to save preference");
+            ESP_LOGW("Preferences", "Failed to save preference");
         }
     } else {
-        ESP_LOGD("Preferences", "Value unchanged, skipping update");
+        ESP_LOGV("Preferences", "Value unchanged, skipping update");
     }
 
     prefs.end();
@@ -273,11 +273,11 @@ void setObject(const String& ns, const String& key, const T& obj, void (*toJson)
 template<typename T>
 bool getObject(const String& ns, const String& key, T& obj, void (*fromJson)(const JsonObject&, T&)) {
     std::lock_guard<std::mutex> lock(_mutex);
-    ESP_LOGD("Preferences", "Getting object from namespace '%s' with key '%s'", ns.c_str(), key.c_str());
+    ESP_LOGV("Preferences", "Getting object from namespace '%s' with key '%s'", ns.c_str(), key.c_str());
 
     Preferences prefs;
     if (!prefs.begin(ns.c_str(), true)) {
-        ESP_LOGD("Preferences", "Failed to begin namespace '%s'", ns.c_str());
+        ESP_LOGV("Preferences", "Failed to begin namespace '%s'", ns.c_str());
         return false;
     }
 
@@ -285,22 +285,22 @@ bool getObject(const String& ns, const String& key, T& obj, void (*fromJson)(con
     prefs.end();
 
     if (jsonStr.isEmpty()) {
-        ESP_LOGD("Preferences", "No data found for key '%s'", key.c_str());
+        ESP_LOGV("Preferences", "No data found for key '%s'", key.c_str());
         return false;
     }
 
-    ESP_LOGD("Preferences", "Retrieved JSON: %s", jsonStr.c_str());
+    ESP_LOGV("Preferences", "Retrieved JSON: %s", jsonStr.c_str());
 
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, jsonStr);
     if (error != DeserializationError::Ok) {
-        ESP_LOGD("Preferences", "JSON deserialization failed: %s", error.c_str());
+        ESP_LOGW("Preferences", "JSON deserialization failed: %s", error.c_str());
         return false;
     }
 
     const auto json = doc.as<JsonObject>();
     fromJson(json, obj);
-    ESP_LOGD("Preferences", "Successfully parsed object");
+    ESP_LOGV("Preferences", "Successfully parsed object");
     return true;
 }
 
