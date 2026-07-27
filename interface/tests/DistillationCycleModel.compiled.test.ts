@@ -25,6 +25,8 @@ function buildCalculatorFixtureHtml(): string {
                 <input type="checkbox" data-path="heads.enabled" checked>
                 <input type="number" data-path="heads.percent" value="3">
                 <input type="number" data-path="heads.targetCycles" value="2">
+                <input type="number" data-path="ssvcSettings.heads.0" value="0" step="0.1">
+                <input type="number" data-path="ssvcSettings.heads.1" value="120" step="1">
                 <input type="checkbox" data-path="late_heads.enabled" checked>
                 <input type="number" data-path="late_heads.percent" value="7">
                 <input type="number" data-path="hearts.percent" value="75">
@@ -87,6 +89,22 @@ describe('Compiled DistillationCycleModel Test', () => {
 
 		expect(totalASElement!.textContent).toBe('10000 мл');
 		expect(console.error).not.toHaveBeenCalled();
+	});
+
+	it('should sync computed SSVC opening time into data-path inputs after calculate', () => {
+		const openingInput = document.querySelector<HTMLInputElement>('[data-path="ssvcSettings.heads.0"]');
+		const powerInput = document.querySelector<HTMLInputElement>('[data-path="powerKw"]');
+
+		expect(openingInput).toBeTruthy();
+		const openingAfterInit = Number(openingInput!.value);
+		expect(openingAfterInit).toBeGreaterThan(0);
+
+		powerInput!.value = '4';
+		powerInput!.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+		const openingAfterPowerChange = Number(openingInput!.value);
+		expect(openingAfterPowerChange).toBeGreaterThan(0);
+		expect(openingAfterPowerChange).not.toBe(openingAfterInit);
 	});
 
 	it('should reset to defaults when reset-all-btn is clicked', () => {
