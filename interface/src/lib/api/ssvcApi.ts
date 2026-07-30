@@ -11,7 +11,8 @@ import type {
 	SsvcSettings,
 	SubsystemsState,
 	TelegramConfig,
-	VkConfig
+	VkConfig,
+	VkPeersResponse
 } from '$lib/types/ssvc';
 
 
@@ -165,6 +166,25 @@ export async function saveVkSettings(settings: VkConfig): Promise<boolean> {
 		return false;
 	}
 	return true;
+}
+
+/** Recent VK dialog peer_id list (messages.getConversations). Uses saved token unless overridden. */
+export async function fetchVkConversationPeers(
+	access_token?: string,
+	api_version?: string
+): Promise<VkPeersResponse | null> {
+	const body: Record<string, string> = {};
+	if (access_token) {
+		body.access_token = access_token;
+	}
+	if (api_version) {
+		body.api_version = api_version;
+	}
+	const response = await apiFetch<VkPeersResponse>('/rest/vk/peers', 'POST', body);
+	if (!response.success) {
+		return null;
+	}
+	return response.data;
 }
 
 export async function setSubsystemState(states: Record<string, boolean>): Promise<boolean> {

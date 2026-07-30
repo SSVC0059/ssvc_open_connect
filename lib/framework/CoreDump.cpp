@@ -18,6 +18,7 @@
 #include "esp_core_dump.h"
 #include "esp_partition.h"
 #include "esp_flash.h"
+#include "esp_err.h"
 
 CoreDump::CoreDump(AsyncWebServer *server,
                    SecurityManager *securityManager) : _server(server),
@@ -62,6 +63,19 @@ void CoreDump::coreDump(AsyncWebServerRequest *request)
         return;
     }
     AsyncWebServerResponse *response = request->beginResponse(200, "application/octet-stream", buffer, coredump_size);
+    response->addHeader("Content-Disposition", "attachment; filename=coredump.bin");
+    response->addHeader("Cache-Control", "no-store");
+
+    request->onDisconnect([buffer, coredump_size]() {
+        // ESPAsyncWebServer has no responseCode(); erase after the client closes a 200 stream we started.
+        const esp_err_t eraseErr = esp_core_dump_image_erase();
+        if (eraseErr == ESP_OK) {
+            ESP_LOGI(SVK_TAG, "Coredump erased from flash after download (%u bytes)", coredump_size);
+        } else if (eraseErr != ESP_ERR_NOT_FOUND) {
+            ESP_LOGW(SVK_TAG, "Coredump erase failed: %s", esp_err_to_name(eraseErr));
+        }
+        free(buffer);
+    });
+
     request->send(response);
-    free(buffer);
 }

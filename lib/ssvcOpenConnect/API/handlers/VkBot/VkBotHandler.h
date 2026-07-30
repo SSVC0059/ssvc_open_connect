@@ -10,6 +10,7 @@ public:
 
     static void updateSettings(AsyncWebServerRequest* request, JsonVariant& json);
     static void getSettings(AsyncWebServerRequest* request);
+    static void listConversationPeers(AsyncWebServerRequest* request, JsonVariant& json);
 
 private:
     static constexpr const char* TAG = "VkBot";

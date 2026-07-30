@@ -159,17 +159,30 @@ export type VkConfig = {
 	access_token: string;
 	api_version: string;
 	group_id: string;
+	peer_id: string;
 	live_enabled: boolean;
-	live_peer_id: string;
 	alerts_enabled: boolean;
-	alerts_peer_id: string;
 	summary_enabled: boolean;
-	summary_peer_id: string;
 	wall_post_enabled: boolean;
-	keyboard_base_url: string;
+	/** Legacy fields from older firmware / saved profiles */
+	live_peer_id?: string;
+	alerts_peer_id?: string;
+	summary_peer_id?: string;
 	enable?: boolean;
 	subsystem_name?: string;
 	status?: string;
+};
+
+export type VkConversationPeer = {
+	peer_id: number;
+	type?: string;
+	title?: string;
+};
+
+export type VkPeersResponse = {
+	ok: boolean;
+	peers?: VkConversationPeer[];
+	error?: string;
 };
 
 // ==================== Настройки подсистем OpenConnect  ===================== //

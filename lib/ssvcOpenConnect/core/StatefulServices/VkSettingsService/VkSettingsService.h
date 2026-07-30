@@ -15,18 +15,13 @@ struct VkSettings {
     /** Numeric group id (positive) for wall.post owner_id = -group_id */
     String groupId;
 
+    /** Destination chat (user id or 2000000000+chat_id). */
+    String peerId;
+
     bool liveEnabled = true;
-    String livePeerId;
-
     bool alertsEnabled = false;
-    String alertsPeerId;
-
     bool summaryEnabled = false;
-    String summaryPeerId;
-
     bool wallPostEnabled = false;
-    /** Base URL for keyboard open_link (e.g. http://192.168.0.10); empty = use STA IP */
-    String keyboardBaseUrl;
 };
 
 StateUpdateResult updateVkSettings(JsonObject& root, VkSettings& settings);

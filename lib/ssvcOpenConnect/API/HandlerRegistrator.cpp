@@ -118,6 +118,13 @@ void HandlerRegistrator::registerVkBot() const
           VkBotHandler::getSettings(request);
       },
       AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/vk/peers", HTTP_POST,
+              _securityManager->wrapCallback(
+                  [](AsyncWebServerRequest* request, JsonVariant& json) {
+                      VkBotHandler::listConversationPeers(request, json);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
 #endif
 }
 

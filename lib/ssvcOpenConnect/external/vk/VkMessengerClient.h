@@ -36,33 +36,35 @@ private:
     void* _alertQueue = nullptr;  // QueueHandle_t
     bool _initialized = false;
 
-    int64_t _livePeer = 0;
-    int64_t _alertsPeer = 0;
-    int64_t _summaryPeer = 0;
+    int64_t _peer = 0;
     /** VK community tokens (vk1.a.…) are often 200+ chars; keep headroom for URL form + API. */
     char _token[512]{};
     char _apiVer[16]{};
     char _groupId[16]{};
-    char _keyboardBase[96]{};
     bool _liveEnabled = false;
     bool _alertsEnabled = false;
     bool _summaryEnabled = false;
     bool _wallPostEnabled = false;
 
     uint32_t _liveMessageId = 0;
+    uint32_t _alertMessageId = 0;
+    char _pendingAlertLine[144]{};
+    bool _hasPendingAlert = false;
+    /** Skip live edit/send until millis() reaches this (VK flood / rate limit). */
+    uint32_t _liveVkBackoffUntilMs = 0;
+    /** After flood/rate edit failure: retry edit once backoff ends (do not clear message_id). */
+    bool _liveEditRetryAfterBackoff = false;
     RectificationTypes::ProcessState _lastRectState = RectificationTypes::ProcessState::IDLE;
 
     // Large scratch buffers: only used from workerTask while _httpMutex is held (not stack).
     static constexpr size_t kFormCap = 10240;
-    static constexpr size_t kRespCap = 640;
+    static constexpr size_t kRespCap = 2048;
     static constexpr size_t kLiveBodyCap = 1400;
-    static constexpr size_t kKbCap = 320;
     static constexpr size_t kSummaryCap = 4096;
     static constexpr size_t kFormatDataCap = 1024;
     char _formBuf[kFormCap]{};
     char _respBuf[kRespCap]{};
     char _liveBodyBuf[kLiveBodyCap]{};
-    char _kbBuf[kKbCap]{};
     char _summaryBuf[kSummaryCap]{};
     /** VK messages.send/edit optional format_data JSON (UTF-16 offsets). */
     char _formatDataBuf[kFormatDataCap]{};
@@ -75,9 +77,13 @@ private:
     bool vkFormPost(const char* method, const char* formBody, char* respBuf, size_t respCap);
     bool sendMessageToPeer(int64_t peer, const char* text, const char* keyboardJson, const char* formatDataJson,
                            uint32_t* outMessageId);
+    bool deleteMessage(int64_t peer, uint32_t messageId);
     bool editLiveMessage(const char* text, const char* keyboardJson, const char* formatDataJson);
-    void buildKeyboardJson(char* out, size_t cap) const;
+    /** Apply VK API backoff after flood / rate-limit errors (ms from now). */
+    void applyLiveVkBackoff(uint32_t durationMs);
     void buildLiveStatusText(char* buf, size_t cap, char* fmtOut, size_t fmtCap);
+    void flushAlertMessageIfDue(uint32_t nowMs);
+    void runLiveCycle(uint32_t nowMs);
     void buildRectificationSummary(char* buf, size_t cap, char* fmtOut, size_t fmtCap) const;
     bool postWall(const char* text);
 

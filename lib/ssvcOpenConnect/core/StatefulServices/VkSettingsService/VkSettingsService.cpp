@@ -25,10 +25,21 @@ StateUpdateResult updateVkSettings(JsonObject& root, VkSettings& settings) {
     assignStr("access_token", settings.accessToken);
     assignStr("api_version", settings.apiVersion);
     assignStr("group_id", settings.groupId);
-    assignStr("live_peer_id", settings.livePeerId);
-    assignStr("alerts_peer_id", settings.alertsPeerId);
-    assignStr("summary_peer_id", settings.summaryPeerId);
-    assignStr("keyboard_base_url", settings.keyboardBaseUrl);
+    assignStr("peer_id", settings.peerId);
+    if (settings.peerId.isEmpty()) {
+        const char* legacyKeys[] = {"live_peer_id", "alerts_peer_id", "summary_peer_id"};
+        for (const char* key : legacyKeys) {
+            if (!root[key].is<const char*>() && !root[key].is<String>()) {
+                continue;
+            }
+            const String v = root[key].as<String>();
+            if (!v.isEmpty()) {
+                settings.peerId = v;
+                changed = true;
+                break;
+            }
+        }
+    }
 
     if (root["live_enabled"].is<bool>()) {
         const bool v = root["live_enabled"].as<bool>();
@@ -68,14 +79,11 @@ void readVkSettings(VkSettings& settings, JsonObject& root) {
     root["access_token"] = settings.accessToken;
     root["api_version"] = settings.apiVersion.isEmpty() ? "5.199" : settings.apiVersion;
     root["group_id"] = settings.groupId;
+    root["peer_id"] = settings.peerId;
     root["live_enabled"] = settings.liveEnabled;
-    root["live_peer_id"] = settings.livePeerId;
     root["alerts_enabled"] = settings.alertsEnabled;
-    root["alerts_peer_id"] = settings.alertsPeerId;
     root["summary_enabled"] = settings.summaryEnabled;
-    root["summary_peer_id"] = settings.summaryPeerId;
     root["wall_post_enabled"] = settings.wallPostEnabled;
-    root["keyboard_base_url"] = settings.keyboardBaseUrl;
 }
 
 VkSettingsService* VkSettingsService::getInstance() {
