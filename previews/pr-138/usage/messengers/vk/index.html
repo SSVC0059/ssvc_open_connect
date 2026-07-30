@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../../media/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -2472,33 +2472,30 @@
 <hr>
 <h2 id="vk-">Что нужно в VK (краткий чек-лист)</h2>
 <ol>
-<li>Сообщество с <strong>включёнными сообщениями</strong> и при необходимости режимом для <strong>чат-бота / возможностей ботов</strong>, если используете inline-клавиатуру (см. сообщения об ошибке <strong>912</strong> в ответах API).</li>
+<li>Сообщество с <strong>включёнными сообщениями</strong>.</li>
 <li><strong>Ключ доступа</strong> с правами <strong><code>messages</code></strong>, при стене — <strong><code>wall</code></strong>.</li>
-<li>До <strong>трёх</strong> числовых <strong><code>peer_id</code></strong> в интерфейсе OC: живой статус, тревоги, итог (стена — отдельно через <code>group_id</code> и <code>wall.post</code>).</li>
+<li>Один <strong><code>peer_id</code></strong> — чат назначения (личка или беседа). Переключатели: телеметрия, тревоги, итог в ЛС; стена — через <code>group_id</code> и <code>wall.post</code>.</li>
 </ol>
 <hr>
 <h2 id="oc">Настройка в интерфейсе OC</h2>
 <ol>
 <li>Откройте <strong>Настройки OC → Мессенджеры</strong>.</li>
 <li>Включите подсистему <strong>VK</strong> (если отключена в списке подсистем).</li>
-<li>В блоке VK укажите <strong>токен</strong> и <strong><code>peer_id</code></strong> для каналов (для живого статуса — тот же числовой id, что <strong><code>VK_PEER_ID</code></strong> в <code>example/.env</code>, если это личный диалог с пользователем).</li>
-<li>Поле <strong>«Кнопка „Веб“»</strong> (<code>keyboard_base_url</code>): <strong>оставьте пустым</strong>, чтобы не отправлять inline-клавиатуру (как <code>example/vk_bot.py</code>). Если указать <code>http(s)://…</code>, в сообщение добавится кнопка <code>open_link</code>; для этого VK может потребовать режим <strong>чат-бота</strong> в настройках сообщества (иначе возможна ошибка <strong>912</strong>).</li>
-<li>При необходимости включите <strong>публикацию на стене</strong> для итога.</li>
-<li>Сохраните настройки.</li>
+<li>Укажите <strong>токен</strong> и <strong>peer_id</strong> (кнопка «Из диалогов VK» или вручную — как <strong><code>VK_PEER_ID</code></strong> в <code>example/.env</code> для личного диалога).</li>
+<li>Включите нужные каналы (телеметрия, тревоги, итог, стена) и сохраните настройки.</li>
 </ol>
 <p>Конфигурация хранится на устройстве (<code>/config/vk.json</code>); REST: <code>GET</code>/<code>PUT</code> <code>/rest/vk/config</code> (при отключённой подсистеме ответ <strong>423</strong>).</p>
 <hr>
 <h2 id="_2">Поведение на устройстве</h2>
 <ul>
 <li>Отправка и правка сообщений выполняется <strong>в отдельной задаче FreeRTOS</strong>, привязанной к <strong>ядру 1</strong>, с неблокирующим циклом.</li>
-<li><strong>Живой статус</strong> периодически обновляется через <code>messages.edit</code> (при ошибке возможна повторная отправка). Текст оформляется через параметр <strong><code>format_data</code></strong> (жирные фрагменты: заголовок «OpenConnect», подписи «Этап:» / «TP1:» / «TP2:», названия зон); смещения считаются в <strong>UTF-16</strong>, как ожидает VK. Если API вернёт ошибку на <code>format_data</code>, обновите версию API в настройках или сообщите — можно будет отключить разметку.</li>
-<li><strong>Тревоги</strong> ставятся в небольшую очередь фиксированного размера.</li>
-<li>По <strong>завершении ректификации</strong> при включённой опции выполняется <code>wall.post</code> с кратким текстом по метрикам/датчикам (без графиков и временных рядов).</li>
+<li><strong>Живой статус</strong> — одно сообщение, обновление через <code>messages.edit</code> не чаще <strong>1 раза в 20 с</strong> (параметр <strong><code>format_data</code></strong> для жирного текста).</li>
+<li><strong>Тревоги</strong> — очередь; в чат уходит не чаще <strong>1 раза в 20 с</strong>; перед новой тревогой предыдущее тревожное сообщение удаляется (<code>messages.delete</code>).</li>
+<li>По <strong>завершении ректификации</strong> — опционально итог в ЛС и/или <code>wall.post</code>.</li>
 </ul>
 <hr>
 <h2 id="_3">Ограничения</h2>
 <ul>
-<li>Inline-клавиатура: только кнопка <strong>ссылка</strong> (<code>open_link</code>), без Long Poll и callback на ESP32. Пока URL кнопки <strong>пустой</strong>, клавиатура <strong>не отправляется</strong>. Формат параметра <code>keyboard</code> и типы кнопок — в официальном разделе <a href="https://dev.vk.com/ru/api/bots/development/keyboard">Клавиатура (чат-боты)</a>; при неверном JSON возможна ошибка <strong>911</strong> (<em>Keyboard format is invalid</em>). Включение клавиатуры в интерфейсе сообщества и пункт <strong>«Возможности ботов»</strong> описаны там же; без этого возможна ошибка <strong>912</strong>. После включения кнопки <code>open_link</code> при ошибке <strong>912</strong> проверьте настройки сообщества.</li>
 <li>Для стабильной работы нужен сетевой доступ устройства к <code>https://api.vk.com</code>.</li>
 </ul>
 <hr>
@@ -2644,7 +2641,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "toc.follow", "content.code.copy"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
         <script src="../../../calculator/rectification_calculator.js"></script>
       

@@ -410,6 +410,12 @@ function deepClone(obj) {
   return objCopy;
 }
 const CALC_ROOT_SELECTOR = ".editor-layout#app";
+const SSVC_COMPUTED_INPUT_PATHS = [
+  "ssvcSettings.heads.0",
+  "ssvcSettings.late_heads.0",
+  "ssvcSettings.hearts.0",
+  "ssvcSettings.tails.0"
+];
 const model = new DistillationCycleModel();
 let activeDefaultParams = null;
 let runUpdate = () => {
@@ -495,6 +501,13 @@ function initCalculator() {
           el.textContent = formatResultText(path, value);
         } else {
           el.textContent = "";
+        }
+      });
+      SSVC_COMPUTED_INPUT_PATHS.forEach((path) => {
+        const value = getValueByPath(profile, path);
+        const input = r.querySelector(`[data-path="${path}"]`);
+        if (input && input.type !== "checkbox" && value !== null && value !== void 0 && !Number.isNaN(value)) {
+          input.value = value;
         }
       });
       const totalPercent = (currentParams.heads.enabled ? currentParams.heads.percent : 0) + (currentParams.late_heads.enabled ? currentParams.late_heads.percent : 0) + (currentParams.tails.enabled ? currentParams.tails.percent : 0) + currentParams.hearts.percent;
