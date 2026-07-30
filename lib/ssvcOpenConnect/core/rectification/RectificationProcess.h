@@ -99,6 +99,13 @@ public:
 
   Metrics& getMetrics();
 
+  RectificationTypes::ProcessState getProcessState() const { return currentProcessStatus; }
+  const char* getRectificationStartTime() const { return startTime; }
+  const char* getRectificationEndTime() const { return endTime; }
+
+  /** Collected volume (ml) for a finished rectification stage; 0 if not recorded. */
+  int getFlowVolumeCollectedMl(RectificationStage stage) const;
+
   std::string errorSet;
 
 private:

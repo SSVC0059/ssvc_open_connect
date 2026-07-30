@@ -155,14 +155,45 @@ export type TelegramConfig = {
 	chat_id: string;
 };
 
+export type VkConfig = {
+	access_token: string;
+	api_version: string;
+	group_id: string;
+	peer_id: string;
+	live_enabled: boolean;
+	alerts_enabled: boolean;
+	summary_enabled: boolean;
+	wall_post_enabled: boolean;
+	/** Legacy fields from older firmware / saved profiles */
+	live_peer_id?: string;
+	alerts_peer_id?: string;
+	summary_peer_id?: string;
+	enable?: boolean;
+	subsystem_name?: string;
+	status?: string;
+};
+
+export type VkConversationPeer = {
+	peer_id: number;
+	type?: string;
+	title?: string;
+};
+
+export type VkPeersResponse = {
+	ok: boolean;
+	peers?: VkConversationPeer[];
+	error?: string;
+};
+
 // ==================== Настройки подсистем OpenConnect  ===================== //
 
 export type SubsystemsState = {
 	telegram_bot: boolean;
+	vk_bot: boolean;
 	thermal: boolean;
 	i2c_bus: boolean;
 	atm_sensor: boolean;
-	settings:	boolean;
+	settings: boolean;
 };
 
 /** Ответ GET/PUT /rest/oc/hardware-config */
