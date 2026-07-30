@@ -25,7 +25,7 @@ namespace {
 
 constexpr size_t kAlertMsgMax = 144;
 constexpr size_t kAlertQueueDepth = 4;
-constexpr int kLivePeriodTicks = 10;  // 10 * 500ms = 5s
+constexpr int kVkPeriodTicks = 40;  // 40 * 500ms = 20s between live edits and alert sends
 constexpr uint32_t kVkProbeCacheOkMs = 60000;
 constexpr uint32_t kVkProbeCacheFailMs = 10000;
 
@@ -57,6 +57,60 @@ bool probeVkApiNow() {
 struct VkAlertMsg {
     char line[kAlertMsgMax];
 };
+
+void logVkRespPreview(const char* ctx, const char* resp) {
+    if (resp == nullptr || resp[0] == '\0') {
+        ESP_LOGW("VkMessenger", "%s: empty response body", ctx);
+        return;
+    }
+    ESP_LOGW("VkMessenger", "%s: %.192s", ctx, resp);
+}
+
+/** Best-effort when JSON truncated but body contains VK error object. */
+int peekVkErrorCode(const char* resp) {
+    if (resp == nullptr) {
+        return 0;
+    }
+    const char* p = strstr(resp, "\"error_code\":");
+    if (p == nullptr) {
+        p = strstr(resp, "\"error_code\" :");
+        if (p == nullptr) {
+            return 0;
+        }
+        p += 13;
+        while (*p == ' ') {
+            ++p;
+        }
+    } else {
+        p += 13;
+    }
+    return atoi(p);
+}
+
+bool vkErrorIsRateOrFlood(int ec) {
+    switch (ec) {
+        case 6:    // Too many requests per second
+        case 9:    // Flood control
+        case 984:  // Spam restriction
+            return true;
+        default:
+            return false;
+    }
+}
+
+/** Message id invalid — allow messages.send on a later cycle. Never for flood (9, 6, 984). */
+bool vkEditErrorNeedsNewMessage(int ec) {
+    if (vkErrorIsRateOrFlood(ec)) {
+        return false;
+    }
+    switch (ec) {
+        case 909:  // too old to edit
+        case 924:  // message not found (legacy)
+            return true;
+        default:
+            return false;
+    }
+}
 
 /** DS18B20-style ROM id: only last 4 characters in live VK text (compact). */
 const char* sensorIdSuffix(const std::string& id) {
@@ -463,10 +517,20 @@ bool VkMessengerClient::isVkApiReachable() {
     }
     s_vkProbeLastOk = probeVkApiNow();
     s_vkProbeLastMs = now;
-    if (s_vkProbeLastOk) {
+    if (!s_vkProbeLastOk) {
+        ESP_LOGI(TAG, "VK API probe failed (cached %u ms)", cacheMs);
+    } else {
         ESP_LOGD(TAG, "VK API reachable");
     }
     return s_vkProbeLastOk;
+}
+
+void VkMessengerClient::applyLiveVkBackoff(const uint32_t durationMs) {
+    const uint32_t until = millis() + durationMs;
+    if (until > _liveVkBackoffUntilMs) {
+        _liveVkBackoffUntilMs = until;
+    }
+    ESP_LOGW(TAG, "live VK backoff %u ms (until %u)", durationMs, _liveVkBackoffUntilMs);
 }
 
 void VkMessengerClient::reloadSettingsSnapshot() {
@@ -480,15 +544,16 @@ void VkMessengerClient::reloadSettingsSnapshot() {
         _apiVer[sizeof(_apiVer) - 1] = '\0';
         strncpy(_groupId, s.groupId.c_str(), sizeof(_groupId) - 1);
         _groupId[sizeof(_groupId) - 1] = '\0';
-        strncpy(_keyboardBase, s.keyboardBaseUrl.c_str(), sizeof(_keyboardBase) - 1);
-        _keyboardBase[sizeof(_keyboardBase) - 1] = '\0';
         _liveEnabled = s.liveEnabled;
         _alertsEnabled = s.alertsEnabled;
         _summaryEnabled = s.summaryEnabled;
         _wallPostEnabled = s.wallPostEnabled;
-        _livePeer = parsePeerId(s.livePeerId);
-        _alertsPeer = parsePeerId(s.alertsPeerId);
-        _summaryPeer = parsePeerId(s.summaryPeerId);
+        const int64_t newPeer = parsePeerId(s.peerId);
+        if (_peer != 0 && newPeer != _peer) {
+            _liveMessageId = 0;
+            _alertMessageId = 0;
+        }
+        _peer = newPeer;
     });
 }
 
@@ -517,7 +582,7 @@ bool VkMessengerClient::vkFormPost(const char* method, const char* formBody, cha
             respBuf[respCap - 1] = '\0';
         }
     } else {
-        ESP_LOGW(TAG, "VK HTTP code=%d", code);
+        ESP_LOGW(TAG, "%s HTTP code=%d", method, code);
     }
     http.end();
     return code == HTTP_CODE_OK && respBuf[0] != '\0';
@@ -548,30 +613,40 @@ bool VkMessengerClient::sendMessageToPeer(const int64_t peer, const char* text, 
 
     char* resp = _respBuf;
     if (!vkFormPost("messages.send", form, resp, kRespCap)) {
+        ESP_LOGW(TAG, "messages.send transport fail peer=%lld kb=%d fmt=%d", static_cast<long long>(peer),
+                 keyboardJson != nullptr && keyboardJson[0] != '\0',
+                 formatDataJson != nullptr && formatDataJson[0] != '\0');
         return false;
     }
     JsonDocument doc;
     if (deserializeJson(doc, resp) != DeserializationError::Ok) {
-        ESP_LOGE(TAG, "send JSON parse fail");
+        ESP_LOGE(TAG, "messages.send JSON parse fail peer=%lld", static_cast<long long>(peer));
+        logVkRespPreview("messages.send", resp);
         return false;
     }
     if (doc["error"].is<JsonObject>()) {
         const int ec = doc["error"]["error_code"] | 0;
-        ESP_LOGE(TAG, "VK err %d: %s", ec, doc["error"]["error_msg"].as<const char*>());
+        ESP_LOGE(TAG, "messages.send VK err %d: %s", ec, doc["error"]["error_msg"].as<const char*>());
+        if (vkErrorIsRateOrFlood(ec)) {
+            applyLiveVkBackoff(ec == 9 ? 60000 : 120000);
+        }
         return false;
     }
     if (!doc["response"].is<int>()) {
+        ESP_LOGE(TAG, "messages.send bad response type peer=%lld (expected int message id)", static_cast<long long>(peer));
+        logVkRespPreview("messages.send", resp);
         return false;
     }
     const int mid = doc["response"].as<int>();
     if (outMessageId != nullptr) {
         *outMessageId = static_cast<uint32_t>(mid);
     }
+    ESP_LOGI(TAG, "messages.send ok peer=%lld message_id=%d", static_cast<long long>(peer), mid);
     return true;
 }
 
-bool VkMessengerClient::editLiveMessage(const char* text, const char* keyboardJson, const char* formatDataJson) {
-    if (_livePeer == 0 || _liveMessageId == 0 || text == nullptr) {
+bool VkMessengerClient::deleteMessage(const int64_t peer, const uint32_t messageId) {
+    if (peer == 0 || messageId == 0 || _token[0] == '\0') {
         return false;
     }
     char* form = _formBuf;
@@ -579,7 +654,50 @@ bool VkMessengerClient::editLiveMessage(const char* text, const char* keyboardJs
     appendFormKV("access_token", _token, form, &pos, kFormCap);
     appendFormKV("v", _apiVer, form, &pos, kFormCap);
     char peerStr[22];
-    snprintf(peerStr, sizeof(peerStr), "%lld", static_cast<long long>(_livePeer));
+    snprintf(peerStr, sizeof(peerStr), "%lld", static_cast<long long>(peer));
+    appendFormKV("peer_id", peerStr, form, &pos, kFormCap);
+    char midStr[16];
+    snprintf(midStr, sizeof(midStr), "%lu", static_cast<unsigned long>(messageId));
+    appendFormKV("message_ids", midStr, form, &pos, kFormCap);
+    appendFormKV("delete_for_all", "1", form, &pos, kFormCap);
+
+    char* resp = _respBuf;
+    if (!vkFormPost("messages.delete", form, resp, kRespCap)) {
+        ESP_LOGW(TAG, "messages.delete transport fail peer=%lld mid=%lu", static_cast<long long>(peer),
+                 static_cast<unsigned long>(messageId));
+        return false;
+    }
+    JsonDocument doc;
+    if (deserializeJson(doc, resp) != DeserializationError::Ok) {
+        ESP_LOGW(TAG, "messages.delete JSON parse fail mid=%lu", static_cast<unsigned long>(messageId));
+        return false;
+    }
+    if (doc["error"].is<JsonObject>()) {
+        const int ec = doc["error"]["error_code"] | 0;
+        ESP_LOGW(TAG, "messages.delete VK err %d mid=%lu: %s", ec, static_cast<unsigned long>(messageId),
+                 doc["error"]["error_msg"].as<const char*>());
+        if (vkErrorIsRateOrFlood(ec)) {
+            applyLiveVkBackoff(ec == 9 ? 60000 : 120000);
+        }
+        return false;
+    }
+    ESP_LOGI(TAG, "messages.delete ok peer=%lld mid=%lu", static_cast<long long>(peer),
+             static_cast<unsigned long>(messageId));
+    return true;
+}
+
+bool VkMessengerClient::editLiveMessage(const char* text, const char* keyboardJson, const char* formatDataJson) {
+    if (_peer == 0 || _liveMessageId == 0 || text == nullptr) {
+        ESP_LOGW(TAG, "live edit skipped (peer=%lld stored_id=%lu text=%p)", static_cast<long long>(_peer),
+                 static_cast<unsigned long>(_liveMessageId), static_cast<const void*>(text));
+        return false;
+    }
+    char* form = _formBuf;
+    size_t pos = 0;
+    appendFormKV("access_token", _token, form, &pos, kFormCap);
+    appendFormKV("v", _apiVer, form, &pos, kFormCap);
+    char peerStr[22];
+    snprintf(peerStr, sizeof(peerStr), "%lld", static_cast<long long>(_peer));
     appendFormKV("peer_id", peerStr, form, &pos, kFormCap);
     char midStr[16];
     snprintf(midStr, sizeof(midStr), "%lu", static_cast<unsigned long>(_liveMessageId));
@@ -593,18 +711,46 @@ bool VkMessengerClient::editLiveMessage(const char* text, const char* keyboardJs
     }
     char* resp = _respBuf;
     if (!vkFormPost("messages.edit", form, resp, kRespCap)) {
+        ESP_LOGW(TAG, "messages.edit transport fail mid=%lu fmt=%d kb=%d", static_cast<unsigned long>(_liveMessageId),
+                 formatDataJson != nullptr && formatDataJson[0] != '\0',
+                 keyboardJson != nullptr && keyboardJson[0] != '\0');
         return false;
     }
     JsonDocument doc;
-    if (deserializeJson(doc, resp) != DeserializationError::Ok) {
+    const DeserializationError jerr = deserializeJson(doc, resp);
+    if (jerr != DeserializationError::Ok) {
+        const int ecPeek = peekVkErrorCode(resp);
+        ESP_LOGW(TAG, "messages.edit JSON parse fail mid=%lu peek_err=%d", static_cast<unsigned long>(_liveMessageId),
+                 ecPeek);
+        logVkRespPreview("messages.edit", resp);
+        if (vkErrorIsRateOrFlood(ecPeek)) {
+            applyLiveVkBackoff(ecPeek == 9 ? 60000 : 120000);
+            _liveEditRetryAfterBackoff = true;
+        }
         return false;
     }
     if (doc["error"].is<JsonObject>()) {
         const int ec = doc["error"]["error_code"] | 0;
-        ESP_LOGW(TAG, "edit err %d — reset live msg id", ec);
-        _liveMessageId = 0;
+        ESP_LOGW(TAG, "messages.edit VK err %d mid=%lu: %s", ec, static_cast<unsigned long>(_liveMessageId),
+                 doc["error"]["error_msg"].as<const char*>());
+        if (vkErrorIsRateOrFlood(ec)) {
+            ESP_LOGW(TAG, "messages.edit rate/flood (ec=%d): keep mid=%lu, retry edit after backoff",
+                     ec, static_cast<unsigned long>(_liveMessageId));
+            applyLiveVkBackoff(ec == 9 ? 60000 : 120000);
+            _liveEditRetryAfterBackoff = true;
+            return false;
+        }
+        if (vkEditErrorNeedsNewMessage(ec)) {
+            ESP_LOGW(TAG, "messages.edit ec=%d: clearing stored mid=%lu (will send new on next live cycle)", ec,
+                     static_cast<unsigned long>(_liveMessageId));
+            _liveMessageId = 0;
+            _liveEditRetryAfterBackoff = false;
+        }
         return false;
     }
+    _liveEditRetryAfterBackoff = false;
+    ESP_LOGI(TAG, "messages.edit ok mid=%lu peer=%lld text_len=%u", static_cast<unsigned long>(_liveMessageId),
+             static_cast<long long>(_peer), static_cast<unsigned>(strlen(text)));
     return true;
 }
 
@@ -642,21 +788,71 @@ bool VkMessengerClient::postWall(const char* text) {
     return true;
 }
 
-void VkMessengerClient::buildKeyboardJson(char* out, const size_t cap) const {
-    // Inline keyboard is a VK «chat bot» surface; omit unless user set a URL (parity with example/vk_bot.py).
-    if (_keyboardBase[0] == '\0') {
-        if (cap > 0) {
-            out[0] = '\0';
-        }
+void VkMessengerClient::flushAlertMessageIfDue(const uint32_t nowMs) {
+    if (!_alertsEnabled || _peer == 0 || _token[0] == '\0' || !_hasPendingAlert) {
         return;
     }
-    char link[128];
-    strncpy(link, _keyboardBase, sizeof(link) - 1);
-    link[sizeof(link) - 1] = '\0';
-    snprintf(out, cap,
-             "{\"one_time\":false,\"inline\":true,\"buttons\":[[{\"action\":{\"type\":\"open_link\",\"link\":\"%s\","
-             "\"label\":\"Веб\"},\"color\":\"primary\"}]]}",
-             link);
+    if (_liveVkBackoffUntilMs != 0 && nowMs < _liveVkBackoffUntilMs) {
+        ESP_LOGD(TAG, "alert cycle skipped (VK backoff, %u ms left)", _liveVkBackoffUntilMs - nowMs);
+        return;
+    }
+
+    MutexLocker lock(_httpMutex);
+    if (_alertMessageId != 0) {
+        const uint32_t oldMid = _alertMessageId;
+        if (deleteMessage(_peer, oldMid)) {
+            _alertMessageId = 0;
+        } else {
+            ESP_LOGW(TAG, "alert delete failed mid=%lu (will try send anyway)", static_cast<unsigned long>(oldMid));
+            _alertMessageId = 0;
+        }
+    }
+    uint32_t mid = 0;
+    if (sendMessageToPeer(_peer, _pendingAlertLine, nullptr, nullptr, &mid)) {
+        _alertMessageId = mid;
+        _hasPendingAlert = false;
+        ESP_LOGI(TAG, "alert sent peer=%lld mid=%lu: %.80s", static_cast<long long>(_peer),
+                 static_cast<unsigned long>(mid), _pendingAlertLine);
+    } else {
+        ESP_LOGW(TAG, "alert send failed peer=%lld: %.80s", static_cast<long long>(_peer), _pendingAlertLine);
+    }
+}
+
+void VkMessengerClient::runLiveCycle(const uint32_t nowMs) {
+    if (!_liveEnabled || _peer == 0 || _token[0] == '\0') {
+        return;
+    }
+    if (_liveVkBackoffUntilMs != 0 && nowMs < _liveVkBackoffUntilMs) {
+        ESP_LOGD(TAG, "live cycle skipped (VK backoff, %u ms left)", _liveVkBackoffUntilMs - nowMs);
+        return;
+    }
+
+    buildLiveStatusText(_liveBodyBuf, kLiveBodyCap, _formatDataBuf, sizeof(_formatDataBuf));
+    const char* fmtJson = (_formatDataBuf[0] != '\0') ? _formatDataBuf : nullptr;
+    const size_t bodyLen = strlen(_liveBodyBuf);
+
+    MutexLocker lock(_httpMutex);
+    if (_liveMessageId == 0) {
+        ESP_LOGI(TAG, "live cycle: send new (peer=%lld body=%u fmt=%d)", static_cast<long long>(_peer),
+                 static_cast<unsigned>(bodyLen), fmtJson != nullptr ? 1 : 0);
+        uint32_t mid = 0;
+        if (sendMessageToPeer(_peer, _liveBodyBuf, nullptr, fmtJson, &mid)) {
+            _liveMessageId = mid;
+            ESP_LOGI(TAG, "live stored message_id=%lu", static_cast<unsigned long>(_liveMessageId));
+        } else {
+            ESP_LOGW(TAG, "live send failed, message_id still 0");
+        }
+    } else {
+        ESP_LOGD(TAG, "live cycle: edit mid=%lu body=%u fmt=%d", static_cast<unsigned long>(_liveMessageId),
+                 static_cast<unsigned>(bodyLen), fmtJson != nullptr ? 1 : 0);
+        const uint32_t editMid = _liveMessageId;
+        if (!editLiveMessage(_liveBodyBuf, nullptr, fmtJson)) {
+            ESP_LOGW(TAG, "live edit failed mid=%lu (flood: id kept, retry after backoff; 909/924: id cleared)",
+                     static_cast<unsigned long>(editMid));
+        } else {
+            _liveEditRetryAfterBackoff = false;
+        }
+    }
 }
 
 void VkMessengerClient::buildLiveStatusText(char* buf, const size_t cap, char* fmtOut, const size_t fmtCap) {
@@ -733,8 +929,14 @@ void VkMessengerClient::buildLiveStatusText(char* buf, const size_t cap, char* f
     }
 
     if (!ok || n == 0) {
+        ESP_LOGW(TAG, "live text build fallback (ok=%d len=%u spans=%d fmt_buf=%u) — format_data cleared",
+                 ok ? 1 : 0, static_cast<unsigned>(n), ns,
+                 static_cast<unsigned>(fmtOut != nullptr && fmtCap > 0 ? fmtCap : 0));
         snprintf(buf, cap, "OpenConnect\nнет данных");
         ns = 0;
+    } else {
+        ESP_LOGD(TAG, "live text ok len=%u spans=%d has_fmt=%d", static_cast<unsigned>(n), ns,
+                 (fmtOut != nullptr && fmtOut[0] != '\0') ? 1 : 0);
     }
 
     if (fmtOut != nullptr && fmtCap > 0) {
@@ -820,20 +1022,23 @@ bool VkMessengerClient::tryEnqueueAlert(const char* utf8Line) {
     }
     VkAlertMsg msg{};
     strncpy(msg.line, utf8Line, sizeof(msg.line) - 1);
-    return xQueueSend(static_cast<QueueHandle_t>(_alertQueue), &msg, 0) == pdTRUE;
+    const bool ok = xQueueSend(static_cast<QueueHandle_t>(_alertQueue), &msg, 0) == pdTRUE;
+    if (!ok) {
+        ESP_LOGW(TAG, "alert queue full, dropped: %.80s", utf8Line);
+    } else {
+        ESP_LOGD(TAG, "alert queued: %.80s", utf8Line);
+    }
+    return ok;
 }
 
 void VkMessengerClient::runLoop() {
     reloadSettingsSnapshot();
 
     VkAlertMsg alert{};
-    int alertBudget = 4;
-    while (alertBudget-- > 0 && xQueueReceive(static_cast<QueueHandle_t>(_alertQueue), &alert, 0) == pdTRUE) {
-        if (_alertsEnabled && _alertsPeer != 0 && _token[0] != '\0') {
-            MutexLocker lock(_httpMutex);
-            uint32_t mid = 0;
-            sendMessageToPeer(_alertsPeer, alert.line, nullptr, nullptr, &mid);
-        }
+    while (xQueueReceive(static_cast<QueueHandle_t>(_alertQueue), &alert, 0) == pdTRUE) {
+        strncpy(_pendingAlertLine, alert.line, sizeof(_pendingAlertLine) - 1);
+        _pendingAlertLine[sizeof(_pendingAlertLine) - 1] = '\0';
+        _hasPendingAlert = true;
     }
 
     const RectificationTypes::ProcessState cur = RectificationProcess::rectController().getProcessState();
@@ -843,10 +1048,10 @@ void VkMessengerClient::runLoop() {
         buildRectificationSummary(_summaryBuf, kSummaryCap, _summaryFmtScratch, kFormatDataCap);
         if (_token[0] != '\0') {
             MutexLocker lock(_httpMutex);
-            if (_summaryEnabled && _summaryPeer != 0) {
+            if (_summaryEnabled && _peer != 0) {
                 uint32_t mid = 0;
                 const char* sumFmt = (_summaryFmtScratch[0] != '\0') ? _summaryFmtScratch : nullptr;
-                sendMessageToPeer(_summaryPeer, _summaryBuf, nullptr, sumFmt, &mid);
+                sendMessageToPeer(_peer, _summaryBuf, nullptr, sumFmt, &mid);
             }
             if (_wallPostEnabled) {
                 postWall(_summaryBuf);
@@ -855,37 +1060,22 @@ void VkMessengerClient::runLoop() {
     }
     _lastRectState = cur;
 
-    static int tick = 0;
-    if (++tick < kLivePeriodTicks) {
-        return;
-    }
-    tick = 0;
+    const uint32_t nowMs = millis();
 
-    if (!_liveEnabled || _livePeer == 0 || _token[0] == '\0') {
-        return;
+    static int liveTick = 0;
+    if (_liveEditRetryAfterBackoff && _liveMessageId != 0 &&
+        (_liveVkBackoffUntilMs == 0 || nowMs >= _liveVkBackoffUntilMs)) {
+        liveTick = kVkPeriodTicks - 1;
+    }
+    if (++liveTick >= kVkPeriodTicks) {
+        liveTick = 0;
+        runLiveCycle(nowMs);
     }
 
-    buildLiveStatusText(_liveBodyBuf, kLiveBodyCap, _formatDataBuf, sizeof(_formatDataBuf));
-    const char* kbJson = nullptr;
-    buildKeyboardJson(_kbBuf, kKbCap);
-    if (_kbBuf[0] != '\0') {
-        kbJson = _kbBuf;
-    }
-    const char* fmtJson = (_formatDataBuf[0] != '\0') ? _formatDataBuf : nullptr;
-
-    MutexLocker lock(_httpMutex);
-    if (_liveMessageId == 0) {
-        uint32_t mid = 0;
-        if (sendMessageToPeer(_livePeer, _liveBodyBuf, kbJson, fmtJson, &mid)) {
-            _liveMessageId = mid;
-        }
-    } else {
-        if (!editLiveMessage(_liveBodyBuf, kbJson, fmtJson)) {
-            uint32_t mid = 0;
-            if (sendMessageToPeer(_livePeer, _liveBodyBuf, kbJson, fmtJson, &mid)) {
-                _liveMessageId = mid;
-            }
-        }
+    static int alertTick = 0;
+    if (++alertTick >= kVkPeriodTicks) {
+        alertTick = 0;
+        flushAlertMessageIfDue(nowMs);
     }
 }
 
@@ -972,6 +1162,12 @@ void VkMessengerClient::shutoff() {
         _httpMutex = nullptr;
     }
     _liveMessageId = 0;
+    _alertMessageId = 0;
+    _hasPendingAlert = false;
+    _pendingAlertLine[0] = '\0';
+    _liveVkBackoffUntilMs = 0;
+    _liveEditRetryAfterBackoff = false;
     _token[0] = '\0';
     _settingsService = nullptr;
+    ESP_LOGI(TAG, "VK messenger shutoff (live message_id cleared)");
 }
