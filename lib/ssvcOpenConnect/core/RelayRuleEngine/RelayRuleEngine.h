@@ -3,6 +3,7 @@
 
 #include "core/IAlarmSubscriber/IAlarmSubscriber.h"
 #include "core/SsvcConnector.h"
+#include "core/rectification/RectificationProcess.h"
 #include <ArduinoJson.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
@@ -53,6 +54,8 @@ private:
   RelayRuleEngine();
 
   void recomputeAndApply();
+  /** Best-effort refresh of the rectification snapshot; on failure keeps the last valid one. */
+  void refreshRectSnapshot();
   static void timerCallback(TimerHandle_t t);
 
   struct Rule {
@@ -108,6 +111,9 @@ private:
   uint64_t _manualMask = 0;
   uint64_t _manualEnergized = 0;
   mutable SemaphoreHandle_t _lock = nullptr;
+
+  /** Last successfully captured rectification snapshot (see refreshRectSnapshot). */
+  RectificationProcess::Snapshot _rectSnapshot;
 
 #if !PINOUT_USE_GPIO
   TimerHandle_t _timer = nullptr;

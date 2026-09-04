@@ -30,7 +30,13 @@
 	let peerChoices = $state<VkConversationPeer[]>([]);
 	let peerPickerOpen = $state(false);
 	let peersError = $state('');
-	let { disabled = false, onToggle } = $props();
+	let {
+		disabled = false,
+		onToggle
+	}: {
+		disabled?: boolean;
+		onToggle: () => Promise<boolean>;
+	} = $props();
 
 	function resolvePeerFromConfig(s: VkConfig): string {
 		if (s.peer_id?.trim()) {
@@ -144,13 +150,20 @@
 	async function postRestart() {
 		try {
 			isSaving = true;
-			await onToggle();
-			await fetch('/rest/restart', {
+			const ok = await onToggle();
+			if (!ok) {
+				notifications.error('Не удалось изменить состояние подсистемы VK', 5000);
+				return;
+			}
+			const res = await fetch('/rest/restart', {
 				method: 'POST',
 				headers: {
 					Authorization: $page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic'
 				}
 			});
+			if (!res.ok) {
+				throw new Error('Ошибка перезагрузки микроконтроллера (' + res.status + ')');
+			}
 			notifications.success('Изменение подсистемы VK применено, микроконтроллер перезагружается', 3000);
 		} catch (err) {
 			notifications.error(err instanceof Error ? err.message : 'Ошибка включения подсистемы', 5000);

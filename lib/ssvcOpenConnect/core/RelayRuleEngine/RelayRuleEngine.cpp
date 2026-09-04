@@ -403,13 +403,19 @@ bool RelayRuleEngine::matchHardwareFault(const Rule& r) const {
   return false;
 }
 
+void RelayRuleEngine::refreshRectSnapshot() {
+  // Best-effort: getSnapshot copies under the shared mutex; on timeout it leaves _rectSnapshot
+  // untouched, so the last valid stage is kept and the relay output is never flipped off just
+  // because the rectification state was momentarily unavailable.
+  RectificationProcess::rectController().getSnapshot(_rectSnapshot);
+}
+
 bool RelayRuleEngine::matchRectification(const Rule& r) const {
   if (r.stageEquals.empty()) {
     return false;
   }
-  RectificationProcess::Snapshot snap{};
-  RectificationProcess::rectController().getSnapshot(snap);
-  const std::string cur = snap.metric.type;
+  // Uses _rectSnapshot refreshed once per recomputeAndApply() pass (see refreshRectSnapshot).
+  const std::string cur = _rectSnapshot.metric.type;
   return cur == r.stageEquals;
 }
 
@@ -522,6 +528,7 @@ bool RelayRuleEngine::conditionMatches(const Rule& r) const {
 }
 
 void RelayRuleEngine::recomputeAndApply() {
+  refreshRectSnapshot();
 #if !PINOUT_USE_GPIO
   EngineLock lock(_lock);
   auto& coord = RelayPortCoordinator::getInstance();

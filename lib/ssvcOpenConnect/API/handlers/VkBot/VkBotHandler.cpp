@@ -103,18 +103,15 @@ void VkBotHandler::getSettings(AsyncWebServerRequest* request) {
     AsyncJsonResponse* response = new AsyncJsonResponse();
     JsonObject root = response->getRoot();
 
+    // Always return the stored config (with the enable flag), even when the subsystem is
+    // disabled, so the UI can pre-configure the messenger before enabling it (CodeRabbit
+    // review feedback — previous 423 made saved settings unreadable while disabled).
     const std::string subsystemName = "vk_bot";
     const bool enable = SubsystemManager::instance().isSubsystemEnabled(subsystemName);
     root["enable"] = enable;
     root["subsystem_name"] = subsystemName.c_str();
     if (!enable) {
         root["status"] = "vk_bot disabled";
-        response->setLength();
-        String str;
-        serializeJson(root, str);
-        request->send(423, "application/json", str);
-        delete response;
-        return;
     }
 
     VkSettingsService* svc = VkSettingsService::getInstance();
