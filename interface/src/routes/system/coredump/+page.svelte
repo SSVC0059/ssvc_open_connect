@@ -37,7 +37,9 @@
 			document.body.appendChild(a);
 			a.click();
 			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
+			// Defer revoke: browsers may cancel an in-flight download if the blob URL is
+			// revoked synchronously right after a.click().
+			setTimeout(() => URL.revokeObjectURL(url), 1000);
 		}
 	}
 </script>

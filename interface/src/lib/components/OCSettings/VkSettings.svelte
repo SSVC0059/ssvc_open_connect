@@ -80,8 +80,12 @@
 				summary_enabled,
 				wall_post_enabled
 			};
-			await saveVkSettings(body);
-			notifications.success('Настройки VK сохранены', 3000);
+			const ok = await saveVkSettings(body);
+			if (ok) {
+				notifications.success('Настройки VK сохранены', 3000);
+			} else {
+				notifications.error('Не удалось сохранить настройки VK', 5000);
+			}
 		} catch (err) {
 			notifications.error(err instanceof Error ? err.message : 'Ошибка сохранения', 5000);
 		} finally {
@@ -147,9 +151,11 @@
 					Authorization: $page.data.features.security ? 'Bearer ' + $user.bearer_token : 'Basic'
 				}
 			});
+			notifications.success('Изменение подсистемы VK применено, микроконтроллер перезагружается', 3000);
+		} catch (err) {
+			notifications.error(err instanceof Error ? err.message : 'Ошибка включения подсистемы', 5000);
 		} finally {
 			isSaving = false;
-			notifications.error('Ошибка включения подсистемы', 5000);
 		}
 	}
 
