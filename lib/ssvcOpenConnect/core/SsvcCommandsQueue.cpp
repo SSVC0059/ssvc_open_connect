@@ -116,6 +116,46 @@ void delayed_get_settings_callback(const TimerHandle_t xTimer) {
   xTimerDelete(xTimer, 0);
 }
 
+/**
+ * @brief Синхронно запросить настройки у SSVC и дождаться ответа.
+ *
+ * Использует глобальный eventGroup и бит BIT10, который выставляется парсером
+ * UART в SsvcConnector::_telemetry при получении ответа на GET_SETTINGS.
+ * commandProcessorTask очищает BIT10 после выполнения callback
+ * (xEventGroupWaitBits с pdTRUE), поэтому здесь используется pdFALSE — мы
+ * только наблюдаем бит, не конкурируем за его сброс.
+ *
+ * @param timeoutMs Максимальное время ожидания в миллисекундах.
+ * @return true если ответ получен в пределах таймаута.
+ */
+bool SsvcCommandsQueue::requestSettingsAndWait(uint32_t timeoutMs) const
+{
+  if (eventGroup == nullptr) {
+    ESP_LOGE(TAG, "requestSettingsAndWait: eventGroup not initialized");
+    return false;
+  }
+
+  // Очищаем BIT10 на случай, если остался от предыдущего ответа
+  xEventGroupClearBits(eventGroup, BIT10);
+
+  // Отправляем GET_SETTINGS через очередь команд (одна попытка, дефолтный таймаут task'а)
+  getSettings();
+
+  ESP_LOGD(TAG, "requestSettingsAndWait: waiting up to %u ms for GET_SETTINGS response", timeoutMs);
+
+  // Ждём ответа. pdFALSE: не очищаем бит — его сбросит commandProcessorTask после callback.
+  const EventBits_t bits = xEventGroupWaitBits(
+      eventGroup, BIT10, pdFALSE, pdFALSE, pdMS_TO_TICKS(timeoutMs));
+
+  const bool ok = (bits & BIT10) != 0;
+  if (!ok) {
+    ESP_LOGW(TAG, "requestSettingsAndWait: timeout after %u ms", timeoutMs);
+  } else {
+    ESP_LOGD(TAG, "requestSettingsAndWait: settings refreshed");
+  }
+  return ok;
+}
+
 void SsvcCommandsQueue::uartRetryTimerCallback(TimerHandle_t xTimer) {
   auto *self = static_cast<SsvcCommandsQueue *>(pvTimerGetTimerID(xTimer));
   if (self) {

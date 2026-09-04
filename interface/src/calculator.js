@@ -5,6 +5,14 @@ import { DistillationCycleModel, createDefaultProfile } from '$lib/actions/Disti
 
 const CALC_ROOT_SELECTOR = '.editor-layout#app';
 
+/** Поля SSVC, которые модель пересчитывает и которые нужно показывать в инпутах (не только в analytics). */
+const SSVC_COMPUTED_INPUT_PATHS = [
+	'ssvcSettings.heads.0',
+	'ssvcSettings.late_heads.0',
+	'ssvcSettings.hearts.0',
+	'ssvcSettings.tails.0'
+];
+
 const model = new DistillationCycleModel();
 
 /** База дефолтов для текущей страницы калькулятора (пересоздаётся при каждом init). */
@@ -126,6 +134,20 @@ function initCalculator() {
 					el.textContent = formatResultText(path, value);
 				} else {
 					el.textContent = '';
+				}
+			});
+
+			SSVC_COMPUTED_INPUT_PATHS.forEach((path) => {
+				const value = getValueByPath(profile, path);
+				const input = r.querySelector(`[data-path="${path}"]`);
+				if (
+					input &&
+					input.type !== 'checkbox' &&
+					value !== null &&
+					value !== undefined &&
+					!Number.isNaN(value)
+				) {
+					input.value = value;
 				}
 			});
 

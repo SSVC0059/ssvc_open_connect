@@ -64,9 +64,13 @@ export async function updateSetting(field: string, value: unknown): Promise<bool
 }
 
 /**
- * Сохранение всех настроек SSVC на сервере
+ * Сохранение настроек SSVC на сервере.
+ *
+ * Принимает как полный объект SsvcSettings, так и Partial — бэкенд
+ * SettingsHandler::updateSettings обрабатывает каждый ключ независимо через
+ * PARAM_HANDLERS, поэтому partial update с дифом поддерживается «из коробки».
  */
-export async function saveSettings(settings: SsvcSettings | undefined): Promise<boolean> {
+export async function saveSettings(settings: Partial<SsvcSettings> | undefined): Promise<boolean> {
 	console.log('Attempting to save settings:', settings);
 	const url = '/rest/settings';
 	console.log(`Sending PUT request to ${url}`);

@@ -99,7 +99,7 @@ describe('StartWizard', () => {
 		);
 	});
 
-	it('при нажатии «Запустить» вызывает saveSettings и sendCommand с корректными данными', async () => {
+	it('при нажатии «Запустить» вызывает saveSettings и sendCommand с diff настроек', async () => {
 		const user = userEvent.setup();
 		vi.mocked(fetchSettings).mockResolvedValue(createMockSsvcSettings({ release_timer: -1 }));
 
@@ -117,10 +117,15 @@ describe('StartWizard', () => {
 		await waitFor(() => {
 			expect(saveSettings).toHaveBeenCalledTimes(1);
 		});
-		// Issue #75: в запрос уходят уже нормализованные настройки (release_timer >= 0)
-		const savedSettings = vi.mocked(saveSettings).mock.calls[0][0];
-		expect(savedSettings).toBeDefined();
-		expect(savedSettings!.release_timer).toBe(0);
+		// Partial update: на контроллер уходит diff между текущим состоянием мастера
+		// и снимком при загрузке. Так как пользователь не менял поля в мастере, а
+		// normalizeSettingsForWizard вызывается ДО снимка — release_timer уже 0
+		// в обоих объектах, и в diff он не попадает (защита от случайной перезаписи
+		// реальных настроек ssvc0059v2). Issue #75 по-прежнему закрыта: мастер
+		// показывает 0 вместо -1, но неявно на контроллер это значение не уходит.
+		const savedDiff = vi.mocked(saveSettings).mock.calls[0][0];
+		expect(savedDiff).toBeDefined();
+		expect(savedDiff).not.toHaveProperty('release_timer');
 
 		await waitFor(() => {
 			expect(sendCommand).toHaveBeenCalledWith('start');

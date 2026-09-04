@@ -1,6 +1,7 @@
 <script lang="ts">
 	import {Fa} from 'svelte-fa';
 import {
+		faArrowsRotate,
 		faClone,
 		faDownload,
 		faEllipsisV,
@@ -10,6 +11,8 @@ import {
 		faPlus,
 		faTrash
 	} from '@fortawesome/free-solid-svg-icons';
+	import Cancel from '~icons/tabler/x';
+	import Check from '~icons/tabler/check';
 	import type {Profile, Profiles} from '$lib/types/ssvc';
 	import ProfileViewer from '$lib/components/profiles/ProfileViewer.svelte';
 	import ProfileEditor from '$lib/components/profiles/ProfileEditor.svelte';
@@ -27,6 +30,8 @@ import {
 	import { modals } from 'svelte-modals';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import InputDialog from '$lib/components/InputDialog.svelte';
+	import { fetchSettings } from '$lib/api/ssvcApi';
+	import { deepDiff } from '$lib/utils/deepDiff';
 
 
 let profiles: Profiles | undefined = $state(undefined);
@@ -36,6 +41,7 @@ let selectedProfile: Profile | null = $state(null); // Profile selected for view
 let editingProfile: Profile | null = $state(null); // Profile currently being edited
 let appliedProfileId: string = $state(''); // ID of the profile active on the controller
 let hasInitializedSelection: boolean = $state(false); // Ensure auto-selection runs only on first load
+let actualizingProfileId: string = $state(''); // ID of profile currently being actualized (for spinner)
 
 	let fileInput: HTMLInputElement;
 
@@ -74,13 +80,55 @@ $effect(() => {
 	}
 
 	async function handleApply(id: string) {
+		const targetId = id.toString();
+		const target = profiles?.find(p => p.id === targetId);
+
+		// Перед применением профиля запрашиваем текущие настройки контроллера
+		// и содержимое профиля. Если есть расхождения — показываем подтверждение.
 		try {
-			const success = await setActiveAndApplyProfile(id.toString());
+			const [currentSettings, profileContent] = await Promise.all([
+				fetchSettings(),
+				target ? getProfileContent(target.id) : Promise.resolve(null)
+			]);
+
+			if (currentSettings && profileContent?.ssvcSettings) {
+				const diff = deepDiff(
+					profileContent.ssvcSettings as unknown as Record<string, any>,
+					currentSettings as unknown as Record<string, any>
+				);
+				const changedKeys = Object.keys(diff);
+
+				if (changedKeys.length > 0) {
+					const preview = changedKeys.slice(0, 8).join(', ') +
+						(changedKeys.length > 8 ? ` и ещё ${changedKeys.length - 8}` : '');
+					const proceed = await new Promise<boolean>((resolve) => {
+						modals.open(ConfirmDialog, {
+							title: 'Применить профиль?',
+							message: `Применение профиля «<b>${target?.name ?? targetId}</b>» изменит <b>${changedKeys.length}</b> настроек на контроллере:<br><br><code style="font-size:0.85em">${preview}</code><br><br>Текущие значения на ssvc0059v2 будут перезаписаны.`,
+							labels: {
+								cancel: { label: 'Отмена', icon: Cancel },
+								confirm: { label: 'Применить', icon: Check }
+							},
+							onConfirm: () => resolve(true),
+							onCancel: () => resolve(false)
+						});
+					});
+					if (!proceed) {
+						return;
+					}
+				}
+			}
+		} catch (err) {
+			console.warn('Не удалось подготовить подтверждение apply, продолжаем без него:', err);
+		}
+
+		try {
+			const success = await setActiveAndApplyProfile(targetId);
 			if (success) {
-				appliedProfileId = id;
+				appliedProfileId = targetId;
 				// Update isApplied flag in local state
 				if (profiles) {
-					profiles = profiles.map(p => ({ ...p, isApplied: p.id === id }));
+					profiles = profiles.map(p => ({ ...p, isApplied: p.id === targetId }));
 				}
 				notifications.success('Профиль успешно применен', 5000);
 			} else {
@@ -89,6 +137,32 @@ $effect(() => {
 		} catch (err) {
 			console.error('Error applying profile:', err);
 			notifications.error('Ошибка при применении профиля', 5000);
+		}
+	}
+
+	/**
+	 * Актуализировать профиль текущими настройками контроллера ssvc0059v2:
+	 * backend принудительно запрашивает GET_SETTINGS, ждёт ответа и затем
+	 * перезаписывает JSON профиля актуальными значениями.
+	 */
+	async function handleActualize(profile: Profile) {
+		try {
+			actualizingProfileId = profile.id;
+			const success = await saveCurrentSettingsToProfile(profile.id);
+			if (success) {
+				notifications.success(
+					`Профиль «${profile.name}» актуализирован текущими настройками контроллера`,
+					5000
+				);
+				await loadData();
+			} else {
+				notifications.error('Не удалось актуализировать профиль', 5000);
+			}
+		} catch (err) {
+			console.error('Error actualizing profile:', err);
+			notifications.error('Ошибка при актуализации профиля', 5000);
+		} finally {
+			actualizingProfileId = '';
 		}
 	}
 
@@ -372,6 +446,17 @@ $effect(() => {
 														>
 															<Fa icon={faPlay} />
 															<span>Применить</span>
+														</button>
+													</li>
+													<li>
+														<button
+															type="button"
+															onclick={() => handleActualize(profile)}
+															disabled={editingProfile !== null || actualizingProfileId === profile.id}
+															title="Записать в профиль текущие настройки контроллера ssvc0059v2"
+														>
+															<Fa icon={faArrowsRotate} spin={actualizingProfileId === profile.id} />
+															<span>Актуализировать</span>
 														</button>
 													</li>
 													<li>

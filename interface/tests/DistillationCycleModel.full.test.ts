@@ -228,6 +228,22 @@ describe('DistillationCycleModel: дефолтный профиль и опци�
 		expect(result.analytics.flows.heads).toBe(2000);
 		expect(result.analytics.flows.heads_final).toBe(7000);
 	});
+
+	it('время открытия клапана голов (ssvcSettings.heads[0]) зависит от мощности', () => {
+		const low = createDefaultProfile();
+		low.powerKw = 2;
+		const high = createDefaultProfile();
+		high.powerKw = 4;
+
+		const rLow = model.calculateProcess(low);
+		const rHigh = model.calculateProcess(high);
+
+		expect(rLow.ssvcSettings.heads[0]).toBeGreaterThan(0);
+		expect(rHigh.ssvcSettings.heads[0]).toBeGreaterThan(0);
+		expect(rHigh.ssvcSettings.heads[0]).not.toBe(rLow.ssvcSettings.heads[0]);
+		// Период цикла — ввод пользователя, модель его не пересчитывает
+		expect(rHigh.ssvcSettings.heads[1]).toBe(rLow.ssvcSettings.heads[1]);
+	});
 });
 
 describe('DistillationCycleModel Edge Cases', () => {

@@ -15,6 +15,7 @@
 	import type { SsvcSettings } from '$lib/types/ssvc';
 	import { fetchSettings, saveSettings, sendCommand } from '$lib/api/ssvcApi';
 	import { normalizeSettingsForWizard } from '$lib/components/StartWizard/wizardDefaults';
+	import { deepDiff } from '$lib/utils/deepDiff';
 
 	interface Props {
 		isOpen: boolean;
@@ -32,6 +33,7 @@
 	let { isOpen }: Props = $props();
 	let isLoading = $state(false);
 	let settings = $state<SsvcSettings | undefined>(undefined);
+	let originalSettings = $state<SsvcSettings | undefined>(undefined);
 	let stepData = $state<Record<number, any>>({}); // Новое состояние для данных шагов
 	let cachedVisibleSteps = $state<Step[]>([]); // Кэшированные видимые шаги
 	let currentIndex = $state(0);
@@ -46,7 +48,13 @@
 
 		try {
 			const loaded = await fetchSettings();
-			settings = normalizeSettingsForWizard(loaded);
+			const normalized = normalizeSettingsForWizard(loaded);
+			settings = normalized;
+			// Снимок исходных настроек для partial update при запуске ректификации.
+			// Используется в submitSettings: PUT /rest/settings отправляется только
+			// с реально изменёнными полями, чтобы не затереть настройки ssvc0059v2,
+			// если локальное зеркало отстаёт от контроллера.
+			originalSettings = normalized ? JSON.parse(JSON.stringify(normalized)) : undefined;
 			hasFetchedInitialData = true;
 
 			// Инициализируем stepData только один раз при первой загрузке
@@ -154,7 +162,15 @@
 	const submitSettings = async () => {
 		isLoading = true;
 		try {
-			const success = await saveSettings(settings);
+			// На контроллер уходят только реально изменённые пользователем поля.
+			// Это страховка от перезаписи настроек ssvc0059v2 пустыми значениями,
+			// если мастер открыт до полной синхронизации локального зеркала с контроллером.
+			const payload = settings
+				? deepDiff(settings as Record<string, any>, originalSettings as Record<string, any>)
+				: {};
+			console.log('Submitting diff:', payload);
+
+			const success = await saveSettings(payload);
 			console.log("success:" + success);
 
 			if (success) {
