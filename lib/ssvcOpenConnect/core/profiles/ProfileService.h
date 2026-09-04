@@ -7,11 +7,26 @@
 #include <ArduinoJson.h>
 #include <set>
 
+/**
+ * Идентификатор и имя авто-создаваемого профиля по умолчанию.
+ * Используется в begin() и при защите от перезаписи настроек контроллера
+ * (см. _applyProfileInternal).
+ */
+static constexpr const char* kDefaultProfileId = "0";
+static constexpr const char* kDefaultProfileName = "Default Profile";
+
 struct ProfileMetadata {
     String id;
     String name;
     String createdAt;
     bool isApplied;
+    /**
+     * true если профиль создан автоматически (begin()). Такие профили не
+     * должны применяться к контроллеру, пока пользователь явно их не отредактирует,
+     * иначе дефолтный пустой профиль с нулями перезапишет реальные настройки
+     * ssvc0059v2, когда локальное зеркало уже синхронизировано через GET_SETTINGS.
+     */
+    bool autoCreated = false;
 };
 
 class ProfileService {
@@ -59,6 +74,7 @@ private:
     bool _addProfileToMetadata(const String& profileId, const String& displayName) const; // Добавлено
     bool _getProfileDocument(const String& profileId, JsonDocument& doc) const; // Добавлено
     bool _writeProfileDocument(const String& profileId, const JsonDocument& doc) const; // Добавлено
+    bool _clearAutoCreatedFlag(const String& profileId) const;
 
     // Private helper methods for applying and setting active
     bool _applyProfileInternal(const String& profileId) const;

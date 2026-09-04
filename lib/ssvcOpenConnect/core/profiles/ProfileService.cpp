@@ -75,8 +75,8 @@ void ProfileService::begin(FS* fs) {
     }
 
     if (profiles.size() == 0) {
-        const String defaultProfileId = "0";
-        const String defaultProfileName = "Default Profile";
+        const String defaultProfileId = kDefaultProfileId;
+        const String defaultProfileName = kDefaultProfileName;
         if (_createOrUpdateProfile(defaultProfileId, defaultProfileName, JsonObject())) {
             // After creating the default profile, we need to re-read the metadata
             // and set the new profile as active.
@@ -85,6 +85,9 @@ void ProfileService::begin(FS* fs) {
             for(JsonObject p : tempProfiles) {
                 if (p["id"] == defaultProfileId) {
                     p["isApplied"] = true;
+                    // Помечаем авто-созданный профиль, чтобы _applyProfileInternal
+                    // не затирал им реальные настройки контроллера.
+                    p["autoCreated"] = true;
                     metadataModified = true; // Mark for writing at the end
                     break;
                 }
@@ -245,6 +248,14 @@ std::vector<ProfileMetadata> ProfileService::getProfileList() const {
         meta.name = profile["name"].as<String>();
         meta.createdAt = profile["createdAt"].as<String>();
         meta.isApplied = profile["isApplied"].as<bool>();
+        // Обратная совместимость: флаг может отсутствовать у старых метаданных.
+        // Для дефолтного профиля считаем autoCreated=true, если флаг не указан явно,
+        // чтобы при первом обновлении прошивки защита сработала корректно.
+        if (profile["autoCreated"].is<bool>()) {
+            meta.autoCreated = profile["autoCreated"].as<bool>();
+        } else {
+            meta.autoCreated = (meta.id == kDefaultProfileId && meta.name == kDefaultProfileName);
+        }
         profiles.push_back(meta);
     }
     return profiles;
@@ -265,6 +276,35 @@ String ProfileService::getActiveProfileId() const {
 }
 
 bool ProfileService::_applyProfileInternal(const String& profileId) const {
+    // Защита от перезаписи настроек контроллера авто-созданным дефолтным профилем.
+    // Если профиль был создан автоматически в begin() и ещё ни разу не редактировался
+    // пользователем, его содержимое (нули из неинициализированного SsvcSettings)
+    // может полностью отличаться от реальных настроек ssvc0059v2 — применение такого
+    // профиля через ProfileSelector приведёт к затиранию контроллера.
+    {
+        JsonDocument metaDoc(&s_profileJsonAllocator);
+        if (_readMetadata(metaDoc)) {
+            const JsonArray metaProfiles = metaDoc.as<JsonArray>();
+            for (JsonObject p : metaProfiles) {
+                if (p["id"].as<String>() == profileId) {
+                    const bool autoCreated =
+                        p["autoCreated"].is<bool>() ? p["autoCreated"].as<bool>() :
+                        (profileId == kDefaultProfileId &&
+                         p["name"].as<String>() == kDefaultProfileName);
+                    if (autoCreated) {
+                        ESP_LOGW(TAG,
+                            "_applyProfileInternal: skipping auto-created default profile '%s' "
+                            "to avoid overwriting controller settings. "
+                            "Edit and save the profile first to enable apply.",
+                            profileId.c_str());
+                        return true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     const String filePath = String(_profilesDir) + "/" + profileId + ".json";
     File profileFile = _fs->open(filePath, "r");
     if (!profileFile) {
@@ -550,6 +590,35 @@ bool ProfileService::_setActiveProfileInternal(const String& profileId) const {
     return _writeMetadata(metadataDoc);
 }
 
+/**
+ * @brief Сбрасывает флаг autoCreated в метаданных (после ручного редактирования
+ * или «актуализации» пользователем). После этого профиль становится
+ * пригодным для применения к контроллеру.
+ */
+bool ProfileService::_clearAutoCreatedFlag(const String& profileId) const {
+    JsonDocument metadataDoc(&s_profileJsonAllocator);
+    if (!_readMetadata(metadataDoc)) {
+        return false;
+    }
+
+    const JsonArray profiles = metadataDoc.as<JsonArray>();
+    bool modified = false;
+    for (JsonObject profile : profiles) {
+        if (profile["id"].as<String>() == profileId &&
+            profile["autoCreated"].as<bool>()) {
+            profile["autoCreated"] = false;
+            modified = true;
+            ESP_LOGI(TAG, "_clearAutoCreatedFlag: profile '%s' no longer auto-created", profileId.c_str());
+            break;
+        }
+    }
+
+    if (modified && !_writeMetadata(metadataDoc)) {
+        return false;
+    }
+    return true;
+}
+
 bool ProfileService::setActiveAndApplyProfile(const String& profileId) const {
     ESP_LOGI(TAG, "setActiveAndApplyProfile: Attempting to set profile %s as active and apply it.", profileId.c_str());
 
@@ -613,6 +682,7 @@ void ProfileService::getProfileListAsJson(String& dest) const {
         profileObj["name"] = meta.name;
         profileObj["createdAt"] = meta.createdAt;
         profileObj["isApplied"] = meta.isApplied;
+        profileObj["autoCreated"] = meta.autoCreated;
     }
 
     serializeJson(doc, dest);
@@ -650,7 +720,11 @@ bool ProfileService::saveCurrentSettingsToProfile(const String& profileId) const
         return false;
     }
 
-    // 3. Вызовем существующий метод, который перезапишет файл профиля текущими настройками
+    // 3. Сбрасываем флаг autoCreated — пользователь явно актуализировал профиль,
+    // после этого профиль можно безопасно применять к контроллеру.
+    _clearAutoCreatedFlag(profileId);
+
+    // 4. Вызовем существующий метод, который перезапишет файл профиля текущими настройками
     // Он также обновит 'createdAt', что логично для операции "сохранить".
     ESP_LOGI(TAG, "Saving current settings to profile ID '%s' (Name: %s)", profileId.c_str(), currentName.c_str());
     return _createOrUpdateProfile(profileId, currentName, JsonObject());
@@ -718,6 +792,10 @@ bool ProfileService::updateProfileContent(const String& profileId, const JsonObj
             return false;
         }
     }
+
+    // Пользователь явно отредактировал профиль — снимаем флаг autoCreated,
+    // чтобы его можно было применить к контроллеру.
+    _clearAutoCreatedFlag(profileId);
 
     return true;
 }
