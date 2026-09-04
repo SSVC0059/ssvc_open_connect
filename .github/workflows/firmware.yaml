@@ -98,6 +98,9 @@ jobs:
       - name: Run native unit tests (PlatformIO)
         run: pio test -e native
 
+      - name: Smoke self-test (no device needed)
+        run: python scripts/smoke_rest.py --self-test
+
   build:
     runs-on: ubuntu-latest
     needs: [frontend-checks, native-tests]
