@@ -1,5 +1,0 @@
-﻿{"type": "response","request": "NEXT","result": "OK"}
-{"type": "response","request": "PAUSE","result": "OK"}
-{"type": "response","request": "RESUME","result": "OK"}
-{"type": "response","request": "STOP","result": "OK"}
-
