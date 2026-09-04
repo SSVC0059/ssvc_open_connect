@@ -193,8 +193,10 @@ export async function setSubsystemState(states: Record<string, boolean>): Promis
 		'PUT',
 		states
 	);
-	return response.success ? response.data : false;
-	// return response?.success ?? false;
+	// Backend replies HTTP 200 with { success, errors } even when a subsystem failed to
+	// change, so response.data is the whole body, not a boolean. Check data.success
+	// explicitly so a real toggle failure is never masked as success.
+	return response.success ? response.data.success === true : false;
 }
 
 export async function getSubsystemState(): Promise<SubsystemsState | null> {

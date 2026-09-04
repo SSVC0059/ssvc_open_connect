@@ -25,14 +25,16 @@
 		props?: Record<string, unknown>;
 	}
 
-	let subsystemsState = $state<SubsystemsState>({
+	const SUBSYSTEM_DEFAULTS: SubsystemsState = {
 		atm_sensor: false,
 		i2c_bus: false,
 		settings: false,
 		telegram_bot: false,
 		vk_bot: false,
 		thermal: false
-	});
+	};
+
+	let subsystemsState = $state<SubsystemsState>({ ...SUBSYSTEM_DEFAULTS });
 
 	let error = $state('');
 	let isLoading = $state(true);
@@ -45,12 +47,7 @@
 			const [state, hw] = await Promise.all([getSubsystemState(), fetchHardwareConfig()]);
 			if (state) {
 				subsystemsState = {
-					atm_sensor: false,
-					i2c_bus: false,
-					settings: false,
-					telegram_bot: false,
-					vk_bot: false,
-					thermal: false,
+					...SUBSYSTEM_DEFAULTS,
 					...state
 				};
 			}

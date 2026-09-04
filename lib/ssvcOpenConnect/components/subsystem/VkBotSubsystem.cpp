@@ -30,7 +30,10 @@ void VkBotSubsystem::enable() {
         ESP_LOGE("VkBotSubsystem", "VkSettingsService null");
         return;
     }
-    _client->init(svc);
+    if (!_client->init(svc)) {
+        ESP_LOGE("VkBotSubsystem", "enable failed (VkMessengerClient::init)");
+        return;
+    }
     _enabled = true;
     ESP_LOGI("VkBotSubsystem", "enabled");
 }

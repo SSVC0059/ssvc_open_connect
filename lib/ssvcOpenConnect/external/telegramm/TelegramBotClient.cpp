@@ -409,7 +409,9 @@ void TelegramBotClient::initializeMessageStructure() {
 
 
 void TelegramBotClient::updateRectificationInfo() {
-    const RectificationProcess::Metrics& metrics = RectificationProcess::rectController().getMetrics();
+    RectificationProcess::Snapshot snap{};
+    RectificationProcess::rectController().getSnapshot(snap);
+    const RectificationProcess::Metrics& metrics = snap.metric;
 
     struct LastValidData {
         float tp1 = 0;

@@ -377,18 +377,24 @@ static void appendJsonObjectFlatLines(JsonObject o, char* buf, size_t& n, size_t
     }
 }
 
+static int collectedMlFor(const std::map<RectificationTypes::Stage, int>& volumes,
+                          RectificationTypes::Stage stage) {
+    const auto it = volumes.find(stage);
+    return it == volumes.end() ? 0 : it->second;
+}
+
 /** «Отобрано, мл:» только если есть ненулевые объёмы; строки с нулём не выводятся. Порядок: головы, подголовники,
  *  тело, хвосты (последнее — только при поддержке хвостов). Перед блоком — «--------». */
-static void appendCollectedMlSection(RectificationProcess& rp, char* buf, size_t& n, size_t cap, size_t& u16,
-                                     VkBoldSpan* spans, int& ns, bool& ok) {
+static void appendCollectedMlSection(const RectificationProcess::Snapshot& snap, char* buf, size_t& n, size_t cap,
+                                     size_t& u16, VkBoldSpan* spans, int& ns, bool& ok) {
     if (!ok) {
         return;
     }
     const bool tailsUi = SsvcSettings::init().isSupportTails();
-    const int mlHeads = rp.getFlowVolumeCollectedMl(RectificationTypes::Stage::HEADS);
-    const int mlLate = rp.getFlowVolumeCollectedMl(RectificationTypes::Stage::LATE_HEADS);
-    const int mlHearts = rp.getFlowVolumeCollectedMl(RectificationTypes::Stage::HEARTS);
-    const int mlTails = tailsUi ? rp.getFlowVolumeCollectedMl(RectificationTypes::Stage::TAILS) : 0;
+    const int mlHeads = collectedMlFor(snap.flowVolumeValves, RectificationTypes::Stage::HEADS);
+    const int mlLate = collectedMlFor(snap.flowVolumeValves, RectificationTypes::Stage::LATE_HEADS);
+    const int mlHearts = collectedMlFor(snap.flowVolumeValves, RectificationTypes::Stage::HEARTS);
+    const int mlTails = tailsUi ? collectedMlFor(snap.flowVolumeValves, RectificationTypes::Stage::TAILS) : 0;
 
     const bool any =
         (mlHeads > 0) || (mlLate > 0) || (mlHearts > 0) || (tailsUi && mlTails > 0);
@@ -881,7 +887,9 @@ void VkMessengerClient::buildLiveStatusText(char* buf, const size_t cap, char* f
         ok = append_utf8("Нет связи с SSVC\n", buf, n, cap, u16);
     }
 
-    const RectificationProcess::Metrics& m = RectificationProcess::rectController().getMetrics();
+    RectificationProcess::Snapshot snap{};
+    RectificationProcess::rectController().getSnapshot(snap);
+    const RectificationProcess::Metrics& m = snap.metric;
     if (ok && !m.type.empty()) {
         const std::string stageStr = RectificationProcess::translateRectificationStage(m.type);
         ok = append_bold_lit(kEtap, spans, ns, buf, n, cap, u16) &&
@@ -896,8 +904,7 @@ void VkMessengerClient::buildLiveStatusText(char* buf, const size_t cap, char* f
     }
 
     if (ok) {
-        RectificationProcess& rp = RectificationProcess::rectController();
-        appendCollectedMlSection(rp, buf, n, cap, u16, spans, ns, ok);
+        appendCollectedMlSection(snap, buf, n, cap, u16, spans, ns, ok);
     }
 
     SensorDataService* sds = SensorDataService::getInstance();
@@ -963,15 +970,16 @@ void VkMessengerClient::buildRectificationSummary(char* buf, const size_t cap, c
     ok = append_bold_lit("OpenConnect", spans, ns, buf, n, cap, u16) && append_utf8("\n", buf, n, cap, u16) &&
          append_utf8("--------\n", buf, n, cap, u16) && append_utf8("Ректификация завершена\n", buf, n, cap, u16);
 
-    RectificationProcess& rp = RectificationProcess::rectController();
-    const RectificationProcess::Metrics& m = rp.getMetrics();
+    RectificationProcess::Snapshot snap{};
+    RectificationProcess::rectController().getSnapshot(snap);
+    const RectificationProcess::Metrics& m = snap.metric;
 
     static const char kNach[] = "Начало:";
     static const char kKon[] = "Конец:";
     ok = ok && append_bold_lit(kNach, spans, ns, buf, n, cap, u16) &&
-         append_snprintf_chunk(buf, n, cap, u16, " %s\n", rp.getRectificationStartTime()) &&
+         append_snprintf_chunk(buf, n, cap, u16, " %s\n", snap.startTime) &&
          append_bold_lit(kKon, spans, ns, buf, n, cap, u16) &&
-         append_snprintf_chunk(buf, n, cap, u16, " %s\n", rp.getRectificationEndTime());
+         append_snprintf_chunk(buf, n, cap, u16, " %s\n", snap.endTime);
 
     static const char kEtap[] = "Этап:";
     static const char kTp1[] = "TP1:";
@@ -986,7 +994,7 @@ void VkMessengerClient::buildRectificationSummary(char* buf, const size_t cap, c
 
     ok = ok && append_snprintf_chunk(buf, n, cap, u16, "Остановок: %u\n", static_cast<unsigned>(m.stops));
 
-    appendCollectedMlSection(rp, buf, n, cap, u16, spans, ns, ok);
+    appendCollectedMlSection(snap, buf, n, cap, u16, spans, ns, ok);
 
     appendRectificationProfileHumanReadable(buf, n, cap, u16, spans, ns, ok);
 
@@ -1007,7 +1015,7 @@ void VkMessengerClient::buildRectificationSummary(char* buf, const size_t cap, c
     if (!ok || n == 0) {
         snprintf(buf, cap,
                  "OpenConnect\nРектификация завершена\nНачало: %s\nКонец: %s\nTP1: %.1f TP2: %.1f\n",
-                 rp.getRectificationStartTime(), rp.getRectificationEndTime(), m.common.tp1, m.common.tp2);
+                 snap.startTime, snap.endTime, m.common.tp1, m.common.tp2);
         ns = 0;
     }
 
@@ -1017,7 +1025,10 @@ void VkMessengerClient::buildRectificationSummary(char* buf, const size_t cap, c
 }
 
 bool VkMessengerClient::tryEnqueueAlert(const char* utf8Line) {
-    if (_alertQueue == nullptr || utf8Line == nullptr) {
+    // The queue is allocated once for the singleton lifetime (see init()/shutoff()), so an
+    // enqueue from a producer task can never race a vQueueDelete (use-after-free); only gate
+    // on the soft enabled flag to avoid accumulating stale alerts while the subsystem is off.
+    if (!_initialized || _alertQueue == nullptr || utf8Line == nullptr) {
         return false;
     }
     VkAlertMsg msg{};
@@ -1041,7 +1052,9 @@ void VkMessengerClient::runLoop() {
         _hasPendingAlert = true;
     }
 
-    const RectificationTypes::ProcessState cur = RectificationProcess::rectController().getProcessState();
+    RectificationProcess::Snapshot snap{};
+    RectificationProcess::rectController().getSnapshot(snap);
+    const RectificationTypes::ProcessState cur = snap.state;
     if (_lastRectState != RectificationTypes::ProcessState::FINISHED &&
         cur == RectificationTypes::ProcessState::FINISHED) {
         _summaryFmtScratch[0] = '\0';
@@ -1105,21 +1118,26 @@ bool VkMessengerClient::init(VkSettingsService* settingsService) {
         return false;
     }
 
-    vTaskDelay(pdMS_TO_TICKS(2000));
-    while (!isVkApiReachable()) {
-        ESP_LOGD(TAG, "wait VK API");
-        vTaskDelay(pdMS_TO_TICKS(3000));
+    // Allocate once and keep for the singleton lifetime: alert producers run on other tasks
+    // (sensor/re-alarm timers, UART, I2C pollers), so freeing the queue here or in shutoff()
+    // would race their enqueue (use-after-free). Just drain stale alerts from a previous
+    // disabled period instead.
+    if (_httpMutex == nullptr) {
+        _httpMutex = xSemaphoreCreateMutex();
     }
-
-    _httpMutex = xSemaphoreCreateMutex();
-    _alertQueue = xQueueCreate(kAlertQueueDepth, sizeof(VkAlertMsg));
+    if (_alertQueue == nullptr) {
+        _alertQueue = xQueueCreate(kAlertQueueDepth, sizeof(VkAlertMsg));
+    }
     if (_httpMutex == nullptr || _alertQueue == nullptr) {
         ESP_LOGE(TAG, "mutex/queue alloc failed");
         return false;
     }
+    xQueueReset(static_cast<QueueHandle_t>(_alertQueue));
 
     reloadSettingsSnapshot();
-    _lastRectState = RectificationProcess::rectController().getProcessState();
+    RectificationProcess::Snapshot snap{};
+    RectificationProcess::rectController().getSnapshot(snap);
+    _lastRectState = snap.state;
     _initialized = true;
 
     // HTTPS/TLS + ArduinoJson + long VK form body need more than default stack (stack canary on 6144).
@@ -1128,10 +1146,6 @@ bool VkMessengerClient::init(VkSettingsService* settingsService) {
         pdPASS) {
         ESP_LOGE(TAG, "task create failed");
         _initialized = false;
-        vQueueDelete(static_cast<QueueHandle_t>(_alertQueue));
-        _alertQueue = nullptr;
-        vSemaphoreDelete(_httpMutex);
-        _httpMutex = nullptr;
         return false;
     }
 
@@ -1140,27 +1154,28 @@ bool VkMessengerClient::init(VkSettingsService* settingsService) {
 }
 
 void VkMessengerClient::shutoff() {
-    if (_taskHandle == nullptr && _alertQueue == nullptr && _httpMutex == nullptr) {
-        _initialized = false;
-        return;
+    _initialized = false;
+
+    // Wait briefly for the worker to exit on its own; force-kill only as a last resort
+    // (the worker may be inside a 12 s HTTP call — tracked as H8/H9 in the review backlog).
+    if (_taskHandle != nullptr) {
+        for (int i = 0; i < 60 && _taskHandle != nullptr; ++i) {
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        if (_taskHandle != nullptr) {
+            vTaskDelete(_taskHandle);
+            _taskHandle = nullptr;
+        }
     }
 
-    _initialized = false;
-    for (int i = 0; i < 60 && _taskHandle != nullptr; ++i) {
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
-    if (_taskHandle != nullptr) {
-        vTaskDelete(_taskHandle);
-        _taskHandle = nullptr;
-    }
+    // K1: never free _alertQueue/_httpMutex here — producer tasks (sensor/re-alarm timers,
+    // UART, I2C pollers) may still be enqueuing concurrently with this teardown; keeping the
+    // queue/mutex allocated for the singleton lifetime removes the check-then-use-after-free
+    // window on disable. Only drain the queue so stale alerts don't fire on re-enable.
     if (_alertQueue != nullptr) {
-        vQueueDelete(static_cast<QueueHandle_t>(_alertQueue));
-        _alertQueue = nullptr;
+        xQueueReset(static_cast<QueueHandle_t>(_alertQueue));
     }
-    if (_httpMutex != nullptr) {
-        vSemaphoreDelete(_httpMutex);
-        _httpMutex = nullptr;
-    }
+
     _liveMessageId = 0;
     _alertMessageId = 0;
     _hasPendingAlert = false;
