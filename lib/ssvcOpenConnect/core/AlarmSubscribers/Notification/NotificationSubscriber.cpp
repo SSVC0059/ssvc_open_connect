@@ -17,6 +17,11 @@
 
 #include "NotificationSubscriber.h"
 
+#include <Features.h>
+#if FT_ENABLED(FT_VK_BOT)
+#include "external/vk/VkMessengerClient.h"
+#endif
+
 NotificationSubscriber::NotificationSubscriber(ESP32SvelteKit* svelteKit)
     : _sveltekit(svelteKit)
 {
@@ -174,6 +179,9 @@ void NotificationSubscriber::sendNotification(const AlarmEvent& event) const
         if (_sveltekit && _sveltekit->getNotificationService()) {
             _sveltekit->getNotificationService()->pushNotification(message_buffer, PUSHERROR);
             ESP_LOGW("ALARM_NOTIF", "%s", message_buffer);
+#if FT_ENABLED(FT_VK_BOT)
+            (void)VkMessengerClient::instance().tryEnqueueAlert(message_buffer);
+#endif
         }
         return;
     }
@@ -221,6 +229,9 @@ void NotificationSubscriber::sendNotification(const AlarmEvent& event) const
     if (_sveltekit && _sveltekit->getNotificationService()) {
         _sveltekit->getNotificationService()->pushNotification(message_buffer, push_level);
         ESP_LOGW("ALARM_NOTIF", "%s: %s", level_str, message_buffer);
+#if FT_ENABLED(FT_VK_BOT)
+        (void)VkMessengerClient::instance().tryEnqueueAlert(message_buffer);
+#endif
     } else {
         ESP_LOGE("ALARM_NOTIF", "Failed to send notification: ESP32SvelteKit or NotificationService is NULL.");
     }

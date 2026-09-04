@@ -17,8 +17,6 @@
 
 #include "SsvcCommandsQueue.h"
 
-#include "SsvcOpenConnect.h"
-
 #define TAG "SsvcCommandsQueue"
 
 // Helper function to convert UTF-8 string to Windows-1251
@@ -67,6 +65,18 @@ const std::map<std::string, std::function<void(const std::string&)>> SsvcCommand
     {"status",       [](const std::string& params){ getQueue().status(params); }},
     {"set",          [](const std::string& params){ getQueue().set(params); }}
 };
+
+// Короткий статусный "привет" по UART (вызывается после первого успешного VERSION/GET_SETTINGS).
+void SsvcCommandsQueue::sendHello() {
+  getQueue().status("Привет!");
+  const std::string version = SsvcSettings::init().getSsvcVersion();
+  getQueue().status(std::string("SSVC: ") + version);
+  const float versionApi = SsvcSettings::init().getSsvcApiVersion();
+  getQueue().status((String("API: ") + versionApi).c_str());
+  getQueue().status("OpenConnect");
+  const std::string versionOC = APP_VERSION;
+  getQueue().status("v:  " + versionOC);
+}
 
 SsvcCommandsQueue::SsvcCommandsQueue() {
   command_queue = xQueueCreate(COMMAND_QUEUE_LENGTH, COMMAND_QUEUE_ITEM_SIZE);
@@ -335,7 +345,7 @@ void SsvcCommandsQueue::registerCallbackCommands() {
       result = true;
     }
     if (result) {
-      SsvcOpenConnect::sendHello();
+      SsvcCommandsQueue::sendHello();
     }
     return result;
   });

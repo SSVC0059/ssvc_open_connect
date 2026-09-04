@@ -36,7 +36,9 @@
 			document.body.appendChild(a);
 			a.click();
 			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
+			// Defer revoke: browsers may cancel an in-flight download if the blob URL is
+			// revoked synchronously right after a.click().
+			setTimeout(() => URL.revokeObjectURL(url), 1000);
 		}
 	}
 </script>
@@ -53,7 +55,8 @@
 						<span
 							>На этой вкладке отображается последний дамп памяти устройства.
 							Дамп памяти — это моментальный снимок памяти в момент сбоя устройства.
-							Эта информация полезна для отладки.</span
+							Эта информация полезна для отладки. После успешной загрузки дамп на
+							контроллере автоматически стирается, чтобы не путать старые падения с новыми.</span
 						>
 					</div>
 

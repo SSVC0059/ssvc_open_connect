@@ -18,7 +18,6 @@
 #include "SensorManager.h"
 
 #include "FSPersistence.h"
-#include "core/SsvcOpenConnect.h"
 #include "core/StatefulServices/SensorDataService/SensorDataService.h"
 
 

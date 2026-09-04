@@ -18,6 +18,7 @@
 #include "esp_core_dump.h"
 #include "esp_partition.h"
 #include "esp_flash.h"
+#include "esp_err.h"
 
 CoreDump::CoreDump(AsyncWebServer *server,
                    SecurityManager *securityManager) : _server(server),
@@ -62,6 +63,26 @@ void CoreDump::coreDump(AsyncWebServerRequest *request)
         return;
     }
     AsyncWebServerResponse *response = request->beginResponse(200, "application/octet-stream", buffer, coredump_size);
+    response->addHeader("Content-Disposition", "attachment; filename=coredump.bin");
+    response->addHeader("Cache-Control", "no-store");
+
+    // Erase only after a FULL, successful transfer: _onDisconnect also fires when the client
+    // aborts mid-transfer or times out, and the flash image is the only coredump we have.
+    // _finished() is true for both RESPONSE_END and RESPONSE_FAILED, so reject the latter.
+    request->onDisconnect([buffer, coredump_size, response]() {
+        const bool completed = (response != nullptr) && response->_finished() && !response->_failed();
+        if (completed) {
+            const esp_err_t eraseErr = esp_core_dump_image_erase();
+            if (eraseErr == ESP_OK) {
+                ESP_LOGI(SVK_TAG, "Coredump erased from flash after download (%u bytes)", coredump_size);
+            } else if (eraseErr != ESP_ERR_NOT_FOUND) {
+                ESP_LOGW(SVK_TAG, "Coredump erase failed: %s", esp_err_to_name(eraseErr));
+            }
+        } else {
+            ESP_LOGI(SVK_TAG, "Coredump download finished incompletely; flash image kept (%u bytes)", coredump_size);
+        }
+        free(buffer);
+    });
+
     request->send(response);
-    free(buffer);
 }

@@ -409,7 +409,10 @@ void TelegramBotClient::initializeMessageStructure() {
 
 
 void TelegramBotClient::updateRectificationInfo() {
-    const RectificationProcess::Metrics& metrics = RectificationProcess::rectController().getMetrics();
+    // Best-effort refresh; on a mutex timeout keep the last valid snapshot so the status is
+    // never rebuilt from zero-valued metrics (review feedback).
+    RectificationProcess::rectController().getSnapshot(_rectSnapshot);
+    const RectificationProcess::Metrics& metrics = _rectSnapshot.metric;
 
     struct LastValidData {
         float tp1 = 0;

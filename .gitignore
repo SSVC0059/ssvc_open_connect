@@ -16,14 +16,12 @@ node_modules
 /temp
 /build/firmware
 /lib/framework/WWWData.h
-lib/framework/WWWData.h
 *WWWData.h
 ssl_certs/cacert.pem
 /logs
 interface/.idea/
 build
 .idea
-platformio.ini
 site
 scripts/**/__pycache__
 package.json
@@ -36,3 +34,7 @@ tools/coredump.bin
 interface/coverage/
 **/coverage/
 __pycache__
+# ZCode/agent working metadata
+.zcode/
+# PlatformIO/Python build artifacts
+pio_build*.log

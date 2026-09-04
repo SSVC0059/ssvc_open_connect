@@ -2,90 +2,54 @@
 #define SSVC_OPEN_CONNECT_SSVCOPENCONNECT_H
 
 #include <memory>
-#include "ESP32SvelteKit.h"
-#include "EventSocket.h"
-#include "SecurityManager.h"
-#include "core/SsvcConnector.h"
-#include "core/SsvcSettings/SsvcSettings.h"
-#include "core/StatefulServices/SensorConfigService/SensorConfigService.h"
-#include "core/SubsystemManager/SubsystemManager.h"
-#include "core/profiles/ProfileService.h"
-#include "API/HttpRequestHandler.h"
-#include "rectification/RectificationProcess.h"
-#include "components/sensors/SensorManager/SensorManager.h"
-#include "components/subsystem/ThermalSubsystem.h"
-#include "components/subsystem/SettingsSubsystem.h"
-#include "commons/commons.h"
-#include "MqttCommandHandler/MqttCommandHandler.h"
-#include "core/StatefulServices/SensorDataService/SensorDataService.h"
-#include "core/StatefulServices/TelemetryService/TelemetryService.h"
-#include "core/StatefulServices/TelegramSettingsService/TelegramSettingsService.h"
-#include "components/Led/StatusLed.h"
-#include "components/subsystem/I2CBusSubsystem.h"
 
-#if FT_ENABLED(FT_TELEGRAM_BOT)
-#include <components/subsystem/TelegramBotSubsystem.h>
-#endif
-#include <ESP32Ping.h>
+#include "core/app/AppContext.h"
+#include "core/app/ServiceRegistry.h"
+#include "core/app/SubsystemCatalog.h"
 
-#include "core/AlarmSubscribers/Notification//NotificationSubscriber.h"
-#include "core/AlarmSubscribers/HardwareFault/HardwareFaultLogSubscriber.h"
-#include "core/AlarmSubscribers/PinOut/PinOutSubscriber.h"
-#include "components/sensors/SensorCoordinator/SensorCoordinator.h"
-#include "external/MqttBridge/MqttBridge.h"
+// Forward declarations — full definitions live in SsvcOpenConnect.cpp only.
+class EventSocket;
+class HttpRequestHandler;
+class MqttCommandHandler;
+class SensorConfigService;
+class StatusLed;
 
-#define TASK_AT_COMMAND_SEND_STACK_PERIOD 60
-#define SENSOR_POLL_INTERVAL_MS 10000
-
+/**
+ * Composition root / facade of the firmware.
+ *
+ * begin() only sequences the boot phases and delegates the heavy wiring to
+ * ServiceRegistry (services + alarms) and SubsystemCatalog (subsystems).
+ * The public API (getInstance, begin, getSensorConfigService) is preserved.
+ */
 class SsvcOpenConnect
 {
 public:
   static SsvcOpenConnect& getInstance();
 
-  static void subsystemManager();
-  void begin(AsyncWebServer& server, ESP32SvelteKit& esp32sveltekit, EventSocket* socket, SecurityManager* securityManager);
+  void begin(AsyncWebServer& server, ESP32SvelteKit& esp32sveltekit,
+             EventSocket* socket, SecurityManager* securityManager);
 
-  ESP32SvelteKit* getESP32SvelteKit() const { return _esp32sveltekit; }
-  SensorConfigService* getSensorConfigService() const { return _sensorConfigService; }
-  TelegramSettingsService* getTelegramSettingsService() const { return _telegramSettingsService; }
+  SensorConfigService* getSensorConfigService() const { return _services.sensorConfig(); }
 
   SsvcOpenConnect(const SsvcOpenConnect&) = delete;
   void operator=(const SsvcOpenConnect&) = delete;
 
-  bool isOnline() const;
-  static void sendHello();
-
 private:
   SsvcOpenConnect() = default;
+  ~SsvcOpenConnect();
 
-  AsyncWebServer* _server = nullptr;
-  ESP32SvelteKit* _esp32sveltekit = nullptr;
-  EventSocket* _socket = nullptr;
-  SecurityManager* _securityManager = nullptr;
-  PsychicMqttClient *_mqttClient  = nullptr;
+  void initPlatform(AsyncWebServer& server, ESP32SvelteKit& esp32sveltekit,
+                    EventSocket* socket, SecurityManager* securityManager);
+  void initHttp();
+  void initMessaging();
 
-  SsvcConnector& _ssvcConnector = SsvcConnector::getConnector();
-  NotificationSubscriber* _notificationSubscriber = nullptr;
-  HardwareFaultLogSubscriber* _hardwareFaultLogSubscriber = nullptr;
-  PinOutSubscriber* _pinOutSubscriber = nullptr;
+  AppContext _ctx;
+  ServiceRegistry _services;
+  SubsystemCatalog _subsystems;
 
-  SensorDataService* _sensorDataService = nullptr;
-  SsvcMqttSettingsService* _ssvcMqttSettingsService = nullptr;
-  AlarmThresholdService* _alarmThresholdService = nullptr;
-  SensorConfigService* _sensorConfigService = nullptr;
-  TelemetryService* _telemetryService = nullptr;
-  ProfileService* _profileService = nullptr;
-  TelegramSettingsService* _telegramSettingsService = nullptr;
-
-  MqttCommandHandler* _mqttCommandHandler = nullptr;
-  // AlarmMonitor* _alarmMonitor = nullptr;
-
-  SsvcSettings& _ssvcSettings = SsvcSettings::init();
-  RectificationProcess& rProcess = RectificationProcess::rectController();
-  SensorManager& _sensorManager = SensorManager::getInstance();
-
-  std::unique_ptr<HttpRequestHandler> httpRequestHandler = nullptr;
+  std::unique_ptr<HttpRequestHandler> _http;
   std::unique_ptr<StatusLed> _statusLed;
+  std::unique_ptr<MqttCommandHandler> _mqttCommands;
 
   static constexpr auto TAG = "SsvcOpenConnect";
 };

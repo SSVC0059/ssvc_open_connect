@@ -3,7 +3,7 @@
 	import { browser } from '$app/environment';
 	import { tick } from 'svelte';
 	import SensorsSettings from '$lib/components/OCSettings/SensorsSettings.svelte';
-	import TelegramSettings from '$lib/components/OCSettings/TelegramSettings.svelte';
+	import MessengerSettings from '$lib/components/OCSettings/MessengerSettings.svelte';
 	import HardwareConfigTab from '$lib/components/OCSettings/HardwareConfigTab.svelte';
 	import ProfileManager from '$lib/components/profiles/ProfileManager.svelte';
 	import { goto } from '$app/navigation';
@@ -13,7 +13,7 @@
 
 	const MOBILE_MQ = '(max-width: 767px)';
 
-	type SettingsTabId = keyof SubsystemsState | 'profiles' | 'hardware';
+	type SettingsTabId = keyof SubsystemsState | 'profiles' | 'hardware' | 'messengers';
 
 	interface Tab {
 		id: SettingsTabId;
@@ -25,13 +25,16 @@
 		props?: Record<string, unknown>;
 	}
 
-	let subsystemsState = $state<SubsystemsState>({
+	const SUBSYSTEM_DEFAULTS: SubsystemsState = {
 		atm_sensor: false,
 		i2c_bus: false,
 		settings: false,
 		telegram_bot: false,
+		vk_bot: false,
 		thermal: false
-	});
+	};
+
+	let subsystemsState = $state<SubsystemsState>({ ...SUBSYSTEM_DEFAULTS });
 
 	let error = $state('');
 	let isLoading = $state(true);
@@ -43,7 +46,10 @@
 		try {
 			const [state, hw] = await Promise.all([getSubsystemState(), fetchHardwareConfig()]);
 			if (state) {
-				subsystemsState = state;
+				subsystemsState = {
+					...SUBSYSTEM_DEFAULTS,
+					...state
+				};
 			}
 
 			filteredTabs = availableTabs.filter((tab) => {
@@ -92,10 +98,11 @@
 			props: { sensorType: 'pressure' }
 		},
 		{
-			id: 'telegram_bot',
-			title: 'Telegram',
-			component: TelegramSettings,
-			alwaysShow: true
+			id: 'messengers',
+			title: 'Мессенджеры',
+			component: MessengerSettings,
+			alwaysShow: true,
+			noSubsystemToggle: true
 		}
 	];
 
@@ -103,7 +110,7 @@
 		void loadAll();
 	});
 
-	async function toggleSubsystem(subsystem: keyof typeof subsystemsState) {
+	async function toggleSubsystem(subsystem: keyof typeof subsystemsState): Promise<boolean> {
 		try {
 			const newState = !subsystemsState[subsystem];
 			const success = await setSubsystemState({
@@ -114,25 +121,23 @@
 				subsystemsState[subsystem] = newState;
 				await loadAll();
 			}
+			return success;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Ошибка изменения';
+			return false;
 		}
 	}
 
 	const toggleSubsystemHandler = (subsystem: keyof SubsystemsState) => {
-		return async () => {
-			try {
-				await toggleSubsystem(subsystem);
-			} catch (err) {
-				console.error(`Error toggling ${subsystem}:`, err);
-			}
-		};
+		// Returns the subsystem-toggle result so callers (e.g. a messenger postRestart
+		// flow) can stop before restarting the MCU when the subsystem PUT failed.
+		return async (): Promise<boolean> => toggleSubsystem(subsystem);
 	};
 
 	const tabFromUrl = $derived($page.url.searchParams.get('tab'));
 
 	function isSubsystemEnabled(id: string): boolean {
-		if (id === 'hardware' || id === 'profiles') return true;
+		if (id === 'hardware' || id === 'profiles' || id === 'messengers') return true;
 
 		const key = id as keyof SubsystemsState;
 		return subsystemsState[key] ?? false;
@@ -143,23 +148,41 @@
 	}
 
 	const mobileItems = $derived(
-		filteredTabs.map((tab) => ({
-			id: String(tab.id),
-			title: tab.title,
-			component: tab.component,
-			props: {
-				...tab.props,
-				disabled: !isSubsystemEnabled(tab.id),
-				onToggle: tabSupportsSubsystemToggle(tab)
-					? toggleSubsystemHandler(tab.id as keyof SubsystemsState)
-					: undefined
+		filteredTabs.map((tab) => {
+			if (tab.id === 'messengers') {
+				return {
+					id: String(tab.id),
+					title: tab.title,
+					component: tab.component,
+					props: {
+						subsystemsState,
+						onToggleTelegram: toggleSubsystemHandler('telegram_bot'),
+						onToggleVk: toggleSubsystemHandler('vk_bot')
+					}
+				};
 			}
-		}))
+			return {
+				id: String(tab.id),
+				title: tab.title,
+				component: tab.component,
+				props: {
+					...tab.props,
+					disabled: !isSubsystemEnabled(tab.id),
+					onToggle: tabSupportsSubsystemToggle(tab)
+						? toggleSubsystemHandler(tab.id as keyof SubsystemsState)
+						: undefined
+				}
+			};
+		})
 	);
 
 	$effect(() => {
 		const tabId = tabFromUrl;
 		if (filteredTabs.length === 0) return;
+		if (tabId === 'telegram_bot') {
+			goto('/oc/settings?tab=messengers', { replaceState: true });
+			return;
+		}
 		if (tabId) {
 			const index = filteredTabs.findIndex((t) => String(t.id) === tabId);
 			if (index !== -1) {
@@ -223,14 +246,22 @@
 						/>
 						<div role="tabpanel" class="tab-content mt-4 w-full">
 							{#if activeTab === index}
-								{@const Component = tab.component}
-								<Component
-									{...tab.props}
-									disabled={!isSubsystemEnabled(tab.id)}
-									onToggle={tabSupportsSubsystemToggle(tab)
-										? toggleSubsystemHandler(tab.id as keyof SubsystemsState)
-										: undefined}
-								/>
+								{#if tab.id === 'messengers'}
+									<MessengerSettings
+										{subsystemsState}
+										onToggleTelegram={toggleSubsystemHandler('telegram_bot')}
+										onToggleVk={toggleSubsystemHandler('vk_bot')}
+									/>
+								{:else}
+									{@const Component = tab.component}
+									<Component
+										{...tab.props}
+										disabled={!isSubsystemEnabled(tab.id)}
+										onToggle={tabSupportsSubsystemToggle(tab)
+											? toggleSubsystemHandler(tab.id as keyof SubsystemsState)
+											: undefined}
+									/>
+								{/if}
 							{/if}
 						</div>
 					{/each}

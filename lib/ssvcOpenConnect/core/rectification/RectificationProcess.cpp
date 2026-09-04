@@ -720,9 +720,21 @@ void RectificationProcess::endEventHandler(const std::string& currentEvent)
   }
 }
 
-RectificationProcess::Metrics& RectificationProcess::getMetrics()
+bool RectificationProcess::getSnapshot(Snapshot& out)
 {
-  return  metric;
+  if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
+    ESP_LOGW(TAG, "getSnapshot: mutex timeout");
+    return false;
+  }
+  out.metric = metric;
+  out.state = currentProcessStatus;
+  strncpy(out.startTime, startTime, sizeof(out.startTime) - 1);
+  out.startTime[sizeof(out.startTime) - 1] = '\0';
+  strncpy(out.endTime, endTime, sizeof(out.endTime) - 1);
+  out.endTime[sizeof(out.endTime) - 1] = '\0';
+  out.flowVolumeValves = flowVolumeValves;
+  xSemaphoreGive(mutex);
+  return true;
 }
 
 void RectificationProcess::writeTelemetryTo(const JsonVariant telemetry)

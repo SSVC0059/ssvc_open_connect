@@ -19,6 +19,10 @@
 #include "SsvcOpenConnect.h"
 #include "core/AlarmMonitor/AlarmMonitor.h"
 
+#include "SsvcCommandsQueue.h"
+#include "MqttCommandHandler/MqttCommandHandler.h"
+#include "external/MqttBridge/MqttBridge.h"
+
 #include <esp_intr_alloc.h>
 
 // Инициализация статической переменной
