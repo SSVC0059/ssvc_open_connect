@@ -108,6 +108,9 @@ public:
   /** Запланировать повторный запрос getSettings при ошибке UART (SSVC выключен) */
   void scheduleUartRetryTimer() const;
 
+  /** Статусный "привет" по UART после первого успешного VERSION/GET_SETTINGS. */
+  static void sendHello();
+
   bool _cmdSetResult{false};
 
   ~SsvcCommandsQueue()

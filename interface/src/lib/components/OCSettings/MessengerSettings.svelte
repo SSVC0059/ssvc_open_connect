@@ -10,8 +10,8 @@
 		onToggleVk
 	}: {
 		subsystemsState: SubsystemsState;
-		onToggleTelegram: () => Promise<void>;
-		onToggleVk: () => Promise<void>;
+		onToggleTelegram: () => Promise<boolean>;
+		onToggleVk: () => Promise<boolean>;
 	} = $props();
 
 	const vkFeature = $derived(

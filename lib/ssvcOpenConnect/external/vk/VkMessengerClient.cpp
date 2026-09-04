@@ -71,18 +71,22 @@ int peekVkErrorCode(const char* resp) {
     if (resp == nullptr) {
         return 0;
     }
-    const char* p = strstr(resp, "\"error_code\":");
+    const char* p = strstr(resp, "\"error_code\"");
     if (p == nullptr) {
-        p = strstr(resp, "\"error_code\" :");
-        if (p == nullptr) {
-            return 0;
-        }
-        p += 13;
-        while (*p == ' ') {
-            ++p;
-        }
-    } else {
-        p += 13;
+        return 0;
+    }
+    // Skip the key, then optional whitespace/colon/whitespace so both JSON spacing forms
+    // ("error_code":<n> and "error_code" : <n>) parse; before, the spaced form stopped at
+    // the colon and atoi() returned 0, losing the flood/rate codes.
+    p += strlen("\"error_code\"");
+    while (*p == ' ' || *p == '\t') {
+        ++p;
+    }
+    if (*p == ':') {
+        ++p;
+    }
+    while (*p == ' ' || *p == '\t') {
+        ++p;
     }
     return atoi(p);
 }
@@ -533,10 +537,19 @@ bool VkMessengerClient::isVkApiReachable() {
 
 void VkMessengerClient::applyLiveVkBackoff(const uint32_t durationMs) {
     const uint32_t until = millis() + durationMs;
-    if (until > _liveVkBackoffUntilMs) {
+    // Wrap-safe: only extend the deadline when the new one is strictly "after" the stored one
+    // (signed delta handles the 2^32 millis() rollover); the 0 sentinel must not block a fresh
+    // backoff once millis() has wrapped past 2^31.
+    if (_liveVkBackoffUntilMs == 0 || static_cast<int32_t>(until - _liveVkBackoffUntilMs) > 0) {
         _liveVkBackoffUntilMs = until;
     }
     ESP_LOGW(TAG, "live VK backoff %u ms (until %u)", durationMs, _liveVkBackoffUntilMs);
+}
+
+bool VkMessengerClient::refreshRectSnapshot() {
+    // Best-effort: on a mutex timeout keep the last valid snapshot so the live text / summary
+    // and the FINISHED detection never format zero-valued rectification data (review feedback).
+    return RectificationProcess::rectController().getSnapshot(_lastRectSnapshot);
 }
 
 void VkMessengerClient::reloadSettingsSnapshot() {
@@ -798,7 +811,7 @@ void VkMessengerClient::flushAlertMessageIfDue(const uint32_t nowMs) {
     if (!_alertsEnabled || _peer == 0 || _token[0] == '\0' || !_hasPendingAlert) {
         return;
     }
-    if (_liveVkBackoffUntilMs != 0 && nowMs < _liveVkBackoffUntilMs) {
+    if (isVkBackoffActive(nowMs)) {
         ESP_LOGD(TAG, "alert cycle skipped (VK backoff, %u ms left)", _liveVkBackoffUntilMs - nowMs);
         return;
     }
@@ -828,7 +841,7 @@ void VkMessengerClient::runLiveCycle(const uint32_t nowMs) {
     if (!_liveEnabled || _peer == 0 || _token[0] == '\0') {
         return;
     }
-    if (_liveVkBackoffUntilMs != 0 && nowMs < _liveVkBackoffUntilMs) {
+    if (isVkBackoffActive(nowMs)) {
         ESP_LOGD(TAG, "live cycle skipped (VK backoff, %u ms left)", _liveVkBackoffUntilMs - nowMs);
         return;
     }
@@ -887,8 +900,7 @@ void VkMessengerClient::buildLiveStatusText(char* buf, const size_t cap, char* f
         ok = append_utf8("Нет связи с SSVC\n", buf, n, cap, u16);
     }
 
-    RectificationProcess::Snapshot snap{};
-    RectificationProcess::rectController().getSnapshot(snap);
+    const RectificationProcess::Snapshot& snap = _lastRectSnapshot;
     const RectificationProcess::Metrics& m = snap.metric;
     if (ok && !m.type.empty()) {
         const std::string stageStr = RectificationProcess::translateRectificationStage(m.type);
@@ -970,8 +982,7 @@ void VkMessengerClient::buildRectificationSummary(char* buf, const size_t cap, c
     ok = append_bold_lit("OpenConnect", spans, ns, buf, n, cap, u16) && append_utf8("\n", buf, n, cap, u16) &&
          append_utf8("--------\n", buf, n, cap, u16) && append_utf8("Ректификация завершена\n", buf, n, cap, u16);
 
-    RectificationProcess::Snapshot snap{};
-    RectificationProcess::rectController().getSnapshot(snap);
+    const RectificationProcess::Snapshot& snap = _lastRectSnapshot;
     const RectificationProcess::Metrics& m = snap.metric;
 
     static const char kNach[] = "Начало:";
@@ -1052,8 +1063,8 @@ void VkMessengerClient::runLoop() {
         _hasPendingAlert = true;
     }
 
-    RectificationProcess::Snapshot snap{};
-    RectificationProcess::rectController().getSnapshot(snap);
+    refreshRectSnapshot();
+    const RectificationProcess::Snapshot& snap = _lastRectSnapshot;
     const RectificationTypes::ProcessState cur = snap.state;
     if (_lastRectState != RectificationTypes::ProcessState::FINISHED &&
         cur == RectificationTypes::ProcessState::FINISHED) {
@@ -1076,8 +1087,7 @@ void VkMessengerClient::runLoop() {
     const uint32_t nowMs = millis();
 
     static int liveTick = 0;
-    if (_liveEditRetryAfterBackoff && _liveMessageId != 0 &&
-        (_liveVkBackoffUntilMs == 0 || nowMs >= _liveVkBackoffUntilMs)) {
+    if (_liveEditRetryAfterBackoff && _liveMessageId != 0 && !isVkBackoffActive(nowMs)) {
         liveTick = kVkPeriodTicks - 1;
     }
     if (++liveTick >= kVkPeriodTicks) {
@@ -1118,6 +1128,20 @@ bool VkMessengerClient::init(VkSettingsService* settingsService) {
         return false;
     }
 
+    // If a previous worker is still winding down (shutoff raced with a blocking HTTP call),
+    // wait for it to self-delete first so no two workers ever share the static HTTPClient /
+    // _httpMutex or the rectification snapshot concurrently.
+    if (_taskHandle != nullptr) {
+        constexpr int kStopWaitIter = 150;  // 150 * 100 ms = 15 s (> 12 s HTTP timeout)
+        for (int i = 0; i < kStopWaitIter && _taskHandle != nullptr; ++i) {
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        if (_taskHandle != nullptr) {
+            ESP_LOGE(TAG, "init: previous worker never exited; aborting init");
+            return false;
+        }
+    }
+
     // Allocate once and keep for the singleton lifetime: alert producers run on other tasks
     // (sensor/re-alarm timers, UART, I2C pollers), so freeing the queue here or in shutoff()
     // would race their enqueue (use-after-free). Just drain stale alerts from a previous
@@ -1135,9 +1159,8 @@ bool VkMessengerClient::init(VkSettingsService* settingsService) {
     xQueueReset(static_cast<QueueHandle_t>(_alertQueue));
 
     reloadSettingsSnapshot();
-    RectificationProcess::Snapshot snap{};
-    RectificationProcess::rectController().getSnapshot(snap);
-    _lastRectState = snap.state;
+    refreshRectSnapshot();
+    _lastRectState = _lastRectSnapshot.state;
     _initialized = true;
 
     // HTTPS/TLS + ArduinoJson + long VK form body need more than default stack (stack canary on 6144).
@@ -1156,16 +1179,17 @@ bool VkMessengerClient::init(VkSettingsService* settingsService) {
 void VkMessengerClient::shutoff() {
     _initialized = false;
 
-    // Wait briefly for the worker to exit on its own; force-kill only as a last resort
-    // (the worker may be inside a 12 s HTTP call — tracked as H8/H9 in the review backlog).
+    // Graceful stop: set the stop flag and wait for the worker to observe it and exit on its
+    // own (it may be inside a 12 s HTTP call). Never vTaskDelete a running task — that would
+    // kill it while it still owns _httpMutex / the static HTTPClient and leak a half-finished
+    // request into the next worker (editLiveMessage retry-flag stayed clear).
+    constexpr int kStopWaitIter = 150;  // 150 * 100 ms = 15 s > 12 s HTTP timeout + margin
+    for (int i = 0; i < kStopWaitIter && _taskHandle != nullptr; ++i) {
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
     if (_taskHandle != nullptr) {
-        for (int i = 0; i < 60 && _taskHandle != nullptr; ++i) {
-            vTaskDelay(pdMS_TO_TICKS(100));
-        }
-        if (_taskHandle != nullptr) {
-            vTaskDelete(_taskHandle);
-            _taskHandle = nullptr;
-        }
+        ESP_LOGW(TAG, "shutoff: worker still busy after %d ms; it will exit when its current call returns",
+                 kStopWaitIter * 100);
     }
 
     // K1: never free _alertQueue/_httpMutex here — producer tasks (sensor/re-alarm timers,

@@ -2,6 +2,7 @@
 #define VK_MESSENGER_CLIENT_H
 
 #include <Arduino.h>
+#include "core/rectification/RectificationProcess.h"
 #include "core/rectification/RectificationTypes.h"
 
 class VkSettingsService;
@@ -55,6 +56,12 @@ private:
     /** After flood/rate edit failure: retry edit once backoff ends (do not clear message_id). */
     bool _liveEditRetryAfterBackoff = false;
     RectificationTypes::ProcessState _lastRectState = RectificationTypes::ProcessState::IDLE;
+    /** Last successfully captured rectification snapshot (worker task only); used on mutex-timeout. */
+    RectificationProcess::Snapshot _lastRectSnapshot{};
+    /** Wrap-safe: true while the flood/rate-limit backoff deadline has not been reached yet. */
+    bool isVkBackoffActive(const uint32_t nowMs) const {
+        return _liveVkBackoffUntilMs != 0 && static_cast<int32_t>(nowMs - _liveVkBackoffUntilMs) < 0;
+    }
 
     // Large scratch buffers: only used from workerTask while _httpMutex is held (not stack).
     static constexpr size_t kFormCap = 10240;
@@ -72,6 +79,8 @@ private:
     char _summaryFmtScratch[kFormatDataCap]{};
 
     void reloadSettingsSnapshot();
+    /** Best-effort rectification snapshot refresh; on failure keeps the last valid one. */
+    bool refreshRectSnapshot();
     /** Cached HTTPS probe to api.vk.com (utils.getServerTime, no token). */
     static bool isVkApiReachable();
     bool vkFormPost(const char* method, const char* formBody, char* respBuf, size_t respCap);

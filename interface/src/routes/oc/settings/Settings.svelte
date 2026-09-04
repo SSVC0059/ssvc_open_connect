@@ -110,7 +110,7 @@
 		void loadAll();
 	});
 
-	async function toggleSubsystem(subsystem: keyof typeof subsystemsState) {
+	async function toggleSubsystem(subsystem: keyof typeof subsystemsState): Promise<boolean> {
 		try {
 			const newState = !subsystemsState[subsystem];
 			const success = await setSubsystemState({
@@ -121,19 +121,17 @@
 				subsystemsState[subsystem] = newState;
 				await loadAll();
 			}
+			return success;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Ошибка изменения';
+			return false;
 		}
 	}
 
 	const toggleSubsystemHandler = (subsystem: keyof SubsystemsState) => {
-		return async () => {
-			try {
-				await toggleSubsystem(subsystem);
-			} catch (err) {
-				console.error(`Error toggling ${subsystem}:`, err);
-			}
-		};
+		// Returns the subsystem-toggle result so callers (e.g. a messenger postRestart
+		// flow) can stop before restarting the MCU when the subsystem PUT failed.
+		return async (): Promise<boolean> => toggleSubsystem(subsystem);
 	};
 
 	const tabFromUrl = $derived($page.url.searchParams.get('tab'));
