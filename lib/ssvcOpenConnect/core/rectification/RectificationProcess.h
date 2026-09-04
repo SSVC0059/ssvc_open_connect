@@ -97,7 +97,22 @@ public:
 
   static std::string translateRectificationStage(const std::string& stageStr);
 
-  Metrics& getMetrics();
+  /** Copy of the live rectification state, safe to read from other tasks. */
+  struct Snapshot {
+    Metrics metric;
+    ProcessState state = ProcessState::IDLE;
+    char startTime[25]{};
+    char endTime[25]{};
+    std::map<RectificationStage, int> flowVolumeValves;
+  };
+
+  /**
+   * Takes the shared `mutex` (as getStatus() does) and copies the live std::string /
+   * std::map state into `out`, so callers from another task (e.g. the VK messenger
+   * worker) never read containers while the RectTelemetry task is mutating them.
+   * On mutex timeout `out` is left untouched and false is returned.
+   */
+  bool getSnapshot(Snapshot& out);
 
   std::string errorSet;
 

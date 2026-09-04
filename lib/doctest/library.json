@@ -1,0 +1,10 @@
+{
+  "name": "doctest",
+  "version": "2.4.12",
+  "description": "The lightest feature-rich C++ single-header testing framework for unit tests and TDD. Vendored from https://github.com/doctest/doctest (MIT) so pio test -e native runs without a registry lookup.",
+  "keywords": "test, unit, tdd",
+  "license": "MIT",
+  "build": {
+    "includeDir": "src"
+  }
+}

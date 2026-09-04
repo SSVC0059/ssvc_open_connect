@@ -136,9 +136,9 @@ import { goto } from '$app/navigation';
                             feature: true
                         },
                         {
-                            title: 'Telegram',
+                            title: 'Мессенджеры',
                             icon: Telegram,
-                            href: '/oc/settings?tab=telegram_bot',
+                            href: '/oc/settings?tab=messengers',
                             feature: true
                         }
                     ]

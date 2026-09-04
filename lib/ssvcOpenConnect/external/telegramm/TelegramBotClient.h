@@ -12,6 +12,7 @@
 #include "core/StatefulServices/TelegramSettingsService/TelegramSettingsService.h"
 #include <components/subsystem/ThermalSubsystem.h>
 #include "commons/commons.h"
+#include "core/rectification/RectificationProcess.h"
 
 #define FB_USE_LOG Serial
 #define MESSAGE_LIMIT_BY_UPDATE 3
@@ -73,6 +74,9 @@ private:
         uint32_t lastUpdateTime = 0;
         bool showControlButtons = false;
     };
+
+    /** Last successfully captured rectification snapshot (refreshed in updateRectificationInfo). */
+    RectificationProcess::Snapshot _rectSnapshot;
 
     CachedMessage cachedStatus;
     bool messageStructureInitialized = false;

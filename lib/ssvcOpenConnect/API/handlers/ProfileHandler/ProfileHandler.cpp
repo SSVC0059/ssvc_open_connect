@@ -3,6 +3,8 @@
 #include <string>
 #include "esp_log.h" // Добавить для логирования
 
+#include "core/SsvcCommandsQueue.h"
+
 static auto TAG_PROFILE_HANDLER = "ProfileHandler"; // Добавить для логирования
 
 ProfileHandler::ProfileHandler(ProfileService* profileService) : _profileService(profileService) {}
@@ -243,7 +245,7 @@ void ProfileHandler::handleSaveSettingsToProfile(AsyncWebServerRequest* request,
     }
 
     if (!json["id"].is<const char*>()) {
-        request->send(400, "application/json", R"({"error": "Missing or invalid 'id' field in request body"})");
+        request->send(400, "application/json", R"({"error": "Missing or invalid 'id' field"})");
         return;
     }
 
@@ -256,8 +258,25 @@ void ProfileHandler::handleSaveSettingsToProfile(AsyncWebServerRequest* request,
 
     ESP_LOGI(TAG_PROFILE_HANDLER, "handleSaveSettingsToProfile called for profileId: %s", profileId.c_str());
 
+    // Перед сохранением запрашиваем актуальные настройки у ssvc0059v2,
+    // чтобы в профиль попали реальные значения контроллера, а не устаревший
+    // локальный кэш. Таймаут 5с — согласован с дефолтным таймаутом task'а.
+    constexpr uint32_t kRefreshTimeoutMs = 5000;
+    const bool refreshed = SsvcCommandsQueue::getQueue().requestSettingsAndWait(kRefreshTimeoutMs);
+    if (!refreshed) {
+        ESP_LOGW(TAG_PROFILE_HANDLER,
+                 "handleSaveSettingsToProfile: GET_SETTINGS timeout for profileId=%s, "
+                 "saving from stale local cache", profileId.c_str());
+    }
+
     if (ProfileService::getInstance()->saveCurrentSettingsToProfile(profileId)) {
-        request->send(200, "application/json", R"({"success": true, "message": "Current settings saved to profile."})");
+        if (refreshed) {
+            request->send(200, "application/json",
+                R"({"success": true, "refreshed": true, "message": "Profile actualized with current controller settings."})");
+        } else {
+            request->send(200, "application/json",
+                R"({"success": true, "refreshed": false, "message": "Profile saved from local cache (controller did not respond in time)."})");
+        }
     } else {
         request->send(404, "application/json", R"({"success": false, "message": "Profile not found or failed to save current settings."})");
     }

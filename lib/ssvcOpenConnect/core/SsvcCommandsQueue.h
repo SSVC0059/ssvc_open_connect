@@ -81,6 +81,22 @@ public:
   void getSettings(int attempt_count = ATTEMPT_COUNT,
                    TickType_t timeout = TIMEOUT) const;
 
+  /**
+   * @brief Синхронный запрос настроек у SSVC с ожиданием ответа.
+   *
+   * Отправляет GET_SETTINGS через очередь команд и блокирует вызывающий поток
+   * до получения ответа (BIT10) или истечения таймаута. После успешного
+   * завершения локальное зеркало SsvcSettings будет обновлено фактическими
+   * значениями контроллера. Используется при «актуализации» профиля —
+   * гарантирует, что сохраняемые в профиль данные соответствуют реальному
+   * состоянию ssvc0059v2, а не устаревшему локальному кэшу.
+   *
+   * @param timeoutMs Максимальное время ожидания ответа в миллисекундах.
+   * @return true если ответ получен в пределах таймаута, false при таймауте
+   *         или если eventGroup не инициализирован.
+   */
+  bool requestSettingsAndWait(uint32_t timeoutMs) const;
+
   void next(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
   void stop(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
@@ -107,6 +123,9 @@ public:
 
   /** Запланировать повторный запрос getSettings при ошибке UART (SSVC выключен) */
   void scheduleUartRetryTimer() const;
+
+  /** Статусный "привет" по UART после первого успешного VERSION/GET_SETTINGS. */
+  static void sendHello();
 
   bool _cmdSetResult{false};
 

@@ -21,6 +21,7 @@
 #include "components/sensors/DS18B20Sensor/DS18B20Sensor.h"
 #include "components/sensors/SensorManager/SensorManager.h"
 #include "core/SsvcOpenConnect.h"
+#include "core/StatefulServices/SensorConfigService/SensorConfigService.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 

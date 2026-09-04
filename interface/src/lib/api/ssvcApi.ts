@@ -10,7 +10,9 @@ import type {
 	SsvcOpenConnectMessage,
 	SsvcSettings,
 	SubsystemsState,
-	TelegramConfig
+	TelegramConfig,
+	VkConfig,
+	VkPeersResponse
 } from '$lib/types/ssvc';
 
 
@@ -62,9 +64,13 @@ export async function updateSetting(field: string, value: unknown): Promise<bool
 }
 
 /**
- * Сохранение всех настроек SSVC на сервере
+ * Сохранение настроек SSVC на сервере.
+ *
+ * Принимает как полный объект SsvcSettings, так и Partial — бэкенд
+ * SettingsHandler::updateSettings обрабатывает каждый ключ независимо через
+ * PARAM_HANDLERS, поэтому partial update с дифом поддерживается «из коробки».
  */
-export async function saveSettings(settings: SsvcSettings | undefined): Promise<boolean> {
+export async function saveSettings(settings: Partial<SsvcSettings> | undefined): Promise<boolean> {
 	console.log('Attempting to save settings:', settings);
 	const url = '/rest/settings';
 	console.log(`Sending PUT request to ${url}`);
@@ -149,14 +155,52 @@ export async function saveTelegramSettings(settings: TelegramConfig): Promise<bo
 	return true;
 }
 
+export async function getVkSettings(): Promise<VkConfig | null> {
+	const response = await apiFetch<VkConfig>('/rest/vk/config', 'GET');
+	if (!response.success) {
+		return null;
+	}
+	return response.data;
+}
+
+export async function saveVkSettings(settings: VkConfig): Promise<boolean> {
+	const response = await apiFetch<{ result?: boolean }>('/rest/vk/config', 'PUT', settings);
+	if (!response.success) {
+		console.error('Ошибка сохранения VK:', response.error);
+		return false;
+	}
+	return true;
+}
+
+/** Recent VK dialog peer_id list (messages.getConversations). Uses saved token unless overridden. */
+export async function fetchVkConversationPeers(
+	access_token?: string,
+	api_version?: string
+): Promise<VkPeersResponse | null> {
+	const body: Record<string, string> = {};
+	if (access_token) {
+		body.access_token = access_token;
+	}
+	if (api_version) {
+		body.api_version = api_version;
+	}
+	const response = await apiFetch<VkPeersResponse>('/rest/vk/peers', 'POST', body);
+	if (!response.success) {
+		return null;
+	}
+	return response.data;
+}
+
 export async function setSubsystemState(states: Record<string, boolean>): Promise<boolean> {
 	const response = await apiFetch<{ success: boolean }>(
 		'/rest/subsystem',
 		'PUT',
 		states
 	);
-	return response.success ? response.data : false;
-	// return response?.success ?? false;
+	// Backend replies HTTP 200 with { success, errors } even when a subsystem failed to
+	// change, so response.data is the whole body, not a boolean. Check data.success
+	// explicitly so a real toggle failure is never masked as success.
+	return response.success ? response.data.success === true : false;
 }
 
 export async function getSubsystemState(): Promise<SubsystemsState | null> {

@@ -168,6 +168,21 @@ cd /d/microcontrollers/esp32/OpenConnect/ssvc_open_connect
 pio test -e native
 ```
 
+### Офлайн-запуск native-тестов без PlatformIO
+
+`pio test -e native` требует установки native-платформы PlatformIO и библиотеки `doctest` из реестра. Если сеть недоступна (или реестр PlatformIO не отвечает), те же тесты можно собрать и прогнать системным `g++` — заголовок `doctest` завендорен в репозитории (`lib/doctest`):
+
+```bash
+bash scripts/run_native_tests.sh
+```
+
+Эквивалент вручную (Git Bash / PowerShell):
+```bash
+g++ -std=gnu++14 -I lib/ssvcOpenConnect -I lib/doctest/src test/native/test_stringview/test_main.cpp -o /tmp/rt && /tmp/rt
+```
+
+Покрытие: `test_stringview`, `test_utils`, `test_uart_api_spec`, `test_rectification_parse` (24 кейса / 98 проверок на doctest 2.4.12).
+
 ### Если native: `*** [test_main.o] Error 1` без сообщений компилятора
 
 Часто PlatformIO вызывает **`g++` не из MSYS2** (из другого MinGW или вовсе не находит компилятор). В той же сессии PowerShell проверьте:
