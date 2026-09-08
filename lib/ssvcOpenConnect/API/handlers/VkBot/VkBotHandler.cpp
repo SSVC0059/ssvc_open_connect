@@ -39,61 +39,85 @@ bool fetchVkConversations(const String& token, const String& apiVer, JsonArray p
         return false;
     }
 
-    String form = "access_token=";
-    appendUrlEncoded(token.c_str(), form);
-    form += "&v=";
-    appendUrlEncoded(apiVer.c_str(), form);
-    form += "&count=20&filter=all&extended=1";
+    // Fetch with pagination: VK API returns up to 1000 items max, 20 per page.
+    // Continue while response.items.length == count and response.groups_count > total_fetched.
+    constexpr int kPageSize = 20;
+    int totalFetched = 0;
+    int offset = 0;
 
-    HTTPClient http;
-    http.setTimeout(15000);
-    if (!http.begin("https://api.vk.com/method/messages.getConversations")) {
-        errMsg = "http.begin failed";
-        return false;
-    }
-    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-    const int code = http.POST(form);
-    const String payload = http.getString();
-    http.end();
+    do {
+        String form = "access_token=";
+        appendUrlEncoded(token.c_str(), form);
+        form += "&v=";
+        appendUrlEncoded(apiVer.c_str(), form);
+        form += "&count=";
+        form += kPageSize;
+        form += "&offset=";
+        form += offset;
+        form += "&filter=all&extended=1";
 
-    if (code != HTTP_CODE_OK || payload.isEmpty()) {
-        errMsg = "HTTP " + String(code);
-        return false;
-    }
-
-    JsonDocument doc;
-    if (deserializeJson(doc, payload) != DeserializationError::Ok) {
-        errMsg = "JSON parse failed";
-        return false;
-    }
-    if (doc["error"].is<JsonObject>()) {
-        errMsg = String("VK ") + String(doc["error"]["error_code"].as<int>()) + ": " +
-                 doc["error"]["error_msg"].as<const char*>();
-        return false;
-    }
-
-    JsonArray items = doc["response"]["items"].as<JsonArray>();
-    if (items.isNull()) {
-        errMsg = "no items in response";
-        return false;
-    }
-
-    for (JsonObject item : items) {
-        JsonObject peer = item["conversation"]["peer"].as<JsonObject>();
-        if (peer.isNull() || peer["id"].isNull()) {
-            continue;
+        HTTPClient http;
+        http.setTimeout(15000);
+        if (!http.begin("https://api.vk.com/method/messages.getConversations")) {
+            errMsg = "http.begin failed";
+            return false;
         }
-        JsonObject row = peersOut.add<JsonObject>();
-        row["peer_id"] = peer["id"].as<long long>();
-        if (peer["type"].is<const char*>()) {
-            row["type"] = peer["type"].as<const char*>();
+        http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+        const int code = http.POST(form);
+        const String payload = http.getString();
+        http.end();
+
+        if (code != HTTP_CODE_OK || payload.isEmpty()) {
+            errMsg = "HTTP " + String(code);
+            return false;
         }
-        if (item["chat_settings"]["title"].is<const char*>()) {
-            row["title"] = item["chat_settings"]["title"].as<const char*>();
-        } else if (item["last_message"]["from_id"].is<int64_t>()) {
-            row["title"] = String("from_id ") + item["last_message"]["from_id"].as<int64_t>();
+
+        JsonDocument doc;
+        if (deserializeJson(doc, payload) != DeserializationError::Ok) {
+            errMsg = "JSON parse failed";
+            return false;
         }
-    }
+        if (doc["error"].is<JsonObject>()) {
+            errMsg = String("VK ") + String(doc["error"]["error_code"].as<int>()) + ": " +
+                     doc["error"]["error_msg"].as<const char*>();
+            return false;
+        }
+
+        JsonObject response = doc["response"].as<JsonObject>();
+        JsonArray items = response["items"].as<JsonArray>();
+        if (items.isNull()) {
+            break;
+        }
+
+        int itemCount = 0;
+        for (JsonObject item : items) {
+            JsonObject peer = item["conversation"]["peer"].as<JsonObject>();
+            if (peer.isNull() || peer["id"].isNull()) {
+                continue;
+            }
+            JsonObject row = peersOut.add<JsonObject>();
+            row["peer_id"] = peer["id"].as<long long>();
+            if (peer["type"].is<const char*>()) {
+                row["type"] = peer["type"].as<const char*>();
+            }
+            if (item["chat_settings"]["title"].is<const char*>()) {
+                row["title"] = item["chat_settings"]["title"].as<const char*>();
+            } else if (item["last_message"]["from_id"].is<int64_t>()) {
+                row["title"] = String("from_id ") + item["last_message"]["from_id"].as<int64_t>();
+            }
+            itemCount++;
+        }
+
+        totalFetched += itemCount;
+        offset += kPageSize;
+
+        // Stop if we got fewer items than requested (last page) or hit groups_count limit
+        const int groupsCount = response["groups_count"].as<int>();
+        if (itemCount < kPageSize || totalFetched >= groupsCount) {
+            break;
+        }
+    } while (totalFetched < 1000);  // Hard cap at 1000 items (VK API max)
+
     return true;
 }
 
@@ -123,7 +147,17 @@ void VkBotHandler::getSettings(AsyncWebServerRequest* request) {
         delete response;
         return;
     }
-    svc->read([&](const VkSettings& s) { readVkSettings(const_cast<VkSettings&>(s), root); });
+    svc->read([&](VkSettings& s) {
+        applyDefaultVersion(s);
+        root["access_token"] = s.accessToken;
+        root["api_version"] = s.apiVersion.isEmpty() ? "5.199" : s.apiVersion;
+        root["group_id"] = s.groupId;
+        root["peer_id"] = s.peerId;
+        root["live_enabled"] = s.liveEnabled;
+        root["alerts_enabled"] = s.alertsEnabled;
+        root["summary_enabled"] = s.summaryEnabled;
+        root["wall_post_enabled"] = s.wallPostEnabled;
+    });
     response->setLength();
     request->send(response);
 }

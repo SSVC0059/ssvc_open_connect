@@ -11,11 +11,6 @@ void VkBotSubsystem::initialize() {
     if (!_initialized) {
         ESP_LOGI("VkBotSubsystem", "init");
         _client = &VkMessengerClient::instance();
-        if (_client == nullptr) {
-            _initialized = false;
-            disable();
-            return;
-        }
         _initialized = true;
     }
 }
@@ -44,6 +39,8 @@ void VkBotSubsystem::disable() {
         _client->shutoff();
     }
     _enabled = false;
+    // Small delay to let the worker task observe _initialized=false and exit its
+    // vTaskDelay/poll loop before the subsystem object is potentially destroyed.
     vTaskDelay(pdMS_TO_TICKS(50));
 }
 

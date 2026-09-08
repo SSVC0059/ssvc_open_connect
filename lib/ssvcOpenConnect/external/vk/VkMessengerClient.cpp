@@ -581,14 +581,20 @@ bool VkMessengerClient::vkFormPost(const char* method, const char* formBody, cha
     http.addHeader("Content-Type", "application/x-www-form-urlencoded");
     const int code = http.POST(formBody);
     respBuf[0] = '\0';
-    if (code == HTTP_CODE_OK) {
+    if (code == HTTP_CODE_OK && http.connected()) {
         const String payload = http.getString();
         if (payload.length() > 0) {
             strncpy(respBuf, payload.c_str(), respCap - 1);
             respBuf[respCap - 1] = '\0';
         }
-    } else {
-        ESP_LOGW(TAG, "%s HTTP code=%d", method, code);
+    } else if (code != HTTP_CODE_OK) {
+        // Read error body for diagnostic even on non-200 responses
+        const String errPayload = http.getString();
+        if (errPayload.length() > 0) {
+            ESP_LOGW(TAG, "%s HTTP code=%d body=%.128s", method, code, errPayload.c_str());
+        } else {
+            ESP_LOGW(TAG, "%s HTTP code=%d", method, code);
+        }
     }
     http.end();
     return code == HTTP_CODE_OK && respBuf[0] != '\0';

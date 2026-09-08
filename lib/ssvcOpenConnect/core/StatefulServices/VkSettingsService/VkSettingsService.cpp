@@ -3,7 +3,7 @@
 
 VkSettingsService* VkSettingsService::_instance = nullptr;
 
-static void applyDefaultVersion(VkSettings& s) {
+void applyDefaultVersion(VkSettings& s) {
     if (s.apiVersion.isEmpty()) {
         s.apiVersion = "5.199";
     }
@@ -74,8 +74,7 @@ StateUpdateResult updateVkSettings(JsonObject& root, VkSettings& settings) {
     return changed ? StateUpdateResult::CHANGED : StateUpdateResult::UNCHANGED;
 }
 
-void readVkSettings(VkSettings& settings, JsonObject& root) {
-    applyDefaultVersion(settings);
+void readVkSettings(const VkSettings& settings, JsonObject& root) {
     root["access_token"] = settings.accessToken;
     root["api_version"] = settings.apiVersion.isEmpty() ? "5.199" : settings.apiVersion;
     root["group_id"] = settings.groupId;
@@ -138,7 +137,15 @@ void VkSettingsService::onProfileApply(const JsonObject& profile) {
 }
 
 void VkSettingsService::onProfileSave(JsonObject& profile) {
-    read([&](const VkSettings& settings) {
-        readVkSettings(const_cast<VkSettings&>(settings), profile);
+    read([&](VkSettings& settings) {
+        applyDefaultVersion(settings);
+        profile["access_token"] = settings.accessToken;
+        profile["api_version"] = settings.apiVersion.isEmpty() ? "5.199" : settings.apiVersion;
+        profile["group_id"] = settings.groupId;
+        profile["peer_id"] = settings.peerId;
+        profile["live_enabled"] = settings.liveEnabled;
+        profile["alerts_enabled"] = settings.alertsEnabled;
+        profile["summary_enabled"] = settings.summaryEnabled;
+        profile["wall_post_enabled"] = settings.wallPostEnabled;
     });
 }

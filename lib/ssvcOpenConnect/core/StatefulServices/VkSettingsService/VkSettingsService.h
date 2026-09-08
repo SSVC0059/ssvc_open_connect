@@ -26,6 +26,7 @@ struct VkSettings {
 
 StateUpdateResult updateVkSettings(JsonObject& root, VkSettings& settings);
 void readVkSettings(VkSettings& settings, JsonObject& root);
+void applyDefaultVersion(VkSettings& settings);
 
 class VkSettingsService : public StatefulService<VkSettings>, public IProfileObserver {
 public:
