@@ -1,5 +1,11 @@
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest.h>
 
+// wingdi.h на Windows определяет ERROR как макрос (0) и ломает enum class Status { ..., ERROR }
+// Локальная защита для нативной сборки на MinGW; на ESP32/ubuntu-latest CI это не нужно.
+#ifdef ERROR
+#undef ERROR
+#endif
 #include "core/SsvcLogProtocol/SsvcLogProtocol.h"
 
 TEST_CASE("GET_LOG requests validate process numbers") {
