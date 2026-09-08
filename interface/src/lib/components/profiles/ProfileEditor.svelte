@@ -447,11 +447,15 @@
 							<div class="sub-settings-group">
 								<h5 class="sub-settings-title">Снижение (Формула)</h5>
 								<div class="formula-controls">
-									<label class="checkbox-label">
-										<input type="checkbox" bind:checked={sourceProfile.ssvcSettings.formula} />
-										<span>Вкл</span>
-									</label>
-									<div class="formula-inputs" class:disabled={!sourceProfile.ssvcSettings.formula}>
+									<label class="input-label" for="formulaMode">Режим</label>
+									<select
+										id="formulaMode"
+										bind:value={sourceProfile.ssvcSettings.formula}
+									>
+										<option value={0}>Выкл</option>
+										<option value={1}>Вкл</option>
+									</select>
+									<div class="formula-inputs" class:disabled={sourceProfile.ssvcSettings.formula === 0}>
 										<div class="input-group">
 											<span class="input-label">Гист.</span>
 											<input class="input-field" type="number" step="0.01" bind:value={sourceProfile.ssvcSettings.hyst} />

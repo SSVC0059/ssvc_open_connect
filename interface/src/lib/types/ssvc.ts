@@ -130,9 +130,11 @@ export type SsvcSettings = {
 	parallel: SsvcTuple; // Параметры Parallel V3 - подголовники
 	hearts_temp_shift: boolean; // Смещение температуры для Hearts
 	hearts_pause: boolean; // Пауза для Hearts
-	formula: boolean; // Формула
+	formula: number; // Формула (0=выкл, 1=вкл)
 	formula_start_temp: number; // Начальная температура для формулы
 	tank_mmhg: number;
+	predec: number; // Предекремент (0=выкл, 7=0.07, 13=0.13)
+	extended_heads: number; // Сброс и снижение (0=выкл, 1=вкл)
 	tp2_shift: number; // Смещение TP2
 	tp_filter: boolean; // Температурный фильтр
 	signal_tp1_control: number; // Контроль сигнала TP1 (0 или 1)

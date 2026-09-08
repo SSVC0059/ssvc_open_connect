@@ -286,7 +286,7 @@
 		} else if (t === 'rectification') {
 			row.condition = { type: 'rectification', stageEquals: 'waiting' };
 		} else {
-			row.condition = { type: 'ssvc_setting', key: 'formula', boolEquals: false };
+			row.condition = { type: 'ssvc_setting', key: 'formula', intEquals: 0 };
 		}
 	}
 
