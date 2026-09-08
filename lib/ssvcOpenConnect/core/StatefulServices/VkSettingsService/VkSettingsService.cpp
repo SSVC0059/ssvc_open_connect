@@ -74,7 +74,7 @@ StateUpdateResult updateVkSettings(JsonObject& root, VkSettings& settings) {
     return changed ? StateUpdateResult::CHANGED : StateUpdateResult::UNCHANGED;
 }
 
-void readVkSettings(const VkSettings& settings, JsonObject& root) {
+void readVkSettings(VkSettings& settings, JsonObject& root) {
     root["access_token"] = settings.accessToken;
     root["api_version"] = settings.apiVersion.isEmpty() ? "5.199" : settings.apiVersion;
     root["group_id"] = settings.groupId;
