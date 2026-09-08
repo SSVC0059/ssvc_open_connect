@@ -66,10 +66,10 @@ void TelegramBotSubsystem::enable() {
 }
 
 void TelegramBotSubsystem::disable() {
-    if (!_enabled) return;
-
     ESP_LOGI("TelegramBotSubsystem", "Disabling...");
-    if (bot) bot->shutoff();
+    if (bot) {
+        bot->shutoff();
+    }
     _enabled = false;
     vTaskDelay(pdMS_TO_TICKS(100));
 }

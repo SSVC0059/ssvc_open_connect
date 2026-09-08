@@ -407,7 +407,9 @@ bool RelayRuleEngine::matchRectification(const Rule& r) const {
   if (r.stageEquals.empty()) {
     return false;
   }
-  const std::string cur = RectificationProcess::rectController().getMetrics().type;
+  RectificationProcess::Snapshot snap{};
+  RectificationProcess::rectController().getSnapshot(snap);
+  const std::string cur = snap.metric.type;
   return cur == r.stageEquals;
 }
 
