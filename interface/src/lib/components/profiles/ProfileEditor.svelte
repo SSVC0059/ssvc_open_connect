@@ -448,13 +448,14 @@
 								<h5 class="sub-settings-title">Снижение (Формула)</h5>
 								<div class="formula-controls">
 									<label class="input-label" for="formulaMode">Режим</label>
-									<select
-										id="formulaMode"
-										bind:value={sourceProfile.ssvcSettings.formula}
-									>
-										<option value={0}>Выкл</option>
-										<option value={1}>Вкл</option>
-									</select>
+								<select
+											id="formulaMode"
+											bind:value={sourceProfile.ssvcSettings.formula}
+										>
+											<option value={0}>Выкл</option>
+											<option value={1}>Вкл</option>
+											<option value={2}>Авто 92+</option>
+										</select>
 									<div class="formula-inputs" class:disabled={sourceProfile.ssvcSettings.formula === 0}>
 										<div class="input-group">
 											<span class="input-label">Гист.</span>

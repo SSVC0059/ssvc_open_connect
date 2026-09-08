@@ -40,6 +40,7 @@
 				>
 					<option value={0}>Выкл</option>
 					<option value={1}>Вкл</option>
+					<option value={2}>Авто 92+</option>
 				</select>
 			</div>
 

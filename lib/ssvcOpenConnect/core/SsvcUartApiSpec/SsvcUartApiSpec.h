@@ -1,6 +1,6 @@
 /**
- * SSVC0059_V2 UART API Specification (v1.8)
- * https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.8/README.md
+ * SSVC0059_V2 UART API Specification (v1.9)
+ * https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.9/README.md
  *
  * Константы и валидация по спецификации API.
  * Используется для тестов и проверки соответствия форматов.
@@ -107,9 +107,9 @@ inline bool isValidHeadsTimer(unsigned int v) {
     return v <= HEADS_TIMER_MAX && (v % HEADS_TIMER_STEP) == 0;
 }
 
-/** Проверка formula: 0 или 1 */
+/** Проверка formula: 0, 1 или 2 */
 inline bool isValidFormula(int v) {
-    return v == 0 || v == 1;
+    return v == 0 || v == 1 || v == 2;
 }
 
 /** Парсинг формата [time,period] — возвращает true если строка соответствует */
