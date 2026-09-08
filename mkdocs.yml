@@ -85,6 +85,7 @@ nav:
       - develop/testing.md
       - develop/docs-previews.md
       - develop/i2c_monitoring.md
+      - "План поддержки UART API v1.10": develop/api-v1.10-support-plan.md
       - "REST API":
           - develop/api/index.md
           - develop/api/settings.md
