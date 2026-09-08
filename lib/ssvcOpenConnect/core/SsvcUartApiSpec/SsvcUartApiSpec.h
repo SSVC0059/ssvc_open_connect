@@ -1,6 +1,6 @@
 /**
- * SSVC0059_V2 UART API Specification (v1.7)
- * https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.7/README.md
+ * SSVC0059_V2 UART API Specification (v1.8)
+ * https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.8/README.md
  *
  * Константы и валидация по спецификации API.
  * Используется для тестов и проверки соответствия форматов.

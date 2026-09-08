@@ -56,11 +56,15 @@ std::map<String, std::unique_ptr<ParamHandler>> createHandlers() {
                          b.setDecrement(v);
                        })));
 
-  // formula
+  // formula: 0=выкл, 1=вкл, 2=авто 92+
   handlers.emplace(
       "formula",
-      std::unique_ptr<BooleanHandler>(new BooleanHandler(
-          [](SsvcSettings::Builder &b, bool v) { b.formulaEnable(v); })));
+      std::unique_ptr<SingleIntHandler>(new SingleIntHandler(
+          [](SsvcSettings::Builder &b, const int v) {
+            if (v >= 0 && v <= 2) {
+              b.formulaEnable(v);
+            }
+          })));
 
   // tank_mmhg
   handlers.emplace("tank_mmhg",
@@ -206,6 +210,24 @@ std::map<String, std::unique_ptr<ParamHandler>> createHandlers() {
                      [](SsvcSettings::Builder &b,const unsigned int v) {
                        b.setStepTimer(v);
                      })));
+
+  // predec: предекремент (0=выкл, 7=0.07, 13=0.13)
+  handlers.emplace(
+      "predec",
+      std::unique_ptr<SingleIntHandler>(new SingleIntHandler(
+          [](SsvcSettings::Builder &b, const int v) { b.setPredec(v); }, 0, 13)));
+
+  // extended_heads: сброс и снижение (0=выкл, 1=вкл)
+  handlers.emplace(
+      "extended_heads",
+      std::unique_ptr<SingleIntHandler>(new SingleIntHandler(
+          [](SsvcSettings::Builder &b, const int v) { b.setExtendedHeads(v); }, 0, 1)));
+
+  // tank_mmhg_act: актуальное давление с датчика (0.0–50.0)
+  handlers.emplace(
+      "tank_mmhg_act",
+      std::unique_ptr<SingleFloatHandler>(new SingleFloatHandler(
+          [](SsvcSettings::Builder &b, const float v) { b.setTankPressureActual(v); })));
 
   return handlers;
 }
