@@ -1,5 +1,5 @@
 /**
- * SSVC0059_V2 UART API Specification (v1.9)
+ * SSVC0059_V2 UART API Specification (v1.10)
  * https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.9/README.md
  *
  * Константы и валидация по спецификации API.
@@ -68,6 +68,7 @@ constexpr size_t SET_CMD_MAX_LEN = 300;
 #define SSVC_CMD_VERSION "VERSION"
 #define SSVC_CMD_GET_SETTINGS "GET_SETTINGS"
 #define SSVC_CMD_SET "SET"
+#define SSVC_CMD_GET_LOG "GET_LOG"
 
 // === Валидация (соответствие API) ===
 
@@ -110,6 +111,16 @@ inline bool isValidHeadsTimer(unsigned int v) {
 /** Проверка formula: 0, 1 или 2 */
 inline bool isValidFormula(int v) {
     return v == 0 || v == 1 || v == 2;
+}
+
+/** Проверка предекремента: 0, 7 или 13 */
+inline bool isValidPredec(int v) {
+    return v == 0 || v == 7 || v == 13;
+}
+
+/** Проверка режима extended_heads: 0 или 1 */
+inline bool isValidExtendedHeads(int v) {
+    return v == 0 || v == 1;
 }
 
 /** Парсинг формата [time,period] — возвращает true если строка соответствует */

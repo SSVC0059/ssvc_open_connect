@@ -80,6 +80,7 @@ export type SsvcTelemetryMessage = {
 	event?: string;
 	info?: string;
 	decrement?: number; // Декремент
+	preempt_cnt?: number; // Количество упреждающих снижений скорости
 };
 
 export type commonType = {
@@ -91,6 +92,42 @@ export type commonType = {
 	overclockingOn: boolean;
 	heatingOn: boolean;
 	hysteresis?: number;
+	cfg_chgd?: boolean;
+	tts?: number;
+};
+
+export type LogFile = {
+	name: string;
+};
+
+export type LogListResponse = {
+	status: 'idle' | 'list';
+	files: string[];
+};
+
+export type LogTransferStart = {
+	status: 'receiving';
+	file: string;
+	total: number;
+};
+
+export type LogChunk = {
+	type: 'file';
+	chunk: number;
+	data: string;
+};
+
+export type LogTransferError = {
+	status: 'error';
+	error: string;
+};
+
+export type SsvcLogStatus = {
+	status: 'idle' | 'list' | 'receiving' | 'completed' | 'error';
+	files?: string[];
+	total: number;
+	received: number;
+	error?: string;
 };
 
 export type valveFlowVolumeType = {

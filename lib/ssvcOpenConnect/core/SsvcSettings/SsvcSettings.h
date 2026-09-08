@@ -204,7 +204,7 @@ private:
     float heads_final = -1.0;
     float hyst = 0.0;
     unsigned char decrement = 0;
-    bool formula = 0; // формула: 0=выкл, 1=вкл, 2=авто 92+
+    int formula = 0; // формула: 0=выкл, 1=вкл, 2=авто 92+
     float tank_mmhg = 0;
     unsigned int heads_timer = 0;
     unsigned char hearts_timer = 0;

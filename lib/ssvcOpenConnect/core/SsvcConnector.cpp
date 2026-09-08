@@ -18,6 +18,7 @@
 #include "SsvcConnector.h"
 #include "SsvcOpenConnect.h"
 #include "core/AlarmMonitor/AlarmMonitor.h"
+#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
 
 #include <esp_intr_alloc.h>
 
@@ -266,10 +267,12 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
       }
       self->uartCommunicationError = false;
       if (doc["type"] == "response") {
-        if (doc["request"] == "GET_SETTINGS") {
+        if (doc["request"] == "GET_LOG") {
+          SsvcLogProtocol::getTransfer().consume(data);
+        } else if (doc["request"] == "GET_SETTINGS") {
           ESP_LOGV("SsvcConnector", "GET_SETTINGS: SEND BIT10");
           xEventGroupSetBits(eventGroup, BIT10);
-        } if (doc["request"] == "VERSION") {
+        } else if (doc["request"] == "VERSION") {
           ESP_LOGV("SsvcConnector", "result: SEND BIT11 start");
           ESP_LOGV("SsvcConnector", "END BIT11 lastMessage: %s",
                    self->lastMessage.c_str());
@@ -294,6 +297,8 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
           data,
           1,
           true);
+      } else if (doc["type"] == "file") {
+        SsvcLogProtocol::getTransfer().consume(data);
       } else {
         if (doc["common"]["cfg_chgd"]) {
           ESP_LOGV("SsvcConnector",

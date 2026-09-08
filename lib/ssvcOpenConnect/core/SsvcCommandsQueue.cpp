@@ -16,8 +16,12 @@
  **/
 
 #include "SsvcCommandsQueue.h"
+#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
 
 #include "SsvcOpenConnect.h"
+
+#include <cstdlib>
+#include <limits>
 
 #define TAG "SsvcCommandsQueue"
 
@@ -65,7 +69,8 @@ const std::map<std::string, std::function<void(const std::string&)>> SsvcCommand
     {"settings",     [](const std::string&){ getQueue().getSettings(); }},
     {"emergency_stop", [](const std::string&){ getQueue().stop(); }},
     {"status",       [](const std::string& params){ getQueue().status(params); }},
-    {"set",          [](const std::string& params){ getQueue().set(params); }}
+    {"set",          [](const std::string& params){ getQueue().set(params); }},
+    {"get_log",      [](const std::string& params){ getQueue().getLog(params); }}
 };
 
 SsvcCommandsQueue::SsvcCommandsQueue() {
@@ -203,6 +208,25 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
           command_success =
               SsvcConnector::sendCommand(oss.str().c_str());
           break;
+        case SsvcCommandType::GET_LOG: {
+          std::string request;
+          if (cmd->parameters.empty()) {
+            SsvcLogProtocol::getTransfer().beginList();
+            SsvcLogProtocol::formatListRequest(request);
+          } else {
+            char* end = nullptr;
+            const long processNumber = std::strtol(cmd->parameters.c_str(), &end, 10);
+            if (end == cmd->parameters.c_str() || *end != '\0' ||
+                processNumber <= 0 || processNumber > std::numeric_limits<int>::max() ||
+                !SsvcLogProtocol::getTransfer().beginFile(static_cast<int>(processNumber)) ||
+                !SsvcLogProtocol::formatFileRequest(static_cast<int>(processNumber), request)) {
+              command_success = false;
+              break;
+            }
+          }
+          command_success = SsvcConnector::sendCommand(request.c_str());
+          break;
+        }
         }
         ESP_LOGD(TAG, "Send result: %d", command_success);
 
@@ -211,6 +235,10 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
                    static_cast<int>(cmd->type));
           vTaskDelay(pdMS_TO_TICKS(2000));
           continue;
+        }
+
+        if (cmd->type == SsvcCommandType::GET_LOG) {
+          break;
         }
 
         // Ожидание ответа с определенным битом
@@ -489,6 +517,11 @@ void SsvcCommandsQueue::set(const std::string& parameters, const int attempt_cou
 void SsvcCommandsQueue::status(const std::string& parameters, const int attempt_count,
                                const TickType_t timeout) const {
   pushCommandInQueue(SsvcCommandType::STATUS, utf8_to_win1251(parameters), attempt_count, timeout);
+}
+
+void SsvcCommandsQueue::getLog(const std::string& parameters, const int attempt_count,
+                               const TickType_t timeout) const {
+  pushCommandInQueue(SsvcCommandType::GET_LOG, parameters, attempt_count, timeout);
 }
 
 /**

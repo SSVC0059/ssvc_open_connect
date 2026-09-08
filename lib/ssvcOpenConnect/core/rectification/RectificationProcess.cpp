@@ -510,6 +510,10 @@ void RectificationProcess::update(void* pvParameters)
         self->metric.common.relay = telemetry["common"]["relay"].as<int>() != 0;
         self->metric.common.signal =
           telemetry["common"]["signal"].as<int>() != 0;
+        self->metric.common.cfg_chgd =
+          telemetry["common"]["cfg_chgd"].as<bool>();
+        self->metric.common.tts =
+          telemetry["common"]["tts"] | 0;
 
         // Получаем актуальное давление из SensorManager
         float current_pressure = 0.0f;
@@ -653,6 +657,14 @@ void RectificationProcess::update(void* pvParameters)
         {
           self->metric.stops = telemetry["stops"].as<unsigned char>();
           ESP_LOGV("SsvcSettings", "Обновлен stops: %u", self->metric.stops);
+        }
+
+        if (telemetry["preempt_cnt"].is<unsigned int>() ||
+            telemetry["preempt_cnt"].is<int>())
+        {
+          self->metric.preempt_cnt = telemetry["preempt_cnt"].as<unsigned int>();
+          ESP_LOGV("SsvcSettings", "Обновлен preempt_cnt: %u",
+                   self->metric.preempt_cnt);
         }
 
         // Пересчет количества отобранного продукта
@@ -821,6 +833,10 @@ void RectificationProcess::writeTelemetryTo(const JsonVariant telemetry)
 
     telemetry["stop"] = metric.stop;
     telemetry["stops"] = metric.stops;
+    if (metric.type == "hearts" || metric.preempt_cnt > 0)
+    {
+      telemetry["preempt_cnt"] = metric.preempt_cnt;
+    }
 
     JsonObject common = telemetry["common"].to<JsonObject>();
     if (metric.common.mmhg)
@@ -845,6 +861,14 @@ void RectificationProcess::writeTelemetryTo(const JsonVariant telemetry)
     }
     common["relay"] = metric.common.relay;
     common["signal"] = metric.common.signal;
+    if (metric.common.cfg_chgd)
+    {
+      common["cfg_chgd"] = true;
+    }
+    if (metric.common.tts > 0)
+    {
+      common["tts"] = metric.common.tts;
+    }
     common["heatingOn"] = isHeatingOn();
     common["overclockingOn"] = isOverclockingOn();
     if (initial_pressure_set) {

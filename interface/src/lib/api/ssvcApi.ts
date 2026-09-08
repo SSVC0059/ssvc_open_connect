@@ -8,6 +8,7 @@ import type {
 	RelayRuleMetadata,
 	SsvcOpenConnectInfo,
 	SsvcOpenConnectMessage,
+	SsvcLogStatus,
 	SsvcSettings,
 	SubsystemsState,
 	TelegramConfig,
@@ -270,6 +271,32 @@ export async function fetchRelayRuleMetadata(): Promise<RelayRuleMetadata | null
 export async function sendTelemetryCommand(command: string): Promise<ApiResponse<unknown>> {
 
 	return await apiFetch<unknown>('/rest/commands', 'POST', { commands: command });
+}
+
+export async function fetchLogStatus(): Promise<SsvcLogStatus | null> {
+	const response = await apiFetch<SsvcLogStatus>('/rest/logs');
+	return response.success ? response.data : null;
+}
+
+export async function startLogDownload(processId: number): Promise<boolean> {
+	const response = await fetch(`/rest/logs/${processId}`, {
+		method: 'GET',
+		headers: getAuthHeaders(),
+		cache: 'no-store'
+	});
+	return response.status === 202 || response.ok;
+}
+
+export async function downloadLog(processId: number): Promise<Blob> {
+	const response = await fetch(`/rest/logs/${processId}`, {
+		method: 'GET',
+		headers: getAuthHeaders(),
+		cache: 'no-store'
+	});
+	if (!response.ok || response.headers.get('content-type')?.startsWith('text/csv') !== true) {
+		throw new Error(`Не удалось скачать журнал: HTTP ${response.status}`);
+	}
+	return response.blob();
 }
 
 /**
