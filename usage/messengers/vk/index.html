@@ -12,11 +12,13 @@
         <meta name="author" content="thedemoncat">
       
       
-        <link rel="canonical" href="https://SSVC0059.github.io/ssvc_open_connect/develop/frontend/styling/">
+        <link rel="canonical" href="https://SSVC0059.github.io/ssvc_open_connect/usage/messengers/vk/">
       
       
-        <link rel="prev" href="../frontend/">
+        <link rel="prev" href="../../get_started/">
       
+      
+        <link rel="next" href="../../interfaces/uart/">
       
       
         
@@ -27,7 +29,7 @@
     
     
       
-        <title>Стратегия стилей (Tailwind + DaisyUI) - SSVC Open Connect</title>
+        <title>Уведомления VK - SSVC Open Connect</title>
       
     
     
@@ -80,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tailwind-daisyui" class="md-skip">
+        <a href="#vk-open-connect" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Стратегия стилей (Tailwind + DaisyUI)
+              Уведомления VK
             
           </span>
         </div>
@@ -257,11 +259,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../../usage/get_started/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../get_started/" class="md-tabs__link">
           
   
   
@@ -281,7 +285,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../usage/interfaces/uart/" class="md-tabs__link">
+        <a href="../../interfaces/uart/" class="md-tabs__link">
           
   
   
@@ -374,13 +378,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../../develop/" class="md-tabs__link">
           
   
   
@@ -674,28 +676,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -713,7 +718,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -731,7 +736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../usage/get_started/" class="md-nav__link">
+      <a href="../../get_started/" class="md-nav__link">
         
   
   
@@ -756,10 +761,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../usage/messengers/vk/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Уведомления VK
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -775,6 +807,103 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ключ доступа сообщества (токен)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#peer_id-messagessend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Параметр peer_id (официально: метод messages.send)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vk-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Что нужно в VK (краткий чек-лист)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Настройка в интерфейсе OC
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Поведение на устройстве
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ограничения
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-github-vk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ссылки на исходники схемы API (GitHub VK)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -848,7 +977,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../usage/interfaces/uart/" class="md-nav__link">
+      <a href="../../interfaces/uart/" class="md-nav__link">
         
   
   
@@ -876,7 +1005,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../usage/interfaces/power/" class="md-nav__link">
+      <a href="../../interfaces/power/" class="md-nav__link">
         
   
   
@@ -904,7 +1033,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../usage/interfaces/ds18b20/" class="md-nav__link">
+      <a href="../../interfaces/ds18b20/" class="md-nav__link">
         
   
   
@@ -932,7 +1061,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../usage/interfaces/bmp581/" class="md-nav__link">
+      <a href="../../interfaces/bmp581/" class="md-nav__link">
         
   
   
@@ -960,7 +1089,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../usage/interfaces/rgb_led/" class="md-nav__link">
+      <a href="../../interfaces/rgb_led/" class="md-nav__link">
         
   
   
@@ -1482,31 +1611,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
         
           
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
             
   
   
@@ -1524,7 +1650,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1542,7 +1668,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../" class="md-nav__link">
+      <a href="../../../develop/" class="md-nav__link">
         
   
   
@@ -1570,7 +1696,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../build/" class="md-nav__link">
+      <a href="../../../develop/build/" class="md-nav__link">
         
   
   
@@ -1598,7 +1724,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../testing/" class="md-nav__link">
+      <a href="../../../develop/testing/" class="md-nav__link">
         
   
   
@@ -1626,7 +1752,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../docs-previews/" class="md-nav__link">
+      <a href="../../../develop/docs-previews/" class="md-nav__link">
         
   
   
@@ -1654,7 +1780,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../i2c_monitoring/" class="md-nav__link">
+      <a href="../../../develop/i2c_monitoring/" class="md-nav__link">
         
   
   
@@ -1688,13 +1814,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -1703,7 +1826,7 @@
         <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_6" >
         
           
-          <label class="md-nav__link" for="__nav_9_6" id="__nav_9_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_9_6" id="__nav_9_6_label" tabindex="0">
             
   
   
@@ -1739,7 +1862,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/" class="md-nav__link">
+      <a href="../../../develop/api/" class="md-nav__link">
         
   
   
@@ -1767,7 +1890,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/settings/" class="md-nav__link">
+      <a href="../../../develop/api/settings/" class="md-nav__link">
         
   
   
@@ -1795,7 +1918,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/commands/" class="md-nav__link">
+      <a href="../../../develop/api/commands/" class="md-nav__link">
         
   
   
@@ -1823,7 +1946,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/sensors/" class="md-nav__link">
+      <a href="../../../develop/api/sensors/" class="md-nav__link">
         
   
   
@@ -1851,7 +1974,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/telegram/" class="md-nav__link">
+      <a href="../../../develop/api/telegram/" class="md-nav__link">
         
   
   
@@ -1879,7 +2002,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/subsystem/" class="md-nav__link">
+      <a href="../../../develop/api/subsystem/" class="md-nav__link">
         
   
   
@@ -1907,7 +2030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/openconnect/" class="md-nav__link">
+      <a href="../../../develop/api/openconnect/" class="md-nav__link">
         
   
   
@@ -1935,7 +2058,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/profiles/" class="md-nav__link">
+      <a href="../../../develop/api/profiles/" class="md-nav__link">
         
   
   
@@ -1963,7 +2086,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/files/" class="md-nav__link">
+      <a href="../../../develop/api/files/" class="md-nav__link">
         
   
   
@@ -1999,7 +2122,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ssvc-api-v1.6/api_docs/" class="md-nav__link">
+      <a href="../../../develop/ssvc-api-v1.6/api_docs/" class="md-nav__link">
         
   
   
@@ -2052,31 +2175,28 @@
                 
   
   
-    
   
   
-  
     
     
     
     
       
       
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
         
           
-          
         
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_9" checked>
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_9" >
         
           
-          <label class="md-nav__link" for="__nav_9_9" id="__nav_9_9_label" tabindex="">
+          <label class="md-nav__link" for="__nav_9_9" id="__nav_9_9_label" tabindex="0">
             
   
   
@@ -2094,7 +2214,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_9_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_9_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_9_9">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2112,7 +2232,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../frontend/" class="md-nav__link">
+      <a href="../../../develop/frontend/frontend/" class="md-nav__link">
         
   
   
@@ -2137,37 +2257,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Стратегия стилей (Tailwind + DaisyUI)
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../develop/frontend/styling/" class="md-nav__link">
         
   
   
@@ -2183,148 +2276,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Основной выбор
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Для нового кода
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. Для нового кода">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#21" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.1 Что использовать
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#22-scss-scoped-" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.2 Когда допустимы исключения (SCSS / scoped-стили)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Общие переменные и миксины
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Общие переменные и миксины">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#31" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.1 Текущее разделение (пока устраивает)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#32" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.2 Как подключать в компонентах
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-flowbite-svelte" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Flowbite-svelte
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Очищенные/удалённые модули
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Документация и ссылки
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2372,10 +2323,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1" class="md-nav__link">
+  <a href="#_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Основной выбор
+        Ключ доступа сообщества (токен)
       
     </span>
   </a>
@@ -2383,88 +2334,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2" class="md-nav__link">
+  <a href="#peer_id-messagessend" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Для нового кода
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. Для нового кода">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#21" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.1 Что использовать
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#22-scss-scoped-" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.2 Когда допустимы исключения (SCSS / scoped-стили)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Общие переменные и миксины
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Общие переменные и миксины">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#31" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.1 Текущее разделение (пока устраивает)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#32" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.2 Как подключать в компонентах
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-flowbite-svelte" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Flowbite-svelte
+        Параметр peer_id (официально: метод messages.send)
       
     </span>
   </a>
@@ -2472,10 +2345,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5" class="md-nav__link">
+  <a href="#vk-" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Очищенные/удалённые модули
+        Что нужно в VK (краткий чек-лист)
       
     </span>
   </a>
@@ -2483,10 +2356,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#6" class="md-nav__link">
+  <a href="#oc" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. Документация и ссылки
+        Настройка в интерфейсе OC
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Поведение на устройстве
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ограничения
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-github-vk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ссылки на исходники схемы API (GitHub VK)
       
     </span>
   </a>
@@ -2513,59 +2419,88 @@
   
 
 
-<div><h1 id="tailwind-daisyui">Стратегия стилей (Tailwind + DaisyUI)</h1>
-<p><strong>Контекст:</strong> <a href="https://github.com/SSVC0059/ssvc_open_connect/issues/97">Issue #97</a>, <a href="https://github.com/SSVC0059/ssvc_open_connect/issues/70">Issue #70</a> — обсуждения рефакторинга стилей (актуальность стека смотрите по версиям в <code>interface/package.json</code>).</p>
+<div><h1 id="vk-open-connect">Уведомления VK (Open Connect)</h1>
+<p>Раздел <strong>Настройки OC → Мессенджеры</strong> доступен при сборке с флагом <code>FT_VK_BOT=1</code> (в проекте по умолчанию включён в <code>features.ini</code>). Устройство вызывает методы раздела <strong>Messages</strong> через HTTPS <code>https://api.vk.com/method/…</code> с ключом доступа сообщества и параметром <code>v</code> (версия API, в настройках по умолчанию <code>5.199</code>).</p>
+<p>Справочник методов: <a href="https://dev.vk.com/ru/method">Описание методов API</a>. Конкретно для отправки текста: <a href="https://dev.vk.com/ru/method/messages.send">messages.send</a>, правка: <a href="https://dev.vk.com/ru/method/messages.edit">messages.edit</a>, пост на стене: <a href="https://dev.vk.com/ru/method/wall.post">wall.post</a>.</p>
+<p>Гайды по чат-боту сообщества (отправка, лимиты, <code>random_id</code>, клавиатура): <a href="https://dev.vk.com/ru/api/bots/development/messages">Сообщения</a>, <a href="https://dev.vk.com/ru/api/bots/development/keyboard">Клавиатура</a>.</p>
 <hr>
-<h2 id="1">1. Основной выбор</h2>
-<p><strong>Основа интерфейса — Tailwind CSS v4 + DaisyUI v5.</strong></p>
+<h2 id="_1">Ключ доступа сообщества (токен)</h2>
+<p>Нужен <strong>ключ доступа сообщества</strong> (community access key), с которым сервер VK разрешает вызывать нужные методы от имени группы.</p>
+<ol>
+<li>
+<p><strong>Где создать ключ</strong> — в интерфейсе ВКонтакте: <strong>Управление сообществом</strong> → <strong>Настройки</strong> → <strong>Работа с API</strong> → создание ключа с нужными возможностями. Общая логика ключей и типов токенов изложена в официальном разделе: <a href="https://dev.vk.com/ru/api/access-token/getting-started">Ключи доступа — общие сведения</a>.<br>
+   Дополнительно по сценарию «сообщения сообщества» см. материалы раздела <strong>API</strong> на <a href="https://dev.vk.com/ru">dev.vk.com</a> с поиском по запросам вроде <em>«сообщения сообщества»</em>, <em>«ключ доступа»</em> — точные подразделы интерфейса документации VK периодически переносятся, канал <strong>dev.vk.com</strong> остаётся источником правды.</p>
+</li>
+<li>
+<p><strong>Права (scopes)</strong> для Open Connect:</p>
+</li>
+<li><strong><code>messages</code></strong> — обязательно для <code>messages.send</code> / <code>messages.edit</code>;</li>
+<li>
+<p><strong><code>wall</code></strong> — если используете публикацию итога ректификации через <code>wall.post</code> (владелец записи — сообщество, см. описание метода <a href="https://dev.vk.com/ru/method/wall.post">wall.post</a> и параметры <code>owner_id</code> / <code>from_group</code> в прошивке).</p>
+</li>
+<li>
+<p><strong>Не путать с пользовательским токеном</strong> — для сценария «бот сообщества пишет пользователям» нужен именно <strong>ключ сообщества</strong>, а не отдельный пользовательский OAuth-токен с <code>vk.com/oauth</code> (см. разделы про виды токенов в <a href="https://dev.vk.com/ru/api/access-token/getting-started">документации по ключам доступа</a>).</p>
+</li>
+<li>
+<p><strong>Длина токена</strong> — у современных ключей вид <code>vk1.a.…</code> строка длинная; в Open Connect она сохраняется целиком. Не обрезайте при копировании.</p>
+</li>
+</ol>
+<hr>
+<h2 id="peer_id-messagessend">Параметр <code>peer_id</code> (официально: метод <code>messages.send</code>)</h2>
+<p>В методе <a href="https://dev.vk.com/ru/method/messages.send">messages.send</a> задаётся обязательный параметр <strong><code>peer_id</code></strong> — идентификатор <strong>чата назначения</strong> в модели переписок VK (см. описание поля в справочнике метода на <strong>dev.vk.com</strong>).</p>
+<p>Ниже — типичные случаи для настройки Open Connect (отправка <strong>от имени сообщества</strong>):</p>
+<table>
+<thead>
+<tr>
+<th>Сценарий</th>
+<th>Что подставить в поле peer_id в OC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Личное сообщение <strong>пользователю</strong></td>
+<td><strong>Положительное</strong> число — <a href="https://dev.vk.com/ru/method/users.get">идентификатор пользователя</a> (<code>user_id</code>). Это же значение используется как <code>VK_PEER_ID</code> в <code>example/.env</code>.</td>
+</tr>
+<tr>
+<td><strong>Беседа</strong> (мультичат)</td>
+<td>Обычно <strong><code>2000000000 + chat_id</code></strong>, где <code>chat_id</code> — идентификатор беседы в API сообщений (см. описание <code>peer_id</code> у <a href="https://dev.vk.com/ru/method/messages.send">messages.send</a> и объекты переписок, например <a href="https://dev.vk.com/ru/reference/objects/conversation">conversation</a>). <code>chat_id</code> можно получить из ответов методов <code>messages.*</code> (список диалогов и т.д.) — см. справочник методов.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Важно:</strong> пользователь должен иметь возможность получать сообщения от сообщества (настройки приватности и первый контакт с сообществом). Иначе API вернёт ошибку (часто обсуждаемая в связке с сообществами код <strong>901</strong> — см. сообщения об ошибках в ответе <code>execute</code>/<code>messages.send</code> в <a href="https://dev.vk.com/ru/reference/errors">документации по ошибкам API</a>).</p>
+<p><strong>Как узнать свой числовой <code>user_id</code>:</strong> официально — метод <a href="https://dev.vk.com/ru/method/users.get">users.get</a> (при необходимости с <code>user_ids</code> или из контекста авторизации приложения). Внешние подсказки и сторонние боты для отображения id не являются официальной справкой VK.</p>
+<hr>
+<h2 id="vk-">Что нужно в VK (краткий чек-лист)</h2>
+<ol>
+<li>Сообщество с <strong>включёнными сообщениями</strong>.</li>
+<li><strong>Ключ доступа</strong> с правами <strong><code>messages</code></strong>, при стене — <strong><code>wall</code></strong>.</li>
+<li>Один <strong><code>peer_id</code></strong> — чат назначения (личка или беседа). Переключатели: телеметрия, тревоги, итог в ЛС; стена — через <code>group_id</code> и <code>wall.post</code>.</li>
+</ol>
+<hr>
+<h2 id="oc">Настройка в интерфейсе OC</h2>
+<ol>
+<li>Откройте <strong>Настройки OC → Мессенджеры</strong>.</li>
+<li>Включите подсистему <strong>VK</strong> (если отключена в списке подсистем).</li>
+<li>Укажите <strong>токен</strong> и <strong>peer_id</strong> (кнопка «Из диалогов VK» или вручную — как <strong><code>VK_PEER_ID</code></strong> в <code>example/.env</code> для личного диалога).</li>
+<li>Включите нужные каналы (телеметрия, тревоги, итог, стена) и сохраните настройки.</li>
+</ol>
+<p>Конфигурация хранится на устройстве (<code>/config/vk.json</code>); REST: <code>GET</code>/<code>PUT</code> <code>/rest/vk/config</code> (при отключённой подсистеме ответ <strong>423</strong>).</p>
+<hr>
+<h2 id="_2">Поведение на устройстве</h2>
 <ul>
-<li>Сборка стилей: <strong><code>@tailwindcss/vite</code></strong> в <code>interface/vite.config.ts</code>, без отдельного <code>tailwind.config.js</code> для базового конвейера. В <code>interface/src/app.css</code>: <code>@import "tailwindcss";</code> и <code>@plugin "daisyui" { themes: corporate --default, business --prefersdark; }</code>.</li>
-<li>Новый код (страницы, компоненты, виджеты) пишем с использованием <strong>утилит Tailwind</strong> и <strong>компонентов DaisyUI</strong>.</li>
-<li>Существующий SCSS и кастомные классы остаются до <strong>постепенной миграции</strong>; при доработке старых экранов предпочтительно переводить их на Tailwind/DaisyUI по мере возможности.</li>
+<li>Отправка и правка сообщений выполняется <strong>в отдельной задаче FreeRTOS</strong>, привязанной к <strong>ядру 1</strong>, с неблокирующим циклом.</li>
+<li><strong>Живой статус</strong> — одно сообщение, обновление через <code>messages.edit</code> не чаще <strong>1 раза в 20 с</strong> (параметр <strong><code>format_data</code></strong> для жирного текста).</li>
+<li><strong>Тревоги</strong> — очередь; в чат уходит не чаще <strong>1 раза в 20 с</strong>; перед новой тревогой предыдущее тревожное сообщение удаляется (<code>messages.delete</code>).</li>
+<li>По <strong>завершении ректификации</strong> — опционально итог в ЛС и/или <code>wall.post</code>.</li>
 </ul>
 <hr>
-<h2 id="2">2. Для нового кода</h2>
-<h3 id="21">2.1 Что использовать</h3>
+<h2 id="_3">Ограничения</h2>
 <ul>
-<li><strong>Разметка и утилиты:</strong> классы Tailwind (<code>flex</code>, <code>gap-4</code>, <code>text-base-content</code>, <code>rounded-box</code> и т.д.).</li>
-<li><strong>Компоненты UI:</strong> классы DaisyUI (<code>btn</code>, <code>btn-primary</code>, <code>card</code>, <code>modal</code>, <code>menu</code>, <code>tabs</code>, <code>alert</code> и т.д.). Темы задаются в <code>app.css</code> через <code>@plugin "daisyui"</code>: <strong>corporate</strong> (светлая по умолчанию), <strong>business</strong> с модификатором <strong><code>--prefersdark</code></strong> (тёмная при системной тёмной схеме). Дополнительно в том же файле в <code>@layer base</code> заданы кастомные <strong>CSS‑переменные</strong> и блок <code>@media (prefers-color-scheme: dark)</code> для старых поверхностей (glass, wizard и т.д.) — их постепенно выравнивают с токенами DaisyUI.</li>
-<li><strong>Цвета и темы:</strong> предпочтительно семантика DaisyUI (<code>base-content</code>, <code>primary</code>, <code>secondary</code> и т.д.). Для графиков/Chart.js можно использовать <code>$lib/DaisyUiHelper.ts</code> (получение цветов темы из DOM).</li>
-<li><strong>Тёмная тема:</strong> в первую очередь <strong>атрибут/классы темы DaisyUI</strong> и <code>business --prefersdark</code>. Переход с глобальных переопределений в <code>interface/src/lib/styles/themes/_dark-theme.scss</code> на единый слой DaisyUI — постепенно, по мере переноса экранов.</li>
-</ul>
-<h3 id="22-scss-scoped-">2.2 Когда допустимы исключения (SCSS / scoped-стили)</h3>
-<p>Допускается использовать <strong>SCSS</strong> (глобальные модули или <code>&lt;style lang="scss"&gt;</code> в компоненте) в случаях:</p>
-<ul>
-<li><strong>Сложные миксины</strong>, которые нецелесообразно дублировать утилитами (например компактные сетки, повторяющиеся блоки с вложенностью).</li>
-<li><strong>Специфичные анимации</strong> или эффекты (keyframes, сложные transition), если их проще держать в SCSS.</li>
-<li><strong>Легаси или участки, запланированные к миграции позже</strong> — до переноса на Tailwind/DaisyUI можно оставлять текущие SCSS-классы.</li>
-</ul>
-<p>При добавлении нового SCSS-кода желательно ограничиваться компонентом (<code>&lt;style lang="scss"&gt;</code> с <code>@use</code> общих модулей при необходимости) и не плодить новые глобальные классы без согласования.</p>
-<hr>
-<h2 id="3">3. Общие переменные и миксины</h2>
-<h3 id="31">3.1 Текущее разделение (пока устраивает)</h3>
-<ul>
-<li><strong>CSS-переменные</strong> (цвета, тени, радиусы, z-index, glass-эффекты) задаются в <strong><code>interface/src/app.css</code></strong> в <code>:root</code> и в <code>@media (prefers-color-scheme: dark)</code>. Их можно использовать и в Tailwind-разметке (например через <code>var(--primary-500)</code> в произвольных значениях), и в SCSS.</li>
-<li><strong>Брейкпоинты</strong> и прочие SCSS-переменные — в <strong><code>$lib/styles/base/_variables.scss</code></strong> (выровнены под Tailwind). Подключаются через <code>@use</code> в тех компонентах, где нужны миксины или медиа-запросы на эти переменные.</li>
-<li><strong>Миксины</strong> (glassmorphism, flex-center, dark-theme-color, compact-points и т.д.) — в <strong><code>$lib/styles/base/_mixins.scss</code></strong>. Используются только в SCSS (глобальном или в компонентах с <code>@use</code>).</li>
-</ul>
-<p>При миграции участков на Tailwind можно заменять использование миксинов эквивалентными утилитами или темами DaisyUI; переменные из <code>app.css</code> при необходимости оставить как общий слой токенов.</p>
-<h3 id="32">3.2 Как подключать в компонентах</h3>
-<ul>
-<li><strong>Только Tailwind/DaisyUI:</strong> достаточно глобального <code>app.css</code> (уже в layout); дополнительные импорты не нужны.</li>
-<li><strong>SCSS (исключения):</strong> в компоненте в <code>&lt;style lang="scss"&gt;</code> использовать <code>@use "$lib/styles/base/variables" as v;</code> и/или <code>@use "$lib/styles/base/mixins" as m;</code> при необходимости. Для существующих блоков (настройки, таблицы, wizard) по-прежнему допускается <code>@use</code> соответствующих модулей из <code>$lib/styles/...</code> (см. <a href="../frontend/">frontend.md</a>).</li>
+<li>Для стабильной работы нужен сетевой доступ устройства к <code>https://api.vk.com</code>.</li>
 </ul>
 <hr>
-<h2 id="4-flowbite-svelte">4. Flowbite-svelte</h2>
-<p><strong>Итог:</strong> зависимости Flowbite <strong>удалены</strong>. Popover заменён на DaisyUI tooltip (ValveParameters, KpnPopover), Spinner — на DaisyUI loading во всех компонентах, иконки — на Tabler (unplugin-icons). Новый функционал реализовывать на DaisyUI/Tailwind/Tabler, без Flowbite.</p>
-<hr>
-<h2 id="5">5. Очищенные/удалённые модули</h2>
-<p>Удалены неиспользуемые SCSS-модули (<code>_buttons.scss</code>, <code>_modals.scss</code>, <code>_tabs.scss</code>, <code>_inputs.scss</code>); стили кнопок, полей ввода, модалок и вкладок задаются в <code>+layout.svelte</code> и в компонентах (см. <a href="../frontend/">frontend.md</a>).</p>
-<hr>
-<h2 id="6">6. Документация и ссылки</h2>
-<ul>
-<li><strong>Описание существующих SCSS-классов и миксинов:</strong> <a href="../frontend/">frontend.md</a>.</li>
-</ul>
-<p>Ссылка на эту стратегию добавлена в <a href="../frontend/">frontend.md</a> и при необходимости может быть добавлена в README или в общий индекс документации.</p></div>
+<h2 id="api-github-vk">Ссылки на исходники схемы API (GitHub VK)</h2>
+<p>Для уточнения типов и полей без веб-интерфейса dev.vk.com можно использовать репозиторий схемы API: <a href="https://github.com/VKCOM/vk-api-schema">VKCOM/vk-api-schema</a> (актуальная версия API ветки, например <strong>5.199</strong>, совпадает с полем <code>v</code> в запросах).</p></div>
 
 
 
