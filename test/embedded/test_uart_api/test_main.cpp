@@ -1,6 +1,6 @@
 /**
- * Тесты по спецификации SSVC0059_V2 UART API v1.7
- * https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.7/README.md
+ * Тесты по спецификации SSVC0059_V2 UART API v1.9
+ * https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.9/README.md
  */
 #include <unity.h>
 #include <Arduino.h>
@@ -167,7 +167,7 @@ void test_version_response_structure(void) {
         "manufacturer": "SmartModule",
         "model": "SSVC0059_V2",
         "version": "2.2.37",
-        "api": "1.7"
+        "api": "1.9"
     })";
     JsonDocument doc;
     DeserializationError err = deserializeJson(doc, json);
@@ -176,7 +176,7 @@ void test_version_response_structure(void) {
     TEST_ASSERT_EQUAL_STRING("response", doc["type"].as<const char*>());
     TEST_ASSERT_EQUAL_STRING("VERSION", doc["request"].as<const char*>());
     TEST_ASSERT_EQUAL_STRING("OK", doc["result"].as<const char*>());
-    TEST_ASSERT_EQUAL_STRING("1.7", doc["api"].as<const char*>());
+    TEST_ASSERT_EQUAL_STRING("1.9", doc["api"].as<const char*>());
 }
 
 // === Тесты формата SET команды ===

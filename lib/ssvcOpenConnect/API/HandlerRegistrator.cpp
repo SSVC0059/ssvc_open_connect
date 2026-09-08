@@ -2,6 +2,11 @@
 #include <AsyncJson.h>
 #include <Features.h>
 #include "handlers/VkBot/VkBotHandler.h"
+#include "core/SsvcCommandsQueue.h"
+#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
+
+#include <cstdlib>
+#include <limits>
 
 #define TAG "HandlerRegistrar"
 
@@ -40,6 +45,7 @@ void HandlerRegistrator::registerAllHandlers() const
     registerTelegramBotHandler();
     registerProfileHandler();
     registerFileHandler();
+    registerLogHandlers();
 
     ESP_LOGI(TAG, "All HTTP handlers registered successfully");
 }
@@ -276,4 +282,100 @@ void HandlerRegistrator::registerProfileHandler() const
 void HandlerRegistrator::registerFileHandler() const
 {
     _fileHandler.registerHandlers(_server, _securityManager);
+}
+
+void HandlerRegistrator::registerLogHandlers() const
+{
+    const auto statusName = [](const SsvcLogProtocol::Status status) {
+        switch (status) {
+        case SsvcLogProtocol::Status::LIST_RECEIVED:
+            return "list";
+        case SsvcLogProtocol::Status::RECEIVING:
+            return "receiving";
+        case SsvcLogProtocol::Status::COMPLETED:
+            return "completed";
+        case SsvcLogProtocol::Status::ERROR:
+            return "error";
+        case SsvcLogProtocol::Status::IDLE:
+        default:
+            return "idle";
+        }
+    };
+
+    _server.on("/rest/logs", HTTP_GET,
+               _securityManager->wrapRequest(
+                   [statusName](AsyncWebServerRequest* request) {
+                       auto& transfer = SsvcLogProtocol::getTransfer();
+                       if (transfer.status() == SsvcLogProtocol::Status::IDLE) {
+                           SsvcCommandsQueue::getQueue().getLog();
+                       }
+
+                       JsonDocument response;
+                       response["status"] = statusName(transfer.status());
+                       response["total"] = transfer.totalChunks();
+                       response["received"] = transfer.receivedChunks();
+                       if (!transfer.error().empty()) {
+                           response["error"] = transfer.error();
+                       }
+                       if (transfer.status() == SsvcLogProtocol::Status::LIST_RECEIVED) {
+                           JsonArray files = response["files"].to<JsonArray>();
+                           for (const auto& file : transfer.files()) {
+                               files.add(file);
+                           }
+                       }
+                       String serialized;
+                       serializeJson(response, serialized);
+                       request->send(200, "application/json", serialized);
+                   },
+                   AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/logs/*", HTTP_GET,
+               _securityManager->wrapRequest(
+                   [statusName](AsyncWebServerRequest* request) {
+                       const String prefix = "/rest/logs/";
+                       const String process = request->url().substring(prefix.length());
+                       char* end = nullptr;
+                       const long processNumber = std::strtol(process.c_str(), &end, 10);
+                       if (end == process.c_str() || *end != '\0' || processNumber <= 0 ||
+                           processNumber > std::numeric_limits<int>::max()) {
+                           request->send(400, "application/json", R"({"error":"invalid_process_id"})");
+                           return;
+                       }
+
+                       auto& transfer = SsvcLogProtocol::getTransfer();
+                       const std::string expectedName = process.c_str() + std::string(".CSV");
+                       if (transfer.status() == SsvcLogProtocol::Status::RECEIVING &&
+                           !transfer.fileName().empty() &&
+                           transfer.fileName() != expectedName) {
+                           request->send(409, "application/json",
+                                         R"({"error":"log_transfer_busy"})");
+                           return;
+                       }
+                       if (transfer.status() == SsvcLogProtocol::Status::COMPLETED &&
+                           transfer.fileName() == expectedName) {
+                           auto* response = request->beginResponse(
+                               200, "text/csv", transfer.data().c_str(), transfer.data().size());
+                           response->addHeader("Content-Disposition",
+                                               ("attachment; filename=\"" + expectedName + "\"").c_str());
+                           request->send(response);
+                           return;
+                       }
+
+                       if (transfer.status() != SsvcLogProtocol::Status::RECEIVING ||
+                           transfer.fileName() != expectedName) {
+                           SsvcCommandsQueue::getQueue().getLog(std::to_string(processNumber));
+                       }
+
+                       JsonDocument response;
+                       response["status"] = statusName(transfer.status());
+                       response["total"] = transfer.totalChunks();
+                       response["received"] = transfer.receivedChunks();
+                       if (!transfer.error().empty()) {
+                           response["error"] = transfer.error();
+                       }
+                       String serialized;
+                       serializeJson(response, serialized);
+                       request->send(202, "application/json", serialized);
+                   },
+                   AuthenticationPredicates::IS_AUTHENTICATED));
 }

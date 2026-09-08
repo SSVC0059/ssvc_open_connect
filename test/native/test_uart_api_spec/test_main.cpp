@@ -1,10 +1,10 @@
 /**
  * Native тесты SsvcUartApiSpec (логика без Arduino/ESP32)
- * SSVC0059_V2 UART API v1.7
+ * SSVC0059_V2 UART API v1.9
  *
  * Документация:
  * - docs/develop/api/ssvc-uart-api.md — описание API, команды, формат SET
- * - https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.7/README.md — спецификация v1.7
+ * - https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.9/README.md — спецификация v1.9
  */
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest.h>
@@ -46,6 +46,17 @@ TEST_CASE("SsvcUartApiSpec - IsValidHyst") {
     CHECK(SsvcUartApiSpec::isValidHyst(0.25f));
     CHECK(SsvcUartApiSpec::isValidHyst(50.0f));
     CHECK_FALSE(SsvcUartApiSpec::isValidHyst(50.01f));
+}
+
+TEST_CASE("SsvcUartApiSpec - API v1.10 settings") {
+    CHECK(SsvcUartApiSpec::isValidFormula(2));
+    CHECK(SsvcUartApiSpec::isValidPredec(0));
+    CHECK(SsvcUartApiSpec::isValidPredec(7));
+    CHECK(SsvcUartApiSpec::isValidPredec(13));
+    CHECK_FALSE(SsvcUartApiSpec::isValidPredec(8));
+    CHECK(SsvcUartApiSpec::isValidExtendedHeads(0));
+    CHECK(SsvcUartApiSpec::isValidExtendedHeads(1));
+    CHECK_FALSE(SsvcUartApiSpec::isValidExtendedHeads(2));
 }
 
 TEST_CASE("SsvcUartApiSpec - IsValidDecrement") {

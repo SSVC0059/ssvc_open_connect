@@ -69,8 +69,8 @@ public:
     // Получает величину уменьшения скорости отбора.
     unsigned char getDecrement() const;
 
-    // Получает значение для использования формулы.
-    bool getFormula() const;
+    // Получает значение для использования формулы (0=выкл, 1=вкл, 2=авто 92+).
+    int getFormula() const;
 
     // Получает давление в кубе (мм рт. ст.).
     float getTank_mmhg() const;
@@ -156,6 +156,12 @@ public:
     // Получает подсветку (состояние подсветки).
     std::string getBacklight() const;
 
+    // Получает предекремент (0=выкл, 7=0.07, 13=0.13).
+    int getPredec() const;
+
+    // Получает значение для сброса и снижения (0=выкл, 1=вкл).
+    int getExtendedHeads() const;
+
     // Получает температуру завершения отбора хвостов.
     float getTailsTemp() const;
 
@@ -198,7 +204,7 @@ private:
     float heads_final = -1.0;
     float hyst = 0.0;
     unsigned char decrement = 0;
-    bool formula = false;
+    int formula = 0; // формула: 0=выкл, 1=вкл, 2=авто 92+
     float tank_mmhg = 0;
     unsigned int heads_timer = 0;
     unsigned char hearts_timer = 0;
@@ -242,6 +248,8 @@ private:
     bool stab_limit_finish =
         false; // завершение стабилизации (ограничение завершения стабилизации)
     std::string backlight; // подсветка (состояние подсветки)
+    int predec = 0; // предекремент: 0=выкл, 7=0.07, 13=0.13
+    int extended_heads = 0; // сброс и снижение: 0=выкл, 1=вкл
 
     //    Актуально в firmware 2.2.*
     std::tuple<float, int> tails = {-1.0, -1};
@@ -300,8 +308,8 @@ public:
         Builder& setDecrement(unsigned char _decrement);
 
         // Включает или выключает использование формулы для снижения скорости
-        // отбора.HG
-        Builder& formulaEnable(bool enable);
+        // отбора. Значение: 0=выкл, 1=вкл, 2=авто 92+.
+        Builder& formulaEnable(int val);
 
         // Устанавливает давление в кубе (мм рт. ст.) относительно атмосферного.
         Builder& setTank_mmhg(float _tank_mmhg);
@@ -355,6 +363,12 @@ public:
         Builder& setStepTimer(unsigned int _timer);
 
         Builder& setTankPressureActual(float pressure);
+
+        // Предекремент (0=выкл, 7=0.07, 13=0.13)
+        Builder& setPredec(int val);
+
+        // Сброс и снижение (0=выкл, 1=вкл)
+        Builder& setExtendedHeads(int val);
 
         // Другие методы установки параметров...
         SsvcSettings build() const;

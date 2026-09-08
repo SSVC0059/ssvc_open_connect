@@ -80,6 +80,7 @@ export type SsvcTelemetryMessage = {
 	event?: string;
 	info?: string;
 	decrement?: number; // Декремент
+	preempt_cnt?: number; // Количество упреждающих снижений скорости
 };
 
 export type commonType = {
@@ -91,6 +92,42 @@ export type commonType = {
 	overclockingOn: boolean;
 	heatingOn: boolean;
 	hysteresis?: number;
+	cfg_chgd?: boolean;
+	tts?: number;
+};
+
+export type LogFile = {
+	name: string;
+};
+
+export type LogListResponse = {
+	status: 'idle' | 'list';
+	files: string[];
+};
+
+export type LogTransferStart = {
+	status: 'receiving';
+	file: string;
+	total: number;
+};
+
+export type LogChunk = {
+	type: 'file';
+	chunk: number;
+	data: string;
+};
+
+export type LogTransferError = {
+	status: 'error';
+	error: string;
+};
+
+export type SsvcLogStatus = {
+	status: 'idle' | 'list' | 'receiving' | 'completed' | 'error';
+	files?: string[];
+	total: number;
+	received: number;
+	error?: string;
 };
 
 export type valveFlowVolumeType = {
@@ -130,9 +167,11 @@ export type SsvcSettings = {
 	parallel: SsvcTuple; // Параметры Parallel V3 - подголовники
 	hearts_temp_shift: boolean; // Смещение температуры для Hearts
 	hearts_pause: boolean; // Пауза для Hearts
-	formula: boolean; // Формула
+	formula: number; // Формула (0=выкл, 1=вкл)
 	formula_start_temp: number; // Начальная температура для формулы
 	tank_mmhg: number;
+	predec: number; // Предекремент (0=выкл, 7=0.07, 13=0.13)
+	extended_heads: number; // Сброс и снижение (0=выкл, 1=вкл)
 	tp2_shift: number; // Смещение TP2
 	tp_filter: boolean; // Температурный фильтр
 	signal_tp1_control: number; // Контроль сигнала TP1 (0 или 1)

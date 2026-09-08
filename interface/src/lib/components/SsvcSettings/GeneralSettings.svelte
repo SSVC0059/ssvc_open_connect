@@ -213,10 +213,14 @@
 
 				<div class="settings-item">
 					<span class="input-label">Формула</span>
-					<Toggle
-						bind:checked={settings.formula}
-						onchange={() => onSave('formula', settings.formula)}
-					/>
+				<select
+					bind:value={settings.formula}
+					onchange={() => onSave('formula', settings.formula)}
+				>
+					<option value={0}>Выкл</option>
+					<option value={1}>Вкл</option>
+					<option value={2}>Авто 92+</option>
+				</select>
 				</div>
 
 				<div class="settings-item">

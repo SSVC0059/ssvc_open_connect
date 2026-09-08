@@ -24,7 +24,7 @@ const defaults: SsvcSettings = {
 	parallel: [0, 0],
 	hearts_temp_shift: false,
 	hearts_pause: false,
-	formula: false,
+	formula: 0,
 	formula_start_temp: 0,
 	tank_mmhg: 0,
 	tp2_shift: 0,

@@ -32,16 +32,19 @@
 
 		<div class="settings-item">
 			<div class="settings-item settings-item-wrapper">
-				<input
-					bind:checked={settings.formula}
+				<label class="input-label" for="formulaMode">Формула</label>
+				<select
+					bind:value={settings.formula}
 					class="settings-checkbox"
-					id="formulaEnabled"
-					type="checkbox"
-				/>
-				<label class="input-label" for="formulaEnabled">Формула</label>
+					id="formulaMode"
+				>
+					<option value={0}>Выкл</option>
+					<option value={1}>Вкл</option>
+					<option value={2}>Авто 92+</option>
+				</select>
 			</div>
 
-			<div class="formula-input-wrapper" class:active={settings.formula}>
+			<div class="formula-input-wrapper" class:active={settings.formula > 0}>
 				<NumberInput
 					bind:value={settings.formula_start_temp}
 					min={1}

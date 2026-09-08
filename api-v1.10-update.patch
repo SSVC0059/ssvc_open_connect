@@ -1,0 +1,1423 @@
+diff --git a/interface/src/lib/api/ssvcApi.ts b/interface/src/lib/api/ssvcApi.ts
+index 021ba63..9375732 100644
+--- a/interface/src/lib/api/ssvcApi.ts
++++ b/interface/src/lib/api/ssvcApi.ts
+@@ -8,6 +8,7 @@ import type {
+ 	RelayRuleMetadata,
+ 	SsvcOpenConnectInfo,
+ 	SsvcOpenConnectMessage,
++	SsvcLogStatus,
+ 	SsvcSettings,
+ 	SubsystemsState,
+ 	TelegramConfig,
+@@ -272,6 +273,32 @@ export async function sendTelemetryCommand(command: string): Promise<ApiResponse
+ 	return await apiFetch<unknown>('/rest/commands', 'POST', { commands: command });
+ }
+ 
++export async function fetchLogStatus(): Promise<SsvcLogStatus | null> {
++	const response = await apiFetch<SsvcLogStatus>('/rest/logs');
++	return response.success ? response.data : null;
++}
++
++export async function startLogDownload(processId: number): Promise<boolean> {
++	const response = await fetch(`/rest/logs/${processId}`, {
++		method: 'GET',
++		headers: getAuthHeaders(),
++		cache: 'no-store'
++	});
++	return response.status === 202 || response.ok;
++}
++
++export async function downloadLog(processId: number): Promise<Blob> {
++	const response = await fetch(`/rest/logs/${processId}`, {
++		method: 'GET',
++		headers: getAuthHeaders(),
++		cache: 'no-store'
++	});
++	if (!response.ok || response.headers.get('content-type')?.startsWith('text/csv') !== true) {
++		throw new Error(`Не удалось скачать журнал: HTTP ${response.status}`);
++	}
++	return response.blob();
++}
++
+ /**
+  * Получение всех настроек порогов тревоги.
+  */
+diff --git a/interface/src/lib/types/ssvc.ts b/interface/src/lib/types/ssvc.ts
+index eb95c62..de63bb5 100644
+--- a/interface/src/lib/types/ssvc.ts
++++ b/interface/src/lib/types/ssvc.ts
+@@ -80,6 +80,7 @@ export type SsvcTelemetryMessage = {
+ 	event?: string;
+ 	info?: string;
+ 	decrement?: number; // Декремент
++	preempt_cnt?: number; // Количество упреждающих снижений скорости
+ };
+ 
+ export type commonType = {
+@@ -91,6 +92,42 @@ export type commonType = {
+ 	overclockingOn: boolean;
+ 	heatingOn: boolean;
+ 	hysteresis?: number;
++	cfg_chgd?: boolean;
++	tts?: number;
++};
++
++export type LogFile = {
++	name: string;
++};
++
++export type LogListResponse = {
++	status: 'idle' | 'list';
++	files: string[];
++};
++
++export type LogTransferStart = {
++	status: 'receiving';
++	file: string;
++	total: number;
++};
++
++export type LogChunk = {
++	type: 'file';
++	chunk: number;
++	data: string;
++};
++
++export type LogTransferError = {
++	status: 'error';
++	error: string;
++};
++
++export type SsvcLogStatus = {
++	status: 'idle' | 'list' | 'receiving' | 'completed' | 'error';
++	files?: string[];
++	total: number;
++	received: number;
++	error?: string;
+ };
+ 
+ export type valveFlowVolumeType = {
+diff --git a/interface/src/routes/oc/telemetry/Ssvc.svelte b/interface/src/routes/oc/telemetry/Ssvc.svelte
+index 2cdd122..777033f 100644
+--- a/interface/src/routes/oc/telemetry/Ssvc.svelte
++++ b/interface/src/routes/oc/telemetry/Ssvc.svelte
+@@ -2,20 +2,26 @@
+ 		import RectImg from '$lib/components/Telemetry/RectImg.svelte';
+ 		import type { SsvcOpenConnectMessage } from '$lib/types/ssvc.ts';
+         import {
+-            fetchAlarmThresholds,
+-            fetchSensorsTemperatureByZone,
+-            fetchTelemetry
+-        } from '$lib/api/ssvcApi';
++				fetchAlarmThresholds,
++				fetchSensorsTemperatureByZone,
++				fetchTelemetry,
++				fetchLogStatus,
++				startLogDownload,
++				downloadLog
++			} from '$lib/api/ssvcApi';
+ 		import Control from '$lib/components/Telemetry/Control.svelte';
+ 		import ValveParameters from '$lib/components/Telemetry/ValveParameters.svelte';
+ 		import { getDescriptionStage, getStageDescription } from '$lib/utils/ssvcHelper';
+ 		import ThermalSensors from '$lib/components/Telemetry/ThermalSensors.svelte';
+-        import type {AlarmThresholdsState, TemperatureResponse} from '$lib/types/Sensors';
++			import type {AlarmThresholdsState, TemperatureResponse} from '$lib/types/Sensors';
++			import type { SsvcLogStatus } from '$lib/types/ssvc';
+ 		import ApiVersionGuard from '$lib/components/ApiVersionGuard.svelte';
+ 
+ 		let data = $state<SsvcOpenConnectMessage | null>();
+ 		let temperatureResponse = $state<TemperatureResponse | null>();
+-        let alarmThresholds = $state<AlarmThresholdsState | null>();
++			let alarmThresholds = $state<AlarmThresholdsState | null>();
++			let logStatus = $state<SsvcLogStatus | null>(null);
++			let logError = $state('');
+ 
+ 		let telemetry = $derived(data?.telemetry)
+ 		let status = $derived(data?.status)
+@@ -39,7 +45,7 @@
+         };
+ 
+ 		// Функция для перезагрузки данных
+-		const reloadSensors = async () => {
++			const reloadSensors = async () => {
+ 			try {
+ 				temperatureResponse = await fetchSensorsTemperatureByZone();
+ 			} catch (err) {
+@@ -88,20 +94,60 @@
+ 			}
+ 		}
+ 
+-		$effect(() => {
++			const loadLogs = async () => {
++				try {
++					logStatus = await fetchLogStatus();
++				} catch (error) {
++					logError = error instanceof Error ? error.message : 'Ошибка получения списка журналов';
++				}
++			};
+ 
+-			loadTelemetry();
+-			reloadSensors()
+-            loadAlarmThresholds();
++			const requestLog = async (file: string) => {
++				const processId = Number(file.replace('.CSV', ''));
++				if (!Number.isInteger(processId) || processId <= 0) return;
++				logError = '';
++				try {
++					if (!await startLogDownload(processId)) {
++						logError = 'Не удалось начать загрузку журнала';
++						return;
++					}
++					for (let attempt = 0; attempt < 30; attempt += 1) {
++						await new Promise((resolve) => setTimeout(resolve, 500));
++						logStatus = await fetchLogStatus();
++						if (logStatus?.status === 'completed') {
++							const blob = await downloadLog(processId);
++							const url = URL.createObjectURL(blob);
++							const anchor = document.createElement('a');
++							anchor.href = url;
++							anchor.download = file;
++							anchor.click();
++							URL.revokeObjectURL(url);
++							return;
++						}
++						if (logStatus?.status === 'error') {
++							logError = logStatus.error ?? 'Ошибка передачи журнала';
++							return;
++						}
++					}
++					logError = 'Истекло время ожидания журнала';
++				} catch (error) {
++					logError = error instanceof Error ? error.message : 'Ошибка загрузки журнала';
++				}
++			};
+ 
+-			const telemetryInt = setInterval(() => loadTelemetry(), BASE_INTERVAL);
+-			const thermal_sensors = setInterval(() => reloadSensors(), TEMPERATURE_REQUEST_INTERVAL);
++			$effect(() => {
++				loadTelemetry();
++				reloadSensors()
++	            loadAlarmThresholds();
+ 
+-			return () => {
+-				clearInterval(telemetryInt);
+-				clearInterval(thermal_sensors);
+-			};
+-		});
++				const telemetryInt = setInterval(() => loadTelemetry(), BASE_INTERVAL);
++				const thermal_sensors = setInterval(() => reloadSensors(), TEMPERATURE_REQUEST_INTERVAL);
++
++				return () => {
++					clearInterval(telemetryInt);
++					clearInterval(thermal_sensors);
++				};
++			});
+ 
+ </script>
+ <div class="telemetry-container">
+@@ -231,13 +277,44 @@
+ 										<span class="reading-label">Количество спирта в кубе:</span> <span class="reading-value">{telemetry.alc}%</span>
+ 									</span>
+ 								{/if}
++								{#if telemetry?.type === 'hearts' && telemetry.preempt_cnt !== undefined}
++									<span class="reading-item">
++										<span class="reading-label">Упреждающие снижения:</span>
++										<span class="reading-value">{telemetry.preempt_cnt}</span>
++									</span>
++								{/if}
++								{#if telemetry?.common.cfg_chgd}
++									<span class="reading-item">
++										<span class="reading-label">Сохранение настроек через:</span>
++										<span class="reading-value">{telemetry.common.tts ?? 0} с</span>
++									</span>
++								{/if}
+ 							</div>
+ 						{/if}
+ 					</div>
+ 				</div>
+ 			</div>
+-		</div>
+-	</main>
++			</div>
++			<div class="glassmorphism panel logs-panel">
++				<div class="logs-header">
++					<h3 class="section-title settings-section-title">Журналы ректификации</h3>
++					<button class="log-button" type="button" onclick={loadLogs}>Обновить</button>
++				</div>
++				{#if logStatus?.status === 'receiving'}
++					<p>Загрузка: {logStatus.received} / {logStatus.total}</p>
++				{:else if logStatus?.status === 'error' || logError}
++					<p class="log-error">{logError || logStatus?.error}</p>
++				{:else if logStatus?.files}
++					<div class="logs-list">
++						{#each logStatus.files as file}
++							<button class="log-button" type="button" onclick={() => requestLog(file)}>{file}</button>
++						{/each}
++					</div>
++				{:else}
++					<p>Нажмите «Обновить», чтобы получить список журналов.</p>
++				{/if}
++			</div>
++		</main>
+ </div>
+ 
+ <style lang="scss">
+diff --git a/lib/ssvcOpenConnect/API/HandlerRegistrator.cpp b/lib/ssvcOpenConnect/API/HandlerRegistrator.cpp
+index 059d2be..cf94653 100644
+--- a/lib/ssvcOpenConnect/API/HandlerRegistrator.cpp
++++ b/lib/ssvcOpenConnect/API/HandlerRegistrator.cpp
+@@ -2,6 +2,11 @@
+ #include <AsyncJson.h>
+ #include <Features.h>
+ #include "handlers/VkBot/VkBotHandler.h"
++#include "core/SsvcCommandsQueue.h"
++#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
++
++#include <cstdlib>
++#include <limits>
+ 
+ #define TAG "HandlerRegistrar"
+ 
+@@ -40,6 +45,7 @@ void HandlerRegistrator::registerAllHandlers() const
+     registerTelegramBotHandler();
+     registerProfileHandler();
+     registerFileHandler();
++    registerLogHandlers();
+ 
+     ESP_LOGI(TAG, "All HTTP handlers registered successfully");
+ }
+@@ -277,3 +283,99 @@ void HandlerRegistrator::registerFileHandler() const
+ {
+     _fileHandler.registerHandlers(_server, _securityManager);
+ }
++
++void HandlerRegistrator::registerLogHandlers() const
++{
++    const auto statusName = [](const SsvcLogProtocol::Status status) {
++        switch (status) {
++        case SsvcLogProtocol::Status::LIST_RECEIVED:
++            return "list";
++        case SsvcLogProtocol::Status::RECEIVING:
++            return "receiving";
++        case SsvcLogProtocol::Status::COMPLETED:
++            return "completed";
++        case SsvcLogProtocol::Status::ERROR:
++            return "error";
++        case SsvcLogProtocol::Status::IDLE:
++        default:
++            return "idle";
++        }
++    };
++
++    _server.on("/rest/logs", HTTP_GET,
++               _securityManager->wrapRequest(
++                   [statusName](AsyncWebServerRequest* request) {
++                       auto& transfer = SsvcLogProtocol::getTransfer();
++                       if (transfer.status() == SsvcLogProtocol::Status::IDLE) {
++                           SsvcCommandsQueue::getQueue().getLog();
++                       }
++
++                       JsonDocument response;
++                       response["status"] = statusName(transfer.status());
++                       response["total"] = transfer.totalChunks();
++                       response["received"] = transfer.receivedChunks();
++                       if (!transfer.error().empty()) {
++                           response["error"] = transfer.error();
++                       }
++                       if (transfer.status() == SsvcLogProtocol::Status::LIST_RECEIVED) {
++                           JsonArray files = response["files"].to<JsonArray>();
++                           for (const auto& file : transfer.files()) {
++                               files.add(file);
++                           }
++                       }
++                       String serialized;
++                       serializeJson(response, serialized);
++                       request->send(200, "application/json", serialized);
++                   },
++                   AuthenticationPredicates::IS_AUTHENTICATED));
++
++    _server.on("/rest/logs/*", HTTP_GET,
++               _securityManager->wrapRequest(
++                   [statusName](AsyncWebServerRequest* request) {
++                       const String prefix = "/rest/logs/";
++                       const String process = request->url().substring(prefix.length());
++                       char* end = nullptr;
++                       const long processNumber = std::strtol(process.c_str(), &end, 10);
++                       if (end == process.c_str() || *end != '\0' || processNumber <= 0 ||
++                           processNumber > std::numeric_limits<int>::max()) {
++                           request->send(400, "application/json", R"({"error":"invalid_process_id"})");
++                           return;
++                       }
++
++                       auto& transfer = SsvcLogProtocol::getTransfer();
++                       const std::string expectedName = process.c_str() + std::string(".CSV");
++                       if (transfer.status() == SsvcLogProtocol::Status::RECEIVING &&
++                           !transfer.fileName().empty() &&
++                           transfer.fileName() != expectedName) {
++                           request->send(409, "application/json",
++                                         R"({"error":"log_transfer_busy"})");
++                           return;
++                       }
++                       if (transfer.status() == SsvcLogProtocol::Status::COMPLETED &&
++                           transfer.fileName() == expectedName) {
++                           auto* response = request->beginResponse(
++                               200, "text/csv", transfer.data().c_str(), transfer.data().size());
++                           response->addHeader("Content-Disposition",
++                                               ("attachment; filename=\"" + expectedName + "\"").c_str());
++                           request->send(response);
++                           return;
++                       }
++
++                       if (transfer.status() != SsvcLogProtocol::Status::RECEIVING ||
++                           transfer.fileName() != expectedName) {
++                           SsvcCommandsQueue::getQueue().getLog(std::to_string(processNumber));
++                       }
++
++                       JsonDocument response;
++                       response["status"] = statusName(transfer.status());
++                       response["total"] = transfer.totalChunks();
++                       response["received"] = transfer.receivedChunks();
++                       if (!transfer.error().empty()) {
++                           response["error"] = transfer.error();
++                       }
++                       String serialized;
++                       serializeJson(response, serialized);
++                       request->send(202, "application/json", serialized);
++                   },
++                   AuthenticationPredicates::IS_AUTHENTICATED));
++}
+diff --git a/lib/ssvcOpenConnect/API/HandlerRegistrator.h b/lib/ssvcOpenConnect/API/HandlerRegistrator.h
+index 2737ae4..ebcf033 100644
+--- a/lib/ssvcOpenConnect/API/HandlerRegistrator.h
++++ b/lib/ssvcOpenConnect/API/HandlerRegistrator.h
+@@ -50,6 +50,7 @@ private:
+     void registerTelegramBotHandler() const;
+     void registerProfileHandler() const;
+     void registerFileHandler() const;
++    void registerLogHandlers() const;
+ };
+ 
+ #endif
+diff --git a/lib/ssvcOpenConnect/core/RelayRuleEngine/RelayRuleEngine.cpp b/lib/ssvcOpenConnect/core/RelayRuleEngine/RelayRuleEngine.cpp
+index dac5560..e22ce9c 100644
+--- a/lib/ssvcOpenConnect/core/RelayRuleEngine/RelayRuleEngine.cpp
++++ b/lib/ssvcOpenConnect/core/RelayRuleEngine/RelayRuleEngine.cpp
+@@ -32,7 +32,7 @@ private:
+ };
+ 
+ const FieldDesc kSsvcFieldDescriptors[] = {
+-    {"formula", "Формула скорости", FieldType::BOOL},
++    {"formula", "Формула скорости", FieldType::INT},
+     {"auto_mode", "Автоматический режим", FieldType::BOOL},
+     {"sound", "Звуковое оповещение", FieldType::BOOL},
+     {"pressure", "Контроль давления", FieldType::BOOL},
+@@ -416,6 +416,9 @@ bool RelayRuleEngine::matchRectification(const Rule& r) const {
+ bool RelayRuleEngine::matchSsvc(const Rule& r) const {
+   const SsvcSettings& s = SsvcSettings::init();
+   if (r.ssvcKey == "formula") {
++    if (r.condKind == Rule::CondKind::SSVC_INT) {
++      return s.getFormula() == r.ssvcInt;
++    }
+     return s.getFormula() == r.ssvcBool;
+   }
+   if (r.ssvcKey == "auto_mode") {
+diff --git a/lib/ssvcOpenConnect/core/SsvcCommandsQueue.cpp b/lib/ssvcOpenConnect/core/SsvcCommandsQueue.cpp
+index 0c32353..535304a 100644
+--- a/lib/ssvcOpenConnect/core/SsvcCommandsQueue.cpp
++++ b/lib/ssvcOpenConnect/core/SsvcCommandsQueue.cpp
+@@ -16,9 +16,13 @@
+  **/
+ 
+ #include "SsvcCommandsQueue.h"
++#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
+ 
+ #include "SsvcOpenConnect.h"
+ 
++#include <cstdlib>
++#include <limits>
++
+ #define TAG "SsvcCommandsQueue"
+ 
+ // Helper function to convert UTF-8 string to Windows-1251
+@@ -65,7 +69,8 @@ const std::map<std::string, std::function<void(const std::string&)>> SsvcCommand
+     {"settings",     [](const std::string&){ getQueue().getSettings(); }},
+     {"emergency_stop", [](const std::string&){ getQueue().stop(); }},
+     {"status",       [](const std::string& params){ getQueue().status(params); }},
+-    {"set",          [](const std::string& params){ getQueue().set(params); }}
++    {"set",          [](const std::string& params){ getQueue().set(params); }},
++    {"get_log",      [](const std::string& params){ getQueue().getLog(params); }}
+ };
+ 
+ SsvcCommandsQueue::SsvcCommandsQueue() {
+@@ -203,6 +208,25 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
+           command_success =
+               SsvcConnector::sendCommand(oss.str().c_str());
+           break;
++        case SsvcCommandType::GET_LOG: {
++          std::string request;
++          if (cmd->parameters.empty()) {
++            SsvcLogProtocol::getTransfer().beginList();
++            SsvcLogProtocol::formatListRequest(request);
++          } else {
++            char* end = nullptr;
++            const long processNumber = std::strtol(cmd->parameters.c_str(), &end, 10);
++            if (end == cmd->parameters.c_str() || *end != '\0' ||
++                processNumber <= 0 || processNumber > std::numeric_limits<int>::max() ||
++                !SsvcLogProtocol::getTransfer().beginFile(static_cast<int>(processNumber)) ||
++                !SsvcLogProtocol::formatFileRequest(static_cast<int>(processNumber), request)) {
++              command_success = false;
++              break;
++            }
++          }
++          command_success = SsvcConnector::sendCommand(request.c_str());
++          break;
++        }
+         }
+         ESP_LOGD(TAG, "Send result: %d", command_success);
+ 
+@@ -213,6 +237,10 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
+           continue;
+         }
+ 
++        if (cmd->type == SsvcCommandType::GET_LOG) {
++          break;
++        }
++
+         // Ожидание ответа с определенным битом
+         EventBits_t expectedBit = self->commandToExpectedBit[cmd->type];
+         ESP_LOGV(TAG, "Waiting for response with bit: %d",
+@@ -491,6 +519,11 @@ void SsvcCommandsQueue::status(const std::string& parameters, const int attempt_
+   pushCommandInQueue(SsvcCommandType::STATUS, utf8_to_win1251(parameters), attempt_count, timeout);
+ }
+ 
++void SsvcCommandsQueue::getLog(const std::string& parameters, const int attempt_count,
++                               const TickType_t timeout) const {
++  pushCommandInQueue(SsvcCommandType::GET_LOG, parameters, attempt_count, timeout);
++}
++
+ /**
+  * @brief Фоновая задача для периодической отправки AT команд (отладка).
+  *
+diff --git a/lib/ssvcOpenConnect/core/SsvcCommandsQueue.h b/lib/ssvcOpenConnect/core/SsvcCommandsQueue.h
+index b25beb6..2435c2a 100644
+--- a/lib/ssvcOpenConnect/core/SsvcCommandsQueue.h
++++ b/lib/ssvcOpenConnect/core/SsvcCommandsQueue.h
+@@ -43,7 +43,8 @@ enum class SsvcCommandType
+   NEXT,
+   AT,
+   SET,
+-  STATUS
++  STATUS,
++  GET_LOG
+ };
+ 
+ struct SsvcCommand
+@@ -100,6 +101,9 @@ public:
+ 
+   void status(const std::string& parameters, int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+ 
++  void getLog(const std::string& parameters = "", int attempt_count = 1,
++              TickType_t timeout = TIMEOUT) const;
++
+   UBaseType_t availableCommands() const
+   {
+     return command_queue ? uxQueueMessagesWaiting(command_queue) : 0;
+diff --git a/lib/ssvcOpenConnect/core/SsvcConnector.cpp b/lib/ssvcOpenConnect/core/SsvcConnector.cpp
+index 3f77a6a..6e2d289 100644
+--- a/lib/ssvcOpenConnect/core/SsvcConnector.cpp
++++ b/lib/ssvcOpenConnect/core/SsvcConnector.cpp
+@@ -18,6 +18,7 @@
+ #include "SsvcConnector.h"
+ #include "SsvcOpenConnect.h"
+ #include "core/AlarmMonitor/AlarmMonitor.h"
++#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
+ 
+ #include <esp_intr_alloc.h>
+ 
+@@ -266,10 +267,12 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
+       }
+       self->uartCommunicationError = false;
+       if (doc["type"] == "response") {
+-        if (doc["request"] == "GET_SETTINGS") {
++        if (doc["request"] == "GET_LOG") {
++          SsvcLogProtocol::getTransfer().consume(data);
++        } else if (doc["request"] == "GET_SETTINGS") {
+           ESP_LOGV("SsvcConnector", "GET_SETTINGS: SEND BIT10");
+           xEventGroupSetBits(eventGroup, BIT10);
+-        } if (doc["request"] == "VERSION") {
++        } else if (doc["request"] == "VERSION") {
+           ESP_LOGV("SsvcConnector", "result: SEND BIT11 start");
+           ESP_LOGV("SsvcConnector", "END BIT11 lastMessage: %s",
+                    self->lastMessage.c_str());
+@@ -294,6 +297,8 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
+           data,
+           1,
+           true);
++      } else if (doc["type"] == "file") {
++        SsvcLogProtocol::getTransfer().consume(data);
+       } else {
+         if (doc["common"]["cfg_chgd"]) {
+           ESP_LOGV("SsvcConnector",
+diff --git a/lib/ssvcOpenConnect/core/SsvcSettings/SsvcSettings.cpp b/lib/ssvcOpenConnect/core/SsvcSettings/SsvcSettings.cpp
+index 81871c4..260108f 100644
+--- a/lib/ssvcOpenConnect/core/SsvcSettings/SsvcSettings.cpp
++++ b/lib/ssvcOpenConnect/core/SsvcSettings/SsvcSettings.cpp
+@@ -1003,8 +1003,10 @@ void SsvcSettings::updateStateFromJson(const JsonObject& src) {
+     decrement = settings["decrement"].as<int>();
+     ESP_LOGV("SsvcSettings", "Обновлен decrement: %d", decrement);
+ 
+-    formula = settings["formula"].as<bool>();
+-    ESP_LOGV("SsvcSettings", "Обновлен formula: %b", formula);
++    formula = settings["formula"].is<bool>()
++        ? (settings["formula"].as<bool>() ? 1 : 0)
++        : settings["formula"].as<int>();
++    ESP_LOGV("SsvcSettings", "Обновлен formula: %d", formula);
+ 
+     tank_mmhg = settings["tank_mmhg"].as<int>();
+     ESP_LOGV("SsvcSettings", "Обновлен tank_mmhg: %d", tank_mmhg);
+@@ -1224,8 +1226,10 @@ void SsvcSettings::applySettingsToController(const JsonVariant json) const {
+         if (val != decrement) builder.setDecrement(val);
+     }
+ 
+-    if (settings["formula"].is<bool>()) {
+-        const bool val = settings["formula"].as<bool>();
++    if (settings["formula"].is<bool>() || settings["formula"].is<int>()) {
++        const int val = settings["formula"].is<bool>()
++            ? (settings["formula"].as<bool>() ? 1 : 0)
++            : settings["formula"].as<int>();
+         if (val != formula) builder.formulaEnable(val);
+     }
+ 
+diff --git a/lib/ssvcOpenConnect/core/SsvcSettings/SsvcSettings.h b/lib/ssvcOpenConnect/core/SsvcSettings/SsvcSettings.h
+index fbbf5bf..27cefdd 100644
+--- a/lib/ssvcOpenConnect/core/SsvcSettings/SsvcSettings.h
++++ b/lib/ssvcOpenConnect/core/SsvcSettings/SsvcSettings.h
+@@ -204,7 +204,7 @@ private:
+     float heads_final = -1.0;
+     float hyst = 0.0;
+     unsigned char decrement = 0;
+-    bool formula = 0; // формула: 0=выкл, 1=вкл, 2=авто 92+
++    int formula = 0; // формула: 0=выкл, 1=вкл, 2=авто 92+
+     float tank_mmhg = 0;
+     unsigned int heads_timer = 0;
+     unsigned char hearts_timer = 0;
+diff --git a/lib/ssvcOpenConnect/core/SsvcUartApiSpec/SsvcUartApiSpec.h b/lib/ssvcOpenConnect/core/SsvcUartApiSpec/SsvcUartApiSpec.h
+index daa4430..a163a40 100644
+--- a/lib/ssvcOpenConnect/core/SsvcUartApiSpec/SsvcUartApiSpec.h
++++ b/lib/ssvcOpenConnect/core/SsvcUartApiSpec/SsvcUartApiSpec.h
+@@ -1,5 +1,5 @@
+ /**
+- * SSVC0059_V2 UART API Specification (v1.9)
++ * SSVC0059_V2 UART API Specification (v1.10)
+  * https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.9/README.md
+  *
+  * Константы и валидация по спецификации API.
+@@ -68,6 +68,7 @@ constexpr size_t SET_CMD_MAX_LEN = 300;
+ #define SSVC_CMD_VERSION "VERSION"
+ #define SSVC_CMD_GET_SETTINGS "GET_SETTINGS"
+ #define SSVC_CMD_SET "SET"
++#define SSVC_CMD_GET_LOG "GET_LOG"
+ 
+ // === Валидация (соответствие API) ===
+ 
+@@ -112,6 +113,16 @@ inline bool isValidFormula(int v) {
+     return v == 0 || v == 1 || v == 2;
+ }
+ 
++/** Проверка предекремента: 0, 7 или 13 */
++inline bool isValidPredec(int v) {
++    return v == 0 || v == 7 || v == 13;
++}
++
++/** Проверка режима extended_heads: 0 или 1 */
++inline bool isValidExtendedHeads(int v) {
++    return v == 0 || v == 1;
++}
++
+ /** Парсинг формата [time,period] — возвращает true если строка соответствует */
+ inline bool parseSpeedParam(const char* param, float& outTime, int& outPeriod) {
+     if (!param) return false;
+diff --git a/lib/ssvcOpenConnect/core/rectification/RectificationProcess.cpp b/lib/ssvcOpenConnect/core/rectification/RectificationProcess.cpp
+index 949ff38..aee17d0 100644
+--- a/lib/ssvcOpenConnect/core/rectification/RectificationProcess.cpp
++++ b/lib/ssvcOpenConnect/core/rectification/RectificationProcess.cpp
+@@ -510,6 +510,10 @@ void RectificationProcess::update(void* pvParameters)
+         self->metric.common.relay = telemetry["common"]["relay"].as<int>() != 0;
+         self->metric.common.signal =
+           telemetry["common"]["signal"].as<int>() != 0;
++        self->metric.common.cfg_chgd =
++          telemetry["common"]["cfg_chgd"].as<bool>();
++        self->metric.common.tts =
++          telemetry["common"]["tts"] | 0;
+ 
+         // Получаем актуальное давление из SensorManager
+         float current_pressure = 0.0f;
+@@ -655,6 +659,14 @@ void RectificationProcess::update(void* pvParameters)
+           ESP_LOGV("SsvcSettings", "Обновлен stops: %u", self->metric.stops);
+         }
+ 
++        if (telemetry["preempt_cnt"].is<unsigned int>() ||
++            telemetry["preempt_cnt"].is<int>())
++        {
++          self->metric.preempt_cnt = telemetry["preempt_cnt"].as<unsigned int>();
++          ESP_LOGV("SsvcSettings", "Обновлен preempt_cnt: %u",
++                   self->metric.preempt_cnt);
++        }
++
+         // Пересчет количества отобранного продукта
+         self->recalculateFlowVolume(telemetry["v1"], telemetry["v2"],
+                                     telemetry["v3"]);
+@@ -821,6 +833,10 @@ void RectificationProcess::writeTelemetryTo(const JsonVariant telemetry)
+ 
+     telemetry["stop"] = metric.stop;
+     telemetry["stops"] = metric.stops;
++    if (metric.type == "hearts" || metric.preempt_cnt > 0)
++    {
++      telemetry["preempt_cnt"] = metric.preempt_cnt;
++    }
+ 
+     JsonObject common = telemetry["common"].to<JsonObject>();
+     if (metric.common.mmhg)
+@@ -845,6 +861,14 @@ void RectificationProcess::writeTelemetryTo(const JsonVariant telemetry)
+     }
+     common["relay"] = metric.common.relay;
+     common["signal"] = metric.common.signal;
++    if (metric.common.cfg_chgd)
++    {
++      common["cfg_chgd"] = true;
++    }
++    if (metric.common.tts > 0)
++    {
++      common["tts"] = metric.common.tts;
++    }
+     common["heatingOn"] = isHeatingOn();
+     common["overclockingOn"] = isOverclockingOn();
+     if (initial_pressure_set) {
+diff --git a/lib/ssvcOpenConnect/core/rectification/RectificationProcess.h b/lib/ssvcOpenConnect/core/rectification/RectificationProcess.h
+index 1d8577b..fd9acdd 100644
+--- a/lib/ssvcOpenConnect/core/rectification/RectificationProcess.h
++++ b/lib/ssvcOpenConnect/core/rectification/RectificationProcess.h
+@@ -51,6 +51,8 @@ public:
+     bool relay;
+     bool signal;
+     float relative_pressure;
++    bool cfg_chgd;
++    int tts;
+   };
+ 
+   struct Metrics
+@@ -74,6 +76,7 @@ public:
+     float alc;
+     bool stop;
+     unsigned char stops;
++    unsigned int preempt_cnt;
+     RectificationEvent event;
+   };
+ 
+diff --git a/mkdocs.yml b/mkdocs.yml
+index 1d108d0..f94c296 100644
+--- a/mkdocs.yml
++++ b/mkdocs.yml
+@@ -85,6 +85,7 @@ nav:
+       - develop/testing.md
+       - develop/docs-previews.md
+       - develop/i2c_monitoring.md
++      - "План поддержки UART API v1.10": develop/api-v1.10-support-plan.md
+       - "REST API":
+           - develop/api/index.md
+           - develop/api/settings.md
+diff --git a/test/native/test_uart_api_spec/test_main.cpp b/test/native/test_uart_api_spec/test_main.cpp
+index af23c43..2ad5966 100644
+--- a/test/native/test_uart_api_spec/test_main.cpp
++++ b/test/native/test_uart_api_spec/test_main.cpp
+@@ -48,6 +48,17 @@ TEST_CASE("SsvcUartApiSpec - IsValidHyst") {
+     CHECK_FALSE(SsvcUartApiSpec::isValidHyst(50.01f));
+ }
+ 
++TEST_CASE("SsvcUartApiSpec - API v1.10 settings") {
++    CHECK(SsvcUartApiSpec::isValidFormula(2));
++    CHECK(SsvcUartApiSpec::isValidPredec(0));
++    CHECK(SsvcUartApiSpec::isValidPredec(7));
++    CHECK(SsvcUartApiSpec::isValidPredec(13));
++    CHECK_FALSE(SsvcUartApiSpec::isValidPredec(8));
++    CHECK(SsvcUartApiSpec::isValidExtendedHeads(0));
++    CHECK(SsvcUartApiSpec::isValidExtendedHeads(1));
++    CHECK_FALSE(SsvcUartApiSpec::isValidExtendedHeads(2));
++}
++
+ TEST_CASE("SsvcUartApiSpec - IsValidDecrement") {
+     CHECK(SsvcUartApiSpec::isValidDecrement(20));
+     CHECK(SsvcUartApiSpec::isValidDecrement(100));
+diff --git a/docs/develop/api-v1.10-support-plan.md b/docs/develop/api-v1.10-support-plan.md
+new file mode 100644
+index 0000000..0bed77b
+--- /dev/null
++++ b/docs/develop/api-v1.10-support-plan.md
+@@ -0,0 +1,237 @@
++# План поддержки UART API v1.10
++
++## Область анализа
++
++Документ подготовлен по результатам сравнения:
++
++- текущей ветки `main` репозитория `ssvc-open-connect`;
++- публичной спецификации UART API v1.9;
++- предоставленной спецификации UART API v1.10.
++
++В версии v1.10 основное новое функциональное изменение — удалённое скачивание
++логов процессов через команду `GET_LOG`. Дополнительно в telemetry этапа
++`hearts` появилось поле `preempt_cnt`.
++
++Параметры `formula=0|1|2`, `predec`, `extended_heads`, а также поля `cfg_chgd`
++и `tts` уже описаны в доступной спецификации v1.9. Они включены в план как
++задачи полной совместимости текущей реализации со спецификацией, но не
++считаются изменениями v1.9 → v1.10.
++
++## Изменения v1.9 → v1.10
++
++### Команда `GET_LOG`
++
++Команда работает только в дежурном режиме контроллера:
++
++```text
++GET_LOG
++GET_LOG <номер_процесса>
++```
++
++Без номера процесса контроллер возвращает список CSV-файлов:
++
++```json
++{
++  "type": "response",
++  "request": "GET_LOG",
++  "result": "LIST",
++  "files": ["15.CSV", "16.CSV", "17.CSV"]
++}
++```
++
++При указании номера процесса начинается пакетная передача файла. Сначала
++приходит мета-пакет:
++
++```json
++{
++  "type": "response",
++  "request": "GET_LOG",
++  "result": "START",
++  "file": "15.CSV",
++  "total": 335
++}
++```
++
++Затем передаются пакеты:
++
++```json
++{
++  "type": "file",
++  "chunk": 1,
++  "data": "<base64>"
++}
++```
++
++`data` содержит Base64-кодированный чанк до 600 байт исходных данных.
++Передача завершается после получения чанка с номером `total`. На время
++операции регулярная telemetry приостанавливается.
++
++Возможные ошибки:
++
++- `err_num` — неверный номер процесса;
++- `err_mnt` — ошибка монтирования файловой системы;
++- `err_nf` — файл не найден или недоступна директория логов;
++- `err_int` — внутренняя ошибка передачи.
++
++### Новое поле telemetry
++
++Для сообщения `type: "hearts"` добавляется:
++
++- `preempt_cnt` — количество упреждающих снижений скорости отбора.
++
++## План backend
++
++### 1. Модель протокола UART
++
++- Добавить `GET_LOG` в список команд и карту команд.
++- Поддержать формирование запросов без номера и с числовым номером процесса.
++- Добавить отдельные модели или структуры для ответов `LIST`, `START`, `file` и
++  ошибок.
++- Разделить обработку обычных response-пакетов и `type: "file"`.
++- Реализовать состояние передачи:
++  `idle → started → receiving → completed/error`.
++- Проверять `total`, последовательность `chunk`, дубликаты, пропуски и
++  преждевременное завершение.
++- Декодировать Base64 потоково, не накапливая весь CSV в RAM.
++- Добавить таймаут, отмену и обработку потери UART.
++- Возобновлять обычную обработку telemetry после последнего чанка или ошибки.
++- Не считать штатную паузу telemetry во время `GET_LOG` потерей соединения.
++
++### 2. Backend REST API
++
++Добавить защищённые endpoint-ы:
++
++- `GET /rest/logs` — получить список доступных логов;
++- `GET /rest/logs/{processId}` — скачать CSV выбранного процесса.
++
++Требования:
++
++- разрешать только числовой идентификатор процесса;
++- не принимать произвольные имена файлов;
++- исключить path traversal;
++- возвращать корректный `Content-Type` и имя CSV-файла;
++- преобразовывать ошибки контроллера в понятные HTTP-ошибки;
++- не блокировать основной цикл управления во время скачивания.
++
++Предпочтительный вариант реализации — потоковая передача декодированных
++данных клиенту с небольшим буфером. Если ограничения используемого HTTP
++стека не позволят это сделать, можно временно сохранять файл в LittleFS и
++удалять его после завершения HTTP-ответа.
++
++### 3. Telemetry и совместимость
++
++- Добавить `preempt_cnt` в `RectificationProcess::Metrics`, snapshot, REST,
++  MQTT и другие каналы, где публикуется telemetry.
++- Использовать существующую обработку `common.cfg_chgd` для автоматического
++  обновления настроек.
++- Добавить `tts` в backend-модель telemetry, если UI должен показывать таймер
++  сохранения настроек.
++- Добавить проверку минимальной версии API перед доступом к журналам.
++- Закрыть backlog совместимости со спецификацией v1.9:
++  - заменить boolean-модель `formula` на значения `0|1|2`;
++  - добавить `predec`;
++  - добавить `extended_heads`;
++  - обновить сериализацию, десериализацию и обработчики `SET`.
++
++## План frontend
++
++### 1. Типы и API-клиент
++
++Добавить типы:
++
++- `LogFile`;
++- `LogListResponse`;
++- `LogTransferStart`;
++- `LogChunk`;
++- `LogTransferError`;
++- `preempt_cnt` в telemetry;
++- `cfg_chgd` и `tts` в `common`.
++
++Добавить API-функции:
++
++- получение списка логов;
++- скачивание одного лога;
++- отмена или повтор скачивания при необходимости.
++
++### 2. Экран журналов
++
++Добавить раздел «История ректификаций»:
++
++- список файлов с номерами процессов;
++- выбор файла;
++- запуск скачивания;
++- прогресс `chunk / total`;
++- состояния загрузки, завершения, отмены и ошибки;
++- автоматическое сохранение CSV через браузер;
++- понятные сообщения для ошибок SD-карты и отсутствующего файла.
++
++Кнопку скачивания следует блокировать, если контроллер не находится в
++дежурном режиме или версия API не поддерживает `GET_LOG`.
++
++### 3. Telemetry и настройки
++
++- Показывать `preempt_cnt` на этапе «Тело» как диагностический показатель
++  работы автоматики.
++- Показывать `cfg_chgd` как состояние «настройки изменены на контроллере» и
++  автоматически обновлять настройки.
++- Показывать `tts` как время до сохранения настроек в энергонезависимую память.
++- Использовать существующий version guard для новых возможностей.
++- В рамках backlog v1.9:
++  - заменить toggle `formula` на выбор режима `0`, `1`, `2`;
++  - добавить UI для `predec`;
++  - добавить UI для `extended_heads`;
++  - обеспечить сохранение новых полей в профилях и мастере запуска;
++  - мигрировать старые boolean-профили.
++
++## План тестирования
++
++### Native и embedded
++
++- Формирование `GET_LOG` и `GET_LOG <номер>`.
++- Разбор ответов `LIST` и `START`.
++- Разбор `type: "file"` и Base64-декодирование.
++- Пустой, короткий, полный 600-байтный и последний неполный чанк.
++- Проверка последовательности чанков, пропуска, дубликата и неверного `total`.
++- Завершение передачи по `chunk == total`.
++- Таймаут, отключение UART и восстановление telemetry.
++- Все коды ошибок `err_num`, `err_mnt`, `err_nf`, `err_int`.
++- Проверка ограничения размера UART-пакета.
++- Разбор `preempt_cnt` в telemetry `hearts`.
++
++### REST и интеграционные тесты
++
++- Получение списка логов.
++- Полное скачивание CSV и проверка содержимого.
++- Корректные заголовки и имя скачиваемого файла.
++- Преобразование ошибок контроллера в HTTP-ответы.
++- Запрет скачивания при неподдерживаемой версии API.
++- Отсутствие смешивания двух параллельных transfer-сессий.
++- Сценарий: список → выбор процесса → скачивание → проверка CSV.
++
++### Frontend
++
++- Отображение списка файлов.
++- Прогресс и завершение загрузки.
++- Ошибка, отмена и повторная попытка.
++- Отображение `preempt_cnt`, `cfg_chgd` и `tts`.
++- Version guard для старого контроллера.
++- Миграция старых boolean-значений `formula`.
++- Сохранение и загрузка `predec` и `extended_heads` в профилях.
++
++## Пользовательский сценарий
++
++Добавить экран «История ректификаций». После завершения процесса пользователь
++открывает список логов, выбирает номер процесса и скачивает CSV. В карточке
++процесса можно показать `preempt_cnt`, давление, температуры и события, чтобы
++понять причины снижения скорости отбора, сравнить партии и скорректировать
++профиль следующей ректификации.
++
++## Проверки перед реализацией
++
++Перед началом разработки необходимо зафиксировать:
++
++1. минимальную версию firmware/API, на которой доступен `GET_LOG`;
++2. способ потоковой передачи CSV через используемый HTTP-стек;
++3. допустимое поведение при остановке или отмене загрузки;
++4. необходимость сохранения промежуточного файла после перезагрузки
++   OpenConnect.
+diff --git a/lib/ssvcOpenConnect/core/SsvcLogProtocol/SsvcLogProtocol.h b/lib/ssvcOpenConnect/core/SsvcLogProtocol/SsvcLogProtocol.h
+new file mode 100644
+index 0000000..777075e
+--- /dev/null
++++ b/lib/ssvcOpenConnect/core/SsvcLogProtocol/SsvcLogProtocol.h
+@@ -0,0 +1,338 @@
++#ifndef SSVC_OPEN_CONNECT_SSVC_LOG_PROTOCOL_H
++#define SSVC_OPEN_CONNECT_SSVC_LOG_PROTOCOL_H
++
++#include <cstddef>
++#include <cctype>
++#include <cstring>
++#include <cstdlib>
++#include <limits>
++#include <string>
++#include <vector>
++
++namespace SsvcLogProtocol {
++
++constexpr std::size_t GET_LOG_CMD_MAX_LEN = 30;
++constexpr std::size_t FILE_CHUNK_RAW_MAX = 600;
++
++enum class Status {
++  IDLE,
++  LIST_RECEIVED,
++  RECEIVING,
++  COMPLETED,
++  ERROR
++};
++
++class Transfer {
++public:
++  bool beginList();
++  bool beginFile(int processNumber);
++  bool consume(const char* message);
++
++  Status status() const;
++  const std::vector<std::string>& files() const;
++  const std::string& fileName() const;
++  const std::string& data() const;
++  const std::string& error() const;
++  int totalChunks() const;
++  int receivedChunks() const;
++
++private:
++  void reset();
++
++  Status _status{Status::IDLE};
++  std::vector<std::string> _files;
++  std::string _fileName;
++  std::string _data;
++  std::string _error;
++  int _totalChunks{0};
++  int _receivedChunks{0};
++};
++
++Transfer& getTransfer();
++
++bool formatListRequest(std::string& request);
++bool formatFileRequest(int processNumber, std::string& request);
++
++namespace detail {
++
++inline const char* base64Alphabet() {
++  return "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
++}
++
++inline int base64Value(const char c) {
++  const char* value = std::strchr(base64Alphabet(), c);
++  return value == nullptr ? -1 : static_cast<int>(value - base64Alphabet());
++}
++
++inline bool decodeBase64(const char* encoded, std::string& decoded) {
++  if (encoded == nullptr) {
++    return false;
++  }
++
++  decoded.clear();
++  int accumulator = 0;
++  int bits = -8;
++  std::size_t padding = 0;
++  std::size_t length = 0;
++  for (const char* cursor = encoded; *cursor != '\0'; ++cursor) {
++    ++length;
++    if (*cursor == '=') {
++      ++padding;
++      continue;
++    }
++    if (padding != 0) {
++      return false;
++    }
++    const int value = base64Value(*cursor);
++    if (value < 0) {
++      return false;
++    }
++    accumulator = (accumulator << 6) | value;
++    bits += 6;
++    if (bits >= 0) {
++      decoded.push_back(static_cast<char>((accumulator >> bits) & 0xff));
++      bits -= 8;
++    }
++  }
++  if (padding > 2 || length % 4 == 1 || (padding != 0 && length % 4 != 0)) {
++    return false;
++  }
++  return padding == 0 || !decoded.empty();
++}
++
++inline bool validRequestLength(const std::string& request) {
++  return request.size() + 1 <= GET_LOG_CMD_MAX_LEN;
++}
++
++inline bool extractString(const std::string& json, const char* key, std::string& value) {
++  const std::string marker = "\"" + std::string(key) + "\"";
++  const std::size_t keyPosition = json.find(marker);
++  if (keyPosition == std::string::npos) {
++    return false;
++  }
++  const std::size_t colon = json.find(':', keyPosition + marker.size());
++  if (colon == std::string::npos) {
++    return false;
++  }
++  const std::size_t openingQuote = json.find('"', colon + 1);
++  if (openingQuote == std::string::npos) {
++    return false;
++  }
++  const std::size_t closingQuote = json.find('"', openingQuote + 1);
++  if (closingQuote == std::string::npos) {
++    return false;
++  }
++  value = json.substr(openingQuote + 1, closingQuote - openingQuote - 1);
++  return true;
++}
++
++inline bool extractInt(const std::string& json, const char* key, int& value) {
++  const std::string marker = "\"" + std::string(key) + "\"";
++  const std::size_t keyPosition = json.find(marker);
++  if (keyPosition == std::string::npos) {
++    return false;
++  }
++  const std::size_t colon = json.find(':', keyPosition + marker.size());
++  if (colon == std::string::npos) {
++    return false;
++  }
++  std::size_t cursor = colon + 1;
++  while (cursor < json.size() && std::isspace(static_cast<unsigned char>(json[cursor]))) {
++    ++cursor;
++  }
++  char* end = nullptr;
++  const long parsed = std::strtol(json.c_str() + cursor, &end, 10);
++  if (end == json.c_str() + cursor) {
++    return false;
++  }
++  if (parsed < std::numeric_limits<int>::min() ||
++      parsed > std::numeric_limits<int>::max()) {
++    return false;
++  }
++  value = static_cast<int>(parsed);
++  return true;
++}
++
++inline void extractFiles(const std::string& json, std::vector<std::string>& files) {
++  const std::string marker = "\"files\"";
++  const std::size_t keyPosition = json.find(marker);
++  if (keyPosition == std::string::npos) {
++    return;
++  }
++  const std::size_t openingBracket = json.find('[', keyPosition + marker.size());
++  if (openingBracket == std::string::npos) {
++    return;
++  }
++  const std::size_t closingBracket = json.find(']', openingBracket + 1);
++  if (closingBracket == std::string::npos) {
++    return;
++  }
++  std::size_t cursor = openingBracket + 1;
++  while (cursor < closingBracket) {
++    const std::size_t openingQuote = json.find('"', cursor);
++    if (openingQuote == std::string::npos || openingQuote >= closingBracket) {
++      break;
++    }
++    const std::size_t closingQuote = json.find('"', openingQuote + 1);
++    if (closingQuote == std::string::npos || closingQuote > closingBracket) {
++      break;
++    }
++    files.emplace_back(json.substr(openingQuote + 1, closingQuote - openingQuote - 1));
++    cursor = closingQuote + 1;
++  }
++}
++
++} // namespace detail
++
++inline Transfer& getTransfer() {
++  static Transfer transfer;
++  return transfer;
++}
++
++inline bool Transfer::beginList() {
++  reset();
++  return true;
++}
++
++inline bool Transfer::beginFile(const int processNumber) {
++  std::string request;
++  if (!formatFileRequest(processNumber, request)) {
++    return false;
++  }
++  reset();
++  _status = Status::RECEIVING;
++  return true;
++}
++
++inline bool Transfer::consume(const char* message) {
++  if (message == nullptr) {
++    return false;
++  }
++
++  const std::string json(message);
++  std::string type;
++  if (!detail::extractString(json, "type", type)) {
++    return false;
++  }
++
++  std::string request;
++  std::string result;
++  if (type == "response" && detail::extractString(json, "request", request) &&
++      request == "GET_LOG") {
++    detail::extractString(json, "result", result);
++    if (result == "LIST") {
++      _files.clear();
++      detail::extractFiles(json, _files);
++      _status = Status::LIST_RECEIVED;
++      return true;
++    }
++
++    if (result == "START") {
++      int total = 0;
++      std::string file;
++      if (!detail::extractInt(json, "total", total) ||
++          !detail::extractString(json, "file", file) || total <= 0) {
++        _status = Status::ERROR;
++        _error = "invalid_start";
++        return false;
++      }
++      _fileName = file;
++      _totalChunks = total;
++      _receivedChunks = 0;
++      _data.clear();
++      _status = Status::RECEIVING;
++      return true;
++    }
++
++    if (result.rfind("err_", 0) == 0) {
++      _status = Status::ERROR;
++      _error = result;
++      return true;
++    }
++    return false;
++  }
++
++  if (type != "file" || _status != Status::RECEIVING) {
++    return false;
++  }
++
++  int chunk = 0;
++  std::string encoded;
++  if (!detail::extractInt(json, "chunk", chunk) ||
++      !detail::extractString(json, "data", encoded) ||
++      chunk != _receivedChunks + 1) {
++    _status = Status::ERROR;
++    _error = "invalid_chunk";
++    return false;
++  }
++
++  std::string decoded;
++  if (!detail::decodeBase64(encoded.c_str(), decoded) ||
++      decoded.size() > FILE_CHUNK_RAW_MAX) {
++    _status = Status::ERROR;
++    _error = "invalid_data";
++    return false;
++  }
++
++  _data += decoded;
++  _receivedChunks = chunk;
++  if (_receivedChunks == _totalChunks) {
++    _status = Status::COMPLETED;
++  }
++  return true;
++}
++
++inline Status Transfer::status() const {
++  return _status;
++}
++
++inline const std::vector<std::string>& Transfer::files() const {
++  return _files;
++}
++
++inline const std::string& Transfer::fileName() const {
++  return _fileName;
++}
++
++inline const std::string& Transfer::data() const {
++  return _data;
++}
++
++inline const std::string& Transfer::error() const {
++  return _error;
++}
++
++inline int Transfer::totalChunks() const {
++  return _totalChunks;
++}
++
++inline int Transfer::receivedChunks() const {
++  return _receivedChunks;
++}
++
++inline void Transfer::reset() {
++  _status = Status::IDLE;
++  _files.clear();
++  _fileName.clear();
++  _data.clear();
++  _error.clear();
++  _totalChunks = 0;
++  _receivedChunks = 0;
++}
++
++inline bool formatListRequest(std::string& request) {
++  request = "GET_LOG\n";
++  return detail::validRequestLength(request);
++}
++
++inline bool formatFileRequest(const int processNumber, std::string& request) {
++  if (processNumber <= 0) {
++    return false;
++  }
++  request = "GET_LOG " + std::to_string(processNumber) + "\n";
++  return detail::validRequestLength(request);
++}
++
++} // namespace SsvcLogProtocol
++
++#endif
+diff --git a/test/native/test_ssvc_log_protocol/test_main.cpp b/test/native/test_ssvc_log_protocol/test_main.cpp
+new file mode 100644
+index 0000000..1729d02
+--- /dev/null
++++ b/test/native/test_ssvc_log_protocol/test_main.cpp
+@@ -0,0 +1,79 @@
++#include <doctest.h>
++
++#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
++
++TEST_CASE("GET_LOG requests validate process numbers") {
++  std::string request;
++  CHECK(SsvcLogProtocol::formatListRequest(request));
++  CHECK(request == "GET_LOG\n");
++  CHECK(SsvcLogProtocol::formatFileRequest(15, request));
++  CHECK(request == "GET_LOG 15\n");
++  CHECK_FALSE(SsvcLogProtocol::formatFileRequest(0, request));
++}
++
++TEST_CASE("GET_LOG list response is parsed") {
++  SsvcLogProtocol::Transfer transfer;
++  transfer.beginList();
++
++  CHECK(transfer.consume(
++      R"({"type":"response","request":"GET_LOG","result":"LIST","files":["15.CSV","16.CSV"]})"));
++  CHECK(transfer.status() == SsvcLogProtocol::Status::LIST_RECEIVED);
++  REQUIRE(transfer.files().size() == 2);
++  CHECK(transfer.files()[0] == "15.CSV");
++  CHECK(transfer.files()[1] == "16.CSV");
++}
++
++TEST_CASE("GET_LOG chunks are decoded in order") {
++  SsvcLogProtocol::Transfer transfer;
++  transfer.beginFile(15);
++
++  CHECK(transfer.consume(
++      R"({"type":"response","request":"GET_LOG","result":"START","file":"15.CSV","total":2})"));
++  CHECK(transfer.status() == SsvcLogProtocol::Status::RECEIVING);
++  CHECK(transfer.consume(R"({"type":"file","chunk":1,"data":"SGVsbG8g"})"));
++  CHECK_FALSE(transfer.consume(R"({"type":"file","chunk":1,"data":"V29ybGQ="})"));
++  CHECK(transfer.status() == SsvcLogProtocol::Status::ERROR);
++
++  transfer.beginFile(15);
++  CHECK(transfer.consume(
++      R"({"type":"response","request":"GET_LOG","result":"START","file":"15.CSV","total":2})"));
++  CHECK(transfer.consume(R"({"type":"file","chunk":1,"data":"SGVsbG8g"})"));
++  CHECK(transfer.consume(R"({"type":"file","chunk":2,"data":"V29ybGQ="})"));
++  CHECK(transfer.status() == SsvcLogProtocol::Status::COMPLETED);
++  CHECK(transfer.data() == "Hello World");
++  CHECK(transfer.receivedChunks() == 2);
++}
++
++TEST_CASE("GET_LOG errors are retained") {
++  SsvcLogProtocol::Transfer transfer;
++  transfer.beginList();
++  CHECK(transfer.consume(
++      R"({"type":"response","request":"GET_LOG","result":"err_nf"})"));
++  CHECK(transfer.status() == SsvcLogProtocol::Status::ERROR);
++  CHECK(transfer.error() == "err_nf");
++}
++
++TEST_CASE("GET_LOG rejects malformed transfer packets") {
++  SsvcLogProtocol::Transfer transfer;
++  transfer.beginFile(15);
++  CHECK_FALSE(transfer.consume(
++      R"({"type":"response","request":"GET_LOG","result":"START","file":"15.CSV","total":0})"));
++  CHECK(transfer.error() == "invalid_start");
++
++  transfer.beginFile(15);
++  CHECK(transfer.consume(
++      R"({"type":"response","request":"GET_LOG","result":"START","file":"15.CSV","total":1})"));
++  CHECK_FALSE(transfer.consume(
++      R"({"type":"file","chunk":1,"data":"A==="})"));
++  CHECK(transfer.error() == "invalid_data");
++}
++
++TEST_CASE("GET_LOG enforces chunk sequence") {
++  SsvcLogProtocol::Transfer transfer;
++  transfer.beginFile(15);
++  CHECK(transfer.consume(
++      R"({"type":"response","request":"GET_LOG","result":"START","file":"15.CSV","total":2})"));
++  CHECK_FALSE(transfer.consume(
++      R"({"type":"file","chunk":2,"data":"SGVsbG8="})"));
++  CHECK(transfer.error() == "invalid_chunk");
++}

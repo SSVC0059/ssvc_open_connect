@@ -171,7 +171,9 @@ std::tuple<float, int> SsvcSettings::getLateHeads() const { return late_heads; }
 std::array<int, 3> SsvcSettings::getValveBw() const { return valve_bw; }
 float SsvcSettings::getHysteresis() const { return hyst; }
 unsigned char SsvcSettings::getDecrement() const { return decrement; }
-bool SsvcSettings::getFormula() const { return formula; }
+int SsvcSettings::getFormula() const { return formula; }
+int SsvcSettings::getPredec() const { return predec; }
+int SsvcSettings::getExtendedHeads() const { return extended_heads; }
 float SsvcSettings::getTank_mmhg() const { return tank_mmhg; }
 unsigned int SsvcSettings::getHeadsTimer() const { return heads_timer; }
 unsigned int SsvcSettings::getLateHeadsTimer() const { return late_heads_timer; }
@@ -372,13 +374,13 @@ SsvcSettings::Builder &SsvcSettings::Builder::setDecrement(unsigned char _decrem
 //- Описание: Использовать или нет формулу для снижения скорости отбора тела в
 // зависимости от температуры на ТД2.
 //- Синтаксис:
-//"formula=[0|1]"
-//- "[0|1]" — 0 - не использовать формулу, 1 - использовать.
+//"formula=<значение>"
+//- "<значение>" — целое число: 0 - не использовать формулу, 1 - использовать, 2 - авто 92+.
 //- Пример:
-//"formula=1"
-SsvcSettings::Builder &SsvcSettings::Builder::formulaEnable(const bool enable) {
-  const bool prevFormula = settings.formula;
-  settings.formula = enable;
+//"formula=2"
+SsvcSettings::Builder &SsvcSettings::Builder::formulaEnable(const int val) {
+  const int prevFormula = settings.formula;
+  settings.formula = (val >= 0 && val <= 2) ? val : prevFormula;
   if (settings.formula != prevFormula) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "formula=%d", settings.formula);
@@ -594,7 +596,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeartsFinishTemp(const float _h
   if (settings.hearts_finish_temp != prevHeartsFinishTemp) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "hearts_finish_temp=%0.1f", settings.hearts_finish_temp);
-    ESP_LOGD("SsvcSettings", "Start_delay: %s", buffer);
+    ESP_LOGD("SsvcSettings", "hearts_finish_temp: %s", buffer);
     if (_isBatchMode) {
       
       _pendingCommands.emplace_back(buffer);
@@ -675,8 +677,8 @@ SsvcSettings::Builder &SsvcSettings::Builder::setReleaseTimer(const int _release
   settings.release_timer = std::min(std::max(_release_timer, (0)), (1200));
   if (settings.release_timer != prevReleaseTimer) {
     char buffer[50];
-    std::snprintf(buffer, sizeof(buffer), "start_delay=%d", settings.release_timer);
-    ESP_LOGD("SsvcSettings", "release_speed: %s", buffer);
+    std::snprintf(buffer, sizeof(buffer), "release_timer=%d", settings.release_timer);
+    ESP_LOGD("SsvcSettings", "release_timer: %s", buffer);
     if (_isBatchMode) {
       _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
@@ -695,6 +697,44 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeadsFinal(const float _heartsF
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "heads_final=%0.1f", settings.heads_final);
     ESP_LOGD("SsvcSettings", "heads_final: %s", buffer);
+    if (_isBatchMode) {
+      _pendingCommands.emplace_back(buffer);
+      ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
+    } else {
+      ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
+      SsvcCommandsQueue::getQueue().set(buffer);
+    }
+  }
+  return *this;
+}
+
+// predec: предекремент (0=выкл, 7=0.07, 13=0.13)
+SsvcSettings::Builder &SsvcSettings::Builder::setPredec(const int val) {
+  const int prevPredec = settings.predec;
+  settings.predec = (val >= 0 && val <= 13) ? val : prevPredec;
+  if (settings.predec != prevPredec) {
+    char buffer[50];
+    std::snprintf(buffer, sizeof(buffer), "predec=%d", settings.predec);
+    ESP_LOGD("SsvcSettings", "setPredec: %s", buffer);
+    if (_isBatchMode) {
+      _pendingCommands.emplace_back(buffer);
+      ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
+    } else {
+      ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
+      SsvcCommandsQueue::getQueue().set(buffer);
+    }
+  }
+  return *this;
+}
+
+// extended_heads: сброс и снижение (0=выкл, 1=вкл)
+SsvcSettings::Builder &SsvcSettings::Builder::setExtendedHeads(const int val) {
+  const int prevExtendedHeads = settings.extended_heads;
+  settings.extended_heads = (val >= 0 && val <= 1) ? val : prevExtendedHeads;
+  if (settings.extended_heads != prevExtendedHeads) {
+    char buffer[50];
+    std::snprintf(buffer, sizeof(buffer), "extended_heads=%d", settings.extended_heads);
+    ESP_LOGD("SsvcSettings", "setExtendedHeads: %s", buffer);
     if (_isBatchMode) {
       _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
@@ -963,8 +1003,10 @@ void SsvcSettings::updateStateFromJson(const JsonObject& src) {
     decrement = settings["decrement"].as<int>();
     ESP_LOGV("SsvcSettings", "Обновлен decrement: %d", decrement);
 
-    formula = settings["formula"].as<bool>();
-    ESP_LOGV("SsvcSettings", "Обновлен formula: %b", formula);
+    formula = settings["formula"].is<bool>()
+        ? (settings["formula"].as<bool>() ? 1 : 0)
+        : settings["formula"].as<int>();
+    ESP_LOGV("SsvcSettings", "Обновлен formula: %d", formula);
 
     tank_mmhg = settings["tank_mmhg"].as<int>();
     ESP_LOGV("SsvcSettings", "Обновлен tank_mmhg: %d", tank_mmhg);
@@ -1184,8 +1226,10 @@ void SsvcSettings::applySettingsToController(const JsonVariant json) const {
         if (val != decrement) builder.setDecrement(val);
     }
 
-    if (settings["formula"].is<bool>()) {
-        const bool val = settings["formula"].as<bool>();
+    if (settings["formula"].is<bool>() || settings["formula"].is<int>()) {
+        const int val = settings["formula"].is<bool>()
+            ? (settings["formula"].as<bool>() ? 1 : 0)
+            : settings["formula"].as<int>();
         if (val != formula) builder.formulaEnable(val);
     }
 

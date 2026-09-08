@@ -43,7 +43,8 @@ enum class SsvcCommandType
   NEXT,
   AT,
   SET,
-  STATUS
+  STATUS,
+  GET_LOG
 };
 
 struct SsvcCommand
@@ -99,6 +100,9 @@ public:
            TickType_t timeout = TIMEOUT) const;
 
   void status(const std::string& parameters, int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+
+  void getLog(const std::string& parameters = "", int attempt_count = 1,
+              TickType_t timeout = TIMEOUT) const;
 
   UBaseType_t availableCommands() const
   {
