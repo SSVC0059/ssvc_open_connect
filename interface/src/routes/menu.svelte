@@ -26,6 +26,7 @@
     import Esp from '~icons/mdi/car-esp';
     import Bug from '~icons/tabler/bug';
     import Temperature from '~icons/tabler/temperature';
+    import FileText from '~icons/tabler/file-text';
 import { page } from '$app/state';
 import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
@@ -83,6 +84,12 @@ import { goto } from '$app/navigation';
                     title: 'Телеметрия',
                     icon: Connected,
                     href: '/oc/telemetry',
+                    feature: true
+                },
+                {
+                    title: 'Журналы ректификации',
+                    icon: FileText,
+                    href: '/oc/logs',
                     feature: true
                 },
                 {

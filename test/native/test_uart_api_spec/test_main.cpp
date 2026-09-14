@@ -1,10 +1,10 @@
 /**
  * Native тесты SsvcUartApiSpec (логика без Arduino/ESP32)
- * SSVC0059_V2 UART API v1.9
+ * SSVC0059_V2 UART API v1.10
  *
  * Документация:
- * - docs/develop/api/ssvc-uart-api.md — описание API, команды, формат SET
- * - https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.9/README.md — спецификация v1.9
+ * - docs/ssvc_uart_api_docs.md — описание API, команды, формат SET
+ * - https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.10/README.md — спецификация v1.10
  */
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest.h>

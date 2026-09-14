@@ -205,9 +205,15 @@ float SsvcSettings::getTailsTemp() const { return tails_temp; }
 float SsvcSettings::getReleaseSpeed() const { return release_speed; }
 int SsvcSettings::getReleaseTimeer() const { return release_timer; }
 std::string SsvcSettings::getSsvcVersion() const { if (ssvcVersion.empty()) { return ""; } return ssvcVersion; }
-float SsvcSettings::getSsvcApiVersion() const { return ssvcApiVersion; }
+std::string SsvcSettings::getSsvcApiVersion() const { return ssvcApiVersionText; }
+int SsvcSettings::getSsvcApiVersionCode() const { return ssvcApiVersionCode; }
+bool SsvcSettings::hasFeature(const int feature) const {
+  return SsvcApiCapabilities::featureAvailable(ssvcApiVersionCode, feature);
+}
 bool SsvcSettings::apiSsvcIsSupport() const { return isSupportApi; }
 bool SsvcSettings::isSupportTails() const { return supportTails; }
+
+bool SsvcSettings::isSupportRelease() const { return !supportTails; }
 
 bool SsvcSettings::setSsvcVersion(std::string _ssvcVersion) {
   this->ssvcVersion = std::move(_ssvcVersion);
@@ -219,13 +225,24 @@ bool SsvcSettings::setSsvcVersion(std::string _ssvcVersion) {
   return true;
 }
 
-bool SsvcSettings::setSsvcApiVersion(const float _ssvcApiVersion) {
-  ESP_LOGD("SsvcSettings", "setSsvcApiVersion: %f", _ssvcApiVersion);
-  this->ssvcApiVersion = _ssvcApiVersion;
-#ifdef SSVC_SUPPORT_API_VERSION
-  constexpr float supportVersion = SSVC_SUPPORT_API_VERSION;
-  isSupportApi = this->ssvcApiVersion >= supportVersion;
-#endif
+bool SsvcSettings::setSsvcApiVersion(const std::string& _ssvcApiVersion) {
+  SsvcUartApiSpec::ApiVersion parsed;
+  if (!SsvcUartApiSpec::parseApiVersion(_ssvcApiVersion.c_str(), parsed)) {
+    ESP_LOGW("SsvcSettings", "setSsvcApiVersion: не удалось разобрать версию API '%s'",
+             _ssvcApiVersion.c_str());
+    this->ssvcApiVersionText = _ssvcApiVersion;
+    this->ssvcApiVersionCode = 0;
+    isSupportApi = false;
+    return false;
+  }
+
+  this->ssvcApiVersionText = _ssvcApiVersion;
+  this->ssvcApiVersionCode = parsed.code();
+  // Совместимость определяется по минимальной поддерживаемой версии; функции,
+  // появившиеся позже версии устройства, отключаются поодиночке (hasFeature).
+  isSupportApi = SsvcApiCapabilities::isCompatible(this->ssvcApiVersionCode);
+  ESP_LOGD("SsvcSettings", "setSsvcApiVersion: %s (code %d), compatible=%d",
+           this->ssvcApiVersionText.c_str(), this->ssvcApiVersionCode, isSupportApi ? 1 : 0);
   return true;
 }
 
@@ -927,6 +944,11 @@ void SsvcSettings::Builder::applySettings() {
     return;
   }
 
+  // Фильтрацию по версии API выполняет очередь (единая точка gate), поэтому
+  // пропущенные поля собираем из её отчёта за время этой отправки.
+  _skippedCommands.clear();
+  SsvcCommandsQueue::getQueue().clearSkippedSetParams();
+
   String payload = "";
   for (const auto& cmd : _pendingCommands) {
     // Проверка лимита в 250-280 символов (с запасом до 300)
@@ -941,6 +963,19 @@ void SsvcSettings::Builder::applySettings() {
 
   if (payload.length() > 0) {
     SsvcCommandsQueue::getQueue().set(payload.c_str());
+  }
+
+  _skippedCommands = SsvcCommandsQueue::getQueue().skippedSetParams();
+  if (!_skippedCommands.empty()) {
+    std::string skippedList;
+    for (const std::string& item : _skippedCommands) {
+      if (!skippedList.empty()) {
+        skippedList += ", ";
+      }
+      skippedList += item;
+    }
+    ESP_LOGW("SsvcSettings", "applySettings: поля не ушли на устройство (API %s): %s",
+             settings.getSsvcApiVersion().c_str(), skippedList.c_str());
   }
 
   _pendingCommands.clear();

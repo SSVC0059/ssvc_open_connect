@@ -54,6 +54,17 @@ export function getInfo(): Promise<SsvcOpenConnectInfo | undefined> {
 }
 
 /**
+ * Сброс кеша getInfo().
+ *
+ * Нужен при переподключении к контроллеру: версия SSVC и набор доступных
+ * возможностей API могли измениться (например, контроллер заменили или
+ * обновили прошивку), поэтому закешированный ответ больше не актуален.
+ */
+export function resetInfoCache(): void {
+	infoPromise = null;
+}
+
+/**
  * Обновление отдельного поля в настройках
  */
 export async function updateSetting(field: string, value: unknown): Promise<boolean> {
@@ -297,6 +308,14 @@ export async function downloadLog(processId: number): Promise<Blob> {
 		throw new Error(`Не удалось скачать журнал: HTTP ${response.status}`);
 	}
 	return response.blob();
+}
+
+/**
+ * Отмена текущей передачи журнала (сброс состояния на OpenConnect).
+ */
+export async function cancelLogDownload(): Promise<boolean> {
+	const response = await apiFetch<{ status: string }>('/rest/logs', 'DELETE');
+	return response.success;
 }
 
 /**

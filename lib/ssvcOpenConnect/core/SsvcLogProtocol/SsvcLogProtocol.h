@@ -13,6 +13,16 @@ namespace SsvcLogProtocol {
 
 constexpr std::size_t GET_LOG_CMD_MAX_LEN = 30;
 constexpr std::size_t FILE_CHUNK_RAW_MAX = 600;
+constexpr std::size_t LOG_TOTAL_RAW_MAX = 512 * 1024;
+
+// Если во время передачи файла новые пакеты не приходят дольше этого интервала,
+// передача считается зависшей и переводится в ошибку "timeout".
+constexpr unsigned long TRANSFER_TIMEOUT_MS = 10000;
+
+// GET_LOG появился в UART API 1.10; ниже этой версии скачивание журналов недоступно.
+// Версия хранится целым кодом major*100+minor: "1.10" как float равно 1.1
+// и оказалось бы меньше "1.7".
+constexpr int GET_LOG_MIN_API_VERSION_CODE = 1 * 100 + 10;
 
 enum class Status {
   IDLE,
@@ -24,9 +34,9 @@ enum class Status {
 
 class Transfer {
 public:
-  bool beginList();
-  bool beginFile(int processNumber);
-  bool consume(const char* message);
+  bool beginList(unsigned long nowMs = 0);
+  bool beginFile(int processNumber, unsigned long nowMs = 0);
+  bool consume(const char* message, unsigned long nowMs = 0);
 
   Status status() const;
   const std::vector<std::string>& files() const;
@@ -35,9 +45,18 @@ public:
   const std::string& error() const;
   int totalChunks() const;
   int receivedChunks() const;
+  unsigned long lastActivityMs() const;
+
+  // Переводит зависшую передачу (RECEIVING без активности дольше timeoutMs) в ERROR.
+  // Возвращает true, если таймаут сработал. nowMs передаётся снаружи (millis()),
+  // чтобы заголовок оставался тестируемым на нативной платформе.
+  bool checkTimeout(unsigned long nowMs, unsigned long timeoutMs = TRANSFER_TIMEOUT_MS);
+
+  void reset();
 
 private:
-  void reset();
+
+  void touch(unsigned long nowMs);
 
   Status _status{Status::IDLE};
   std::vector<std::string> _files;
@@ -46,6 +65,7 @@ private:
   std::string _error;
   int _totalChunks{0};
   int _receivedChunks{0};
+  unsigned long _lastActivityMs{0};
 };
 
 Transfer& getTransfer();
@@ -189,25 +209,28 @@ inline Transfer& getTransfer() {
   return transfer;
 }
 
-inline bool Transfer::beginList() {
+inline bool Transfer::beginList(const unsigned long nowMs) {
   reset();
+  touch(nowMs);
   return true;
 }
 
-inline bool Transfer::beginFile(const int processNumber) {
+inline bool Transfer::beginFile(const int processNumber, const unsigned long nowMs) {
   std::string request;
   if (!formatFileRequest(processNumber, request)) {
     return false;
   }
   reset();
+  touch(nowMs);
   _status = Status::RECEIVING;
   return true;
 }
 
-inline bool Transfer::consume(const char* message) {
+inline bool Transfer::consume(const char* message, const unsigned long nowMs) {
   if (message == nullptr) {
     return false;
   }
+  touch(nowMs);
 
   const std::string json(message);
   std::string type;
@@ -274,6 +297,12 @@ inline bool Transfer::consume(const char* message) {
     return false;
   }
 
+  if (_data.size() + decoded.size() > LOG_TOTAL_RAW_MAX) {
+    _status = Status::ERROR;
+    _error = "log_too_large";
+    return false;
+  }
+
   _data += decoded;
   _receivedChunks = chunk;
   if (_receivedChunks == _totalChunks) {
@@ -310,6 +339,29 @@ inline int Transfer::receivedChunks() const {
   return _receivedChunks;
 }
 
+inline unsigned long Transfer::lastActivityMs() const {
+  return _lastActivityMs;
+}
+
+inline void Transfer::touch(const unsigned long nowMs) {
+  // 0 означает "время не отслеживается" — вызовы без метки времени не сбрасывают её.
+  if (nowMs != 0) {
+    _lastActivityMs = nowMs;
+  }
+}
+
+inline bool Transfer::checkTimeout(const unsigned long nowMs, const unsigned long timeoutMs) {
+  if (_status != Status::RECEIVING || _lastActivityMs == 0) {
+    return false;
+  }
+  if (nowMs - _lastActivityMs < timeoutMs) {
+    return false;
+  }
+  _status = Status::ERROR;
+  _error = "timeout";
+  return true;
+}
+
 inline void Transfer::reset() {
   _status = Status::IDLE;
   _files.clear();
@@ -318,6 +370,7 @@ inline void Transfer::reset() {
   _error.clear();
   _totalChunks = 0;
   _receivedChunks = 0;
+  _lastActivityMs = 0;
 }
 
 inline bool formatListRequest(std::string& request) {

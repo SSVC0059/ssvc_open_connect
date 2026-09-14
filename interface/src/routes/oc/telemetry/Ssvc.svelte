@@ -4,24 +4,18 @@
         import {
 				fetchAlarmThresholds,
 				fetchSensorsTemperatureByZone,
-				fetchTelemetry,
-				fetchLogStatus,
-				startLogDownload,
-				downloadLog
+				fetchTelemetry
 			} from '$lib/api/ssvcApi';
 		import Control from '$lib/components/Telemetry/Control.svelte';
 		import ValveParameters from '$lib/components/Telemetry/ValveParameters.svelte';
 		import { getDescriptionStage, getStageDescription } from '$lib/utils/ssvcHelper';
 		import ThermalSensors from '$lib/components/Telemetry/ThermalSensors.svelte';
 			import type {AlarmThresholdsState, TemperatureResponse} from '$lib/types/Sensors';
-			import type { SsvcLogStatus } from '$lib/types/ssvc';
 		import ApiVersionGuard from '$lib/components/ApiVersionGuard.svelte';
 
 		let data = $state<SsvcOpenConnectMessage | null>();
 		let temperatureResponse = $state<TemperatureResponse | null>();
 			let alarmThresholds = $state<AlarmThresholdsState | null>();
-			let logStatus = $state<SsvcLogStatus | null>(null);
-			let logError = $state('');
 
 		let telemetry = $derived(data?.telemetry)
 		let status = $derived(data?.status)
@@ -93,47 +87,6 @@
 
 			}
 		}
-
-			const loadLogs = async () => {
-				try {
-					logStatus = await fetchLogStatus();
-				} catch (error) {
-					logError = error instanceof Error ? error.message : 'Ошибка получения списка журналов';
-				}
-			};
-
-			const requestLog = async (file: string) => {
-				const processId = Number(file.replace('.CSV', ''));
-				if (!Number.isInteger(processId) || processId <= 0) return;
-				logError = '';
-				try {
-					if (!await startLogDownload(processId)) {
-						logError = 'Не удалось начать загрузку журнала';
-						return;
-					}
-					for (let attempt = 0; attempt < 30; attempt += 1) {
-						await new Promise((resolve) => setTimeout(resolve, 500));
-						logStatus = await fetchLogStatus();
-						if (logStatus?.status === 'completed') {
-							const blob = await downloadLog(processId);
-							const url = URL.createObjectURL(blob);
-							const anchor = document.createElement('a');
-							anchor.href = url;
-							anchor.download = file;
-							anchor.click();
-							URL.revokeObjectURL(url);
-							return;
-						}
-						if (logStatus?.status === 'error') {
-							logError = logStatus.error ?? 'Ошибка передачи журнала';
-							return;
-						}
-					}
-					logError = 'Истекло время ожидания журнала';
-				} catch (error) {
-					logError = error instanceof Error ? error.message : 'Ошибка загрузки журнала';
-				}
-			};
 
 			$effect(() => {
 				loadTelemetry();
@@ -294,25 +247,6 @@
 					</div>
 				</div>
 			</div>
-			</div>
-			<div class="glassmorphism panel logs-panel">
-				<div class="logs-header">
-					<h3 class="section-title settings-section-title">Журналы ректификации</h3>
-					<button class="log-button" type="button" onclick={loadLogs}>Обновить</button>
-				</div>
-				{#if logStatus?.status === 'receiving'}
-					<p>Загрузка: {logStatus.received} / {logStatus.total}</p>
-				{:else if logStatus?.status === 'error' || logError}
-					<p class="log-error">{logError || logStatus?.error}</p>
-				{:else if logStatus?.files}
-					<div class="logs-list">
-						{#each logStatus.files as file}
-							<button class="log-button" type="button" onclick={() => requestLog(file)}>{file}</button>
-						{/each}
-					</div>
-				{:else}
-					<p>Нажмите «Обновить», чтобы получить список журналов.</p>
-				{/if}
 			</div>
 		</main>
 </div>

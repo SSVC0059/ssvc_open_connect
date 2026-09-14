@@ -27,6 +27,8 @@ const defaults: SsvcSettings = {
 	formula: 0,
 	formula_start_temp: 0,
 	tank_mmhg: 0,
+	predec: 0,
+	extended_heads: 0,
 	tp2_shift: 0,
 	tp_filter: false,
 	signal_tp1_control: 0,

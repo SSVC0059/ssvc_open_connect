@@ -35,6 +35,10 @@ void SettingsHandler::updateSettings(AsyncWebServerRequest* request, JsonVariant
     bool hasErrors = false;
     auto errors = jsonBuffer.to<JsonObject>();
 
+    // Сбор пропущенных полей начинается заново для каждого запроса: очередь
+    // отбрасывает параметры, недоступные версии API устройства, и ведёт их список.
+    SsvcCommandsQueue::getQueue().clearSkippedSetParams();
+
     if (json.is<JsonObject>()) {
         SsvcSettings::Builder builder;
         ESP_LOGD(TAG, "Request has JSON body.");
@@ -68,9 +72,19 @@ void SettingsHandler::updateSettings(AsyncWebServerRequest* request, JsonVariant
 
     SsvcCommandsQueue::getQueue().getSettings();
 
+    // Поля, которых нет на устройстве этой версии API: клиент должен знать, что
+    // часть настроек не отправлена (см. SsvcApiCapabilities).
+    const auto& skipped = SsvcCommandsQueue::getQueue().skippedSetParams();
+
     JsonDocument successResponse;
     successResponse["success"] = true;
     successResponse["message"] = "Settings updated successfully";
+    if (!skipped.empty()) {
+        JsonArray skippedArray = successResponse["skipped"].to<JsonArray>();
+        for (const auto& item : skipped) {
+            skippedArray.add(item);
+        }
+    }
     String successMsg;
     serializeJson(successResponse, successMsg);
     request->send(200, "application/json", successMsg.c_str());

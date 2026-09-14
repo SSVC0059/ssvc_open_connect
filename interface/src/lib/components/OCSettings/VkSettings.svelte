@@ -35,7 +35,8 @@
 		onToggle
 	}: {
 		disabled?: boolean;
-		onToggle: () => Promise<boolean>;
+		/** Колбэк может не возвращать результат — ошибкой считается только явный false. */
+		onToggle: () => Promise<boolean | void>;
 	} = $props();
 
 	function resolvePeerFromConfig(s: VkConfig): string {
@@ -144,7 +145,9 @@
 	};
 
 	// Focus trap for peer picker dialog (modal keyboard behavior)
-	const peerPanelRef = { current: null };
+	// Аннотация обязательна: без неё TS выводит тип `null`, из-за чего
+	// querySelectorAll/focus дают `never`, а bind:this не принимает элемент.
+	const peerPanelRef: { current: HTMLDivElement | null } = { current: null };
 
 	function focusTrap(event: KeyboardEvent) {
 		if (!peerPickerOpen) return;
@@ -196,7 +199,7 @@
 		try {
 			isSaving = true;
 			const ok = await onToggle();
-			if (!ok) {
+			if (ok === false) {
 				notifications.error('Не удалось изменить состояние подсистемы VK', 5000);
 				return;
 			}

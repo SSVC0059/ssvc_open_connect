@@ -890,21 +890,6 @@
 		}
 	}
 
-	.checkbox-label {
-		display: flex;
-		align-items: center;
-		gap: 0.3rem;
-		font-size: 0.85rem;
-		font-weight: 600;
-		cursor: pointer;
-		user-select: none;
-
-		input[type="checkbox"] {
-			width: 16px;
-			height: 16px;
-		}
-	}
-
 	.final-analytics-card {
 		border-color: var(--blue-300);
 		background-color: var(--primary-100);
