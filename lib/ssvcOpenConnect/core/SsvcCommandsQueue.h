@@ -27,6 +27,7 @@
 #include <string>
 #include <unordered_map>
 #include <map>
+#include <vector>
 
 #define ATTEMPT_COUNT 3
 #define TIMEOUT pdMS_TO_TICKS(3000)
@@ -43,7 +44,8 @@ enum class SsvcCommandType
   NEXT,
   AT,
   SET,
-  STATUS
+  STATUS,
+  GET_LOG
 };
 
 struct SsvcCommand
@@ -95,10 +97,15 @@ public:
 
   void at(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
-  void set(const std::string& parameters, int attempt_count = ATTEMPT_COUNT,
+  /// @return true, если команда поставлена в очередь; false — отброшена по версии API.
+  bool set(const std::string& parameters, int attempt_count = ATTEMPT_COUNT,
            TickType_t timeout = TIMEOUT) const;
 
   void status(const std::string& parameters, int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+
+  /// @return true, если команда поставлена в очередь; false — функция недоступна на устройстве.
+  bool getLog(const std::string& parameters = "", int attempt_count = 1,
+              TickType_t timeout = TIMEOUT) const;
 
   UBaseType_t availableCommands() const
   {
@@ -109,6 +116,34 @@ public:
   void scheduleUartRetryTimer() const;
 
   bool _cmdSetResult{false};
+
+  /**
+   * @brief Описание последней отбраковки команды по версии API.
+   *
+   * Пусто, если отбраковок не было. Заполняется в единой точке постановки в
+   * очередь, чтобы вызывающий мог отличить «команда ушла» от «команда
+   * отброшена, потому что устройство старее».
+   */
+  std::string lastRejectionReason() const { return _lastRejectionReason; }
+
+  /// Возможность, которой не хватило ("get_log", "extended_heads", ...).
+  std::string lastRejectedFeature() const { return _lastRejectedFeature; }
+
+  /// Фактическая и требуемая версия API из последней отбраковки ("1.7" / "1.10").
+  std::string lastRejectedDeviceApi() const { return _lastRejectedDeviceApi; }
+
+  std::string lastRejectedRequiredApi() const { return _lastRejectedRequiredApi; }
+
+  /**
+   * @brief Параметры SET, отброшенные по версии API с момента последнего сброса.
+   *
+   * Заполняется в единой точке постановки в очередь, поэтому вызывающий
+   * (REST-слой, Builder) узнаёт, какие поля не ушли на устройство.
+   */
+  const std::vector<std::string>& skippedSetParams() const { return _skippedSetParams; }
+
+  /// Начать новый сбор пропущенных параметров (перед пакетом команд SET).
+  void clearSkippedSetParams() const { _skippedSetParams.clear(); }
 
   ~SsvcCommandsQueue()
   {
@@ -183,8 +218,29 @@ private:
 
   SsvcCommandsQueue();
 
-  void pushCommandInQueue(SsvcCommandType type, const std::string& parameters,
+  /**
+   * @brief Единая точка постановки команды в очередь — и единственное место gate.
+   *
+   * Проверка версии API стоит здесь, а не в set()/getLog(), чтобы новая
+   * версионозависимая команда не могла её забыть: для SET отбрасываются поля,
+   * отсутствующие на устройстве, для GET_LOG проверяется возможность.
+   *
+   * @return true, если команда поставлена в очередь.
+   */
+  bool pushCommandInQueue(SsvcCommandType type, const std::string& parameters,
                           int attempt_count, TickType_t timeout) const;
+
+  /// Диагностика последней отбраковки; читается REST-слоем при отказе.
+  void rememberRejection(const std::string& reason, const std::string& feature,
+                         const std::string& requiredApi, const std::string& deviceApi) const;
+
+  mutable std::string _lastRejectionReason;
+  mutable std::string _lastRejectedFeature;
+  mutable std::string _lastRejectedDeviceApi;
+  mutable std::string _lastRejectedRequiredApi;
+
+  /// Накопитель отброшенных параметров SET; сбрасывается clearSkippedSetParams().
+  mutable std::vector<std::string> _skippedSetParams;
 };
 
 #endif // SSVCOPENCONNECT_SSVCCOMMANDSQUEUE_H

@@ -57,7 +57,7 @@ describe('DistillationCycleModel Process Logic', () => {
 
 	it('должен учитывать декремент (снижение скорости) при включенной формуле', () => {
 		const profile = createDefaultProfile();
-		profile.ssvcSettings.formula = true;
+		profile.ssvcSettings.formula = 1;
 		profile.ssvcSettings.decrement = 10; // 10%
 		profile.ssvcSettings.hearts_finish_temp = 95;
 		profile.hearts.targetFlowMlh = 2000;
@@ -79,7 +79,7 @@ describe('DistillationCycleModel Process Logic', () => {
 		profile.volumeL = 10;
 		profile.strengthVol = 40; // 4000мл АС
 		profile.ssvcSettings.hearts_finish_temp = 90; // Температура, при которой отбор тела завершается
-		profile.ssvcSettings.formula = true; // Включаем формулу декремента
+		profile.ssvcSettings.formula = 1; // Включаем формулу декремента
 		profile.ssvcSettings.decrement = 10; // Декремент 10%
 		profile.ssvcSettings.hyst = 0.1; // Гистерезис
 		profile.hearts.targetFlowMlh = 1000; // Начальная скорость отбора тела

@@ -2,20 +2,20 @@
 		import RectImg from '$lib/components/Telemetry/RectImg.svelte';
 		import type { SsvcOpenConnectMessage } from '$lib/types/ssvc.ts';
         import {
-            fetchAlarmThresholds,
-            fetchSensorsTemperatureByZone,
-            fetchTelemetry
-        } from '$lib/api/ssvcApi';
+				fetchAlarmThresholds,
+				fetchSensorsTemperatureByZone,
+				fetchTelemetry
+			} from '$lib/api/ssvcApi';
 		import Control from '$lib/components/Telemetry/Control.svelte';
 		import ValveParameters from '$lib/components/Telemetry/ValveParameters.svelte';
 		import { getDescriptionStage, getStageDescription } from '$lib/utils/ssvcHelper';
 		import ThermalSensors from '$lib/components/Telemetry/ThermalSensors.svelte';
-        import type {AlarmThresholdsState, TemperatureResponse} from '$lib/types/Sensors';
+			import type {AlarmThresholdsState, TemperatureResponse} from '$lib/types/Sensors';
 		import ApiVersionGuard from '$lib/components/ApiVersionGuard.svelte';
 
 		let data = $state<SsvcOpenConnectMessage | null>();
 		let temperatureResponse = $state<TemperatureResponse | null>();
-        let alarmThresholds = $state<AlarmThresholdsState | null>();
+			let alarmThresholds = $state<AlarmThresholdsState | null>();
 
 		let telemetry = $derived(data?.telemetry)
 		let status = $derived(data?.status)
@@ -39,7 +39,7 @@
         };
 
 		// Функция для перезагрузки данных
-		const reloadSensors = async () => {
+			const reloadSensors = async () => {
 			try {
 				temperatureResponse = await fetchSensorsTemperatureByZone();
 			} catch (err) {
@@ -88,20 +88,19 @@
 			}
 		}
 
-		$effect(() => {
+			$effect(() => {
+				loadTelemetry();
+				reloadSensors()
+	            loadAlarmThresholds();
 
-			loadTelemetry();
-			reloadSensors()
-            loadAlarmThresholds();
+				const telemetryInt = setInterval(() => loadTelemetry(), BASE_INTERVAL);
+				const thermal_sensors = setInterval(() => reloadSensors(), TEMPERATURE_REQUEST_INTERVAL);
 
-			const telemetryInt = setInterval(() => loadTelemetry(), BASE_INTERVAL);
-			const thermal_sensors = setInterval(() => reloadSensors(), TEMPERATURE_REQUEST_INTERVAL);
-
-			return () => {
-				clearInterval(telemetryInt);
-				clearInterval(thermal_sensors);
-			};
-		});
+				return () => {
+					clearInterval(telemetryInt);
+					clearInterval(thermal_sensors);
+				};
+			});
 
 </script>
 <div class="telemetry-container">
@@ -231,13 +230,25 @@
 										<span class="reading-label">Количество спирта в кубе:</span> <span class="reading-value">{telemetry.alc}%</span>
 									</span>
 								{/if}
+								{#if telemetry?.type === 'hearts' && telemetry.preempt_cnt !== undefined}
+									<span class="reading-item">
+										<span class="reading-label">Упреждающие снижения:</span>
+										<span class="reading-value">{telemetry.preempt_cnt}</span>
+									</span>
+								{/if}
+								{#if telemetry?.common.cfg_chgd}
+									<span class="reading-item">
+										<span class="reading-label">Сохранение настроек через:</span>
+										<span class="reading-value">{telemetry.common.tts ?? 0} с</span>
+									</span>
+								{/if}
 							</div>
 						{/if}
 					</div>
 				</div>
 			</div>
-		</div>
-	</main>
+			</div>
+		</main>
 </div>
 
 <style lang="scss">

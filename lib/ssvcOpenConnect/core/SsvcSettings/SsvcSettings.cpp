@@ -120,6 +120,8 @@ void SsvcSettings::fillSettings(JsonVariant settings) const
 
   settings["hearts_temp_shift"] = hearts_temp_shift;
   settings["hearts_pause"] = hearts_pause;
+  settings["predec"] = predec;
+  settings["extended_heads"] = extended_heads;
   settings["tp2_shift"] = tp2_shift;
   settings["tp_filter"] = tp_filter;
   settings["signal_tp1_control"] = signal_tp1_control;
@@ -171,7 +173,9 @@ std::tuple<float, int> SsvcSettings::getLateHeads() const { return late_heads; }
 std::array<int, 3> SsvcSettings::getValveBw() const { return valve_bw; }
 float SsvcSettings::getHysteresis() const { return hyst; }
 unsigned char SsvcSettings::getDecrement() const { return decrement; }
-bool SsvcSettings::getFormula() const { return formula; }
+int SsvcSettings::getFormula() const { return formula; }
+int SsvcSettings::getPredec() const { return predec; }
+int SsvcSettings::getExtendedHeads() const { return extended_heads; }
 float SsvcSettings::getTank_mmhg() const { return tank_mmhg; }
 unsigned int SsvcSettings::getHeadsTimer() const { return heads_timer; }
 unsigned int SsvcSettings::getLateHeadsTimer() const { return late_heads_timer; }
@@ -203,9 +207,15 @@ float SsvcSettings::getTailsTemp() const { return tails_temp; }
 float SsvcSettings::getReleaseSpeed() const { return release_speed; }
 int SsvcSettings::getReleaseTimeer() const { return release_timer; }
 std::string SsvcSettings::getSsvcVersion() const { if (ssvcVersion.empty()) { return ""; } return ssvcVersion; }
-float SsvcSettings::getSsvcApiVersion() const { return ssvcApiVersion; }
+std::string SsvcSettings::getSsvcApiVersion() const { return ssvcApiVersionText; }
+int SsvcSettings::getSsvcApiVersionCode() const { return ssvcApiVersionCode; }
+bool SsvcSettings::hasFeature(const int feature) const {
+  return SsvcApiCapabilities::featureAvailable(ssvcApiVersionCode, feature);
+}
 bool SsvcSettings::apiSsvcIsSupport() const { return isSupportApi; }
 bool SsvcSettings::isSupportTails() const { return supportTails; }
+
+bool SsvcSettings::isSupportRelease() const { return !supportTails; }
 
 bool SsvcSettings::setSsvcVersion(std::string _ssvcVersion) {
   this->ssvcVersion = std::move(_ssvcVersion);
@@ -217,13 +227,24 @@ bool SsvcSettings::setSsvcVersion(std::string _ssvcVersion) {
   return true;
 }
 
-bool SsvcSettings::setSsvcApiVersion(const float _ssvcApiVersion) {
-  ESP_LOGD("SsvcSettings", "setSsvcApiVersion: %f", _ssvcApiVersion);
-  this->ssvcApiVersion = _ssvcApiVersion;
-#ifdef SSVC_SUPPORT_API_VERSION
-  constexpr float supportVersion = SSVC_SUPPORT_API_VERSION;
-  isSupportApi = this->ssvcApiVersion >= supportVersion;
-#endif
+bool SsvcSettings::setSsvcApiVersion(const std::string& _ssvcApiVersion) {
+  SsvcUartApiSpec::ApiVersion parsed;
+  if (!SsvcUartApiSpec::parseApiVersion(_ssvcApiVersion.c_str(), parsed)) {
+    ESP_LOGW("SsvcSettings", "setSsvcApiVersion: не удалось разобрать версию API '%s'",
+             _ssvcApiVersion.c_str());
+    this->ssvcApiVersionText = _ssvcApiVersion;
+    this->ssvcApiVersionCode = 0;
+    isSupportApi = false;
+    return false;
+  }
+
+  this->ssvcApiVersionText = _ssvcApiVersion;
+  this->ssvcApiVersionCode = parsed.code();
+  // Совместимость определяется по минимальной поддерживаемой версии; функции,
+  // появившиеся позже версии устройства, отключаются поодиночке (hasFeature).
+  isSupportApi = SsvcApiCapabilities::isCompatible(this->ssvcApiVersionCode);
+  ESP_LOGD("SsvcSettings", "setSsvcApiVersion: %s (code %d), compatible=%d",
+           this->ssvcApiVersionText.c_str(), this->ssvcApiVersionCode, isSupportApi ? 1 : 0);
   return true;
 }
 
@@ -372,13 +393,13 @@ SsvcSettings::Builder &SsvcSettings::Builder::setDecrement(unsigned char _decrem
 //- Описание: Использовать или нет формулу для снижения скорости отбора тела в
 // зависимости от температуры на ТД2.
 //- Синтаксис:
-//"formula=[0|1]"
-//- "[0|1]" — 0 - не использовать формулу, 1 - использовать.
+//"formula=<значение>"
+//- "<значение>" — целое число: 0 - не использовать формулу, 1 - использовать, 2 - авто 92+.
 //- Пример:
-//"formula=1"
-SsvcSettings::Builder &SsvcSettings::Builder::formulaEnable(const bool enable) {
-  const bool prevFormula = settings.formula;
-  settings.formula = enable;
+//"formula=2"
+SsvcSettings::Builder &SsvcSettings::Builder::formulaEnable(const int val) {
+  const int prevFormula = settings.formula;
+  settings.formula = (val >= 0 && val <= 2) ? val : prevFormula;
   if (settings.formula != prevFormula) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "formula=%d", settings.formula);
@@ -594,7 +615,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeartsFinishTemp(const float _h
   if (settings.hearts_finish_temp != prevHeartsFinishTemp) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "hearts_finish_temp=%0.1f", settings.hearts_finish_temp);
-    ESP_LOGD("SsvcSettings", "Start_delay: %s", buffer);
+    ESP_LOGD("SsvcSettings", "hearts_finish_temp: %s", buffer);
     if (_isBatchMode) {
       
       _pendingCommands.emplace_back(buffer);
@@ -675,8 +696,8 @@ SsvcSettings::Builder &SsvcSettings::Builder::setReleaseTimer(const int _release
   settings.release_timer = std::min(std::max(_release_timer, (0)), (1200));
   if (settings.release_timer != prevReleaseTimer) {
     char buffer[50];
-    std::snprintf(buffer, sizeof(buffer), "start_delay=%d", settings.release_timer);
-    ESP_LOGD("SsvcSettings", "release_speed: %s", buffer);
+    std::snprintf(buffer, sizeof(buffer), "release_timer=%d", settings.release_timer);
+    ESP_LOGD("SsvcSettings", "release_timer: %s", buffer);
     if (_isBatchMode) {
       _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
@@ -695,6 +716,44 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeadsFinal(const float _heartsF
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "heads_final=%0.1f", settings.heads_final);
     ESP_LOGD("SsvcSettings", "heads_final: %s", buffer);
+    if (_isBatchMode) {
+      _pendingCommands.emplace_back(buffer);
+      ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
+    } else {
+      ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
+      SsvcCommandsQueue::getQueue().set(buffer);
+    }
+  }
+  return *this;
+}
+
+// predec: предекремент (0=выкл, 7=0.07, 13=0.13)
+SsvcSettings::Builder &SsvcSettings::Builder::setPredec(const int val) {
+  const int prevPredec = settings.predec;
+  settings.predec = (val >= 0 && val <= 13) ? val : prevPredec;
+  if (settings.predec != prevPredec) {
+    char buffer[50];
+    std::snprintf(buffer, sizeof(buffer), "predec=%d", settings.predec);
+    ESP_LOGD("SsvcSettings", "setPredec: %s", buffer);
+    if (_isBatchMode) {
+      _pendingCommands.emplace_back(buffer);
+      ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
+    } else {
+      ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
+      SsvcCommandsQueue::getQueue().set(buffer);
+    }
+  }
+  return *this;
+}
+
+// extended_heads: сброс и снижение (0=выкл, 1=вкл)
+SsvcSettings::Builder &SsvcSettings::Builder::setExtendedHeads(const int val) {
+  const int prevExtendedHeads = settings.extended_heads;
+  settings.extended_heads = (val >= 0 && val <= 1) ? val : prevExtendedHeads;
+  if (settings.extended_heads != prevExtendedHeads) {
+    char buffer[50];
+    std::snprintf(buffer, sizeof(buffer), "extended_heads=%d", settings.extended_heads);
+    ESP_LOGD("SsvcSettings", "setExtendedHeads: %s", buffer);
     if (_isBatchMode) {
       _pendingCommands.emplace_back(buffer);
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
@@ -887,6 +946,11 @@ void SsvcSettings::Builder::applySettings() {
     return;
   }
 
+  // Фильтрацию по версии API выполняет очередь (единая точка gate), поэтому
+  // пропущенные поля собираем из её отчёта за время этой отправки.
+  _skippedCommands.clear();
+  SsvcCommandsQueue::getQueue().clearSkippedSetParams();
+
   String payload = "";
   for (const auto& cmd : _pendingCommands) {
     // Проверка лимита в 250-280 символов (с запасом до 300)
@@ -901,6 +965,19 @@ void SsvcSettings::Builder::applySettings() {
 
   if (payload.length() > 0) {
     SsvcCommandsQueue::getQueue().set(payload.c_str());
+  }
+
+  _skippedCommands = SsvcCommandsQueue::getQueue().skippedSetParams();
+  if (!_skippedCommands.empty()) {
+    std::string skippedList;
+    for (const std::string& item : _skippedCommands) {
+      if (!skippedList.empty()) {
+        skippedList += ", ";
+      }
+      skippedList += item;
+    }
+    ESP_LOGW("SsvcSettings", "applySettings: поля не ушли на устройство (API %s): %s",
+             settings.getSsvcApiVersion().c_str(), skippedList.c_str());
   }
 
   _pendingCommands.clear();
@@ -963,8 +1040,10 @@ void SsvcSettings::updateStateFromJson(const JsonObject& src) {
     decrement = settings["decrement"].as<int>();
     ESP_LOGV("SsvcSettings", "Обновлен decrement: %d", decrement);
 
-    formula = settings["formula"].as<bool>();
-    ESP_LOGV("SsvcSettings", "Обновлен formula: %b", formula);
+    formula = settings["formula"].is<bool>()
+        ? (settings["formula"].as<bool>() ? 1 : 0)
+        : settings["formula"].as<int>();
+    ESP_LOGV("SsvcSettings", "Обновлен formula: %d", formula);
 
     tank_mmhg = settings["tank_mmhg"].as<int>();
     ESP_LOGV("SsvcSettings", "Обновлен tank_mmhg: %d", tank_mmhg);
@@ -1081,6 +1160,16 @@ void SsvcSettings::updateStateFromJson(const JsonObject& src) {
       heads_final = settings["heads_final"].as<float>();
       ESP_LOGV("SsvcSettings", "Обновлен heads_final: %f", heads_final);
     }
+
+    if (settings["predec"].is<int>()) {
+      predec = settings["predec"].as<int>();
+      ESP_LOGV("SsvcSettings", "Обновлен predec: %d", predec);
+    }
+
+    if (settings["extended_heads"].is<int>()) {
+      extended_heads = settings["extended_heads"].as<int>();
+      ESP_LOGV("SsvcSettings", "Обновлен extended_heads: %d", extended_heads);
+    }
 }
 
 void SsvcSettings::applySettingsToController(const JsonVariant json) const {
@@ -1184,8 +1273,10 @@ void SsvcSettings::applySettingsToController(const JsonVariant json) const {
         if (val != decrement) builder.setDecrement(val);
     }
 
-    if (settings["formula"].is<bool>()) {
-        const bool val = settings["formula"].as<bool>();
+    if (settings["formula"].is<bool>() || settings["formula"].is<int>()) {
+        const int val = settings["formula"].is<bool>()
+            ? (settings["formula"].as<bool>() ? 1 : 0)
+            : settings["formula"].as<int>();
         if (val != formula) builder.formulaEnable(val);
     }
 
@@ -1223,6 +1314,16 @@ void SsvcSettings::applySettingsToController(const JsonVariant json) const {
         if (speed != std::get<0>(parallel_v1) || period != std::get<1>(parallel_v1)) {
             builder.setParallelV1(speed, period);
         }
+    }
+
+    if (settings["predec"].is<int>()) {
+        const int val = settings["predec"].as<int>();
+        if (val != predec) builder.setPredec(val);
+    }
+
+    if (settings["extended_heads"].is<int>()) {
+        const int val = settings["extended_heads"].as<int>();
+        if (val != extended_heads) builder.setExtendedHeads(val);
     }
 
     if (settings["parallel_v3"].is<JsonArray>()) {

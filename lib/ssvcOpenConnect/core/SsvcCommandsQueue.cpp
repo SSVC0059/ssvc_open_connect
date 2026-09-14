@@ -16,8 +16,12 @@
  **/
 
 #include "SsvcCommandsQueue.h"
+#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
 
 #include "SsvcOpenConnect.h"
+
+#include <cstdlib>
+#include <limits>
 
 #define TAG "SsvcCommandsQueue"
 
@@ -65,7 +69,8 @@ const std::map<std::string, std::function<void(const std::string&)>> SsvcCommand
     {"settings",     [](const std::string&){ getQueue().getSettings(); }},
     {"emergency_stop", [](const std::string&){ getQueue().stop(); }},
     {"status",       [](const std::string& params){ getQueue().status(params); }},
-    {"set",          [](const std::string& params){ getQueue().set(params); }}
+    {"set",          [](const std::string& params){ getQueue().set(params); }},
+    {"get_log",      [](const std::string& params){ getQueue().getLog(params); }}
 };
 
 SsvcCommandsQueue::SsvcCommandsQueue() {
@@ -197,12 +202,33 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
         case SsvcCommandType::AT:
           command_success = SsvcConnector::sendCommand("AT\n");
           break;
-        case SsvcCommandType::STATUS:
+        case SsvcCommandType::STATUS: {
           std::ostringstream oss;
           oss << "STATUS " << cmd->parameters << "\n";
           command_success =
               SsvcConnector::sendCommand(oss.str().c_str());
           break;
+        }
+        case SsvcCommandType::GET_LOG: {
+          std::string request;
+          if (cmd->parameters.empty()) {
+            SsvcLogProtocol::getTransfer().beginList(millis());
+            SsvcLogProtocol::formatListRequest(request);
+          } else {
+            char* end = nullptr;
+            const long processNumber = std::strtol(cmd->parameters.c_str(), &end, 10);
+            if (end == cmd->parameters.c_str() || *end != '\0' ||
+                processNumber <= 0 || processNumber > std::numeric_limits<int>::max() ||
+                !SsvcLogProtocol::getTransfer().beginFile(
+                    static_cast<int>(processNumber), millis()) ||
+                !SsvcLogProtocol::formatFileRequest(static_cast<int>(processNumber), request)) {
+              command_success = false;
+              break;
+            }
+          }
+          command_success = SsvcConnector::sendCommand(request.c_str());
+          break;
+        }
         }
         ESP_LOGD(TAG, "Send result: %d", command_success);
 
@@ -211,6 +237,10 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
                    static_cast<int>(cmd->type));
           vTaskDelay(pdMS_TO_TICKS(2000));
           continue;
+        }
+
+        if (cmd->type == SsvcCommandType::GET_LOG) {
+          break;
         }
 
         // Ожидание ответа с определенным битом
@@ -290,8 +320,9 @@ void SsvcCommandsQueue::registerCallbackCommands() {
       result = true;
     }
     if (response["api"].is<String>()) {
-      const auto ssvcApiVersion = response["api"].as<float>();
-      SsvcSettings::init().setSsvcApiVersion(ssvcApiVersion);
+      // Версия приходит строкой: "1.10" нельзя читать как float — получится 1.1,
+      // то есть формально меньше "1.7". Разбор идёт в целый код major*100+minor.
+      SsvcSettings::init().setSsvcApiVersion(response["api"].as<std::string>());
       result = true;
     }
     if (result) {
@@ -350,31 +381,109 @@ void SsvcCommandsQueue::registerCallbackCommands() {
 }
 
 /**
- * @brief Добавляет произвольную команду в очередь команд.
+ * @brief Единая точка постановки команды в очередь и единственное место gate.
+ *
+ * Проверка версии API стоит здесь, а не в set()/getLog(): новая
+ * версионозависимая команда не сможет её обойти. Для SET из пакета
+ * исключаются поля, которых нет на устройстве, для GET_LOG проверяется
+ * наличие возможности.
  *
  * @param type Тип команды (например, SET, GET_SETTINGS и т.д.)
  * @param parameters Параметры команды (строка).
  * @param attempt_count Количество попыток при неудаче.
  * @param timeout Тайм-аут ожидания ответа (в тиках).
+ * @return true, если команда поставлена в очередь.
  */
-void SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
+bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
                                            const std::string& parameters,
                                            const int attempt_count,
                                            const TickType_t timeout) const
 {
+  const SsvcSettings& settings = SsvcSettings::init();
+  const int deviceCode = settings.getSsvcApiVersionCode();
+  const std::string deviceApi = settings.getSsvcApiVersion();
+
+  std::string effectiveParameters = parameters;
+
+  if (type == SsvcCommandType::SET) {
+    std::vector<std::string> skipped;
+    std::string filtered;
+    if (!SsvcApiCapabilities::filterSetParameters(parameters, deviceCode, skipped, filtered)) {
+      // Ни один параметр команды не поддерживается версией устройства.
+      int feature = SsvcApiCapabilities::FEATURE_BASE;
+      SsvcUartApiSpec::ApiVersion required = SsvcApiCapabilities::minSupportedApiVersion();
+      if (!skipped.empty()) {
+        const SsvcApiCapabilities::SetParamRequirement requirement =
+            SsvcApiCapabilities::requiredForSetParam(skipped.front());
+        feature = requirement.feature;
+        required = requirement.minVersion;
+      }
+      ESP_LOGW(TAG, "SET отклонён: ни один параметр не поддерживается устройством (API %s)",
+               deviceApi.c_str());
+      _skippedSetParams.insert(_skippedSetParams.end(), skipped.begin(), skipped.end());
+      rememberRejection("no_supported_params", SsvcApiCapabilities::featureName(feature),
+                        SsvcUartApiSpec::formatApiVersion(required), deviceApi);
+      return false;
+    }
+    // Копим пропущенное для вызывающего: REST-слой показывает, какие поля не
+    // ушли на устройство. Список сбрасывается вызовом clearSkippedSetParams().
+    _skippedSetParams.insert(_skippedSetParams.end(), skipped.begin(), skipped.end());
+
+    if (!skipped.empty()) {
+      std::string skippedList;
+      for (const std::string& item : skipped) {
+        if (!skippedList.empty()) {
+          skippedList += ", ";
+        }
+        skippedList += item;
+      }
+      ESP_LOGW(TAG, "SET: поля недоступны на API %s и пропущены: %s", deviceApi.c_str(),
+               skippedList.c_str());
+    }
+    effectiveParameters = filtered;
+  } else if (type == SsvcCommandType::GET_LOG) {
+    if (!SsvcApiCapabilities::featureAvailable(deviceCode, SsvcApiCapabilities::FEATURE_GET_LOG)) {
+      const std::string requiredApi = SsvcUartApiSpec::formatApiVersion(
+          SsvcApiCapabilities::featureMinVersion(SsvcApiCapabilities::FEATURE_GET_LOG));
+      ESP_LOGW(TAG, "GET_LOG недоступен: устройство на API %s, требуется %s", deviceApi.c_str(),
+               requiredApi.c_str());
+      rememberRejection("feature_unsupported", "get_log", requiredApi, deviceApi);
+      return false;
+    }
+  }
+
   ESP_LOGD(TAG, "Attempting to enqueue command type: %d", static_cast<int>(type));
   auto *cmd = new SsvcCommand();
   cmd->type = type;
-  cmd->parameters = parameters;
+  cmd->parameters = effectiveParameters;
   cmd->attempt_count = attempt_count;
   cmd->timeout = pdMS_TO_TICKS(timeout);
 
   if (xQueueSend(command_queue, &cmd, pdMS_TO_TICKS(1000)) != pdPASS) {
     ESP_LOGE(TAG, "Failed to send command to queue! Queue might be full.");
     delete cmd;
-  } else {
-    ESP_LOGD(TAG, "Command type %d enqueued successfully.", static_cast<int>(type));
+    return false;
   }
+
+  ESP_LOGD(TAG, "Command type %d enqueued successfully.", static_cast<int>(type));
+  return true;
+}
+
+/**
+ * @brief Запоминает причину последней отбраковки для REST-слоя.
+ *
+ * Запись ведёт только продюсер команд, чтение носит информационный характер,
+ * поэтому блокировка здесь не берётся.
+ */
+void SsvcCommandsQueue::rememberRejection(const std::string& reason,
+                                          const std::string& feature,
+                                          const std::string& requiredApi,
+                                          const std::string& deviceApi) const
+{
+  _lastRejectionReason = reason;
+  _lastRejectedFeature = feature;
+  _lastRejectedRequiredApi = requiredApi;
+  _lastRejectedDeviceApi = deviceApi;
 }
 
 /**
@@ -468,15 +577,19 @@ void SsvcCommandsQueue::at(const int attempt_count, const TickType_t timeout) co
 /**
  * @brief Добавляет в очередь команду SET с параметрами.
  *
+ * Фильтрация полей по версии API выполняется в pushCommandInQueue — единой
+ * точке gate, чтобы проверку нельзя было обойти из нового вызова.
+ *
  * @param parameters Параметры команды.
  * @param attempt_count Количество попыток.
  * @param timeout Тайм-аут ожидания (в тиках).
+ * @return true, если команда поставлена в очередь.
  */
-void SsvcCommandsQueue::set(const std::string& parameters, const int attempt_count,
+bool SsvcCommandsQueue::set(const std::string& parameters, const int attempt_count,
                             const TickType_t timeout) const
 {
   ESP_LOGD(TAG, "Set command called with parameters: %s", parameters.c_str());
-  pushCommandInQueue(SsvcCommandType::SET, parameters, attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::SET, parameters, attempt_count, timeout);
 }
 
 /**
@@ -489,6 +602,21 @@ void SsvcCommandsQueue::set(const std::string& parameters, const int attempt_cou
 void SsvcCommandsQueue::status(const std::string& parameters, const int attempt_count,
                                const TickType_t timeout) const {
   pushCommandInQueue(SsvcCommandType::STATUS, utf8_to_win1251(parameters), attempt_count, timeout);
+}
+
+/**
+ * @brief Добавляет в очередь команду GET_LOG.
+ *
+ * Проверка возможности выполняется в pushCommandInQueue — единой точке gate.
+ *
+ * @param parameters Параметры команды.
+ * @param attempt_count Количество попыток.
+ * @param timeout Тайм-аут ожидания (в тиках).
+ * @return true, если команда поставлена в очередь.
+ */
+bool SsvcCommandsQueue::getLog(const std::string& parameters, const int attempt_count,
+                               const TickType_t timeout) const {
+  return pushCommandInQueue(SsvcCommandType::GET_LOG, parameters, attempt_count, timeout);
 }
 
 /**

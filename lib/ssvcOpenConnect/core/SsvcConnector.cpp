@@ -18,6 +18,7 @@
 #include "SsvcConnector.h"
 #include "SsvcOpenConnect.h"
 #include "core/AlarmMonitor/AlarmMonitor.h"
+#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
 
 #include <esp_intr_alloc.h>
 
@@ -178,12 +179,19 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
   int errorCounter = 0;
 
   while (true) {
+    // Во время GET_LOG контроллер штатно приостанавливает телеметрию и
+    // непрерывным потоком передаёт файл: буфер не выбрасываем, темп цикла
+    // повышаем, а зависшую передачу переводим в ошибку по таймауту.
+    const bool logTransferActive =
+        SsvcLogProtocol::getTransfer().status() == SsvcLogProtocol::Status::RECEIVING;
+
     size_t data_len = 0;
     uart_get_buffered_data_len(SSVC_OPEN_CONNECT_UART_NUM, &data_len);
-    if (data_len > SSVC_OPEN_CONNECT_BUF_SIZE) {
+    if (data_len > SSVC_OPEN_CONNECT_BUF_SIZE && !logTransferActive) {
       ESP_LOGE("SsvcConnector", "Buffer overflow detected, clearing buffer!");
       uart_flush(SSVC_OPEN_CONNECT_UART_NUM); // Очистка буфера
     }
+    SsvcLogProtocol::getTransfer().checkTimeout(millis());
 
     memset(data, 0, sizeof(data));
     int idx = 0;
@@ -223,23 +231,28 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
       // Порог — по *подряд* идущим ошибкам; успешный кадр сбрасывает счётчик ниже.
       // Таймаут чтения строки без единого байта (тишина на RX) учитывается сильнее.
       constexpr int errorThreshold = 5;
-      if (lineReadTimedOut && idx == 0) {
-        errorCounter += 2;
-      } else {
-        errorCounter++;
-      }
       ESP_LOGE("SsvcConnector", "Ошибка десериализации: %s", error.c_str());
 
-      if (errorCounter >= errorThreshold) {
-        if (!self->uartCommunicationError) {
-          ESP_LOGW("SsvcConnector",
-                   "uartCommunicationError=true (errors=%d, threshold=%d)",
-                   errorCounter, errorThreshold);
-          SsvcCommandsQueue::getQueue().scheduleUartRetryTimer();
-          AlarmMonitor::getInstance().raiseHardwareFault(
-              HardwareFaultCode::UART_LINK_LOST, 0, "ssvc_uart");
+      // Пауза телеметрии во время GET_LOG — штатное поведение: ошибки
+      // десериализации в этот момент не считаем потерей связи.
+      if (!logTransferActive) {
+        if (lineReadTimedOut && idx == 0) {
+          errorCounter += 2;
+        } else {
+          errorCounter++;
         }
-        self->uartCommunicationError = true;
+
+        if (errorCounter >= errorThreshold) {
+          if (!self->uartCommunicationError) {
+            ESP_LOGW("SsvcConnector",
+                     "uartCommunicationError=true (errors=%d, threshold=%d)",
+                     errorCounter, errorThreshold);
+            SsvcCommandsQueue::getQueue().scheduleUartRetryTimer();
+            AlarmMonitor::getInstance().raiseHardwareFault(
+                HardwareFaultCode::UART_LINK_LOST, 0, "ssvc_uart");
+          }
+          self->uartCommunicationError = true;
+        }
       }
     } else {
       errorCounter = 0;
@@ -266,10 +279,12 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
       }
       self->uartCommunicationError = false;
       if (doc["type"] == "response") {
-        if (doc["request"] == "GET_SETTINGS") {
+        if (doc["request"] == "GET_LOG") {
+          SsvcLogProtocol::getTransfer().consume(data, millis());
+        } else if (doc["request"] == "GET_SETTINGS") {
           ESP_LOGV("SsvcConnector", "GET_SETTINGS: SEND BIT10");
           xEventGroupSetBits(eventGroup, BIT10);
-        } if (doc["request"] == "VERSION") {
+        } else if (doc["request"] == "VERSION") {
           ESP_LOGV("SsvcConnector", "result: SEND BIT11 start");
           ESP_LOGV("SsvcConnector", "END BIT11 lastMessage: %s",
                    self->lastMessage.c_str());
@@ -294,6 +309,8 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
           data,
           1,
           true);
+      } else if (doc["type"] == "file") {
+        SsvcLogProtocol::getTransfer().consume(data, millis());
       } else {
         if (doc["common"]["cfg_chgd"]) {
           ESP_LOGV("SsvcConnector",
@@ -305,7 +322,9 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
       }
     }
 
-    vTaskDelay(pdMS_TO_TICKS(500)); 
+    // Передача файла идёт непрерывным потоком — не тормозим чтение;
+    // в обычном режиме сохраняем прежний темп опроса.
+    vTaskDelay(pdMS_TO_TICKS(logTransferActive ? 10 : 500));
   }
 }
 

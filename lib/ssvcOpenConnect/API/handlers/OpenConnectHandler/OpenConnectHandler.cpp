@@ -67,12 +67,30 @@ void OpenConnectHandler::getInfo(AsyncWebServerRequest* request)
 
     JsonObject ssvc = root["ssvc"].to<JsonObject>();
     ssvc["version"] = settings.getSsvcVersion().c_str();
-    ssvc["api"] = settings.getSsvcApiVersion();
+    ssvc["api"] = settings.getSsvcApiVersion().c_str();
+    ssvc["api_code"] = settings.getSsvcApiVersionCode();
     ssvc["mode"] = SsvcSettings::init().isSupportTails() ? "tails" : "late_heads";
 
     JsonObject oc = root["oc"].to<JsonObject>();
     oc["version"] = APP_VERSION;
     oc["is_support_api"] = settings.apiSsvcIsSupport();
+    // Признак ветки прошивки: «Сброс и снижение» есть только у прошивки
+    // с подголовниками (late_heads), у прошивки с хвостами (tails) — нет.
+    oc["is_support_release"] = settings.isSupportRelease();
+    oc["api_min"] = SSVC_API_VERSION_MIN;
+    oc["api_target"] = SSVC_API_VERSION_TARGET;
+    oc["api_compatibility"] =
+        SsvcApiCapabilities::compatibilityName(settings.getSsvcApiVersionCode());
+    JsonArray apiFeatures = oc["api_features"].to<JsonArray>();
+    for (int feature = 0; feature < SsvcApiCapabilities::FEATURE_COUNT; ++feature) {
+        JsonObject item = apiFeatures.add<JsonObject>();
+        item["name"] = SsvcApiCapabilities::featureName(feature);
+        item["min_api"] = SsvcUartApiSpec::formatApiVersion(
+                              SsvcApiCapabilities::featureMinVersion(feature))
+                              .c_str();
+        item["available"] = SsvcApiCapabilities::featureAvailable(
+            settings.getSsvcApiVersionCode(), feature);
+    }
 
     response->setLength();
     request->send(response);

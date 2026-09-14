@@ -222,6 +222,41 @@ private:
   Setter _setter;
 };
 
+// Обработчик для int с валидацией диапазона
+class SingleIntHandler final : public ParamHandler
+{
+public:
+  using Setter = std::function<void(SsvcSettings::Builder&, int)>;
+
+  explicit SingleIntHandler(Setter setter, int lo = INT_MIN, int hi = INT_MAX)
+    : _setter(std::move(setter)), _lo(lo), _hi(hi)
+  {
+  }
+
+  bool handle(SsvcSettings::Builder& builder,
+              const JsonVariant& value) const override
+  {
+    if (!value.is<int>())
+    {
+      ESP_LOGE("SingleIntHandler", "Value is not an integer");
+      return false;
+    }
+    const int val = value.as<int>();
+    if (val < _lo || val > _hi)
+    {
+      ESP_LOGE("SingleIntHandler", "Value %d out of range [%d, %d]", val, _lo, _hi);
+      return false;
+    }
+    _setter(builder, val);
+    return true;
+  }
+
+private:
+  Setter _setter;
+  int _lo;
+  int _hi;
+};
+
 // Для параметров вида "param": [int1, int2, int3]
 class ThreeIntHandler final : public ParamHandler
 {

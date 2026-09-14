@@ -36,3 +36,4 @@ tools/coredump.bin
 interface/coverage/
 **/coverage/
 __pycache__
+.workai/

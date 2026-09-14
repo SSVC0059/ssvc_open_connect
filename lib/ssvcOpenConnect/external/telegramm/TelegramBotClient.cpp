@@ -596,19 +596,19 @@ void TelegramBotClient::updateMessage(const std::string& message, uint32_t messa
 void TelegramBotClient::sendHello() {
     static const String version = "v" + String(APP_VERSION);
 
-    float apiVersin = SsvcSettings::init().getSsvcApiVersion();
+    const std::string apiVersion = SsvcSettings::init().getSsvcApiVersion();
     std::ostringstream msgText;
     msgText << "👋 <b>Привет! Это SSVC open connect</b>\n\n"
             << "📦 <b>Версия OpenConnect:</b> " << version.c_str() << "\n"
             << "🤖 <b>Версия SSVC:</b> " << SsvcSettings::init().getSsvcVersion() << "\n";
 
-    if (apiVersin != 0.0) {
-        msgText << "🔌 <b>Версия API:</b> " << SsvcSettings::init().getSsvcApiVersion();
+    if (!apiVersion.empty()) {
+        msgText << "🔌 <b>Версия API:</b> " << apiVersion;
         if (SsvcSettings::init().apiSsvcIsSupport()) {
             msgText << " (✅ <b>Совместима</b>)\n";
         } else {
             msgText << " (❌ <b>Несовместима</b>)\n"
-                    << "    Требуется версия: <b>" << SSVC_SUPPORT_API_VERSION << "</b> или выше.\n"
+                    << "    Требуется версия: <b>" << SSVC_API_VERSION_MIN << "</b> или выше.\n"
                     << "    <a href=\"https://smartmodule.ru/portfolio/0059_v2/\">Обновите прошивку на сайте производителя.</a>\n";
         }
     } else {

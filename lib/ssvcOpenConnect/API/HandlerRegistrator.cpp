@@ -2,6 +2,12 @@
 #include <AsyncJson.h>
 #include <Features.h>
 #include "handlers/VkBot/VkBotHandler.h"
+#include "core/SsvcCommandsQueue.h"
+#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
+#include "core/SsvcSettings/SsvcSettings.h"
+
+#include <cstdlib>
+#include <limits>
 
 #define TAG "HandlerRegistrar"
 
@@ -40,6 +46,7 @@ void HandlerRegistrator::registerAllHandlers() const
     registerTelegramBotHandler();
     registerProfileHandler();
     registerFileHandler();
+    registerLogHandlers();
 
     ESP_LOGI(TAG, "All HTTP handlers registered successfully");
 }
@@ -276,4 +283,159 @@ void HandlerRegistrator::registerProfileHandler() const
 void HandlerRegistrator::registerFileHandler() const
 {
     _fileHandler.registerHandlers(_server, _securityManager);
+}
+
+void HandlerRegistrator::registerLogHandlers() const
+{
+    const auto statusName = [](const SsvcLogProtocol::Status status) {
+        switch (status) {
+        case SsvcLogProtocol::Status::LIST_RECEIVED:
+            return "list";
+        case SsvcLogProtocol::Status::RECEIVING:
+            return "receiving";
+        case SsvcLogProtocol::Status::COMPLETED:
+            return "completed";
+        case SsvcLogProtocol::Status::ERROR:
+            return "error";
+        case SsvcLogProtocol::Status::IDLE:
+        default:
+            return "idle";
+        }
+    };
+
+    _server.on("/rest/logs", HTTP_GET,
+               _securityManager->wrapRequest(
+                   [statusName](AsyncWebServerRequest* request) {
+                       if (!SsvcApiCapabilities::featureAvailable(
+                               SsvcSettings::init().getSsvcApiVersionCode(),
+                               SsvcApiCapabilities::FEATURE_GET_LOG)) {
+                           // Отказ сообщает, чего именно не хватает: UI показывает
+                           // «требуется API x.y, устройство сообщает z».
+                           const String requiredApi =
+                               SsvcUartApiSpec::formatApiVersion(SsvcApiCapabilities::featureMinVersion(
+                                       SsvcApiCapabilities::FEATURE_GET_LOG))
+                                   .c_str();
+                           const String deviceApi = SsvcSettings::init().getSsvcApiVersion().c_str();
+                           request->send(409, "application/json",
+                                         String("{\"error\":\"api_version_unsupported\","
+                                                "\"feature\":\"get_log\",\"required_api\":\"") +
+                                             requiredApi + "\",\"device_api\":\"" + deviceApi + "\"}");
+                           return;
+                       }
+
+                       auto& transfer = SsvcLogProtocol::getTransfer();
+                       if (!transfer.isPending() &&
+                           transfer.status() == SsvcLogProtocol::Status::IDLE) {
+                           transfer.markPending();
+                           SsvcCommandsQueue::getQueue().getLog();
+                       }
+
+                       JsonDocument response;
+                       response["status"] = statusName(transfer.status());
+                       response["total"] = transfer.totalChunks();
+                       response["received"] = transfer.receivedChunks();
+                       if (!transfer.error().empty()) {
+                           response["error"] = transfer.error();
+                       }
+                       if (transfer.status() == SsvcLogProtocol::Status::LIST_RECEIVED) {
+                           JsonArray files = response["files"].to<JsonArray>();
+                           for (const auto& file : transfer.files()) {
+                               files.add(file);
+                           }
+                       }
+                       String serialized;
+                       serializeJson(response, serialized);
+                       request->send(200, "application/json", serialized);
+                   },
+                   AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/logs/*", HTTP_GET,
+               _securityManager->wrapRequest(
+                   [statusName](AsyncWebServerRequest* request) {
+                       const String prefix = "/rest/logs/";
+                       const String process = request->url().substring(prefix.length());
+                       char* end = nullptr;
+                       const long processNumber = std::strtol(process.c_str(), &end, 10);
+                       if (end == process.c_str() || *end != '\0' || processNumber <= 0 ||
+                           processNumber > std::numeric_limits<int>::max()) {
+                           request->send(400, "application/json", R"({"error":"invalid_process_id"})");
+                           return;
+                       }
+
+                       if (!SsvcApiCapabilities::featureAvailable(
+                               SsvcSettings::init().getSsvcApiVersionCode(),
+                               SsvcApiCapabilities::FEATURE_GET_LOG)) {
+                           // Отказ сообщает, чего именно не хватает: UI показывает
+                           // «требуется API x.y, устройство сообщает z».
+                           const String requiredApi =
+                               SsvcUartApiSpec::formatApiVersion(SsvcApiCapabilities::featureMinVersion(
+                                       SsvcApiCapabilities::FEATURE_GET_LOG))
+                                   .c_str();
+                           const String deviceApi = SsvcSettings::init().getSsvcApiVersion().c_str();
+                           request->send(409, "application/json",
+                                         String("{\"error\":\"api_version_unsupported\","
+                                                "\"feature\":\"get_log\",\"required_api\":\"") +
+                                             requiredApi + "\",\"device_api\":\"" + deviceApi + "\"}");
+                           return;
+                       }
+
+                       auto& transfer = SsvcLogProtocol::getTransfer();
+                       const std::string expectedName = process.c_str() + std::string(".CSV");
+
+                       // Запрос списка уже в очереди — второй запрос затрёт его через reset().
+                       if (transfer.isPending() &&
+                           transfer.status() == SsvcLogProtocol::Status::IDLE) {
+                           request->send(409, "application/json",
+                                         R"({"error":"log_transfer_busy"})");
+                           return;
+                       }
+
+                       if (transfer.status() == SsvcLogProtocol::Status::RECEIVING) {
+                           if (!transfer.fileName().empty() && transfer.fileName() != expectedName) {
+                               request->send(409, "application/json",
+                                             R"({"error":"log_transfer_busy"})");
+                               return;
+                           }
+                           // Идёт передача именно этого файла — отдаём прогресс ниже.
+                       } else if (transfer.status() == SsvcLogProtocol::Status::COMPLETED &&
+                                  transfer.fileName() == expectedName) {
+                           // beginResponse(code, type, const uint8_t*, len) не копирует буфер.
+                           // Копируем данные в String и сразу сбрасываем Transfer, иначе
+                           // следующий запрос освободит память под уже отправляемым ответом
+                           // (use-after-free), а сам буфер продолжит занимать RAM.
+                           String csv(transfer.data().c_str(),
+                                      static_cast<unsigned int>(transfer.data().size()));
+                           String disposition =
+                               String("attachment; filename=\"") + expectedName.c_str() + "\"";
+                           transfer.reset();
+                           auto* response = request->beginResponse(200, "text/csv", csv);
+                           response->addHeader("Content-Disposition", disposition);
+                           request->send(response);
+                           return;
+                       } else {
+                           SsvcCommandsQueue::getQueue().getLog(std::to_string(processNumber));
+                       }
+
+                       JsonDocument response;
+                       response["status"] = statusName(transfer.status());
+                       response["total"] = transfer.totalChunks();
+                       response["received"] = transfer.receivedChunks();
+                       if (!transfer.error().empty()) {
+                           response["error"] = transfer.error();
+                       }
+                       String serialized;
+                       serializeJson(response, serialized);
+                       request->send(202, "application/json", serialized);
+                   },
+                   AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // Отмена текущей передачи журнала (GET_LOG). Контроллер при этом доигрывает
+    // уже отправленные пакеты, но они игнорируются, т.к. Transfer сброшен.
+    _server.on("/rest/logs", HTTP_DELETE,
+               _securityManager->wrapRequest(
+                   [](AsyncWebServerRequest* request) {
+                       SsvcLogProtocol::getTransfer().reset();
+                       request->send(200, "application/json", R"({"status":"idle"})");
+                   },
+                   AuthenticationPredicates::IS_AUTHENTICATED));
 }

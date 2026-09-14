@@ -1,13 +1,22 @@
 import { getInfo } from '$lib/api/ssvcApi';
 
 /**
- * Svelte Action для блокировки элементов в зависимости от версии прошивки.
+ * Преобразует версию API в целочисленный код major*100+minor.
+ * Версию с двузначным minor передавайте строкой: число 1.10 в JS равно 1.1.
+ */
+export function apiVersionCode(version: number | string): number {
+	const [major, minor] = String(version).split('.');
+	return Number(major ?? 0) * 100 + Number(minor ?? 0);
+}
+
+/**
+ * Svelte Action для блокировки элементов в зависимости от версии API.
  * Элемент будет доступен, если текущая версия API больше или равна требуемой.
  *
  * @param node - HTML-элемент, к которому применяется действие.
- * @param requiredVersion - Требуемая минимальная версия прошивки (например, 1.6).
+ * @param requiredVersion - Требуемая минимальная версия API ("1.6" или 1.6).
  */
-export function requireVersion(node: HTMLElement, requiredVersion: number) {
+export function requireVersion(node: HTMLElement, requiredVersion: number | string) {
 	let isInitialized = false;
 
 	const checkVersion = async () => {
@@ -19,8 +28,8 @@ export function requireVersion(node: HTMLElement, requiredVersion: number) {
 				return;
 			}
 
-			const currentVersion = info.ssvc.api;
-			const isSupported = currentVersion >= requiredVersion;
+			const isSupported =
+				apiVersionCode(info.ssvc.api) >= apiVersionCode(requiredVersion);
 
 			if (!isSupported) {
 				disableInteractions(node);
@@ -60,7 +69,7 @@ export function requireVersion(node: HTMLElement, requiredVersion: number) {
 
 	return {
 		// Если нужно будет динамически обновлять версию
-		update(newRequiredVersion: number) {
+		update(newRequiredVersion: number | string) {
 			if (isInitialized) {
 				requiredVersion = newRequiredVersion;
 				void checkVersion();

@@ -24,6 +24,7 @@
 #include <string>
 #include <core/SsvcConnector.h>
 #include <core/SsvcCommandsQueue.h>
+#include <core/SsvcApiCapabilities/SsvcApiCapabilities.h>
 #include "core/profiles/IProfileObserver.h"
 
 #include "core/StatefulServices/SensorDataService/SensorDataService.h"
@@ -69,8 +70,8 @@ public:
     // Получает величину уменьшения скорости отбора.
     unsigned char getDecrement() const;
 
-    // Получает значение для использования формулы.
-    bool getFormula() const;
+    // Получает значение для использования формулы (0=выкл, 1=вкл, 2=авто 92+).
+    int getFormula() const;
 
     // Получает давление в кубе (мм рт. ст.).
     float getTank_mmhg() const;
@@ -156,6 +157,12 @@ public:
     // Получает подсветку (состояние подсветки).
     std::string getBacklight() const;
 
+    // Получает предекремент (0=выкл, 7=0.07, 13=0.13).
+    int getPredec() const;
+
+    // Получает значение для сброса и снижения (0=выкл, 1=вкл).
+    int getExtendedHeads() const;
+
     // Получает температуру завершения отбора хвостов.
     float getTailsTemp() const;
 
@@ -166,15 +173,29 @@ public:
 
     std::string getSsvcVersion() const;
 
-    float getSsvcApiVersion() const;
+    // Версия API устройства строкой ("1.7") — для отображения в REST и мессенджерах.
+    std::string getSsvcApiVersion() const;
+
+    // Код версии API: major * 100 + minor ("1.7" -> 107, "1.10" -> 110).
+    // 0 означает «версия ещё неизвестна».
+    int getSsvcApiVersionCode() const;
+
+    // Доступна ли конкретная возможность API на подключённом устройстве.
+    bool hasFeature(int feature) const;
+
     bool apiSsvcIsSupport() const;
     bool isSupportTails() const;
+
+    // Доступен ли функционал «Сброс и снижение» (release_timer, release_speed,
+    // heads_final). Есть только у прошивки с подголовниками (late_heads).
+    bool isSupportRelease() const;
 
     // SETTERS
 
     bool setSsvcVersion(std::string _ssvcVersion);
 
-    bool setSsvcApiVersion(float _ssvcApiVersion);
+    // Версия принимается строкой: "1.10" нельзя приводить к float (получится 1.1).
+    bool setSsvcApiVersion(const std::string& _ssvcApiVersion);
 
 private:
     explicit SsvcSettings();
@@ -185,7 +206,9 @@ private:
 
     // Версии подисистем модуля ssvc
     std::string ssvcVersion;
-    float ssvcApiVersion = 0.0;
+    // Версия API хранится и строкой (для вывода), и целым кодом (для сравнений).
+    std::string ssvcApiVersionText;
+    int ssvcApiVersionCode = 0;
     bool isSupportApi = false;
     bool supportTails = false;
 
@@ -198,7 +221,7 @@ private:
     float heads_final = -1.0;
     float hyst = 0.0;
     unsigned char decrement = 0;
-    bool formula = false;
+    int formula = 0; // формула: 0=выкл, 1=вкл, 2=авто 92+
     float tank_mmhg = 0;
     unsigned int heads_timer = 0;
     unsigned char hearts_timer = 0;
@@ -242,6 +265,8 @@ private:
     bool stab_limit_finish =
         false; // завершение стабилизации (ограничение завершения стабилизации)
     std::string backlight; // подсветка (состояние подсветки)
+    int predec = 0; // предекремент: 0=выкл, 7=0.07, 13=0.13
+    int extended_heads = 0; // сброс и снижение: 0=выкл, 1=вкл
 
     //    Актуально в firmware 2.2.*
     std::tuple<float, int> tails = {-1.0, -1};
@@ -274,6 +299,8 @@ public:
         // Режим отправки. Либо накапливаем или шлем сразу.
         std::vector<String> _pendingCommands;
         bool _isBatchMode = false;            // Флаг: копим или шлем сразу
+        // Поля SET, не ушедшие на устройство из-за его версии API.
+        std::vector<std::string> _skippedCommands;
     public:
         bool hasChanges = false;
         explicit Builder() : settings(SsvcSettings::init())
@@ -300,8 +327,8 @@ public:
         Builder& setDecrement(unsigned char _decrement);
 
         // Включает или выключает использование формулы для снижения скорости
-        // отбора.HG
-        Builder& formulaEnable(bool enable);
+        // отбора. Значение: 0=выкл, 1=вкл, 2=авто 92+.
+        Builder& formulaEnable(int val);
 
         // Устанавливает давление в кубе (мм рт. ст.) относительно атмосферного.
         Builder& setTank_mmhg(float _tank_mmhg);
@@ -356,13 +383,23 @@ public:
 
         Builder& setTankPressureActual(float pressure);
 
+        // Предекремент (0=выкл, 7=0.07, 13=0.13)
+        Builder& setPredec(int val);
+
+        // Сброс и снижение (0=выкл, 1=вкл)
+        Builder& setExtendedHeads(int val);
+
         // Другие методы установки параметров...
         SsvcSettings build() const;
 
         void beginBatch() {
             _isBatchMode = true;
             _pendingCommands.clear();
+            _skippedCommands.clear();
         }
+
+        /// Поля, отброшенные при последней отправке SET из-за версии API устройства.
+        const std::vector<std::string>& skippedCommands() const { return _skippedCommands; }
 
         static void validateAndSetValues(float& timeTurnOn, int& period,
                                          float* targetTimeTurnOn,
