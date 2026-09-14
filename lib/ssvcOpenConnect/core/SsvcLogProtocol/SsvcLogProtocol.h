@@ -37,6 +37,9 @@ public:
   bool beginList(unsigned long nowMs = 0);
   bool beginFile(int processNumber, unsigned long nowMs = 0);
   bool consume(const char* message, unsigned long nowMs = 0);
+  bool isPending() const;
+  void markPending();
+  void clearPending();
 
   Status status() const;
   const std::vector<std::string>& files() const;
@@ -59,6 +62,7 @@ private:
   void touch(unsigned long nowMs);
 
   Status _status{Status::IDLE};
+  bool _pending{false};
   std::vector<std::string> _files;
   std::string _fileName;
   std::string _data;
@@ -212,6 +216,7 @@ inline Transfer& getTransfer() {
 inline bool Transfer::beginList(const unsigned long nowMs) {
   reset();
   touch(nowMs);
+  _pending = true;
   return true;
 }
 
@@ -223,7 +228,20 @@ inline bool Transfer::beginFile(const int processNumber, const unsigned long now
   reset();
   touch(nowMs);
   _status = Status::RECEIVING;
+  _pending = true;
   return true;
+}
+
+inline bool Transfer::isPending() const {
+  return _pending;
+}
+
+inline void Transfer::markPending() {
+  _pending = true;
+}
+
+inline void Transfer::clearPending() {
+  _pending = false;
 }
 
 inline bool Transfer::consume(const char* message, const unsigned long nowMs) {
@@ -359,11 +377,15 @@ inline bool Transfer::checkTimeout(const unsigned long nowMs, const unsigned lon
   }
   _status = Status::ERROR;
   _error = "timeout";
+  // Снимаем признак занятости: иначе после молчания контролера лог-эндпоинты
+  // останутся заблокированными навсегда.
+  _pending = false;
   return true;
 }
 
 inline void Transfer::reset() {
   _status = Status::IDLE;
+  _pending = false;
   _files.clear();
   _fileName.clear();
   _data.clear();

@@ -117,8 +117,8 @@
     "result": "OK",
     "manufacturer": "SmartModule",
     "model": "SSVC0059_V2",
-    "version": "2.2.37",
-    "api": "1.7"
+    "version": "2.2.55",
+    "api": "1.10"
   }
   ```
 

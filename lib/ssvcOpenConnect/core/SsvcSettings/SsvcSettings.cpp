@@ -120,6 +120,8 @@ void SsvcSettings::fillSettings(JsonVariant settings) const
 
   settings["hearts_temp_shift"] = hearts_temp_shift;
   settings["hearts_pause"] = hearts_pause;
+  settings["predec"] = predec;
+  settings["extended_heads"] = extended_heads;
   settings["tp2_shift"] = tp2_shift;
   settings["tp_filter"] = tp_filter;
   settings["signal_tp1_control"] = signal_tp1_control;
@@ -1158,6 +1160,16 @@ void SsvcSettings::updateStateFromJson(const JsonObject& src) {
       heads_final = settings["heads_final"].as<float>();
       ESP_LOGV("SsvcSettings", "Обновлен heads_final: %f", heads_final);
     }
+
+    if (settings["predec"].is<int>()) {
+      predec = settings["predec"].as<int>();
+      ESP_LOGV("SsvcSettings", "Обновлен predec: %d", predec);
+    }
+
+    if (settings["extended_heads"].is<int>()) {
+      extended_heads = settings["extended_heads"].as<int>();
+      ESP_LOGV("SsvcSettings", "Обновлен extended_heads: %d", extended_heads);
+    }
 }
 
 void SsvcSettings::applySettingsToController(const JsonVariant json) const {
@@ -1302,6 +1314,16 @@ void SsvcSettings::applySettingsToController(const JsonVariant json) const {
         if (speed != std::get<0>(parallel_v1) || period != std::get<1>(parallel_v1)) {
             builder.setParallelV1(speed, period);
         }
+    }
+
+    if (settings["predec"].is<int>()) {
+        const int val = settings["predec"].as<int>();
+        if (val != predec) builder.setPredec(val);
+    }
+
+    if (settings["extended_heads"].is<int>()) {
+        const int val = settings["extended_heads"].as<int>();
+        if (val != extended_heads) builder.setExtendedHeads(val);
     }
 
     if (settings["parallel_v3"].is<JsonArray>()) {

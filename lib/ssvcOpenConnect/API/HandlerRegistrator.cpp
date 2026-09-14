@@ -324,7 +324,9 @@ void HandlerRegistrator::registerLogHandlers() const
                        }
 
                        auto& transfer = SsvcLogProtocol::getTransfer();
-                       if (transfer.status() == SsvcLogProtocol::Status::IDLE) {
+                       if (!transfer.isPending() &&
+                           transfer.status() == SsvcLogProtocol::Status::IDLE) {
+                           transfer.markPending();
                            SsvcCommandsQueue::getQueue().getLog();
                        }
 
@@ -379,6 +381,14 @@ void HandlerRegistrator::registerLogHandlers() const
 
                        auto& transfer = SsvcLogProtocol::getTransfer();
                        const std::string expectedName = process.c_str() + std::string(".CSV");
+
+                       // Запрос списка уже в очереди — второй запрос затрёт его через reset().
+                       if (transfer.isPending() &&
+                           transfer.status() == SsvcLogProtocol::Status::IDLE) {
+                           request->send(409, "application/json",
+                                         R"({"error":"log_transfer_busy"})");
+                           return;
+                       }
 
                        if (transfer.status() == SsvcLogProtocol::Status::RECEIVING) {
                            if (!transfer.fileName().empty() && transfer.fileName() != expectedName) {

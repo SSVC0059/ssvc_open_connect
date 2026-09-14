@@ -350,7 +350,20 @@
 			return 'bool';
 		}
 		const cond = row.condition;
-		return relayMetadata?.ssvcFields.find((f) => f.key === cond.key)?.valueType ?? 'bool';
+		const fromMetadata = relayMetadata?.ssvcFields.find((f) => f.key === cond.key)?.valueType;
+		if (fromMetadata) {
+			return fromMetadata;
+		}
+		// Метаданные могут быть ещё не загружены. Определяем тип по фактически
+		// заполненному полю условия, иначе intEquals/floatEquals будут удалены
+		// как «лишние» для bool и значение настройки потеряется.
+		if (cond.intEquals !== undefined) {
+			return 'int';
+		}
+		if (cond.floatEquals !== undefined) {
+			return 'float';
+		}
+		return 'bool';
 	}
 
 	function normalizeSsvcConditionValue(row: OpenConnectRelayRuleRow) {

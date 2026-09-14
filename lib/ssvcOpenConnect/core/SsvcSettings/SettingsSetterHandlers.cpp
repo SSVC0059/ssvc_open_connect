@@ -60,11 +60,7 @@ std::map<String, std::unique_ptr<ParamHandler>> createHandlers() {
   handlers.emplace(
       "formula",
       std::unique_ptr<SingleIntHandler>(new SingleIntHandler(
-          [](SsvcSettings::Builder &b, const int v) {
-            if (v >= 0 && v <= 2) {
-              b.formulaEnable(v);
-            }
-          })));
+          [](SsvcSettings::Builder &b, const int v) { b.formulaEnable(v); }, 0, 2)));
 
   // tank_mmhg
   handlers.emplace("tank_mmhg",

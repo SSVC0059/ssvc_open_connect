@@ -48,7 +48,7 @@ TEST_CASE("SsvcUartApiSpec - IsValidHyst") {
     CHECK_FALSE(SsvcUartApiSpec::isValidHyst(50.01f));
 }
 
-TEST_CASE("SsvcUartApiSpec - API v1.10 settings") {
+TEST_CASE("SsvcUartApiSpec - API v1.8/v1.9 settings") {
     CHECK(SsvcUartApiSpec::isValidFormula(2));
     CHECK(SsvcUartApiSpec::isValidPredec(0));
     CHECK(SsvcUartApiSpec::isValidPredec(7));
