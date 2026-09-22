@@ -53,6 +53,17 @@ export function getInfo(): Promise<SsvcOpenConnectInfo | undefined> {
 }
 
 /**
+ * Сброс кеша getInfo().
+ *
+ * Нужен при переподключении к контроллеру: версия SSVC и набор доступных
+ * возможностей API могли измениться (например, контроллер заменили или
+ * обновили прошивку), поэтому закешированный ответ больше не актуален.
+ */
+export function resetInfoCache(): void {
+	infoPromise = null;
+}
+
+/**
  * Обновление отдельного поля в настройках
  */
 export async function updateSetting(field: string, value: unknown): Promise<boolean> {

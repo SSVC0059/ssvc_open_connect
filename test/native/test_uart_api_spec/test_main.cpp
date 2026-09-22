@@ -3,7 +3,7 @@
  * SSVC0059_V2 UART API v1.9
  *
  * Документация:
- * - docs/develop/api/ssvc-uart-api.md — описание API, команды, формат SET
+ * - docs/ssvc_uart_api_docs.md — описание API, команды, формат SET
  * - https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.9/README.md — спецификация v1.9
  */
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
@@ -48,7 +48,7 @@ TEST_CASE("SsvcUartApiSpec - IsValidHyst") {
     CHECK_FALSE(SsvcUartApiSpec::isValidHyst(50.01f));
 }
 
-TEST_CASE("SsvcUartApiSpec - API v1.10 settings") {
+TEST_CASE("SsvcUartApiSpec - API v1.8/v1.9 settings") {
     CHECK(SsvcUartApiSpec::isValidFormula(2));
     CHECK(SsvcUartApiSpec::isValidPredec(0));
     CHECK(SsvcUartApiSpec::isValidPredec(7));

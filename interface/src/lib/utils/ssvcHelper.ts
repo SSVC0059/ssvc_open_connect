@@ -1,12 +1,17 @@
 import { getInfo } from '$lib/api/ssvcApi';
+import { apiVersionCode } from '$lib/actions/versioning';
 
 /**
- * Проверяет, что версия API SSVC равна 1.6.
- * @returns {Promise<boolean>} - Возвращает true, если версия API равна 1.6, иначе false.
+ * Проверяет, что версия API SSVC совпадает с ожидаемой.
+ * Сравнение идёт по целому коду версии: `api` приходит строкой ("1.10"),
+ * а число 1.10 в JS равно 1.1 и дало бы неверный результат.
+ *
+ * @param apiVersion - Ожидаемая версия: "1.6" или 1.6 (двузначный minor — строкой).
+ * @returns {Promise<boolean>} - true, если версия API совпадает, иначе false.
  */
-export async function isApiVersion(apiVersion: number): Promise<boolean> {
+export async function isApiVersion(apiVersion: number | string): Promise<boolean> {
 	const info = await getInfo();
-	return info?.ssvc?.api === apiVersion;
+	return apiVersionCode(info?.ssvc?.api ?? '') === apiVersionCode(apiVersion);
 }
 
 export function formatSecondsToHHMMSS(seconds: number): string {

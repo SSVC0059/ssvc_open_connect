@@ -3,12 +3,41 @@
 	import EditTimeModal from '$lib/components/SsvcSettings/EditTimeModal.svelte';
 	import Toggle from '$lib/components/Toggle.svelte';
 
-	import type { SsvcSettings } from '$lib/types/ssvc';
+	import type { OcApiFeature, SsvcSettings } from '$lib/types/ssvc';
 
-	const { settings, onSave } = $props<{
+	const {
+		settings,
+		onSave,
+		apiFeatures = [],
+		isSupportRelease
+	} = $props<{
 		settings: SsvcSettings;
 		onSave: (field: string, value: any) => void;
+		apiFeatures?: OcApiFeature[];
+		/**
+		 * Признак ветки прошивки: «Сброс и снижение» доступно только у прошивки
+		 * с подголовниками. undefined — старая прошивка openConnect, поле не отдаёт.
+		 */
+		isSupportRelease?: boolean;
 	}>();
+
+	// Секция «Сброс и снижение»: явный признак ветки прошивки, а не значение
+	// release_timer (ноль — легитимное значение таймера и не должен скрывать
+	// секцию). Фолбэк на старое поведение — для прошивок без нового поля.
+	const releaseSectionVisible = $derived(
+		isSupportRelease === undefined ? Boolean(settings.release_timer) : true
+	);
+	const releaseSectionEnabled = $derived(isSupportRelease !== false);
+
+	// Возможности, появившиеся в API 1.9. На устройстве старее 1.9 поля
+	// показываются неактивными с пояснением, а не скрываются: пользователь
+	// должен видеть, что настройка существует и чего не хватает.
+	const formulaAuto92Available = $derived(
+		apiFeatures.find((feature: OcApiFeature) => feature.name === 'formula_auto92')?.available ?? true
+	);
+	const formulaStartTempAvailable = $derived(
+		apiFeatures.find((feature: OcApiFeature) => feature.name === 'formula')?.available ?? true
+	);
 
 	// Состояния для управления модальными окнами
 	let showNumbersModal = false;
@@ -213,34 +242,50 @@
 
 				<div class="settings-item">
 					<span class="input-label">Формула</span>
-				<select
-					bind:value={settings.formula}
-					onchange={() => onSave('formula', settings.formula)}
-				>
-					<option value={0}>Выкл</option>
-					<option value={1}>Вкл</option>
-					<option value={2}>Авто 92+</option>
-				</select>
+					<span class="settings-value">
+						<select
+							class="settings-select"
+							value={settings.formula}
+							onchange={(e) => onSave('formula', Number(e.currentTarget.value))}
+						>
+							<option value={0}>Выкл</option>
+							<option value={1}>Вкл</option>
+							<option
+								value={2}
+								disabled={!formulaAuto92Available}
+								title={formulaAuto92Available ? '' : 'Требуется API 1.9'}
+							>
+								Авто 92+
+							</option>
+						</select>
+					</span>
 				</div>
 
 				<div class="settings-item">
 					<span class="input-label">Температура начала формулы</span>
-					<EditNumbersModal
-						onSave={(newValues) => {
-								// Используйте полный тип объекта как в компоненте
-								onSave('formula_start_temp', newValues[0].value);
-							}}
-						values={[
-								{
-									name: 'Температура начала формулы',
-									value: settings.formula_start_temp,
-									unit: '°С',
-									min: 84.0,
-									max: 100.0,
-									step: 0.1
-								}
-							]}
-					/>
+					{#if formulaStartTempAvailable}
+						<EditNumbersModal
+							onSave={(newValues) => {
+									// Используйте полный тип объекта как в компоненте
+									onSave('formula_start_temp', newValues[0].value);
+								}}
+							values={[
+									{
+										name: 'Температура начала формулы',
+										value: settings.formula_start_temp,
+										unit: '°С',
+										min: 84.0,
+										max: 100.0,
+										step: 0.1
+									}
+								]}
+						/>
+					{:else}
+						<span class="settings-value settings-value--disabled">
+							{settings.formula_start_temp} °С
+							<span class="settings-hint">требуется API 1.9</span>
+						</span>
+					{/if}
 				</div>
 
 				<div class="settings-item">
@@ -254,27 +299,39 @@
 				</div>
 			</div>
 
-			{#if settings.release_timer}
+			{#if releaseSectionVisible}
 				<div class="settings-section">
 					<h3 class="settings-section-title">Сброс и снижение</h3>
 
+					{#if !releaseSectionEnabled}
+						<p class="settings-hint">
+							Доступно только для прошивки с подголовниками (late_heads).
+						</p>
+					{/if}
+
 					<div class="settings-item">
 						<span class="input-label">Время сброса</span>
-						<EditNumbersModal
-							onSave={(newValues) => {
-								// Используйте полный тип объекта как в компоненте
-								onSave('release_timer', newValues[0].value);
-							}}
-							values={[
-								{
-									name: 'Время сброса.',
-									value: settings.release_timer,
-									unit: 'сек',
-									min: 0,
-									max: 1200
-								}
-							]}
-						/>
+						{#if releaseSectionEnabled}
+							<EditNumbersModal
+								onSave={(newValues) => {
+									// Используйте полный тип объекта как в компоненте
+									onSave('release_timer', newValues[0].value);
+								}}
+								values={[
+									{
+										name: 'Время сброса.',
+										value: settings.release_timer,
+										unit: 'сек',
+										min: 0,
+										max: 1200
+									}
+								]}
+							/>
+						{:else}
+							<span class="settings-value settings-value--disabled">
+								{settings.release_timer} сек
+							</span>
+						{/if}
 					</div>
 					<div class="settings-item">
 						<span class="input-label">Скорость сброса</span>

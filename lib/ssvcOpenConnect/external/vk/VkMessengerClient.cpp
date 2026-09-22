@@ -1011,9 +1011,9 @@ void VkMessengerClient::buildRectificationSummary(char* buf, const size_t cap, c
     const std::string ssvcVer = SsvcSettings::init().getSsvcVersion();
     ok = ok && append_snprintf_chunk(buf, n, cap, u16, "Прошивка SSVC: %s\n",
                                      ssvcVer.empty() ? "-" : ssvcVer.c_str());
-    const float ssvcApi = SsvcSettings::init().getSsvcApiVersion();
-    if (ok && ssvcApi > 0.0f) {
-        ok = append_snprintf_chunk(buf, n, cap, u16, "API SSVC (контроллер): %.2f\n", static_cast<double>(ssvcApi));
+    const std::string ssvcApi = SsvcSettings::init().getSsvcApiVersion();
+    if (ok && !ssvcApi.empty()) {
+        ok = append_snprintf_chunk(buf, n, cap, u16, "API SSVC (контроллер): %s\n", ssvcApi.c_str());
     } else if (ok) {
         ok = append_utf8("API SSVC (контроллер): -\n", buf, n, cap, u16);
     }

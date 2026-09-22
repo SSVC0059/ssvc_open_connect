@@ -1,19 +1,22 @@
 <script lang="ts">
 	import { getInfo } from '$lib/api/ssvcApi';
+	import { apiVersionCode } from '$lib/actions/versioning';
 
 	let {
 		requiredVersion,
 		message = 'Этот функционал не поддерживается вашей версией API.',
 	} = $props<{
-		requiredVersion: number;
+		// Версию с двузначным minor передавайте строкой: число 1.10 в JS равно 1.1.
+		requiredVersion: number | string;
 		message?: string;
 	}>();
 
 	let isLoading = $state(true);
-	let currentVersion = $state<number | undefined>(undefined);
+	let currentVersion = $state<string | undefined>(undefined);
 
 	const isSupported = $derived(
-		currentVersion !== undefined && currentVersion >= requiredVersion
+		currentVersion !== undefined &&
+			apiVersionCode(currentVersion) >= apiVersionCode(requiredVersion)
 	);
 
 	$effect(() => {

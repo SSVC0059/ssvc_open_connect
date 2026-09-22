@@ -20,18 +20,44 @@ export type SsvcOpenConnectMessage = {
 
 export type SsvcOpenConnectInfo = {
 	ssvc: ssvc_info;
-	os: os_info;
+	/** Раздел `oc` ответа /rest/oc/info: версия прошивки и реестр возможностей API. */
+	oc: os_info;
 };
 
 export type ssvc_info = {
 	version: string;
-	api: number;
+	/** Версия UART API устройства строкой: "1.7", "1.10" (числом нельзя — 1.10 === 1.1). */
+	api: string;
+	/** Целочисленный код версии API: major * 100 + minor ("1.7" → 107, "1.10" → 110). */
+	api_code: number;
 	mode: 'late_heads';
+};
+
+/** Возможность UART API и её доступность на подключённом устройстве. */
+export type OcApiFeature = {
+	name: string;
+	min_api: string;
+	available: boolean;
 };
 
 export type os_info = {
 	version: string;
 	is_support_api: boolean;
+	/**
+	 * Признак ветки прошивки SSVC: «Сброс и снижение» (release_timer,
+	 * release_speed, heads_final) есть только у прошивки с подголовниками
+	 * (late_heads), у прошивки с хвостами (tails) — нет.
+	 * Поле новое: на старой прошивке openConnect приходит undefined.
+	 */
+	is_support_release?: boolean;
+	/** Минимальная версия API, с которой работает прошивка. */
+	api_min?: string;
+	/** Версия API, которую реализует прошивка. */
+	api_target?: string;
+	/** unknown — версия ещё не получена, too_old — ниже минимальной, supported — ок. */
+	api_compatibility?: 'unknown' | 'too_old' | 'supported';
+	/** Реестр возможностей: чем можно пользоваться на этом устройстве. */
+	api_features?: OcApiFeature[];
 };
 
 // ======================== Статус ректификации ======================== //

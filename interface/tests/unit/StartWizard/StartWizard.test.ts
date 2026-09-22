@@ -11,7 +11,8 @@ import { createMockSsvcSettings } from '../../lib/createMockSsvcSettings';
 vi.mock('$lib/api/ssvcApi', () => ({
 	fetchSettings: vi.fn(),
 	saveSettings: vi.fn(),
-	sendCommand: vi.fn()
+	sendCommand: vi.fn(),
+	getInfo: vi.fn()
 }));
 
 vi.mock('svelte-modals', () => ({

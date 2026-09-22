@@ -38,7 +38,8 @@ vi.mock('$app/environment', () => ({
 
 vi.mock('$lib/api/ssvcApi', () => ({
 	fetchSettings: vi.fn(),
-	updateSetting: vi.fn()
+	updateSetting: vi.fn(),
+	getInfo: vi.fn()
 }));
 
 vi.mock('$lib/components/toasts/notifications', () => ({
