@@ -112,6 +112,16 @@ inline bool isValidFormula(int v) {
     return v == 0 || v == 1 || v == 2;
 }
 
+/** Проверка предекремента: 0, 7 или 13 */
+inline bool isValidPredec(int v) {
+    return v == 0 || v == 7 || v == 13;
+}
+
+/** Проверка режима extended_heads: 0 или 1 */
+inline bool isValidExtendedHeads(int v) {
+    return v == 0 || v == 1;
+}
+
 /** Парсинг формата [time,period] — возвращает true если строка соответствует */
 inline bool parseSpeedParam(const char* param, float& outTime, int& outPeriod) {
     if (!param) return false;

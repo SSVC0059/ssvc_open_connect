@@ -32,7 +32,7 @@ private:
 };
 
 const FieldDesc kSsvcFieldDescriptors[] = {
-    {"formula", "Формула скорости", FieldType::BOOL},
+    {"formula", "Формула скорости", FieldType::INT},
     {"auto_mode", "Автоматический режим", FieldType::BOOL},
     {"sound", "Звуковое оповещение", FieldType::BOOL},
     {"pressure", "Контроль давления", FieldType::BOOL},
@@ -416,6 +416,9 @@ bool RelayRuleEngine::matchRectification(const Rule& r) const {
 bool RelayRuleEngine::matchSsvc(const Rule& r) const {
   const SsvcSettings& s = SsvcSettings::init();
   if (r.ssvcKey == "formula") {
+    if (r.condKind == Rule::CondKind::SSVC_INT) {
+      return s.getFormula() == r.ssvcInt;
+    }
     return s.getFormula() == r.ssvcBool;
   }
   if (r.ssvcKey == "auto_mode") {

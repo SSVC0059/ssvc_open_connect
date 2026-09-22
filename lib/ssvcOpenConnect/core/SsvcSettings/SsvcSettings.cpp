@@ -1003,8 +1003,10 @@ void SsvcSettings::updateStateFromJson(const JsonObject& src) {
     decrement = settings["decrement"].as<int>();
     ESP_LOGV("SsvcSettings", "Обновлен decrement: %d", decrement);
 
-    formula = settings["formula"].as<bool>();
-    ESP_LOGV("SsvcSettings", "Обновлен formula: %b", formula);
+    formula = settings["formula"].is<bool>()
+        ? (settings["formula"].as<bool>() ? 1 : 0)
+        : settings["formula"].as<int>();
+    ESP_LOGV("SsvcSettings", "Обновлен formula: %d", formula);
 
     tank_mmhg = settings["tank_mmhg"].as<int>();
     ESP_LOGV("SsvcSettings", "Обновлен tank_mmhg: %d", tank_mmhg);
@@ -1224,8 +1226,10 @@ void SsvcSettings::applySettingsToController(const JsonVariant json) const {
         if (val != decrement) builder.setDecrement(val);
     }
 
-    if (settings["formula"].is<bool>()) {
-        const bool val = settings["formula"].as<bool>();
+    if (settings["formula"].is<bool>() || settings["formula"].is<int>()) {
+        const int val = settings["formula"].is<bool>()
+            ? (settings["formula"].as<bool>() ? 1 : 0)
+            : settings["formula"].as<int>();
         if (val != formula) builder.formulaEnable(val);
     }
 

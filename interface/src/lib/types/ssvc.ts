@@ -80,6 +80,7 @@ export type SsvcTelemetryMessage = {
 	event?: string;
 	info?: string;
 	decrement?: number; // Декремент
+	preempt_cnt?: number; // Количество упреждающих снижений скорости
 };
 
 export type commonType = {
@@ -91,6 +92,8 @@ export type commonType = {
 	overclockingOn: boolean;
 	heatingOn: boolean;
 	hysteresis?: number;
+	cfg_chgd?: boolean;
+	tts?: number;
 };
 
 export type valveFlowVolumeType = {

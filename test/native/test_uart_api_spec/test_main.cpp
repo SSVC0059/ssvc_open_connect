@@ -48,6 +48,17 @@ TEST_CASE("SsvcUartApiSpec - IsValidHyst") {
     CHECK_FALSE(SsvcUartApiSpec::isValidHyst(50.01f));
 }
 
+TEST_CASE("SsvcUartApiSpec - API v1.10 settings") {
+    CHECK(SsvcUartApiSpec::isValidFormula(2));
+    CHECK(SsvcUartApiSpec::isValidPredec(0));
+    CHECK(SsvcUartApiSpec::isValidPredec(7));
+    CHECK(SsvcUartApiSpec::isValidPredec(13));
+    CHECK_FALSE(SsvcUartApiSpec::isValidPredec(8));
+    CHECK(SsvcUartApiSpec::isValidExtendedHeads(0));
+    CHECK(SsvcUartApiSpec::isValidExtendedHeads(1));
+    CHECK_FALSE(SsvcUartApiSpec::isValidExtendedHeads(2));
+}
+
 TEST_CASE("SsvcUartApiSpec - IsValidDecrement") {
     CHECK(SsvcUartApiSpec::isValidDecrement(20));
     CHECK(SsvcUartApiSpec::isValidDecrement(100));
