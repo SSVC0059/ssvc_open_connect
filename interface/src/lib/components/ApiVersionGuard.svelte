@@ -26,6 +26,9 @@
 		let isMounted = true;
 		const checkVersion = async () => {
 			isLoading = true;
+			// Сбрасываем версию прошлого подключения: если getInfo() не вернёт
+			// api или запрос упадёт, гейт не должен считать старую версию актуальной.
+			currentVersion = undefined;
 			try {
 				const info = await getInfo();
 				if (isMounted && info?.ssvc?.api) {
