@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { OcApiFeature, SsvcSettings } from '$lib/types/ssvc';
 	import NumberInput from '$lib/components/NumberInput.svelte';
-	import { getInfo } from '$lib/api/ssvcApi';
+	import { getInfo, infoCacheVersion } from '$lib/api/ssvcApi';
 
 	let { settings = $bindable() } = $props<{
 		settings: SsvcSettings;
@@ -13,6 +13,9 @@
 	let apiFeatures = $state<OcApiFeature[]>([]);
 
 	$effect(() => {
+		// Перечитываем при сбросе кеша /rest/oc/info (переподключение): контроллер
+		// мог быть заменён или перепрошит, и набор возможностей API изменился.
+		void $infoCacheVersion;
 		let cancelled = false;
 		void (async () => {
 			const info = await getInfo();
