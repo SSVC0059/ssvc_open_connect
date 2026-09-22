@@ -103,14 +103,14 @@ describe('GeneralSettings (Общие)', () => {
 		});
 	});
 
-	it('при переключении чекбокса «Формула» вызывает onSave с полем formula и значением из реестра', async () => {
+	it('при выборе значения в селекте «Формула» вызывает onSave с полем formula и значением из реестра', async () => {
 		const spec = GENERAL_SETTINGS_EXPECTED_REQUESTS.formula;
-		const settings = createMockSsvcSettings({ formula: false });
+		const settings = createMockSsvcSettings({ formula: 0 });
 		render(GeneralSettings, { props: { settings, onSave: mockOnSave } });
 		const item = screen.getByText(spec.label).closest('.settings-item');
-		const checkbox = item?.querySelector('input[type="checkbox"]');
-		expect(checkbox).toBeTruthy();
-		await userEvent.setup().click(checkbox!);
+		const select = item?.querySelector('select');
+		expect(select).toBeTruthy();
+		await userEvent.setup().selectOptions(select!, String(spec.expectedRequestBody));
 		await waitFor(() => {
 			expect(mockOnSave).toHaveBeenCalledWith(spec.field, spec.expectedRequestBody);
 		});

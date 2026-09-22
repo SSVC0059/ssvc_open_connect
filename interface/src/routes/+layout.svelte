@@ -6,6 +6,7 @@
 	import { analytics } from '$lib/stores/analytics';
 	import { batteryHistory } from '$lib/stores/battery';
 	import { socket } from '$lib/stores/socket';
+	import { resetInfoCache } from '$lib/api/ssvcApi';
 	import type { userProfile } from '$lib/stores/user';
 	import { page } from '$app/state';
 	import { Modals } from 'svelte-modals';
@@ -94,6 +95,10 @@
 
 	const handleOpen = () => {
 		notifications.success('Соединение с ESP32 установлено', 5000);
+		// Контроллер мог быть перепрошит или заменён, пока связи не было:
+		// сбрасываем кеш /rest/oc/info, чтобы индикатор версии API и гейты
+		// полей настроек перечитали актуальные данные.
+		resetInfoCache();
 	};
 
 	const handleClose = () => {

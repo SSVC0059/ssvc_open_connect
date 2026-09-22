@@ -51,6 +51,8 @@ public:
     bool relay;
     bool signal;
     float relative_pressure;
+    bool cfg_chgd;
+    int tts;
   };
 
   struct Metrics
@@ -74,6 +76,7 @@ public:
     float alc;
     bool stop;
     unsigned char stops;
+    unsigned int preempt_cnt;
     RectificationEvent event;
   };
 

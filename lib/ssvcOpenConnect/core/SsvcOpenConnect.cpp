@@ -174,8 +174,8 @@ void SsvcOpenConnect::sendHello() {
     SsvcCommandsQueue::getQueue().status("Привет!");
     const std::string version = SsvcSettings::init().getSsvcVersion();
     SsvcCommandsQueue::getQueue().status(std::string("SSVC: ") + version);
-    const float versionApi = SsvcSettings::init().getSsvcApiVersion();
-    SsvcCommandsQueue::getQueue().status((String("API: ") + versionApi).c_str());
+    const std::string versionApi = SsvcSettings::init().getSsvcApiVersion();
+    SsvcCommandsQueue::getQueue().status((String("API: ") + versionApi.c_str()).c_str());
     SsvcCommandsQueue::getQueue().status("OpenConnect");
     const std::string versionOC = APP_VERSION;
     SsvcCommandsQueue::getQueue().status("v:  " + versionOC);

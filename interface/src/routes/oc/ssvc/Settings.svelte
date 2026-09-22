@@ -2,8 +2,8 @@
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
 	import { tick } from 'svelte';
-	import type { SsvcSettings } from '$lib/types/ssvc';
-	import { fetchSettings, updateSetting } from '$lib/api/ssvcApi';
+	import type { OcApiFeature, SsvcSettings } from '$lib/types/ssvc';
+	import { fetchSettings, getInfo, updateSetting, infoCacheVersion } from '$lib/api/ssvcApi';
 	import { notifications } from '$lib/components/toasts/notifications';
 	import GeneralSettings from '$lib/components/SsvcSettings/GeneralSettings.svelte';
 	import ValveBandwidth from '$lib/components/SsvcSettings/ValveBandwidth.svelte';
@@ -16,6 +16,12 @@
 	const MOBILE_MQ = '(max-width: 767px)';
 
 	let ssvcSettings = $state<SsvcSettings | null>();
+	// Возможности API подключённого контроллера: по ним поля, появившиеся в
+	// новых версиях API, показываются неактивными с пояснением.
+	let apiFeatures = $state<OcApiFeature[]>([]);
+	// Признак ветки прошивки: «Сброс и снижение» есть только у прошивки
+	// с подголовниками. undefined — старая прошивка openConnect, поля нет.
+	let isSupportRelease = $state<boolean | undefined>(undefined);
 
 	let activeTab = $state(0);
 
@@ -27,6 +33,12 @@
 				console.error(err);
 			}
 		}
+	};
+
+	const loadApiFeatures = async () => {
+		const info = await getInfo();
+		apiFeatures = info?.oc.api_features ?? [];
+		isSupportRelease = info?.oc.is_support_release;
 	};
 
 	async function saveChanges(field: string, value: unknown) {
@@ -56,7 +68,7 @@
 				id: 'general',
 				title: 'Общие',
 				component: GeneralSettings,
-				props: { settings, onSave: saveChanges }
+				props: { settings, onSave: saveChanges, apiFeatures, isSupportRelease }
 			},
 			{
 				id: 'valve-bandwidth',
@@ -91,7 +103,13 @@
 	const tabFromUrl = $derived($page.url.searchParams.get('tab'));
 
 	$effect(() => {
+		// Сброс кеша /rest/oc/info (переподключение) должен перечитать гейты
+		// возможностей API, иначе они останутся от прошлого подключения.
+		void $infoCacheVersion;
 		loadSsvcSettings();
+		// Возможности API и признак ветки прошивки нужны для гейта полей,
+		// появившихся в новых версиях API (см. GeneralSettings).
+		loadApiFeatures();
 	});
 
 	$effect(() => {

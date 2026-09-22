@@ -35,8 +35,12 @@ void SettingsHandler::updateSettings(AsyncWebServerRequest* request, JsonVariant
     bool hasErrors = false;
     auto errors = jsonBuffer.to<JsonObject>();
 
+    // Builder живёт в рамках одного запроса и сам ведёт список полей, которые
+    // очередь отбросила по версии API устройства: общего накопителя нет, поэтому
+    // параллельные MQTT/профильные операции не подмешиваются в отчёт.
+    SsvcSettings::Builder builder;
+
     if (json.is<JsonObject>()) {
-        SsvcSettings::Builder builder;
         ESP_LOGD(TAG, "Request has JSON body.");
         JsonObject bodyObj = json.as<JsonObject>();
         for (JsonPair kv : bodyObj) {
@@ -68,9 +72,20 @@ void SettingsHandler::updateSettings(AsyncWebServerRequest* request, JsonVariant
 
     SsvcCommandsQueue::getQueue().getSettings();
 
+    // Поля, которых нет на устройстве этой версии API: клиент должен знать, что
+    // часть настроек не отправлена (см. SsvcApiCapabilities). Копия — чтобы
+    // сериализация не зависела от дальнейших изменений Builder.
+    const std::vector<std::string> skipped = builder.skippedCommands();
+
     JsonDocument successResponse;
     successResponse["success"] = true;
     successResponse["message"] = "Settings updated successfully";
+    if (!skipped.empty()) {
+        JsonArray skippedArray = successResponse["skipped"].to<JsonArray>();
+        for (const auto& item : skipped) {
+            skippedArray.add(item);
+        }
+    }
     String successMsg;
     serializeJson(successResponse, successMsg);
     request->send(200, "application/json", successMsg.c_str());

@@ -5,6 +5,7 @@
 	import { user } from '$lib/stores/user';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import DeviceDateTime from '$lib/components/DeviceDateTime.svelte';
+	import SsvcApiWarning from '$lib/components/SsvcApiWarning.svelte';
 	import WiFiOff from '~icons/tabler/wifi-off';
 	import Hamburger from '~icons/tabler/menu-2';
 	import Power from '~icons/tabler/power';
@@ -48,6 +49,9 @@
 	</div>
 	<div class="indicator flex-none">
 		<UpdateIndicator />
+	</div>
+	<div class="mr-2 flex-none">
+		<SsvcApiWarning />
 	</div>
 	{#if !$telemetry.rssi.disconnected && page.data.features.ntp}
 		<div class="mr-2">

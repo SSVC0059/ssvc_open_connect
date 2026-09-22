@@ -19,8 +19,8 @@ export type GeneralSettingsFieldSpec = {
 	/** Ожидаемое тело запроса для этого поля. Настраивается здесь — тесты проверяют именно его. */
 	expectedRequestBody: GeneralSettingsRequestBody;
 	getValue: (settings: SsvcSettings) => GeneralSettingsRequestBody;
-	/** 'modal' — открыть модалку и нажать «Сохранить»; 'checkbox' — клик по чекбоксу */
-	controlType: 'modal' | 'time_modal' | 'checkbox';
+	/** 'modal' — открыть модалку и нажать «Сохранить»; 'select' — выбор значения в <select> */
+	controlType: 'modal' | 'time_modal' | 'select';
 	/** Секция отображается только если условие выполняется (например, release_timer) */
 	visibleWhen?: (settings: SsvcSettings) => boolean;
 };
@@ -81,10 +81,10 @@ export const GENERAL_SETTINGS_EXPECTED_REQUESTS = {
 	formula: {
 		label: 'Формула',
 		field: 'formula',
-		valueDescription: 'boolean',
-		expectedRequestBody: true,
+		valueDescription: 'число, 0=выкл / 1=вкл / 2=авто 92+',
+		expectedRequestBody: 1,
 		getValue: (s: SsvcSettings) => s.formula,
-		controlType: 'checkbox'
+		controlType: 'select'
 	} satisfies GeneralSettingsFieldSpec,
 	formula_start_temp: {
 		label: 'Температура начала формулы',

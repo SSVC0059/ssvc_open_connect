@@ -1,25 +1,34 @@
 <script lang="ts">
-	import { getInfo } from '$lib/api/ssvcApi';
+	import { getInfo, infoCacheVersion } from '$lib/api/ssvcApi';
+	import { apiVersionCode } from '$lib/actions/versioning';
 
 	let {
 		requiredVersion,
 		message = 'Этот функционал не поддерживается вашей версией API.',
 	} = $props<{
-		requiredVersion: number;
+		// Версию с двузначным minor передавайте строкой: число 1.10 в JS равно 1.1.
+		requiredVersion: number | string;
 		message?: string;
 	}>();
 
 	let isLoading = $state(true);
-	let currentVersion = $state<number | undefined>(undefined);
+	let currentVersion = $state<string | undefined>(undefined);
 
 	const isSupported = $derived(
-		currentVersion !== undefined && currentVersion >= requiredVersion
+		currentVersion !== undefined &&
+			apiVersionCode(currentVersion) >= apiVersionCode(requiredVersion)
 	);
 
 	$effect(() => {
+		// Перечитываем версию API при сбросе кеша (переподключение к контроллеру):
+		// иначе уже смонтированный гейт останется с версией прошлого подключения.
+		void $infoCacheVersion;
 		let isMounted = true;
 		const checkVersion = async () => {
 			isLoading = true;
+			// Сбрасываем версию прошлого подключения: если getInfo() не вернёт
+			// api или запрос упадёт, гейт не должен считать старую версию актуальной.
+			currentVersion = undefined;
 			try {
 				const info = await getInfo();
 				if (isMounted && info?.ssvc?.api) {

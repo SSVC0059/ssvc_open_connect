@@ -32,7 +32,7 @@ private:
 };
 
 const FieldDesc kSsvcFieldDescriptors[] = {
-    {"formula", "Формула скорости", FieldType::BOOL},
+    {"formula", "Формула скорости", FieldType::INT},
     {"auto_mode", "Автоматический режим", FieldType::BOOL},
     {"sound", "Звуковое оповещение", FieldType::BOOL},
     {"pressure", "Контроль давления", FieldType::BOOL},
@@ -416,7 +416,12 @@ bool RelayRuleEngine::matchRectification(const Rule& r) const {
 bool RelayRuleEngine::matchSsvc(const Rule& r) const {
   const SsvcSettings& s = SsvcSettings::init();
   if (r.ssvcKey == "formula") {
-    return s.getFormula() == r.ssvcBool;
+    if (r.condKind == Rule::CondKind::SSVC_INT) {
+      return s.getFormula() == r.ssvcInt;
+    }
+    // Устаревшие правила boolEquals хранят «формула включена». Значения 1 и 2
+    // обе означают включённую формулу, поэтому сравниваем с состоянием, а не с 1.
+    return (s.getFormula() > 0) == r.ssvcBool;
   }
   if (r.ssvcKey == "auto_mode") {
     return s.getAutoMode() == r.ssvcBool;

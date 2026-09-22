@@ -231,6 +231,18 @@
 										<span class="reading-label">Количество спирта в кубе:</span> <span class="reading-value">{telemetry.alc}%</span>
 									</span>
 								{/if}
+								{#if telemetry?.type === 'hearts' && telemetry.preempt_cnt !== undefined}
+									<span class="reading-item">
+										<span class="reading-label">Упреждающие снижения:</span>
+										<span class="reading-value">{telemetry.preempt_cnt}</span>
+									</span>
+								{/if}
+								{#if telemetry?.common.cfg_chgd}
+									<span class="reading-item">
+										<span class="reading-label">Сохранение настроек через:</span>
+										<span class="reading-value">{telemetry.common.tts ?? 0} с</span>
+									</span>
+								{/if}
 							</div>
 						{/if}
 					</div>

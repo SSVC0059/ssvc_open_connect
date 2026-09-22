@@ -1,6 +1,6 @@
 import { page } from '$app/state';
 import { user } from '$lib/stores/user';
-import { get } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 import type { AlarmThresholdsState, TemperatureResponse } from '$lib/types/Sensors';
 import type {
 	OcHardwareConfigResponse,
@@ -29,6 +29,12 @@ export async function fetchSettings(): Promise<SsvcSettings | undefined> {
 let infoPromise: Promise<SsvcOpenConnectInfo | undefined> | null = null;
 
 /**
+ * Поколение кеша /rest/oc/info. Увеличивается при сбросе кеша, чтобы уже
+ * смонтированные компоненты могли перечитать версию API и набор возможностей.
+ */
+export const infoCacheVersion = writable(0);
+
+/**
  * Получение информации о версии SSVC и OpenConnect SsvcOpenConnectInfo с кешированием.
  */
 export function getInfo(): Promise<SsvcOpenConnectInfo | undefined> {
@@ -50,6 +56,20 @@ export function getInfo(): Promise<SsvcOpenConnectInfo | undefined> {
 		})();
 	}
 	return infoPromise;
+}
+
+/**
+ * Сброс кеша getInfo().
+ *
+ * Нужен при переподключении к контроллеру: версия SSVC и набор доступных
+ * возможностей API могли измениться (например, контроллер заменили или
+ * обновили прошивку), поэтому закешированный ответ больше не актуален.
+ */
+export function resetInfoCache(): void {
+	infoPromise = null;
+	// Будим подписчиков: сброса промиса недостаточно, у уже смонтированных
+	// компонентов остаётся прочитанное ранее состояние совместимости.
+	infoCacheVersion.update((version) => version + 1);
 }
 
 /**

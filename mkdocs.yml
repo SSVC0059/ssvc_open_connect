@@ -95,7 +95,7 @@ nav:
           - develop/api/openconnect.md
           - develop/api/profiles.md
           - develop/api/files.md
-      - "UART API SSVC (справка)": develop/ssvc-api-v1.6/api_docs.md
+      - "UART API SSVC (справка)": ssvc_uart_api_docs.md
       - "Протокол UART — примеры (JSON/TXT)": ssvc-serial-protocol/develop/Readme.md
       - "Фронтенд":
           - develop/frontend/frontend.md

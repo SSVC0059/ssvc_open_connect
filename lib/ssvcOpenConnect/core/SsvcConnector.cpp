@@ -269,7 +269,7 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
         if (doc["request"] == "GET_SETTINGS") {
           ESP_LOGV("SsvcConnector", "GET_SETTINGS: SEND BIT10");
           xEventGroupSetBits(eventGroup, BIT10);
-        } if (doc["request"] == "VERSION") {
+        } else if (doc["request"] == "VERSION") {
           ESP_LOGV("SsvcConnector", "result: SEND BIT11 start");
           ESP_LOGV("SsvcConnector", "END BIT11 lastMessage: %s",
                    self->lastMessage.c_str());

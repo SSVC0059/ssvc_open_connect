@@ -214,7 +214,7 @@ pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-gcc-libs
 |------|----------|
 | `native/test_stringview` | StringView — конструкторы, `data()`, `size()`, `empty()` |
 | `native/test_utils` | Вспомогательные функции (isNumericId, и т.п.) |
-| `native/test_uart_api_spec` | SsvcUartApiSpec — лимиты и валидация по UART API v1.7 |
+| `native/test_uart_api_spec` | SsvcUartApiSpec — лимиты и валидация по UART API v1.9 |
 | `native/test_rectification_parse` | Разбор/утилиты ректификации (host) |
 | `embedded/test_stringview_esp32` | StringView на ESP32 (Unity) |
 | `embedded/test_uart_api` | UART API: лимиты, валидация, форматы JSON (GET_SETTINGS, VERSION, SET) |
