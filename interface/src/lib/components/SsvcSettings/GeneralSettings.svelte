@@ -334,6 +334,7 @@
 						{:else}
 							<span class="settings-value settings-value--disabled">
 								{settings.release_timer} сек
+								<span class="settings-hint">требуется прошивка с подголовниками</span>
 							</span>
 						{/if}
 					</div>
