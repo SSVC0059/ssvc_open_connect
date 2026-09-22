@@ -97,8 +97,11 @@ public:
   void at(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
   /// @return true, если команда поставлена в очередь; false — отброшена по версии API.
+  /// @param skippedOut необязательный приёмник отброшенных полей SET (принадлежит
+  ///        вызывающей операции, поэтому отчёт не смешивается между запросами).
   bool set(const std::string& parameters, int attempt_count = ATTEMPT_COUNT,
-           TickType_t timeout = TIMEOUT) const;
+           TickType_t timeout = TIMEOUT,
+           std::vector<std::string>* skippedOut = nullptr) const;
 
   void status(const std::string& parameters, int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
@@ -128,17 +131,6 @@ public:
   std::string lastRejectedDeviceApi() const { return _lastRejectedDeviceApi; }
 
   std::string lastRejectedRequiredApi() const { return _lastRejectedRequiredApi; }
-
-  /**
-   * @brief Параметры SET, отброшенные по версии API с момента последнего сброса.
-   *
-   * Заполняется в единой точке постановки в очередь, поэтому вызывающий
-   * (REST-слой, Builder) узнаёт, какие поля не ушли на устройство.
-   */
-  const std::vector<std::string>& skippedSetParams() const { return _skippedSetParams; }
-
-  /// Начать новый сбор пропущенных параметров (перед пакетом команд SET).
-  void clearSkippedSetParams() const { _skippedSetParams.clear(); }
 
   ~SsvcCommandsQueue()
   {
@@ -223,7 +215,8 @@ private:
    * @return true, если команда поставлена в очередь.
    */
   bool pushCommandInQueue(SsvcCommandType type, const std::string& parameters,
-                          int attempt_count, TickType_t timeout) const;
+                          int attempt_count, TickType_t timeout,
+                          std::vector<std::string>* skippedOut = nullptr) const;
 
   /// Диагностика последней отбраковки; читается REST-слоем при отказе.
   void rememberRejection(const std::string& reason, const std::string& feature,
@@ -233,9 +226,6 @@ private:
   mutable std::string _lastRejectedFeature;
   mutable std::string _lastRejectedDeviceApi;
   mutable std::string _lastRejectedRequiredApi;
-
-  /// Накопитель отброшенных параметров SET; сбрасывается clearSkippedSetParams().
-  mutable std::vector<std::string> _skippedSetParams;
 };
 
 #endif // SSVCOPENCONNECT_SSVCCOMMANDSQUEUE_H

@@ -1,10 +1,33 @@
 <script lang="ts">
-	import type { SsvcSettings } from '$lib/types/ssvc';
+	import type { OcApiFeature, SsvcSettings } from '$lib/types/ssvc';
 	import NumberInput from '$lib/components/NumberInput.svelte';
+	import { getInfo } from '$lib/api/ssvcApi';
 
 	let { settings = $bindable() } = $props<{
 		settings: SsvcSettings;
 	}>();
+
+	// Режим «Авто 92+» появился в API 1.9. Возможность запрашиваем у контроллера:
+	// при отсутствии метаданных считаем её недоступной, иначе на API 1.7/1.8 поле
+	// молча отбросит очередь, а визард покажет сохранение.
+	let apiFeatures = $state<OcApiFeature[]>([]);
+
+	$effect(() => {
+		let cancelled = false;
+		void (async () => {
+			const info = await getInfo();
+			if (!cancelled) {
+				apiFeatures = info?.oc.api_features ?? [];
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	});
+
+	const formulaAuto92Available = $derived(
+		apiFeatures.find((feature) => feature.name === 'formula_auto92')?.available ?? false
+	);
 </script>
 
 <div class="settings-block">
@@ -40,7 +63,13 @@
 				>
 					<option value={0}>Выкл</option>
 					<option value={1}>Вкл</option>
-					<option value={2}>Авто 92+</option>
+					<option
+						value={2}
+						disabled={!formulaAuto92Available}
+						title={formulaAuto92Available ? undefined : 'Требуется API 1.9'}
+					>
+						Авто 92+
+					</option>
 				</select>
 			</div>
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getInfo } from '$lib/api/ssvcApi';
+	import { getInfo, infoCacheVersion } from '$lib/api/ssvcApi';
 	import { apiVersionCode } from '$lib/actions/versioning';
 
 	let {
@@ -20,6 +20,9 @@
 	);
 
 	$effect(() => {
+		// Перечитываем версию API при сбросе кеша (переподключение к контроллеру):
+		// иначе уже смонтированный гейт останется с версией прошлого подключения.
+		void $infoCacheVersion;
 		let isMounted = true;
 		const checkVersion = async () => {
 			isLoading = true;

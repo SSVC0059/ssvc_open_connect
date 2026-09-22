@@ -211,7 +211,8 @@ std::map<String, std::unique_ptr<ParamHandler>> createHandlers() {
   handlers.emplace(
       "predec",
       std::unique_ptr<SingleIntHandler>(new SingleIntHandler(
-          [](SsvcSettings::Builder &b, const int v) { b.setPredec(v); }, 0, 13)));
+          [](SsvcSettings::Builder &b, const int v) { b.setPredec(v); }, 0, 13,
+          [](const int v) { return SsvcUartApiSpec::isValidPredec(v); })));
 
   // extended_heads: сброс и снижение (0=выкл, 1=вкл)
   handlers.emplace(

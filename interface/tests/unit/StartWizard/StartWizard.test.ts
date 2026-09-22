@@ -5,6 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
+import { writable } from 'svelte/store';
 import StartWizard from '$lib/components/StartWizard/StartWizard.svelte';
 import { createMockSsvcSettings } from '../../lib/createMockSsvcSettings';
 
@@ -12,7 +13,8 @@ vi.mock('$lib/api/ssvcApi', () => ({
 	fetchSettings: vi.fn(),
 	saveSettings: vi.fn(),
 	sendCommand: vi.fn(),
-	getInfo: vi.fn()
+	getInfo: vi.fn(),
+	infoCacheVersion: writable(0)
 }));
 
 vi.mock('svelte-modals', () => ({

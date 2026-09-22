@@ -238,7 +238,9 @@ bool SsvcSettings::setSsvcApiVersion(const std::string& _ssvcApiVersion) {
     return false;
   }
 
-  this->ssvcApiVersionText = _ssvcApiVersion;
+  // Храним нормализованный вид: разбор допускает запятую как разделитель
+  // ("1,9"), а REST-клиент и UI умеют читать только форму с точкой.
+  this->ssvcApiVersionText = SsvcUartApiSpec::formatApiVersion(parsed);
   this->ssvcApiVersionCode = parsed.code();
   // Совместимость определяется по минимальной поддерживаемой версии; функции,
   // появившиеся позже версии устройства, отключаются поодиночке (hasFeature).
@@ -264,7 +266,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeads(float timeTurnOn, int per
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -284,7 +286,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHearts(float timeTurnOn, int pe
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -304,7 +306,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setLateHeads(float timeTurnOn, int
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -324,7 +326,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setTails(float timeTurnOn, int per
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -353,7 +355,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHysteresis(float _hyst) {
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -383,7 +385,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setDecrement(unsigned char _decrem
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -411,7 +413,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::formulaEnable(const int val) {
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -442,7 +444,7 @@ SsvcSettings::Builder::setTank_mmhg(float _tank_mmhg) {
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -475,7 +477,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeadsTimer(const unsigned int _
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -506,7 +508,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setLateHeadsTimer(const unsigned i
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -535,7 +537,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeartsTimer(const unsigned char
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -564,7 +566,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setTailsTemp(const float _tailsTem
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -593,7 +595,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setStartDelay(const unsigned int _
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -623,7 +625,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeartsFinishTemp(const float _h
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -643,7 +645,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setFormulaStartTemp(const float _f
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -667,7 +669,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setValveBw(const int v1, const int
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -685,7 +687,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setReleaseSpeed(const float _relea
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -703,7 +705,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setReleaseTimer(const int _release
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -721,7 +723,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeadsFinal(const float _heartsF
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -730,7 +732,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setHeadsFinal(const float _heartsF
 // predec: предекремент (0=выкл, 7=0.07, 13=0.13)
 SsvcSettings::Builder &SsvcSettings::Builder::setPredec(const int val) {
   const int prevPredec = settings.predec;
-  settings.predec = (val >= 0 && val <= 13) ? val : prevPredec;
+  settings.predec = SsvcUartApiSpec::isValidPredec(val) ? val : prevPredec;
   if (settings.predec != prevPredec) {
     char buffer[50];
     std::snprintf(buffer, sizeof(buffer), "predec=%d", settings.predec);
@@ -740,7 +742,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setPredec(const int val) {
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -759,7 +761,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setExtendedHeads(const int val) {
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -780,7 +782,7 @@ SsvcSettings::Builder & SsvcSettings::Builder::setParallel(float timeTurnOn, int
     } else {
       
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -801,7 +803,7 @@ SsvcSettings::Builder & SsvcSettings::Builder::setParallelV1(float timeTurnOn, i
     } else {
 
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
   return *this;
@@ -838,7 +840,7 @@ SsvcSettings::Builder& SsvcSettings::Builder::setParallelV3(const std::vector<st
       ESP_LOGD("SsvcSettings", "Batch queued: %s", command.c_str());
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", command.c_str());
-      SsvcCommandsQueue::getQueue().set(command.c_str());
+      SsvcCommandsQueue::getQueue().set(command.c_str(), ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   }
 
@@ -854,7 +856,7 @@ SsvcSettings::Builder& SsvcSettings::Builder::setStepTemp(const float stepTemp){
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   return *this;
 }
@@ -868,7 +870,7 @@ SsvcSettings::Builder& SsvcSettings::Builder::setStepHysteresis(const float step
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   return *this;
 }
@@ -881,7 +883,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setStepSpeed(const float timeTurnO
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   return *this;
 }
@@ -895,7 +897,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setStepDecrement(const unsigned ch
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   return *this;
 }
@@ -909,7 +911,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setStepTimer(const unsigned int _t
       ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
     } else {
       ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
+      SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
   return *this;
 }
@@ -922,7 +924,7 @@ SsvcSettings::Builder& SsvcSettings::Builder::setTankPressureActual(const float 
         ESP_LOGI("SsvcSettings", "Batch queued: %s", buffer);
     } else {
         ESP_LOGI("SsvcSettings", "Single send: %s", buffer);
-        SsvcCommandsQueue::getQueue().set(buffer);
+        SsvcCommandsQueue::getQueue().set(buffer, ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
     }
     return *this;
 }
@@ -946,16 +948,15 @@ void SsvcSettings::Builder::applySettings() {
     return;
   }
 
-  // Фильтрацию по версии API выполняет очередь (единая точка gate), поэтому
-  // пропущенные поля собираем из её отчёта за время этой отправки.
+  // Фильтрацию по версии API выполняет очередь (единая точка gate), поэтому она
+  // пополняет наш собственный приёмник пропущенных полей за время этой отправки.
   _skippedCommands.clear();
-  SsvcCommandsQueue::getQueue().clearSkippedSetParams();
 
   String payload = "";
   for (const auto& cmd : _pendingCommands) {
     // Проверка лимита в 250-280 символов (с запасом до 300)
     if (payload.length() > 0 && (payload.length() + cmd.length() + 1 > 250)) {
-      SsvcCommandsQueue::getQueue().set(payload.c_str());
+      SsvcCommandsQueue::getQueue().set(payload.c_str(), ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
       payload = "";
     }
 
@@ -964,10 +965,9 @@ void SsvcSettings::Builder::applySettings() {
   }
 
   if (payload.length() > 0) {
-    SsvcCommandsQueue::getQueue().set(payload.c_str());
+    SsvcCommandsQueue::getQueue().set(payload.c_str(), ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
   }
 
-  _skippedCommands = SsvcCommandsQueue::getQueue().skippedSetParams();
   if (!_skippedCommands.empty()) {
     std::string skippedList;
     for (const std::string& item : _skippedCommands) {

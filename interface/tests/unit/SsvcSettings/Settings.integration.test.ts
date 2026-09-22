@@ -5,6 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
+import { writable } from 'svelte/store';
 import { createMockSsvcSettings } from '../../lib/createMockSsvcSettings';
 import { SPEED_SETTINGS_EXPECTED_REQUESTS } from '../../lib/speedSettingsExpectedRequests';
 
@@ -39,7 +40,8 @@ vi.mock('$app/environment', () => ({
 vi.mock('$lib/api/ssvcApi', () => ({
 	fetchSettings: vi.fn(),
 	updateSetting: vi.fn(),
-	getInfo: vi.fn()
+	getInfo: vi.fn(),
+	infoCacheVersion: writable(0)
 }));
 
 vi.mock('$lib/components/toasts/notifications', () => ({

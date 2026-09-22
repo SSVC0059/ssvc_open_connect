@@ -3,7 +3,7 @@
 	import { browser } from '$app/environment';
 	import { tick } from 'svelte';
 	import type { OcApiFeature, SsvcSettings } from '$lib/types/ssvc';
-	import { fetchSettings, getInfo, updateSetting } from '$lib/api/ssvcApi';
+	import { fetchSettings, getInfo, updateSetting, infoCacheVersion } from '$lib/api/ssvcApi';
 	import { notifications } from '$lib/components/toasts/notifications';
 	import GeneralSettings from '$lib/components/SsvcSettings/GeneralSettings.svelte';
 	import ValveBandwidth from '$lib/components/SsvcSettings/ValveBandwidth.svelte';
@@ -103,6 +103,9 @@
 	const tabFromUrl = $derived($page.url.searchParams.get('tab'));
 
 	$effect(() => {
+		// Сброс кеша /rest/oc/info (переподключение) должен перечитать гейты
+		// возможностей API, иначе они останутся от прошлого подключения.
+		void $infoCacheVersion;
 		loadSsvcSettings();
 		// Возможности API и признак ветки прошивки нужны для гейта полей,
 		// появившихся в новых версиях API (см. GeneralSettings).

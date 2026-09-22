@@ -32,8 +32,12 @@
 	// Возможности, появившиеся в API 1.9. На устройстве старее 1.9 поля
 	// показываются неактивными с пояснением, а не скрываются: пользователь
 	// должен видеть, что настройка существует и чего не хватает.
+	//
+	// Отсутствие метаданных трактуется как «возможности нет»: включать режим 1.9
+	// по умолчанию нельзя, иначе на контроллере 1.7/1.8 поле молча отбросит
+	// очередь, а интерфейс покажет успех.
 	const formulaAuto92Available = $derived(
-		apiFeatures.find((feature: OcApiFeature) => feature.name === 'formula_auto92')?.available ?? true
+		apiFeatures.find((feature: OcApiFeature) => feature.name === 'formula_auto92')?.available ?? false
 	);
 	const formulaStartTempAvailable = $derived(
 		apiFeatures.find((feature: OcApiFeature) => feature.name === 'formula')?.available ?? true
@@ -335,40 +339,52 @@
 					</div>
 					<div class="settings-item">
 						<span class="input-label">Скорость сброса</span>
-						<EditNumbersModal
-							onSave={(newValues) => {
-								// Используйте полный тип объекта как в компоненте
-								onSave('release_speed', newValues[0].value);
-							}}
-							values={[
-								{
-									name: 'Скорость сброса (время открытого клапана). Значение должно быть меньше периода этапа отбора голов.',
-									value: settings.release_speed,
-									unit: 'сек',
-									step: 0.1
-								}
-							]}
-						/>
+						{#if releaseSectionEnabled}
+							<EditNumbersModal
+								onSave={(newValues) => {
+									// Используйте полный тип объекта как в компоненте
+									onSave('release_speed', newValues[0].value);
+								}}
+								values={[
+									{
+										name: 'Скорость сброса (время открытого клапана). Значение должно быть меньше периода этапа отбора голов.',
+										value: settings.release_speed,
+										unit: 'сек',
+										step: 0.1
+									}
+								]}
+							/>
+						{:else}
+							<span class="settings-value settings-value--disabled">
+								{settings.release_speed} сек
+							</span>
+						{/if}
 					</div>
 
 					<div class="settings-item">
 						<span class="input-label">Скорость отбора к окончанию голов</span>
-						<EditNumbersModal
-							onSave={(newValues) => {
-								// Используйте полный тип объекта как в компоненте
-								onSave('heads_final', newValues[0].value);
-							}}
-							values={[
-								{
-									name: 'Скорость отбора к окончанию голов',
-									value: settings.heads_final,
-									unit: 'сек',
-									min: 0,
-									max: 99.9,
-									step: 0.1
-								}
-							]}
-						/>
+						{#if releaseSectionEnabled}
+							<EditNumbersModal
+								onSave={(newValues) => {
+									// Используйте полный тип объекта как в компоненте
+									onSave('heads_final', newValues[0].value);
+								}}
+								values={[
+									{
+										name: 'Скорость отбора к окончанию голов',
+										value: settings.heads_final,
+										unit: 'сек',
+										min: 0,
+										max: 99.9,
+										step: 0.1
+									}
+								]}
+							/>
+						{:else}
+							<span class="settings-value settings-value--disabled">
+								{settings.heads_final} сек
+							</span>
+						{/if}
 					</div>
 				</div>
 			{/if}

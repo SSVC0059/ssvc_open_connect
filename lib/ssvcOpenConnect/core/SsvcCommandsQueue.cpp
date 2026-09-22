@@ -362,12 +362,16 @@ void SsvcCommandsQueue::registerCallbackCommands() {
  * @param parameters Параметры команды (строка).
  * @param attempt_count Количество попыток при неудаче.
  * @param timeout Тайм-аут ожидания ответа (в тиках).
+ * @param skippedOut Приёмник отброшенных по версии API полей SET. Владелец —
+ *        вызывающая операция; nullptr означает, что отчёт не нужен. Общий
+ *        накопитель здесь недопустим: HTTP, MQTT и профили идут из разных задач.
  * @return true, если команда поставлена в очередь.
  */
 bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
                                            const std::string& parameters,
                                            const int attempt_count,
-                                           const TickType_t timeout) const
+                                           const TickType_t timeout,
+                                           std::vector<std::string>* skippedOut) const
 {
   const SsvcSettings& settings = SsvcSettings::init();
   const int deviceCode = settings.getSsvcApiVersionCode();
@@ -390,14 +394,18 @@ bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
       }
       ESP_LOGW(TAG, "SET отклонён: ни один параметр не поддерживается устройством (API %s)",
                deviceApi.c_str());
-      _skippedSetParams.insert(_skippedSetParams.end(), skipped.begin(), skipped.end());
+      if (skippedOut != nullptr) {
+        skippedOut->insert(skippedOut->end(), skipped.begin(), skipped.end());
+      }
       rememberRejection("no_supported_params", SsvcApiCapabilities::featureName(feature),
                         SsvcUartApiSpec::formatApiVersion(required), deviceApi);
       return false;
     }
-    // Копим пропущенное для вызывающего: REST-слой показывает, какие поля не
-    // ушли на устройство. Список сбрасывается вызовом clearSkippedSetParams().
-    _skippedSetParams.insert(_skippedSetParams.end(), skipped.begin(), skipped.end());
+    // Отчёт кладётся в приёмник вызывающей операции: REST-слой показывает, какие
+    // поля не ушли на устройство, не смешивая их с параллельными запросами.
+    if (skippedOut != nullptr) {
+      skippedOut->insert(skippedOut->end(), skipped.begin(), skipped.end());
+    }
 
     if (!skipped.empty()) {
       std::string skippedList;
@@ -544,13 +552,15 @@ void SsvcCommandsQueue::at(const int attempt_count, const TickType_t timeout) co
  * @param parameters Параметры команды.
  * @param attempt_count Количество попыток.
  * @param timeout Тайм-аут ожидания (в тиках).
+ * @param skippedOut Приёмник отброшенных по версии API полей; может быть nullptr.
  * @return true, если команда поставлена в очередь.
  */
 bool SsvcCommandsQueue::set(const std::string& parameters, const int attempt_count,
-                            const TickType_t timeout) const
+                            const TickType_t timeout,
+                            std::vector<std::string>* skippedOut) const
 {
   ESP_LOGD(TAG, "Set command called with parameters: %s", parameters.c_str());
-  return pushCommandInQueue(SsvcCommandType::SET, parameters, attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::SET, parameters, attempt_count, timeout, skippedOut);
 }
 
 /**
