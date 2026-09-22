@@ -4797,7 +4797,7 @@
 <li><code>hearts=[&lt;время_включения&gt;,&lt;период&gt;]</code> — скорость отбора тела.</li>
 <li><code>hyst=&lt;значение&gt;</code> — гистерезис.</li>
 <li><code>decrement=&lt;значение&gt;</code> — декремент.</li>
-<li><code>formula=[0|1|2]</code> — формула.</li>
+<li><code>formula=[0|1|2]</code> — формула. Значения <code>0</code> и <code>1</code> доступны начиная с API 1.7, значение <code>2</code> («авто 92+») — начиная с API 1.9.</li>
 <li><code>predec=[0|7|13]</code> — предекремент.</li>
 <li><code>tank_mmhg=&lt;значение&gt;</code> — давление в кубе относительно атмосферного (параметр в настройках), мм рт. ст.</li>
 <li><code>tank_mmhg_act=&lt;значение&gt;</code> — актуальное давление в кубе относительно атмосферного (измеряется датчиком), мм рт. ст.</li>
@@ -5334,7 +5334,7 @@ SET formula_start_temp=100.0
 SET valve_bw=[10000,11000,12000]
 </code></pre></div>
 <h4 id="_10">Примеры команд с ошибками</h4>
-<div class="highlight"><pre><span></span><code>SET heads=[60.0,360],hearts=[2.0,4],hyst=0.19,decrement=30,formula=2
+<div class="highlight"><pre><span></span><code>SET heads=[60.0,360],hearts=[2.0,4],hyst=0.19,decrement=30,formula=3
 SET heads=[100.0,180],hearts=[2.5,5],formula=1
 SET heads=[99.9,1000],hearts=[2.5,5]
 SET heads=[99.1,99],hearts=[2.5,5],formula=1
@@ -5408,7 +5408,7 @@ SET valve_bw=[10000,11000,21000]
 <span class="w">    </span><span class="nt">"backlight"</span><span class="p">:</span><span class="w"> </span><span class="s2">"active"</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">"valve_bw"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">1100</span><span class="p">,</span><span class="w"> </span><span class="mi">1200</span><span class="p">,</span><span class="w"> </span><span class="mi">1300</span><span class="p">],</span>
 <span class="w">    </span><span class="nt">"extended_heads"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"predec"</span><span class="p">:</span><span class="w"> </span><span class="mi">13</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"predec"</span><span class="p">:</span><span class="w"> </span><span class="mi">13</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
