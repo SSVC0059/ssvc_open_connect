@@ -287,19 +287,21 @@ void HandlerRegistrator::registerFileHandler() const
 
 void HandlerRegistrator::registerLogHandlers() const
 {
-    const auto statusName = [](const SsvcLogProtocol::Status status) {
+    const auto statusName = [](const SsvcLogProtocol::Status status) -> const char* {
         switch (status) {
+        case SsvcLogProtocol::Status::IDLE:
+            return "idle";
         case SsvcLogProtocol::Status::LIST_RECEIVED:
             return "list";
-        case SsvcLogProtocol::Status::RECEIVING:
-            return "receiving";
         case SsvcLogProtocol::Status::COMPLETED:
             return "completed";
         case SsvcLogProtocol::Status::ERROR:
             return "error";
-        case SsvcLogProtocol::Status::IDLE:
         default:
-            return "idle";
+            // Все состояния «в работе» (резерв, ожидание LIST/START, приём,
+            // дренирование) отдаются как receiving: UI продолжает опрос, а не
+            // подменяет прогресс устаревшим списком.
+            return "receiving";
         }
     };
 
@@ -324,22 +326,34 @@ void HandlerRegistrator::registerLogHandlers() const
                        }
 
                        auto& transfer = SsvcLogProtocol::getTransfer();
-                       if (!transfer.isPending() &&
-                           transfer.status() == SsvcLogProtocol::Status::IDLE) {
-                           transfer.markPending();
-                           SsvcCommandsQueue::getQueue().getLog();
+                       // Deadline незавершённых ожиданий проверяется до чтения
+                       // снимка: зависший LIST не должен выглядеть активным.
+                       transfer.checkTimeout(millis());
+
+                       if (transfer.snapshot().status == SsvcLogProtocol::Status::IDLE &&
+                           transfer.reserveList(millis()) ==
+                               SsvcLogProtocol::ReserveResult::Accepted) {
+                           // Резерв сделан до постановки команды; при отказе
+                           // очереди он снимается, и клиент получает причину.
+                           if (!SsvcCommandsQueue::getQueue().getLog("", transfer.generation())) {
+                               transfer.releaseReservation();
+                               request->send(503, "application/json",
+                                             R"({"error":"queue_full"})");
+                               return;
+                           }
                        }
 
+                       const SsvcLogProtocol::Snapshot snap = transfer.snapshot();
                        JsonDocument response;
-                       response["status"] = statusName(transfer.status());
-                       response["total"] = transfer.totalChunks();
-                       response["received"] = transfer.receivedChunks();
-                       if (!transfer.error().empty()) {
-                           response["error"] = transfer.error();
+                       response["status"] = statusName(snap.status);
+                       response["total"] = snap.totalChunks;
+                       response["received"] = snap.receivedChunks;
+                       if (!snap.error.empty()) {
+                           response["error"] = snap.error;
                        }
-                       if (transfer.status() == SsvcLogProtocol::Status::LIST_RECEIVED) {
+                       if (snap.status == SsvcLogProtocol::Status::LIST_RECEIVED) {
                            JsonArray files = response["files"].to<JsonArray>();
-                           for (const auto& file : transfer.files()) {
+                           for (const auto& file : snap.files) {
                                files.add(file);
                            }
                        }
@@ -381,30 +395,45 @@ void HandlerRegistrator::registerLogHandlers() const
 
                        auto& transfer = SsvcLogProtocol::getTransfer();
                        const std::string expectedName = process.c_str() + std::string(".CSV");
+                       transfer.checkTimeout(millis());
 
-                       // Запрос списка уже в очереди — второй запрос затрёт его через reset().
-                       if (transfer.isPending() &&
-                           transfer.status() == SsvcLogProtocol::Status::IDLE) {
+                       // Резерв до enqueue: повторный запрос того же файла получает
+                       // текущий статус без новой команды, чужой запрос — 409.
+                       const SsvcLogProtocol::ReserveResult reserved =
+                           transfer.reserveFile(static_cast<int>(processNumber), millis());
+
+                       if (reserved == SsvcLogProtocol::ReserveResult::Unavailable) {
+                           request->send(400, "application/json",
+                                         R"({"error":"invalid_process_id"})");
+                           return;
+                       }
+
+                       if (reserved == SsvcLogProtocol::ReserveResult::Busy) {
                            request->send(409, "application/json",
                                          R"({"error":"log_transfer_busy"})");
                            return;
                        }
 
-                       if (transfer.status() == SsvcLogProtocol::Status::RECEIVING) {
-                           if (!transfer.fileName().empty() && transfer.fileName() != expectedName) {
-                               request->send(409, "application/json",
-                                             R"({"error":"log_transfer_busy"})");
-                               return;
-                           }
-                           // Идёт передача именно этого файла — отдаём прогресс ниже.
-                       } else if (transfer.status() == SsvcLogProtocol::Status::COMPLETED &&
-                                  transfer.fileName() == expectedName) {
+                       if (reserved == SsvcLogProtocol::ReserveResult::Accepted &&
+                           !SsvcCommandsQueue::getQueue().getLog(std::to_string(processNumber),
+                                                                 transfer.generation())) {
+                           // Очередь отказала — резерв снимается до ответа, чтобы
+                           // сессия не осталась занятой без команды.
+                           transfer.releaseReservation();
+                           request->send(503, "application/json",
+                                         R"({"error":"queue_full"})");
+                           return;
+                       }
+
+                       const SsvcLogProtocol::Snapshot snap = transfer.snapshot();
+                       if (snap.status == SsvcLogProtocol::Status::COMPLETED &&
+                           snap.fileName == expectedName) {
                            // beginResponse(code, type, const uint8_t*, len) не копирует буфер.
-                           // Копируем данные в String и сразу сбрасываем Transfer, иначе
-                           // следующий запрос освободит память под уже отправляемым ответом
-                           // (use-after-free), а сам буфер продолжит занимать RAM.
-                           String csv(transfer.data().c_str(),
-                                      static_cast<unsigned int>(transfer.data().size()));
+                           // Копируем данные и сбрасываем Transfer, иначе следующий запрос
+                           // освободит память под уже отправляемым ответом (use-after-free).
+                           // Удержание результата между запросами — задача Фазы 7.
+                           const std::string data = transfer.dataCopy();
+                           String csv(data.c_str(), static_cast<unsigned int>(data.size()));
                            String disposition =
                                String("attachment; filename=\"") + expectedName.c_str() + "\"";
                            transfer.reset();
@@ -412,16 +441,14 @@ void HandlerRegistrator::registerLogHandlers() const
                            response->addHeader("Content-Disposition", disposition);
                            request->send(response);
                            return;
-                       } else {
-                           SsvcCommandsQueue::getQueue().getLog(std::to_string(processNumber));
                        }
 
                        JsonDocument response;
-                       response["status"] = statusName(transfer.status());
-                       response["total"] = transfer.totalChunks();
-                       response["received"] = transfer.receivedChunks();
-                       if (!transfer.error().empty()) {
-                           response["error"] = transfer.error();
+                       response["status"] = statusName(snap.status);
+                       response["total"] = snap.totalChunks;
+                       response["received"] = snap.receivedChunks;
+                       if (!snap.error.empty()) {
+                           response["error"] = snap.error;
                        }
                        String serialized;
                        serializeJson(response, serialized);
@@ -429,13 +456,20 @@ void HandlerRegistrator::registerLogHandlers() const
                    },
                    AuthenticationPredicates::IS_AUTHENTICATED));
 
-    // Отмена текущей передачи журнала (GET_LOG). Контроллер при этом доигрывает
-    // уже отправленные пакеты, но они игнорируются, т.к. Transfer сброшен.
+    // Отмена текущей передачи журнала (GET_LOG). До отправки резерв снимается,
+    // после отправки сессия переходит в DRAINING: новый запрос не принимается,
+    // пока не показана граница старого потока кадров.
     _server.on("/rest/logs", HTTP_DELETE,
                _securityManager->wrapRequest(
-                   [](AsyncWebServerRequest* request) {
-                       SsvcLogProtocol::getTransfer().reset();
-                       request->send(200, "application/json", R"({"status":"idle"})");
+                   [statusName](AsyncWebServerRequest* request) {
+                       auto& transfer = SsvcLogProtocol::getTransfer();
+                       transfer.cancel();
+                       const SsvcLogProtocol::Snapshot snap = transfer.snapshot();
+                       JsonDocument response;
+                       response["status"] = statusName(snap.status);
+                       String serialized;
+                       serializeJson(response, serialized);
+                       request->send(200, "application/json", serialized);
                    },
                    AuthenticationPredicates::IS_AUTHENTICATED));
 }

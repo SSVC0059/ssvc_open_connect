@@ -57,6 +57,9 @@ struct SsvcCommand
   std::string parameters;
   int attempt_count = 0;
   TickType_t timeout = TIMEOUT;
+  /// Номер сессии GET_LOG, под которую сделан резерв (0 — команда вне сессии).
+  /// По нему воркер отбрасывает отменённые и устаревшие лог-команды.
+  unsigned long generation = 0;
 };
 
 class MutexLock
@@ -107,8 +110,10 @@ public:
   void status(const std::string& parameters, int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
   /// @return true, если команда поставлена в очередь; false — функция недоступна на устройстве.
-  bool getLog(const std::string& parameters = "", int attempt_count = 1,
-              TickType_t timeout = TIMEOUT) const;
+  /// generation — номер сессии, зарезервированной через Transfer::reserve*;
+  /// команда с устаревшим generation отбрасывается воркером до отправки.
+  bool getLog(const std::string& parameters = "", unsigned long generation = 0,
+              int attempt_count = 1, TickType_t timeout = TIMEOUT) const;
 
   UBaseType_t availableCommands() const
   {
@@ -240,7 +245,8 @@ private:
    * @return true, если команда поставлена в очередь.
    */
   bool pushCommandInQueue(SsvcCommandType type, const std::string& parameters,
-                          int attempt_count, TickType_t timeout) const;
+                          int attempt_count, TickType_t timeout,
+                          unsigned long generation = 0) const;
 
   /// Диагностика последней отбраковки; читается REST-слоем при отказе.
   void rememberRejection(const std::string& reason, const std::string& feature,
