@@ -50,6 +50,17 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     _securityManager = securityManager;
     _mqttClient = _esp32sveltekit->getMqttClient();
 
+    // Явная инициализация UART-тракта и очереди команд: раньше драйвер поднимался
+    // из конструктора Connector, то есть до готовности зависимостей. Теперь
+    // неудачная инициализация видна как Failed, а команды не идут через
+    // частично созданный singleton.
+    if (!_ssvcConnector.begin()) {
+        ESP_LOGE(TAG, "begin: UART-тракт не готов (Failed)");
+    }
+    if (!SsvcCommandsQueue::getQueue().begin()) {
+        ESP_LOGE(TAG, "begin: очередь команд не готова (Failed)");
+    }
+
     ESP_LOGD(TAG, "begin: StatusLed");
     _statusLed = std::make_unique<StatusLed>(&esp32sveltekit);
     _statusLed->begin(NEO_GRB);

@@ -60,6 +60,10 @@ struct SsvcCommand
   /// Номер сессии GET_LOG, под которую сделан резерв (0 — команда вне сессии).
   /// По нему воркер отбрасывает отменённые и устаревшие лог-команды.
   unsigned long generation = 0;
+  /// Поколение safety: снимок _safetyEpoch на момент постановки. Неотправленная
+  /// неидемпотентная команда с устаревшим поколением отбрасывается после
+  /// аварийной остановки.
+  unsigned long safetyEpoch = 0;
 };
 
 class MutexLock
@@ -86,28 +90,41 @@ public:
     return queue;
   }
 
-  void getSettings(int attempt_count = ATTEMPT_COUNT,
+  /// Явная инициализация: очередь → задача-воркер → Ready. Вызывается из
+  /// SsvcOpenConnect::begin() после готовности зависимостей, а не из конструктора.
+  bool begin();
+
+  bool isReady() const { return _ready; }
+  bool hasFailed() const { return _failed; }
+
+  /// Аварийная остановка: приоритетный путь вне общего FIFO.
+  /// Ставится в отдельную safety-очередь, которую воркер забирает первой, и не
+  /// ждёт накопленных обычных команд. @return true, если STOP принят к отправке.
+  bool emergencyStop();
+
+  /// @return true, если команда поставлена в очередь.
+  bool getSettings(int attempt_count = ATTEMPT_COUNT,
                    TickType_t timeout = TIMEOUT) const;
 
-  void next(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool next(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
-  void stop(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool stop(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
-  void start(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool start(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
-  void pause(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool pause(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
-  void resume(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool resume(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
-  void version(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool version(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
-  void at(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool at(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
   /// @return true, если команда поставлена в очередь; false — отброшена по версии API.
   bool set(const std::string& parameters, int attempt_count = ATTEMPT_COUNT,
            TickType_t timeout = TIMEOUT) const;
 
-  void status(const std::string& parameters, int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool status(const std::string& parameters, int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
   /// @return true, если команда поставлена в очередь; false — функция недоступна на устройстве.
   /// generation — номер сессии, зарезервированной через Transfer::reserve*;
@@ -161,10 +178,20 @@ public:
     }
   }
 
-  static const std::map<std::string, std::function<void(const std::string&)>> COMMAND_MAP;
+  /// Команда возвращает результат постановки в очередь: REST отвечает ошибкой
+  /// при отказе, а не «accepted» независимо от фактической отправки.
+  static const std::map<std::string, std::function<bool(const std::string&)>> COMMAND_MAP;
 
 private:
   QueueHandle_t command_queue;
+  /// Отдельная очередь аварийных команд: воркер забирает её прежде общего FIFO,
+  /// поэтому STOP не зависит от накопленных обычных команд.
+  QueueHandle_t safety_queue{};
+  bool _ready{false};
+  bool _failed{false};
+  /// Поколение safety: инкремент при emergencyStop инвалидирует неотправленные
+  /// START/NEXT/RESUME, устаревшие после аварийной остановки.
+  unsigned long _safetyEpoch{0};
   TimerHandle_t _settingsTimer = nullptr;
   mutable TimerHandle_t _uartRetryTimer = nullptr;
   static constexpr UBaseType_t COMMAND_QUEUE_LENGTH = 50;

@@ -93,7 +93,19 @@ extern EventGroupHandle_t eventGroup;
 
 class SsvcConnector {
 public:
+  /// Состояние UART-тракта: явная готовность вместо «singleton уже создан».
+  enum class LinkState { NotReady, Ready, Failed };
+
   static SsvcConnector &getConnector();
+
+  /// Однократная явная инициализация: драйвер → приёмная задача → Ready.
+  /// Вызывается из SsvcOpenConnect::begin() после готовности зависимостей, а не
+  /// из конструктора: до готовности тракта singleton не отправляет команд.
+  bool begin();
+
+  bool isReady() const { return _linkState == LinkState::Ready; }
+  bool hasFailed() const { return _linkState == LinkState::Failed; }
+  LinkState linkState() const { return _linkState; }
 
   std::string getLastMessage();
 
@@ -109,8 +121,8 @@ public:
 private:
   explicit SsvcConnector();
 
-  void InitUartDriver();
-  void initSsvcController();
+  bool InitUartDriver();
+  bool initSsvcController();
 
   /// Сохранить кадр ответа вместе с его request одним снимком под mutex.
   void storeResponse(const std::string& payload, const std::string& request);
@@ -119,6 +131,9 @@ private:
 
   static SsvcConnector *_ssvcConnector;
   QueueHandle_t command_queue{};
+
+  /// Текущее состояние тракта; выставляется один раз в begin().
+  LinkState _linkState{LinkState::NotReady};
 
   std::string lastMessage;
   std::string lastSettings;

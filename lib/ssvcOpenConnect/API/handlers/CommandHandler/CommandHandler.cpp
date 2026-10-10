@@ -47,9 +47,25 @@ void CommandHandler::handleCommand(AsyncWebServerRequest* request, JsonVariant& 
             params = json["parameters"].as<std::string>();
         }
 
-        // Выполняем команду, передавая параметры
-        it->second(params);
-        ESP_LOGI("CommandHandler", "Command executed: %s", commandName.c_str());
+        // Команда сообщает, поставлена ли она в очередь: 200 отдаётся только при
+        // фактическом принятии, иначе клиент не отличит отказ от выполнения.
+        const bool accepted = it->second(params);
+        if (!accepted) {
+            const std::string reason = SsvcCommandsQueue::getQueue().lastRejectionReason();
+            ESP_LOGW("CommandHandler", "Command rejected: %s (reason: %s)",
+                     commandName.c_str(), reason.c_str());
+
+            if (reason == "feature_unsupported") {
+                request->send(409, "text/plain", "Command unsupported by device API");
+            } else if (reason == "queue_full") {
+                request->send(503, "text/plain", "Command queue is full");
+            } else {
+                request->send(503, "text/plain", "Command not accepted");
+            }
+            return;
+        }
+
+        ESP_LOGI("CommandHandler", "Command accepted: %s", commandName.c_str());
         request->send(200, "text/plain", "Command accepted");
     } catch (const std::exception& e) {
         ESP_LOGE("CommandHandler", "Command error: %s", e.what());

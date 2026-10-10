@@ -26,10 +26,11 @@
 SsvcConnector *SsvcConnector::_ssvcConnector = nullptr;
 
 SsvcConnector::SsvcConnector() {
+  // Конструктор только обнуляет состояние: UART-драйвер и задачи поднимаются в
+  // begin(), после готовности зависимостей (см. SsvcOpenConnect::begin).
   uartCommunicationError = false;
   lastSettings = "";
   lastMessage = "";
-  InitUartDriver();
 }
 
 SsvcConnector &SsvcConnector::getConnector() {
@@ -39,7 +40,32 @@ SsvcConnector &SsvcConnector::getConnector() {
   return *_ssvcConnector; // Возвращаем указатель на экземпляр
 }
 
-void SsvcConnector::InitUartDriver() {
+bool SsvcConnector::begin() {
+  if (_linkState == LinkState::Ready) {
+    return true; // Инициализация идемпотентна
+  }
+  if (_linkState == LinkState::Failed) {
+    return false; // Повторять заведомо неудачную инициализацию не пробуем
+  }
+
+  ESP_LOGI("SsvcConnector", "begin: инициализация UART-тракта");
+  if (!InitUartDriver()) {
+    _linkState = LinkState::Failed;
+    ESP_LOGE("SsvcConnector", "begin: InitUartDriver failed -> Failed");
+    return false;
+  }
+  if (!initSsvcController()) {
+    _linkState = LinkState::Failed;
+    ESP_LOGE("SsvcConnector", "begin: initSsvcController failed -> Failed");
+    return false;
+  }
+
+  _linkState = LinkState::Ready;
+  ESP_LOGI("SsvcConnector", "begin: тракт готов (Ready)");
+  return true;
+}
+
+bool SsvcConnector::InitUartDriver() {
 #if BOARD_KINCONY_KC868_A6
   constexpr int kUartIntrFlags = ESP_INTR_FLAG_LOWMED;
   const char *kBoardTag = "KC868-A6";
@@ -96,7 +122,7 @@ void SsvcConnector::InitUartDriver() {
              "InitUartDriver: uart_param_config FAILED uart=%d err=%s (0x%x)",
              static_cast<int>(SSVC_OPEN_CONNECT_UART_NUM), esp_err_to_name(ret),
              static_cast<unsigned>(ret));
-    return;
+    return false;
   }
   ESP_LOGI("SsvcConnector", "InitUartDriver: uart_param_config OK");
 
@@ -112,7 +138,7 @@ void SsvcConnector::InitUartDriver() {
     ESP_LOGE("SsvcConnector",
              "InitUartDriver: uart_set_pin FAILED err=%s (0x%x)", esp_err_to_name(ret),
              static_cast<unsigned>(ret));
-    return;
+    return false;
   }
   ESP_LOGI("SsvcConnector", "InitUartDriver: uart_set_pin OK");
 
@@ -133,7 +159,7 @@ void SsvcConnector::InitUartDriver() {
     ESP_LOGE("SsvcConnector",
              "InitUartDriver: uart_driver_install FAILED err=%s (0x%x)",
              esp_err_to_name(ret), static_cast<unsigned>(ret));
-    return;
+    return false;
   }
   ESP_LOGI("SsvcConnector", "InitUartDriver: uart_driver_install OK");
 
@@ -150,25 +176,31 @@ void SsvcConnector::InitUartDriver() {
   ESP_LOGI("SsvcConnector", "InitUartDriver: settle delay done");
 #endif
 
-  ESP_LOGI("SsvcConnector", "InitUartDriver: complete, calling initSsvcController()");
-  ESP_LOGV("SsvcConnector", "Starting loop task");
-
-  SsvcConnector::initSsvcController();
+  ESP_LOGI("SsvcConnector", "InitUartDriver: драйвер готов");
+  return true;
 }
 
 // CRON
-void SsvcConnector::initSsvcController() {
+bool SsvcConnector::initSsvcController() {
   ESP_LOGV("SsvcConnector", "start _telemetry task");
   //     Запуск сбора телеметрии
-  xTaskCreatePinnedToCore(
+  TaskHandle_t telemetryTask = nullptr;
+  const BaseType_t created = xTaskCreatePinnedToCore(
       SsvcConnector::_telemetry, // Function that should be called
       "TelemetryTask",           // Name of the task (for debugging)
       4096,                      // Stack size (bytes)
       this,                      // Pass reference to this class instance
       (tskIDLE_PRIORITY + 1),    // task priority
-      nullptr,                   // Task handle
+      &telemetryTask,            // Task handle
       1                          // Pin to application core
   );
+  // Отказ создания задачи виден как Failed: без приёмника UART тракт нерабочий.
+  if (created != pdPASS || telemetryTask == nullptr) {
+    ESP_LOGE("SsvcConnector", "initSsvcController: не удалось создать TelemetryTask");
+    return false;
+  }
+  ESP_LOGI("SsvcConnector", "initSsvcController: TelemetryTask запущена");
+  return true;
 }
 
 constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
@@ -374,6 +406,12 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
 }
 
 bool SsvcConnector::sendCommand(const char *command) {
+  // Защита от команд через частично созданный singleton: до Ready тракт не
+  // используется, а отказ виден вызывающему как false.
+  if (_ssvcConnector == nullptr || !_ssvcConnector->isReady()) {
+    ESP_LOGE("SsvcConnector", "sendCommand: UART не готов, команда отклонена");
+    return false;
+  }
   char *commandCopy = strdup(command);
   if (!commandCopy) {
     ESP_LOGE("SsvcConnector", "Ошибка копирования команды");
