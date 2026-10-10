@@ -62,17 +62,79 @@
 	};
 
 	const loadLogs = async () => {
+		cancelLocalRequest();
+		const requestId = ++logRequestId;
+		logAbort = new AbortController();
+		const signal = logAbort.signal;
+
 		// Явное обновление: refresh=1 действительно запрашивает список заново,
 		// а не отдаёт ранее полученный.
 		logError = '';
-		const result = await refreshLogList();
-		if (result.ok) {
+		logStatus = null;
+		localState = 'starting';
+
+		try {
+			const result = await refreshLogList(signal);
+			if (requestId !== logRequestId) return;
+
+			if (!result.ok) {
+				logError = logErrorText(result.code) || result.message;
+				localState = 'error';
+				return;
+			}
+
 			logStatus = result.data;
-			localState = 'idle';
-			return;
+			if (result.data.status === 'error') {
+				logError = logErrorText(result.data.error) || 'Ошибка получения списка журналов';
+				localState = 'error';
+				return;
+			}
+			if (result.data.status !== 'receiving') {
+				localState = 'idle';
+				return;
+			}
+
+			// Список ещё запрашивается (backend ответил 202): ждём LIST/ERROR,
+			// иначе поздно пришедший список не отобразится без повторного клика.
+			localState = 'waiting';
+			const listDeadlineAt = Date.now() + LOG_IDLE_TIMEOUT_MS;
+
+			for (;;) {
+				await new Promise((resolve) => setTimeout(resolve, 500));
+				if (requestId !== logRequestId) return;
+
+				const status = await fetchLogStatus(signal, { statusOnly: true });
+				if (requestId !== logRequestId) return;
+
+				if (!status.ok) {
+					logError = logErrorText(status.code) || status.message;
+					localState = 'error';
+					return;
+				}
+
+				logStatus = status.data;
+				if (status.data.status === 'error') {
+					logError = logErrorText(status.data.error) || 'Ошибка получения списка журналов';
+					localState = 'error';
+					return;
+				}
+				if (status.data.status !== 'receiving') {
+					localState = 'idle';
+					return;
+				}
+				if (Date.now() > listDeadlineAt) {
+					logError = logErrorText('timeout') || 'Превышено время ожидания списка журналов';
+					localState = 'error';
+					return;
+				}
+			}
+		} catch (error) {
+			if (requestId !== logRequestId) return;
+			logError = error instanceof Error ? error.message : 'Ошибка получения списка журналов';
+			localState = 'error';
+		} finally {
+			if (requestId === logRequestId) logAbort = null;
 		}
-		logError = logErrorText(result.code) || result.message;
-		localState = 'error';
 	};
 
 	const requestLog = async (file: string) => {
@@ -211,9 +273,13 @@
 			<p class="log-hint">Для журналов требуется версия API SSVC {logsMinApi} или новее.</p>
 		{/if}
 		{#if localState === 'waiting' || localState === 'downloading'}
-			<p>Загрузка: {logStatus?.received ?? 0} / {logStatus?.total ?? 0}</p>
+			{#if (logStatus?.total ?? 0) > 0}
+				<p>Загрузка: {logStatus?.received ?? 0} / {logStatus?.total ?? 0}</p>
+			{:else}
+				<p>Получение списка журналов…</p>
+			{/if}
 		{:else if localState === 'starting'}
-			<p>Запрос журнала…</p>
+			<p>Запрос данных с контроллера…</p>
 		{:else if localState === 'done'}
 			<p>Журнал сохранён.</p>
 		{:else if localState === 'cancelled'}

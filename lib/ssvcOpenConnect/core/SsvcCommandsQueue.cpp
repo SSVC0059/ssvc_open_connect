@@ -167,14 +167,16 @@ bool SsvcCommandsQueue::begin() {
 bool SsvcCommandsQueue::emergencyStop() {
   // Аварийная команда идёт приоритетным путём: отдельная очередь (воркер берёт
   // её первой) и новое поколение safety, чтобы неотправленные START/NEXT/RESUME
-  // не «догнали» остановку.
-  _safetyEpoch += 1;
+  // не «догнали» остановку. Поколение применяется только после успешной
+  // постановки: иначе при отказе STOP не ушёл бы, а догоняющие команды уже были
+  // бы инвалидированы.
+  const unsigned long safetyEpoch = _safetyEpoch + 1;
 
   auto *cmd = new SsvcCommand();
   cmd->type = SsvcCommandType::STOP;
   cmd->attempt_count = 1;
   cmd->timeout = TIMEOUT;
-  cmd->safetyEpoch = _safetyEpoch;
+  cmd->safetyEpoch = safetyEpoch;
 
   if (safety_queue == nullptr ||
       xQueueSend(safety_queue, &cmd, pdMS_TO_TICKS(1000)) != pdPASS) {
@@ -184,6 +186,7 @@ bool SsvcCommandsQueue::emergencyStop() {
     return false;
   }
 
+  _safetyEpoch = safetyEpoch;
   ESP_LOGW(TAG, "emergencyStop: STOP поставлен вне общего FIFO");
   return true;
 }
@@ -252,6 +255,9 @@ void SsvcCommandsQueue::scheduleUartRetryTimer() const {
 void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
   auto *self = static_cast<SsvcCommandsQueue *>(pvParameters);
   SsvcCommand *cmd = nullptr;
+  // Пауза при откладывании обычной команды: за это время воркер успевает
+  // опросить safety-очередь и извлечь зарезервированный GET_LOG.
+  constexpr uint32_t kDeferRetryMs = 100;
 
   while (true) {
     // Приоритет аварийных команд: safety-очередь забирается без ожидания, до
@@ -286,17 +292,23 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
       continue;
     }
 
-    while (cmd->attempt_count != 0) {
-      // Обычные команды не вклиниваются в активную лог-сессию: они ждут её
-      // завершения или дренирования. Счётчик попыток не расходуется — команда
-      // ещё не отправлялась. Аварийный STOP ждать не обязан.
-      if (cmd->type != SsvcCommandType::GET_LOG && cmd->type != SsvcCommandType::STOP &&
-          SsvcLogProtocol::getTransfer().isBlocked()) {
-        SsvcLogProtocol::getTransfer().checkTimeout(millis());
-        vTaskDelay(pdMS_TO_TICKS(50));
-        continue;
+    // Обычные команды не вклиниваются в активную лог-сессию. Команда возвращается
+    // в хвост очереди, а не удерживается в цикле: воркер продолжает опрашивать
+    // safety-очередь и способен извлечь зарезервированный GET_LOG. Удержание
+    // блокировало и приоритет STOP, и саму лог-сессию до её таймаута.
+    if (cmd->type != SsvcCommandType::GET_LOG && cmd->type != SsvcCommandType::STOP &&
+        SsvcLogProtocol::getTransfer().isBlocked()) {
+      SsvcLogProtocol::getTransfer().checkTimeout(millis());
+      vTaskDelay(pdMS_TO_TICKS(kDeferRetryMs));
+      // Слот освободился при извлечении команды, но его мог занять другой
+      // постановщик — повтор до успешного возврата.
+      while (xQueueSendToBack(self->command_queue, &cmd, 0) != pdPASS) {
+        vTaskDelay(pdMS_TO_TICKS(kDeferRetryMs));
       }
+      continue;
+    }
 
+    while (cmd->attempt_count != 0) {
       cmd->attempt_count--;
 
       // Отправка команды в зависимости от типа

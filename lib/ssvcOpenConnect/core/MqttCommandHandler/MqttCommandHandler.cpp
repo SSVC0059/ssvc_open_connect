@@ -65,8 +65,17 @@ void MqttCommandHandler::handleCommand(const String& commandString)
 
         ESP_LOGI(TAG, "-> Найдена команда '%s'. Вызываем с параметрами: '%s'", commandName.c_str(), params.c_str());
 
-        // Вызываем лямбда-функцию из COMMAND_MAP, передавая параметры
-        it->second(params);
+        // Лямбда возвращает результат постановки: отказ должен быть виден и в
+        // логе, и в MQTT, а не только по отсутствию эффекта на устройстве.
+        const bool accepted = it->second(params);
+        if (!accepted) {
+            const std::string reason = SsvcCommandsQueue::getQueue().lastRejectionReason();
+            ESP_LOGW(TAG, "<- Команда '%s' не принята (reason: %s).", commandName.c_str(),
+                     reason.c_str());
+            const std::string errorMessage = commandName + " - команда не принята: " + reason;
+            (void)MqttBridge::getInstance().publish(MQTT_RSP_TOPIC, errorMessage.c_str(), 1, false);
+            return;
+        }
 
         ESP_LOGI(TAG, "<- Команда '%s' поставлена в очередь.", commandName.c_str());
     } else {

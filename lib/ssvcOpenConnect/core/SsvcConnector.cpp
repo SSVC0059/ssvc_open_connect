@@ -203,7 +203,10 @@ bool SsvcConnector::initSsvcController() {
   return true;
 }
 
-constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
+// Короткое блочное чтение: RX не должен просыпаться редко. Тишина учитывается
+// отдельным шагом — иначе частота опроса напрямую задавала бы порог потери связи.
+constexpr uint32_t UART_READ_TIMEOUT_MS = 200;
+constexpr uint32_t kSilenceStepMs = 1000;
 
 [[noreturn]] void SsvcConnector::_telemetry(void *pvParameters) {
   auto *self = static_cast<SsvcConnector *>(pvParameters);
@@ -217,6 +220,7 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
   std::size_t lineLength = 0;
   bool discardingOversize = false;
   int errorCounter = 0;
+  uint32_t lastSilenceMs = millis();
 
   while (true) {
     // Зависшая сессия переводится в ошибку независимо от потока байтов.
@@ -239,10 +243,11 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
       const int len = uart_read_bytes(SSVC_OPEN_CONNECT_UART_NUM, chunk, sizeof(chunk),
                                       pdMS_TO_TICKS(UART_READ_TIMEOUT_MS));
       if (len <= 0) {
-        // Тишина на RX: сессия проверяется по таймауту, а связь — по тому же
-        // порогу подряд идущих ошибок.
+        // Тишина на RX: сессия проверяется по таймауту, а связь — по числу секунд
+        // тишины (шаг учёта отделён от частоты коротких чтений).
         SsvcLogProtocol::getTransfer().checkTimeout(millis());
-        if (lineLength == 0) {
+        if (lineLength == 0 && millis() - lastSilenceMs >= kSilenceStepMs) {
+          lastSilenceMs = millis();
           ++errorCounter;
           if (errorCounter >= kErrorThreshold && !self->uartCommunicationError) {
             ESP_LOGW("SsvcConnector", "uartCommunicationError=true (тишина RX)");
@@ -326,15 +331,14 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
     } else {
       errorCounter = 0;
 
-      ESP_LOGV("SsvcConnector", "Начало вывода данных");
-      ESP_LOGV("SsvcConnector", "%s", data);
-      ESP_LOGV("SsvcConnector", "Конец вывода данных");
-
-      // Кадр классифицируется до общего mailbox: файловые кадры и ответы
-      // GET_LOG идут только в Transfer и не ждут mutex телеметрии.
+      // Классификация выполняется до общего mailbox и подробного лога: файловые
+      // кадры идут только в Transfer и не тратят время на печать payload.
       const bool isLogFrame = doc["request"] == "GET_LOG" || doc["type"] == "file";
 
       if (!isLogFrame) {
+        ESP_LOGV("SsvcConnector", "Начало вывода данных");
+        ESP_LOGV("SsvcConnector", "%s", data);
+        ESP_LOGV("SsvcConnector", "Конец вывода данных");
         // Обычный кадр при дренировании означает, что поток отменённого файла
         // закончился: сессия освобождается, не дожидаясь таймаута.
         SsvcLogProtocol::getTransfer().completeDrain("telemetry_resumed", false);
@@ -366,9 +370,15 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
                                              : std::string();
         if (doc["request"] == "GET_LOG") {
           SsvcLogProtocol::getTransfer().consume(data, millis());
-        } else if (doc["request"] == "GET_SETTINGS") {
+        } else if (doc["request"] == "GET_SETTINGS" && doc["result"] == "OK") {
           ESP_LOGV("SsvcConnector", "GET_SETTINGS: SEND BIT10");
           xEventGroupSetBits(eventGroup, BIT10);
+        } else if (doc["request"] == "GET_SETTINGS") {
+          // Ответ без успеха: настройки из него не загружаются, команда
+          // завершается как ошибка устройства, а не подменой payload.
+          ESP_LOGW("SsvcConnector", "GET_SETTINGS: результат %s",
+                   doc["result"] | "?");
+          xEventGroupSetBits(eventGroup, BIT1);
         } else if (doc["request"] == "VERSION") {
           ESP_LOGV("SsvcConnector", "result: SEND BIT11 start");
           self->storeResponse(std::string(data), responseRequest);

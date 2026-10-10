@@ -305,6 +305,10 @@ void HandlerRegistrator::registerLogHandlers() const
         }
     };
 
+    // Готовый журнал удерживается в памяти ограниченное время: иначе до
+    // LOG_TOTAL_RAW_MAX байт остаются занятыми, пока клиент не запросит иное.
+    constexpr unsigned long kCompletedHoldMs = 5UL * 60UL * 1000UL;
+
     _server.on("/rest/logs", HTTP_GET,
                _securityManager->wrapRequest(
                    [statusName](AsyncWebServerRequest* request) {
@@ -329,6 +333,7 @@ void HandlerRegistrator::registerLogHandlers() const
                        // Deadline незавершённых ожиданий проверяется до чтения
                        // снимка: зависший LIST не должен выглядеть активным.
                        transfer.checkTimeout(millis());
+                       transfer.releaseExpiredResult(millis(), kCompletedHoldMs);
 
                        const bool statusOnly = request->hasParam("statusOnly");
                        const bool refresh = request->hasParam("refresh");
@@ -422,6 +427,7 @@ void HandlerRegistrator::registerLogHandlers() const
                        auto& transfer = SsvcLogProtocol::getTransfer();
                        const std::string expectedName = process.c_str() + std::string(".CSV");
                        transfer.checkTimeout(millis());
+                       transfer.releaseExpiredResult(millis(), kCompletedHoldMs);
 
                        // Резерв до enqueue: повторный запрос того же файла получает
                        // текущий статус без новой команды, чужой запрос — 409.

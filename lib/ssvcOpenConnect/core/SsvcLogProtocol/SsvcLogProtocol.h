@@ -98,6 +98,10 @@ public:
   bool completeDrain(const char* reason, bool asError);
   bool isDraining() const;
 
+  /// Освобождает готовый результат, удерживаемый дольше holdMs: иначе буфер
+  /// вплоть до LOG_TOTAL_RAW_MAX остаётся занятым, пока клиент не запросит иное.
+  bool releaseExpiredResult(unsigned long nowMs, unsigned long holdMs);
+
   // Сессия занята (резерв, приём или дренирование) — обычные команды ждут.
   bool isBlocked() const;
   bool isFileSession() const;
@@ -137,6 +141,8 @@ private:
   int _totalChunks{0};
   int _receivedChunks{0};
   unsigned long _lastActivityMs{0};
+  /// Момент перехода в COMPLETED: от него считается срок удержания результата.
+  unsigned long _completedAtMs{0};
 };
 
 Transfer& getTransfer();
@@ -516,6 +522,22 @@ inline std::string Transfer::dataCopy() const {
   return _data;
 }
 
+inline bool Transfer::releaseExpiredResult(const unsigned long nowMs,
+                                           const unsigned long holdMs) {
+  std::lock_guard<std::mutex> lock(_mutex);
+  if (_status != Status::COMPLETED || _completedAtMs == 0) {
+    return false;
+  }
+  if (nowMs - _completedAtMs < holdMs) {
+    return false;
+  }
+  // Буфер освобождается вместо бессрочного удержания: вызывающий (REST-слой)
+  // видит факт по возвращаемому значению.
+  ++_generation;
+  resetLocked();
+  return true;
+}
+
 inline bool Transfer::consume(const char* message, const unsigned long nowMs) {
   std::lock_guard<std::mutex> lock(_mutex);
   return consumeLocked(message, nowMs);
@@ -525,12 +547,23 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
   if (message == nullptr) {
     return false;
   }
-  touchLocked(nowMs);
 
   const std::string json(message);
   std::string type;
   if (!detail::extractString(json, "type", type)) {
     return false;
+  }
+
+  // Deadline сессии продлевают только кадры самой сессии: посторонняя телеметрия
+  // и повреждённые кадры не должны отодвигать таймаут передачи.
+  std::string request;
+  const bool isLogFrame =
+      type == "file" ||
+      (type == "response" && detail::extractString(json, "request", request) &&
+       request == "GET_LOG");
+
+  if (isLogFrame) {
+    touchLocked(nowMs);
   }
 
   if (_status == Status::DRAINING) {
@@ -548,10 +581,8 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
     return false;
   }
 
-  std::string request;
   std::string result;
-  if (type == "response" && detail::extractString(json, "request", request) &&
-      request == "GET_LOG") {
+  if (isLogFrame && type == "response") {
     detail::extractString(json, "result", result);
     if (result == "LIST") {
       if (_request != RequestKind::List) {
@@ -631,6 +662,8 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
   _receivedChunks = chunk;
   if (_receivedChunks == _totalChunks) {
     _status = Status::COMPLETED;
+    // Момент готовности: от него считается срок удержания результата в памяти.
+    _completedAtMs = nowMs;
   }
   return true;
 }
@@ -717,6 +750,7 @@ inline void Transfer::resetLocked() {
   _totalChunks = 0;
   _receivedChunks = 0;
   _lastActivityMs = 0;
+  _completedAtMs = 0;
 }
 
 inline bool formatListRequest(std::string& request) {
