@@ -160,7 +160,15 @@ private:
   TimerHandle_t _settingsTimer = nullptr;
   mutable TimerHandle_t _uartRetryTimer = nullptr;
   static constexpr UBaseType_t COMMAND_QUEUE_LENGTH = 50;
-  static constexpr UBaseType_t COMMAND_QUEUE_ITEM_SIZE = sizeof(SsvcCommand);
+  /**
+   * @brief Размер элемента очереди — указателя на команду, а не объекта.
+   *
+   * FreeRTOS копирует элемент побайтово и не вызывает конструктор копирования
+   * std::string, поэтому очередь владеет указателями, а объект живёт в куче
+   * до delete в commandProcessorTask. Размер обязан совпадать с адресом,
+   * который передаётся в xQueueSend/xQueueReceive.
+   */
+  static constexpr UBaseType_t COMMAND_QUEUE_ITEM_SIZE = sizeof(SsvcCommand *);
 
   /**
    * @brief Соответствие типов команд и битов событий
