@@ -161,34 +161,52 @@ inline bool decodeBase64(const char* encoded, std::string& decoded) {
   }
 
   decoded.clear();
-  int accumulator = 0;
-  int bits = -8;
-  std::size_t padding = 0;
-  std::size_t length = 0;
-  for (const char* cursor = encoded; *cursor != '\0'; ++cursor) {
-    ++length;
-    if (*cursor == '=') {
-      ++padding;
-      continue;
-    }
-    if (padding != 0) {
-      return false;
-    }
-    const int value = base64Value(*cursor);
-    if (value < 0) {
-      return false;
-    }
-    accumulator = (accumulator << 6) | value;
-    bits += 6;
-    if (bits >= 0) {
-      decoded.push_back(static_cast<char>((accumulator >> bits) & 0xff));
-      bits -= 8;
-    }
-  }
-  if (padding > 2 || length % 4 == 1 || (padding != 0 && length % 4 != 0)) {
+  const std::size_t length = std::strlen(encoded);
+  // Длина обязана быть кратной 4: иначе кадр обрезан, и «успешное» декодирование
+  // молча потеряло бы байты.
+  if (length == 0 || length % 4 != 0) {
     return false;
   }
-  return padding == 0 || !decoded.empty();
+
+  decoded.reserve(length / 4 * 3);
+  for (std::size_t index = 0; index < length; index += 4) {
+    unsigned values[4] = {0, 0, 0, 0};
+    unsigned padding = 0;
+    for (std::size_t offset = 0; offset < 4; ++offset) {
+      const char symbol = encoded[index + offset];
+      if (symbol == '=') {
+        // Padding допустим только в хвосте последней группы.
+        if (index + 4 != length || offset < 2) {
+          return false;
+        }
+        ++padding;
+        continue;
+      }
+      if (padding != 0) {
+        return false; // данные после '=' внутри группы
+      }
+      const int value = base64Value(symbol);
+      if (value < 0) {
+        return false; // символ вне алфавита
+      }
+      values[offset] = static_cast<unsigned>(value);
+    }
+    if (padding > 2) {
+      return false;
+    }
+
+    const unsigned triple =
+        (values[0] << 18) | (values[1] << 12) | (values[2] << 6) | values[3];
+    decoded.push_back(static_cast<char>((triple >> 16) & 0xFF));
+    if (padding < 2) {
+      decoded.push_back(static_cast<char>((triple >> 8) & 0xFF));
+    }
+    if (padding == 0) {
+      decoded.push_back(static_cast<char>(triple & 0xFF));
+    }
+  }
+
+  return true;
 }
 
 inline bool validRequestLength(const std::string& request) {
@@ -368,7 +386,7 @@ inline ReserveResult Transfer::reserveFile(const int processNumber, const unsign
     // получает текущий прогресс или уже собранный CSV.
     return ReserveResult::SameRequest;
   }
-  if (blockedLocked() || _status == Status::COMPLETED) {
+  if (blockedLocked()) {
     return ReserveResult::Busy;
   }
   resetLocked();
@@ -423,6 +441,13 @@ inline void Transfer::cancel() {
     // лежащая в очереди команда с прежним generation дошла бы до UART.
     ++_generation;
     abortLocked(nullptr, false);
+    return;
+  }
+  if (_status == Status::COMPLETED) {
+    // Отмена готового результата: он освобождается, повторный GET того же
+    // процесса потребует новой передачи.
+    ++_generation;
+    resetLocked();
     return;
   }
   if (blockedLocked()) {

@@ -454,15 +454,15 @@ void HandlerRegistrator::registerLogHandlers() const
                        const SsvcLogProtocol::Snapshot snap = transfer.snapshot();
                        if (snap.status == SsvcLogProtocol::Status::COMPLETED &&
                            snap.fileName == expectedName) {
-                           // beginResponse(code, type, const uint8_t*, len) не копирует буфер.
-                           // Копируем данные и сбрасываем Transfer, иначе следующий запрос
-                           // освободит память под уже отправляемым ответом (use-after-free).
-                           // Удержание результата между запросами — задача Фазы 7.
+                           // Копия берётся под lock, а результат остаётся в Transfer:
+                           // обрыв HTTP или повторный GET того же процесса отдаёт те же
+                           // байты без новой UART-команды. Ресурс освобождается при новом
+                           // резерве или отмене. Пиковая память — исходный буфер плюс эта
+                           // копия; потоковая выдача требует замера heap (не подтверждено).
                            const std::string data = transfer.dataCopy();
                            String csv(data.c_str(), static_cast<unsigned int>(data.size()));
                            String disposition =
                                String("attachment; filename=\"") + expectedName.c_str() + "\"";
-                           transfer.reset();
                            auto* response = request->beginResponse(200, "text/csv", csv);
                            response->addHeader("Content-Disposition", disposition);
                            request->send(response);
