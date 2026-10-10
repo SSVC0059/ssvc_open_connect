@@ -233,6 +233,41 @@ export type OcHardwareCapabilities = {
 	relayOptionsAvailable: boolean;
 };
 
+/** Режим проверки перед стартом при некалиброванных датчиках XKC-25. */
+export type Xkc25StartGuardMode = 0 | 1 | 2;
+
+/**
+ * Реакция на срабатывание датчика уровня — взаимоисключающий выбор:
+ * 0 — только уведомление, 1 — пауза отбора, 2 — прерывание ректификации.
+ */
+export type Xkc25TriggerAction = 0 | 1 | 2;
+
+/**
+ * Настройки одного датчика XKC-25-NPN (бесконтактный ёмкостный датчик уровня).
+ *
+ * Датчик крепится на внешнюю стенку неметаллической ёмкости, поэтому состояний
+ * «сухой/погружённый» нет: фиксируются сырые уровни пина в двух состояниях жидкости.
+ */
+export type Xkc25SensorConfig = {
+	enabled: boolean;
+	/** GPIO-пин выхода OUT (жёлтый провод). */
+	gpio: number;
+	/** true → «жидкость обнаружена» соответствует LOW на пине; результат калибровки. */
+	activeLow: boolean;
+	/** 0..2 → приёмная ёмкость 1/2/3. */
+	zoneIndex: number;
+	/**
+	 * Один датчик используется на всех ёмкостях: пользователь переставляет его
+	 * по фракциям. Зону такому датчику задаёт `xkc25SharedTankIndex`.
+	 */
+	sharedAcrossTanks?: boolean;
+	/** Калибровка выполняется мастером: по PUT эти поля только для чтения. */
+	calibrated?: boolean;
+	levelWithoutLiquid?: number;
+	levelWithLiquid?: number;
+	calibratedAt?: number;
+};
+
 export type OcHardwareConfigResponse = {
 	schemaVersion: number;
 	pressureSensorEnabled: boolean;
@@ -260,8 +295,75 @@ export type OcHardwareConfigResponse = {
 	lcd1602ProbeOk?: boolean;
 	/** Резерв (OLED и т.д.). */
 	oledEnabled?: boolean;
+	/** XKC-25-NPN: от 0 до 3 датчиков уровня, каждый на своём GPIO. */
+	xkc25Sensors?: Xkc25SensorConfig[];
+	/** Реакция на срабатывание: только уведомление / пауза отбора / прерывание. */
+	xkc25TriggerAction?: Xkc25TriggerAction;
+	/** На какой приёмной ёмкости сейчас стоит переносной датчик (0..2). */
+	xkc25SharedTankIndex?: number;
+	/** Проверка перед стартом при некалиброванных датчиках: off / warn / block. */
+	xkc25StartGuardMode?: Xkc25StartGuardMode;
 	capabilities: OcHardwareCapabilities;
 	needsReboot: boolean;
+};
+
+/** Живое состояние одного датчика XKC-25 (GET /rest/oc/xkc25/status). */
+export type Xkc25SensorStatus = {
+	index: number;
+	enabled: boolean;
+	gpio: number;
+	zoneIndex: number;
+	/** Ключ зоны: receiver_tank_1/2/3. */
+	zone: string;
+	zoneLabel: string;
+	/** Датчик переносной: зона — та ёмкость, на которой он стоит сейчас. */
+	sharedAcrossTanks?: boolean;
+	activeLow: boolean;
+	calibrated: boolean;
+	calibratedAt: number;
+	levelWithoutLiquid: number;
+	levelWithLiquid: number;
+	/** false — датчик выключен или подсистема не поднята (нужна перезагрузка). */
+	live: boolean;
+	/** Сырое чтение пина без инверсии; -1 — чтение не выполнялось. */
+	rawLevel: number;
+	/** Жидкость напротив датчика есть. */
+	filled: boolean;
+};
+
+/** Ответ GET /rest/oc/xkc25/status. */
+export type Xkc25StatusResponse = {
+	sensors: Xkc25SensorStatus[];
+	/** Действующий режим реакции на срабатывание (0/1/2). */
+	triggerAction?: Xkc25TriggerAction;
+	/** Ёмкость, на которой сейчас стоит переносной датчик (0..2). */
+	sharedTankIndex?: number;
+	/** Действующий режим проверки перед стартом (off / warn / block). */
+	startGuardMode: number;
+	/** true — в режиме block старт будет отклонён. */
+	blockStart: boolean;
+	blockReasons: string[];
+	warnings: string[];
+};
+
+/** Шаг мастера калибровки XKC-25. */
+export type Xkc25CalibrationStep = 'without_liquid' | 'with_liquid' | 'verify_return';
+
+/** Ответ POST /rest/oc/xkc25/calibrate. */
+export type Xkc25CalibrationResponse = {
+	ok: boolean;
+	/** Калибровка целиком завершена (уровни различаются). */
+	completed: boolean;
+	/** Машинный код итога: ok, unstable_signal, not_reacted, verify_failed и т.д. */
+	code: string;
+	rawLevel: number;
+	message: string;
+	/** Текст ошибки запроса, когда шаг отклонён без пояснения (например, 400 «Missing index»). */
+	error?: string;
+	/** Чек-лист подключения при отклонённой калибровке. */
+	checklist: string[];
+	/** Состояние датчика после шага. */
+	sensor?: Xkc25SensorStatus;
 };
 
 export type SendCommandResponse = {

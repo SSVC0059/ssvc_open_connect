@@ -16,6 +16,8 @@
 
 #include "MqttCommandHandler.h"
 
+#include "components/subsystem/Xkc25Subsystem.h"
+
 MqttCommandHandler::MqttCommandHandler() = default;
 
 void MqttCommandHandler::begin() const
@@ -61,6 +63,28 @@ void MqttCommandHandler::handleCommand(const String& commandString)
         if (spacePos != std::string::npos) {
             // Извлекаем параметры из оригинальной строки, чтобы сохранить регистр
             params = commandInput.substr(spacePos + 1);
+        }
+
+        // Предстартовая проверка XKC-25 (6.4): MQTT — вторая точка вызова COMMAND_MAP,
+        // без неё блокировку старта можно было бы обойти мимо веб-UI.
+        if (commandName == "start") {
+            const Xkc25StartCheck check = Xkc25Subsystem::checkStart();
+            if (!check.allow) {
+                std::string reason = "start - отклонен: ";
+                for (size_t i = 0; i < check.blockReasons.size(); ++i) {
+                    if (i > 0) {
+                        reason += "; ";
+                    }
+                    reason += check.blockReasons[i];
+                }
+                ESP_LOGW(TAG, "%s", reason.c_str());
+                (void)MqttBridge::getInstance().publish(MQTT_RSP_TOPIC, reason.c_str(), 1, false);
+                return;
+            }
+            for (const auto& warning : check.warnings) {
+                ESP_LOGW(TAG, "%s", warning.c_str());
+                (void)MqttBridge::getInstance().publish(MQTT_RSP_TOPIC, warning.c_str(), 1, false);
+            }
         }
 
         ESP_LOGI(TAG, "-> Найдена команда '%s'. Вызываем с параметрами: '%s'", commandName.c_str(), params.c_str());

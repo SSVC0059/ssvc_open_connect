@@ -1,5 +1,7 @@
 #include "CommandHandler.h"
 
+#include "components/subsystem/Xkc25Subsystem.h"
+
 /**
 *   SSVC Open Connect
  *
@@ -41,6 +43,28 @@ void CommandHandler::handleCommand(AsyncWebServerRequest* request, JsonVariant& 
         return;
     }
 
+    // Предстартовая проверка XKC-25: защищает только команды, проходящие через ESP32
+    // (веб-UI, MQTT, боты). Старт физической кнопкой SSVC-0059 так не перехватить.
+    Xkc25StartCheck xkc25Check;
+    if (commandName == "start") {
+        xkc25Check = Xkc25Subsystem::checkStart();
+        if (!xkc25Check.allow) {
+            JsonDocument doc;
+            doc["status"] = "rejected";
+            doc["command"] = commandName;
+            JsonArray reasons = doc["blockReasons"].to<JsonArray>();
+            for (const auto& reason : xkc25Check.blockReasons) {
+                reasons.add(reason);
+            }
+            String body;
+            serializeJson(doc, body);
+            ESP_LOGW("CommandHandler", "Command '%s' rejected by the XKC-25 start guard",
+                     commandName.c_str());
+            request->send(409, "application/json", body);
+            return;
+        }
+    }
+
     try {
         std::string params;
         if (json["parameters"].is<std::string>()) {
@@ -50,6 +74,19 @@ void CommandHandler::handleCommand(AsyncWebServerRequest* request, JsonVariant& 
         // Выполняем команду, передавая параметры
         it->second(params);
         ESP_LOGI("CommandHandler", "Command executed: %s", commandName.c_str());
+        if (!xkc25Check.warnings.empty()) {
+            JsonDocument doc;
+            doc["status"] = "accepted";
+            doc["command"] = commandName;
+            JsonArray warnings = doc["warnings"].to<JsonArray>();
+            for (const auto& warning : xkc25Check.warnings) {
+                warnings.add(warning);
+            }
+            String body;
+            serializeJson(doc, body);
+            request->send(200, "application/json", body);
+            return;
+        }
         request->send(200, "text/plain", "Command accepted");
     } catch (const std::exception& e) {
         ESP_LOGE("CommandHandler", "Command error: %s", e.what());

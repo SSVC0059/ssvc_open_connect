@@ -68,6 +68,21 @@
 #define SSVC_PINOUT_ALARM_GPIO_CRITICAL GPIO_NUM_13
 #endif
 
+/**
+ * Default GPIOs for the optional XKC-25-NPN level sensors (open-collector NPN output).
+ * Up to three sensors, each on its own pin; slot N belongs to the N-th sensor.
+ * Override per board with -DSSVC_XKC25_GPIO_1/2/3=<pin> in platformio.ini.
+ */
+#ifndef SSVC_XKC25_GPIO_1
+#define SSVC_XKC25_GPIO_1 GPIO_NUM_4
+#endif
+#ifndef SSVC_XKC25_GPIO_2
+#define SSVC_XKC25_GPIO_2 GPIO_NUM_5
+#endif
+#ifndef SSVC_XKC25_GPIO_3
+#define SSVC_XKC25_GPIO_3 GPIO_NUM_6
+#endif
+
 /** First (or only) PCF8574 relay/output port when PINOUT_USE_GPIO=0. Extra chips: another port + role. */
 #ifndef SSVC_RELAY_PCF8574_I2C_ADDR
 #define SSVC_RELAY_PCF8574_I2C_ADDR 0x24
