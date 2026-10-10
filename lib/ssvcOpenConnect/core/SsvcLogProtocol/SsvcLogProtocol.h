@@ -164,7 +164,11 @@ inline bool decodeBase64(const char* encoded, std::string& decoded) {
   const std::size_t length = std::strlen(encoded);
   // Длина обязана быть кратной 4: иначе кадр обрезан, и «успешное» декодирование
   // молча потеряло бы байты.
-  if (length == 0 || length % 4 != 0) {
+  // Пустая строка — валидный «нулевой» чанк, а не ошибка длины.
+  if (length == 0) {
+    return true;
+  }
+  if (length % 4 != 0) {
     return false;
   }
 

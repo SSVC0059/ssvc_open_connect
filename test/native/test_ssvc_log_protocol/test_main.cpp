@@ -167,3 +167,44 @@ TEST_CASE("GET_LOG updates activity timestamp on each consume") {
   CHECK(transfer.status() == SsvcLogProtocol::Status::ERROR);
   CHECK(transfer.error() == "timeout");
 }
+
+TEST_CASE("Base64 decoding validates alphabet, padding and length") {
+  SUBCASE("padding == 1 для остатка 2 байта") {
+    std::string decoded;
+    CHECK(SsvcLogProtocol::detail::decodeBase64("QUI=", decoded));
+    CHECK(decoded == "AB");
+  }
+  SUBCASE("padding == 2 для остатка 1 байта") {
+    std::string decoded = "stale";
+    CHECK(SsvcLogProtocol::detail::decodeBase64("QQ==", decoded));
+    CHECK(decoded == "A");
+  }
+  SUBCASE("padding не в хвосте группы отвергается") {
+    std::string decoded;
+    CHECK_FALSE(SsvcLogProtocol::detail::decodeBase64("AA=A", decoded));
+    CHECK_FALSE(SsvcLogProtocol::detail::decodeBase64("A===", decoded));
+  }
+  SUBCASE("символ вне алфавита отвергается") {
+    std::string decoded;
+    CHECK_FALSE(SsvcLogProtocol::detail::decodeBase64("!!!!", decoded));
+    CHECK_FALSE(SsvcLogProtocol::detail::decodeBase64("AA-A", decoded));
+  }
+  SUBCASE("длина не кратна 4 отвергается") {
+    std::string decoded;
+    CHECK_FALSE(SsvcLogProtocol::detail::decodeBase64("AAA", decoded));
+  }
+}
+
+TEST_CASE("GET_LOG accepts chunk of exactly FILE_CHUNK_RAW_MAX bytes") {
+  // 200 групп "AAAA" → 600 нулевых байт: ровно FILE_CHUNK_RAW_MAX.
+  const std::string payload =
+      std::string(R"({"type":"file","chunk":1,"data":")") + std::string(800, 'A') + "\"}";
+
+  SsvcLogProtocol::Transfer transfer;
+  transfer.beginFile(15);
+  CHECK(transfer.consume(
+      R"({"type":"response","request":"GET_LOG","result":"START","file":"15.CSV","total":1})"));
+  CHECK(transfer.consume(payload.c_str()));
+  CHECK(transfer.status() == SsvcLogProtocol::Status::COMPLETED);
+  CHECK(transfer.data().size() == 600u);
+}
