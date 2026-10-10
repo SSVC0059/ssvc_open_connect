@@ -99,6 +99,9 @@ public:
 
   std::string getLastResponse();
 
+  /// Поле request ответа, сохранённого в lastResponse ("" — если поля не было).
+  std::string getLastResponseRequest();
+
   bool uartCommunicationError;
 
   static bool sendCommand(const char *command);
@@ -109,6 +112,9 @@ private:
   void InitUartDriver();
   void initSsvcController();
 
+  /// Сохранить кадр ответа вместе с его request одним снимком под mutex.
+  void storeResponse(const std::string& payload, const std::string& request);
+
   [[noreturn]] static void _telemetry(void *pvParameters);
 
   static SsvcConnector *_ssvcConnector;
@@ -117,6 +123,7 @@ private:
   std::string lastMessage;
   std::string lastSettings;
   std::string lastResponse;
+  std::string lastResponseRequest;
 
   struct SpiRamAllocator final : ArduinoJson::Allocator {
     virtual ~SpiRamAllocator() = default;

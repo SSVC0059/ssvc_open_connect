@@ -56,6 +56,46 @@ static std::string utf8_to_win1251(const std::string& utf8) {
     return win1251;
 }
 
+namespace {
+
+/// START/NEXT/RESUME неидемпотентны: повтор после неоднозначной отправки запрещён.
+bool isIdempotentRetry(const SsvcCommandType type) {
+  switch (type) {
+  case SsvcCommandType::START:
+  case SsvcCommandType::NEXT:
+  case SsvcCommandType::RESUME:
+    return false;
+  default:
+    return true;
+  }
+}
+
+/// Имя request, которым контроллер помечает ответ на эту команду ("" — неизвестно).
+const char *requestNameFor(const SsvcCommandType type) {
+  switch (type) {
+  case SsvcCommandType::STOP:
+    return "STOP";
+  case SsvcCommandType::START:
+    return "START";
+  case SsvcCommandType::PAUSE:
+    return "PAUSE";
+  case SsvcCommandType::RESUME:
+    return "RESUME";
+  case SsvcCommandType::NEXT:
+    return "NEXT";
+  case SsvcCommandType::AT:
+    return "AT";
+  case SsvcCommandType::SET:
+    return "SET";
+  case SsvcCommandType::STATUS:
+    return "STATUS";
+  default:
+    return "";
+  }
+}
+
+} // namespace
+
 // Инициализация статической карты команд
 const std::map<std::string, std::function<void(const std::string&)>> SsvcCommandsQueue::COMMAND_MAP = {
     {"at",           [](const std::string&){ getQueue().at(); }},
@@ -244,15 +284,19 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
         }
 
         // Ожидание ответа с определенным битом
-        EventBits_t expectedBit = self->commandToExpectedBit[cmd->type];
+        const EventBits_t expectedBit = self->commandToExpectedBit[cmd->type];
         ESP_LOGV(TAG, "Waiting for response with bit: %d",
                  expectedBit);
         const EventBits_t responseMask = expectedBit | BIT1;
 
+        // Успешная запись в UART ещё не означает выполнение команды: результат
+        // сбрасывается перед ожиданием, а BIT1 (отказ устройства) не
+        // маршрутизируется в callback ожидаемого бита.
+        command_success = false;
         const EventBits_t bits = xEventGroupWaitBits(eventGroup, responseMask, pdTRUE,
-                                               pdFALSE, cmd->timeout);
+                                                     pdFALSE, cmd->timeout);
 
-        if ((bits & responseMask) != 0) {
+        if ((bits & expectedBit) != 0) {
           MutexLock lock(mutex);
 
           // Обработка ответа через зарегистрированные callback'и
@@ -267,10 +311,24 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
             ESP_LOGW(TAG, "No callback handler for bit %d",
                      expectedBit);
           }
+        } else if ((bits & BIT1) != 0) {
+          ESP_LOGW(TAG, "Command %d rejected by device (BIT1)",
+                   static_cast<int>(cmd->type));
+        } else {
+          ESP_LOGW(TAG, "Command %d: no response, outcome unknown",
+                   static_cast<int>(cmd->type));
         }
 
         if (command_success) {
           ESP_LOGV(TAG, "Command %d executed successfully",
+                   static_cast<int>(cmd->type));
+          break;
+        }
+
+        // Неидемпотентную команду нельзя повторять после отправки: контроллер
+        // мог её выполнить, а ответ потеряться.
+        if (!isIdempotentRetry(cmd->type)) {
+          ESP_LOGW(TAG, "Command %d: retry skipped after uncertain outcome",
                    static_cast<int>(cmd->type));
           break;
         }
@@ -333,10 +391,33 @@ void SsvcCommandsQueue::registerCallbackCommands() {
 
   // Бит для всех команд с успешным выполнением
   registerBitHandler(BIT9, [this](SsvcCommand *cmd) {
-    const std::string _message = SsvcConnector::getConnector().getLastResponse();
+    const std::string message = SsvcConnector::getConnector().getLastResponse();
+    if (message.empty()) {
+      ESP_LOGW(TAG, "BIT9: пустой снимок ответа");
+      return false;
+    }
+
+    JsonDocument response;
+    if (deserializeJson(response, message)) {
+      ESP_LOGW(TAG, "BIT9: ответ не разобран как JSON");
+      return false;
+    }
+
+    // Ответ должен относиться к отправленной команде: если контроллер указал
+    // request, он обязан совпасть — иначе это ответ другой команды.
+    const std::string responseRequest =
+        SsvcConnector::getConnector().getLastResponseRequest();
+    const std::string expectedRequest = requestNameFor(cmd->type);
+    if (!responseRequest.empty() && !expectedRequest.empty() &&
+        responseRequest != expectedRequest) {
+      ESP_LOGW(TAG, "BIT9: ответ %s не соответствует команде %s",
+               responseRequest.c_str(), expectedRequest.c_str());
+      return false;
+    }
+
     //      Если в полученном ответе будет SET, значит был запрос изменения
     //      настроек, а значит их нужно будет перечитать заново
-    if (_message.find("SET") != std::string::npos) {
+    if (std::string(response["request"] | "") == "SET") {
       if (_settingsTimer == nullptr) {
         // Создание одноразового таймера
         _settingsTimer =
@@ -368,7 +449,7 @@ void SsvcCommandsQueue::registerCallbackCommands() {
         }
       }
     }
-    const bool result = _message.find("OK") != std::string::npos;
+    const bool result = std::string(response["result"] | "") == "OK";
     _cmdSetResult = result;
     return result;
   });
@@ -457,7 +538,9 @@ bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
   cmd->type = type;
   cmd->parameters = effectiveParameters;
   cmd->attempt_count = attempt_count;
-  cmd->timeout = pdMS_TO_TICKS(timeout);
+  // timeout приходит уже в тиках (SsvcCommand/TIMEOUT): повторный pdMS_TO_TICKS
+  // удлинял ожидание при tick != 1 мс.
+  cmd->timeout = timeout;
 
   if (xQueueSend(command_queue, &cmd, pdMS_TO_TICKS(1000)) != pdPASS) {
     ESP_LOGE(TAG, "Failed to send command to queue! Queue might be full.");

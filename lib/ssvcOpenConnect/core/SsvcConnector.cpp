@@ -279,6 +279,11 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
       }
       self->uartCommunicationError = false;
       if (doc["type"] == "response") {
+        // request сохраняется вместе с payload: Queue сверяет ответ с активной
+        // командой, а не полагается на «OK» в произвольном кадре.
+        const std::string responseRequest =
+            doc["request"].is<const char*>() ? std::string(doc["request"].as<const char*>())
+                                             : std::string();
         if (doc["request"] == "GET_LOG") {
           SsvcLogProtocol::getTransfer().consume(data, millis());
         } else if (doc["request"] == "GET_SETTINGS") {
@@ -286,17 +291,13 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
           xEventGroupSetBits(eventGroup, BIT10);
         } else if (doc["request"] == "VERSION") {
           ESP_LOGV("SsvcConnector", "result: SEND BIT11 start");
-          ESP_LOGV("SsvcConnector", "END BIT11 lastMessage: %s",
-                   self->lastMessage.c_str());
-          self->lastResponse = std::string(data);
+          self->storeResponse(std::string(data), responseRequest);
           xEventGroupSetBits(eventGroup, BIT11);
           ESP_LOGV("SsvcConnector", "result: SEND BIT11 -end");
 
         } else if (doc["result"] == "OK") {
           ESP_LOGV("SsvcConnector", "result: SEND BIT9 start");
-          ESP_LOGV("SsvcConnector", "END BIT9 lastMessage: %s",
-                   self->lastMessage.c_str());
-          self->lastResponse = std::string(data);
+          self->storeResponse(std::string(data), responseRequest);
           xEventGroupSetBits(eventGroup, BIT9);
           ESP_LOGV("SsvcConnector", "result: SEND BIT9 -end");
         } else {
@@ -345,6 +346,45 @@ bool SsvcConnector::sendCommand(const char *command) {
   return result;
 }
 
-std::string SsvcConnector::getLastMessage() { return lastMessage; }
+namespace {
+/**
+ * Выполняет чтение под общим mutex.
+ *
+ * Снимок строки берётся целиком под блокировкой: возврат ссылки или чтение без
+ * mutex давали гонку с задачей телеметрии. Пустой результат — признак неудачи
+ * захвата, вызывающий обязан обработать его как «снимок недоступен».
+ */
+template <typename Getter>
+std::string withMutex(Getter&& getter, const char* what) {
+  std::string snapshot;
+  if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+    snapshot = getter();
+    xSemaphoreGive(mutex);
+  } else {
+    ESP_LOGE("SsvcConnector", "%s: не удалось захватить мьютекс", what);
+  }
+  return snapshot;
+}
+} // namespace
 
-std::string SsvcConnector::getLastResponse() { return lastResponse; }
+void SsvcConnector::storeResponse(const std::string& payload, const std::string& request) {
+  if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+    lastResponse = payload;
+    lastResponseRequest = request;
+    xSemaphoreGive(mutex);
+  } else {
+    ESP_LOGE("SsvcConnector", "storeResponse: не удалось захватить мьютекс");
+  }
+}
+
+std::string SsvcConnector::getLastMessage() {
+  return withMutex([this] { return lastMessage; }, "getLastMessage");
+}
+
+std::string SsvcConnector::getLastResponse() {
+  return withMutex([this] { return lastResponse; }, "getLastResponse");
+}
+
+std::string SsvcConnector::getLastResponseRequest() {
+  return withMutex([this] { return lastResponseRequest; }, "getLastResponseRequest");
+}

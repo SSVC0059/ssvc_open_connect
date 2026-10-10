@@ -30,6 +30,9 @@
 #include <vector>
 
 #define ATTEMPT_COUNT 3
+// Таймаут ожидания ответа задан в тиках: значение по умолчанию уже
+// сконвертировано, поэтому повторный pdMS_TO_TICKS над ним в
+// pushCommandInQueue давал неверную длительность при tick != 1 мс.
 #define TIMEOUT pdMS_TO_TICKS(3000)
 #define GET_SETTINGS_REQUEST_TIMER 30000
 
@@ -182,6 +185,7 @@ private:
       {SsvcCommandType::NEXT, BIT9},
       {SsvcCommandType::AT, BIT9},
       {SsvcCommandType::SET, BIT9},
+      {SsvcCommandType::STATUS, BIT9},
       {SsvcCommandType::START, BIT9}
   };
 
