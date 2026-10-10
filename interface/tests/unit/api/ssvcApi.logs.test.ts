@@ -1,6 +1,6 @@
 /**
  * Тесты API-клиента журналов ректификаций (GET_LOG / REST).
- * Проверяют URL, методы и базовую обработку ответов для
+ * Проверяют URL, методы и разбор ответов для
  * fetchLogStatus / startLogDownload / downloadLog / cancelLogDownload.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -24,6 +24,15 @@ import {
 	cancelLogDownload
 } from '$lib/api/ssvcApi';
 
+const jsonResponse = (body: unknown, status = 200): Response =>
+	new Response(JSON.stringify(body), {
+		status,
+		headers: { 'content-type': 'application/json' }
+	});
+
+const csvResponse = (csv: string, status = 200): Response =>
+	new Response(csv, { status, headers: { 'content-type': 'text/csv' } });
+
 describe('ssvcApi — журналы ректификаций (GET_LOG)', () => {
 	let fetchMock: ReturnType<typeof vi.fn>;
 
@@ -36,100 +45,149 @@ describe('ssvcApi — журналы ректификаций (GET_LOG)', () => 
 		vi.unstubAllGlobals();
 	});
 
-	it('fetchLogStatus запрашивает GET /rest/logs и возвращает данные', async () => {
-		fetchMock.mockResolvedValueOnce(
-			new Response(JSON.stringify({ status: 'list', total: 0, received: 0, files: ['15.CSV'] }), {
-				status: 200,
-				headers: { 'content-type': 'application/json' }
-			})
-		);
-		const result = await fetchLogStatus();
-		expect(fetchMock).toHaveBeenCalledTimes(1);
-		const [url, init] = fetchMock.mock.calls[0];
-		expect(url).toBe('/rest/logs');
-		expect(init.method).toBe('GET');
-		expect(result).toEqual({ status: 'list', total: 0, received: 0, files: ['15.CSV'] });
-	});
-
-	it('fetchLogStatus возвращает null при ошибке HTTP', async () => {
-		fetchMock.mockResolvedValueOnce(new Response('fail', { status: 500 }));
-		const result = await fetchLogStatus();
-		expect(result).toBeNull();
-	});
-
-	it('startLogDownload возвращает true при HTTP 202', async () => {
-		fetchMock.mockResolvedValueOnce(new Response('', { status: 202 }));
-		const ok = await startLogDownload(15);
-		const [url, init] = fetchMock.mock.calls[0];
-		expect(url).toBe('/rest/logs/15');
-		expect(init.method).toBe('GET');
-		expect(ok).toBe(true);
-	});
-
-	it('startLogDownload возвращает true при HTTP 200', async () => {
-		fetchMock.mockResolvedValueOnce(new Response('', { status: 200 }));
-		expect(await startLogDownload(15)).toBe(true);
-	});
-
-	it('startLogDownload возвращает false при HTTP 500', async () => {
-		fetchMock.mockResolvedValueOnce(new Response('', { status: 500 }));
-		expect(await startLogDownload(15)).toBe(false);
-	});
-
-	it('downloadLog возвращает Blob для text/csv', async () => {
-		const csv = 'a;b;c\n1;2;3';
-		const blobLike = {
-			size: csv.length,
-			type: 'text/csv',
-			text: () => Promise.resolve(csv)
-		};
-		fetchMock.mockResolvedValueOnce({
-			ok: true,
-			status: 200,
-			headers: {
-				get: (name: string) =>
-					name.toLowerCase() === 'content-type' ? 'text/csv' : null
-			},
-			blob: () => Promise.resolve(blobLike)
+	describe('fetchLogStatus', () => {
+		it('запрашивает GET /rest/logs и возвращает данные', async () => {
+			fetchMock.mockResolvedValueOnce(
+				jsonResponse({ status: 'list', total: 0, received: 0, files: ['15.CSV'] })
+			);
+			const result = await fetchLogStatus();
+			expect(fetchMock).toHaveBeenCalledTimes(1);
+			const [url, init] = fetchMock.mock.calls[0];
+			expect(url).toBe('/rest/logs');
+			expect(init.method).toBe('GET');
+			expect(result).toEqual({
+				ok: true,
+				data: { status: 'list', total: 0, received: 0, files: ['15.CSV'] }
+			});
 		});
-		const blob = await downloadLog(15);
-		const [url] = fetchMock.mock.calls[0];
-		expect(url).toBe('/rest/logs/15');
-		expect(blob).toBe(blobLike);
-		expect(blob.size).toBe(csv.length);
+
+		it('сохраняет HTTP-статус отказа вместо null', async () => {
+			fetchMock.mockResolvedValueOnce(new Response('fail', { status: 500 }));
+			const result = await fetchLogStatus();
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.httpStatus).toBe(500);
+				expect(result.message).toContain('500');
+			}
+		});
+
+		it('разбирает код ошибки backend', async () => {
+			fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'log_transfer_busy' }, 409));
+			const result = await fetchLogStatus();
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.code).toBe('log_transfer_busy');
+			}
+		});
+
+		it('передаёт AbortSignal в fetch', async () => {
+			fetchMock.mockResolvedValueOnce(jsonResponse({ status: 'idle', total: 0, received: 0 }));
+			const controller = new AbortController();
+			await fetchLogStatus(controller.signal);
+			expect(fetchMock.mock.calls[0][1].signal).toBeDefined();
+		});
+
+		it('отдаёт network_error, если запрос не выполнен', async () => {
+			fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+			const result = await fetchLogStatus();
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.code).toBe('network_error');
+			}
+		});
 	});
 
-	it('downloadLog выбрасывает ошибку при неверном content-type', async () => {
-		fetchMock.mockResolvedValueOnce(
-			new Response('not csv', {
-				status: 200,
-				headers: { 'content-type': 'text/plain' }
-			})
-		);
-		await expect(downloadLog(15)).rejects.toThrow();
+	describe('startLogDownload', () => {
+		it('202 → accepted со снапшотом статуса', async () => {
+			fetchMock.mockResolvedValueOnce(
+				jsonResponse({ status: 'receiving', total: 12, received: 3 }, 202)
+			);
+			const result = await startLogDownload(15);
+			const [url, init] = fetchMock.mock.calls[0];
+			expect(url).toBe('/rest/logs/15');
+			expect(init.method).toBe('GET');
+			expect(result).toEqual({
+				kind: 'accepted',
+				status: { status: 'receiving', total: 12, received: 3 }
+			});
+		});
+
+		it('200 text/csv → ready с Blob', async () => {
+			fetchMock.mockResolvedValueOnce(csvResponse('a;b\n1;2'));
+			const result = await startLogDownload(15);
+			expect(result.kind).toBe('ready');
+			if (result.kind === 'ready') {
+				expect(result.blob.size).toBe('a;b\n1;2'.length);
+			}
+		});
+
+		it('409 → error с кодом backend', async () => {
+			fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'log_transfer_busy' }, 409));
+			const result = await startLogDownload(15);
+			expect(result.kind).toBe('error');
+			if (result.kind === 'error') {
+				expect(result.httpStatus).toBe(409);
+				expect(result.code).toBe('log_transfer_busy');
+			}
+		});
+
+		it('500 → error с HTTP-статусом', async () => {
+			fetchMock.mockResolvedValueOnce(new Response('', { status: 500 }));
+			const result = await startLogDownload(15);
+			expect(result.kind).toBe('error');
+			if (result.kind === 'error') {
+				expect(result.httpStatus).toBe(500);
+			}
+		});
+
+		it('сетевой сбой → error, а не тихий false', async () => {
+			fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+			const result = await startLogDownload(15);
+			expect(result.kind).toBe('error');
+			if (result.kind === 'error') {
+				expect(result.code).toBe('network_error');
+			}
+		});
 	});
 
-	it('downloadLog выбрасывает ошибку при HTTP 500', async () => {
-		fetchMock.mockResolvedValueOnce(new Response('', { status: 500 }));
-		await expect(downloadLog(15)).rejects.toThrow();
+	describe('downloadLog', () => {
+		it('возвращает Blob для text/csv', async () => {
+			fetchMock.mockResolvedValueOnce(csvResponse('a;b;c\n1;2;3'));
+			const blob = await downloadLog(15);
+			const [url] = fetchMock.mock.calls[0];
+			expect(url).toBe('/rest/logs/15');
+			expect(blob.size).toBe('a;b;c\n1;2;3'.length);
+		});
+
+		it('выбрасывает ошибку при неверном content-type', async () => {
+			fetchMock.mockResolvedValueOnce(
+				new Response('not csv', {
+					status: 200,
+					headers: { 'content-type': 'text/plain' }
+				})
+			);
+			await expect(downloadLog(15)).rejects.toThrow();
+		});
+
+		it('выбрасывает ошибку при HTTP 500', async () => {
+			fetchMock.mockResolvedValueOnce(new Response('', { status: 500 }));
+			await expect(downloadLog(15)).rejects.toThrow();
+		});
 	});
 
-	it('cancelLogDownload отправляет DELETE /rest/logs', async () => {
-		fetchMock.mockResolvedValueOnce(
-			new Response(JSON.stringify({ status: 'idle' }), {
-				status: 200,
-				headers: { 'content-type': 'application/json' }
-			})
-		);
-		const ok = await cancelLogDownload();
-		const [url, init] = fetchMock.mock.calls[0];
-		expect(url).toBe('/rest/logs');
-		expect(init.method).toBe('DELETE');
-		expect(ok).toBe(true);
-	});
+	describe('cancelLogDownload', () => {
+		it('отправляет DELETE /rest/logs', async () => {
+			fetchMock.mockResolvedValueOnce(jsonResponse({ status: 'idle' }));
+			const ok = await cancelLogDownload();
+			const [url, init] = fetchMock.mock.calls[0];
+			expect(url).toBe('/rest/logs');
+			expect(init.method).toBe('DELETE');
+			expect(ok).toBe(true);
+		});
 
-	it('cancelLogDownload возвращает false при ошибке', async () => {
-		fetchMock.mockResolvedValueOnce(new Response('fail', { status: 500 }));
-		expect(await cancelLogDownload()).toBe(false);
+		it('возвращает false при ошибке', async () => {
+			fetchMock.mockResolvedValueOnce(new Response('fail', { status: 500 }));
+			expect(await cancelLogDownload()).toBe(false);
+		});
 	});
 });

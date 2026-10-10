@@ -284,26 +284,161 @@ export async function sendTelemetryCommand(command: string): Promise<ApiResponse
 	return await apiFetch<unknown>('/rest/commands', 'POST', { commands: command });
 }
 
-export async function fetchLogStatus(): Promise<SsvcLogStatus | null> {
-	const response = await apiFetch<SsvcLogStatus>('/rest/logs');
-	return response.success ? response.data : null;
+/** Результат запроса статуса журнала: данные контроллера или сохранённая причина отказа. */
+export type LogStatusResult =
+	| { ok: true; data: SsvcLogStatus }
+	| { ok: false; httpStatus: number | null; code: string; message: string };
+
+/** Результат старта загрузки: 202 (запущено), 200 text/csv (готов сразу) или ошибка. */
+export type LogDownloadStart =
+	| { kind: 'accepted'; status: SsvcLogStatus | null }
+	| { kind: 'ready'; blob: Blob }
+	| { kind: 'error'; httpStatus: number | null; code: string; message: string };
+
+// Таймауты GET_LOG-пути: статус отвечает быстро, тело CSV может идти долго.
+// Клиентский idle timeout (LOG_IDLE_TIMEOUT_MS) больше backend-ового TRANSFER_TIMEOUT_MS
+// (10 с), чтобы ошибку контроллера успел сообщить сам backend.
+const LOG_STATUS_TIMEOUT_MS = 5000;
+const LOG_CSV_TIMEOUT_MS = 60000;
+export const LOG_IDLE_TIMEOUT_MS = 15000;
+
+const isAbortError = (error: unknown): boolean =>
+	error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError');
+
+/**
+ * fetch с собственным таймаутом и поддержкой внешнего AbortSignal.
+ *
+ * Общий apiFetch намеренно не меняется: у него другое поведение ошибок,
+ * а GET_LOG-путь обязан отличать таймаут от HTTP-отказа.
+ */
+async function fetchLogResponse(
+	url: string,
+	init: RequestInit,
+	timeoutMs: number,
+	signal?: AbortSignal
+): Promise<Response> {
+	const controller = new AbortController();
+	const timer = setTimeout(
+		() => controller.abort(new DOMException('timeout', 'TimeoutError')),
+		timeoutMs
+	);
+	const abortFromCaller = () => controller.abort(new DOMException('cancelled', 'AbortError'));
+	if (signal) {
+		if (signal.aborted) {
+			abortFromCaller();
+		} else {
+			signal.addEventListener('abort', abortFromCaller, { once: true });
+		}
+	}
+	try {
+		return await fetch(url, { ...init, signal: controller.signal });
+	} finally {
+		clearTimeout(timer);
+		signal?.removeEventListener('abort', abortFromCaller);
+	}
 }
 
-export async function startLogDownload(processId: number): Promise<boolean> {
-	const response = await fetch(`/rest/logs/${processId}`, {
-		method: 'GET',
-		headers: getAuthHeaders(),
-		cache: 'no-store'
-	});
-	return response.status === 202 || response.ok;
+/** Код и сообщение отказа backend ({"error":"..."}), иначе HTTP-статус. */
+async function readLogErrorPayload(response: Response): Promise<{ code: string; message: string }> {
+	try {
+		const payload = await response.json();
+		if (payload && typeof payload.error === 'string') {
+			return { code: payload.error, message: payload.error };
+		}
+	} catch {
+		// Тело не JSON — ограничиваемся HTTP-статусом.
+	}
+	return { code: '', message: `HTTP ${response.status}: ${response.statusText}` };
 }
 
-export async function downloadLog(processId: number): Promise<Blob> {
-	const response = await fetch(`/rest/logs/${processId}`, {
-		method: 'GET',
-		headers: getAuthHeaders(),
-		cache: 'no-store'
-	});
+export async function fetchLogStatus(signal?: AbortSignal): Promise<LogStatusResult> {
+	try {
+		const response = await fetchLogResponse(
+			'/rest/logs',
+			{ method: 'GET', headers: getAuthHeaders(), cache: 'no-store' },
+			LOG_STATUS_TIMEOUT_MS,
+			signal
+		);
+		if (!response.ok) {
+			return {
+				ok: false,
+				httpStatus: response.status,
+				...(await readLogErrorPayload(response))
+			};
+		}
+		return { ok: true, data: (await response.json()) as SsvcLogStatus };
+	} catch (error) {
+		return {
+			ok: false,
+			httpStatus: null,
+			code: isAbortError(error) ? 'aborted' : 'network_error',
+			message: isAbortError(error) ? 'Запрос статуса журнала прерван' : 'Нет связи с контроллером'
+		};
+	}
+}
+
+/**
+ * Первый запрос журнала. Различает готовый CSV (200) и запущенную передачу (202),
+ * чтобы готовый файл сохранялся сразу и polling не запускался.
+ */
+export async function startLogDownload(
+	processId: number,
+	signal?: AbortSignal
+): Promise<LogDownloadStart> {
+	try {
+		const response = await fetchLogResponse(
+			`/rest/logs/${processId}`,
+			{ method: 'GET', headers: getAuthHeaders(), cache: 'no-store' },
+			LOG_CSV_TIMEOUT_MS,
+			signal
+		);
+
+		const contentType = response.headers.get('content-type') ?? '';
+		if (response.ok && contentType.startsWith('text/csv')) {
+			return { kind: 'ready', blob: await response.blob() };
+		}
+
+		if (response.status === 202) {
+			let status: SsvcLogStatus | null = null;
+			try {
+				status = (await response.json()) as SsvcLogStatus;
+			} catch {
+				status = null;
+			}
+			return { kind: 'accepted', status };
+		}
+
+		if (response.ok) {
+			return {
+				kind: 'error',
+				httpStatus: response.status,
+				code: '',
+				message: 'Контроллер вернул не CSV'
+			};
+		}
+
+		return {
+			kind: 'error',
+			httpStatus: response.status,
+			...(await readLogErrorPayload(response))
+		};
+	} catch (error) {
+		return {
+			kind: 'error',
+			httpStatus: null,
+			code: isAbortError(error) ? 'aborted' : 'network_error',
+			message: isAbortError(error) ? 'Запрос журнала прерван' : 'Нет связи с контроллером'
+		};
+	}
+}
+
+export async function downloadLog(processId: number, signal?: AbortSignal): Promise<Blob> {
+	const response = await fetchLogResponse(
+		`/rest/logs/${processId}`,
+		{ method: 'GET', headers: getAuthHeaders(), cache: 'no-store' },
+		LOG_CSV_TIMEOUT_MS,
+		signal
+	);
 	if (!response.ok || response.headers.get('content-type')?.startsWith('text/csv') !== true) {
 		throw new Error(`Не удалось скачать журнал: HTTP ${response.status}`);
 	}
@@ -313,9 +448,18 @@ export async function downloadLog(processId: number): Promise<Blob> {
 /**
  * Отмена текущей передачи журнала (сброс состояния на OpenConnect).
  */
-export async function cancelLogDownload(): Promise<boolean> {
-	const response = await apiFetch<{ status: string }>('/rest/logs', 'DELETE');
-	return response.success;
+export async function cancelLogDownload(signal?: AbortSignal): Promise<boolean> {
+	try {
+		const response = await fetchLogResponse(
+			'/rest/logs',
+			{ method: 'DELETE', headers: getAuthHeaders(), cache: 'no-store' },
+			LOG_STATUS_TIMEOUT_MS,
+			signal
+		);
+		return response.ok;
+	} catch {
+		return false;
+	}
 }
 
 /**

@@ -4,12 +4,18 @@
 		startLogDownload,
 		downloadLog,
 		cancelLogDownload,
-		getInfo
+		getInfo,
+		LOG_IDLE_TIMEOUT_MS
 	} from '$lib/api/ssvcApi';
 	import type { SsvcLogStatus, OcApiFeature } from '$lib/types/ssvc';
 
+	// Локальное состояние операции отделено от backend-снапшота: устаревший
+	// «receiving» с контроллера не должен перекрывать уже показанную ошибку.
+	type LocalLogState = 'idle' | 'starting' | 'waiting' | 'downloading' | 'done' | 'error' | 'cancelled';
+
 	let logStatus = $state<SsvcLogStatus | null>(null);
 	let logError = $state('');
+	let localState = $state<LocalLogState>('idle');
 	// Снапшот возможностей устройства из /rest/oc/info (см. SsvcApiCapabilities).
 	let apiFeatures = $state<OcApiFeature[]>([]);
 
@@ -35,59 +41,144 @@
 		code ? LOG_ERROR_MESSAGES[code] ?? code : '';
 
 	let logRequestId = 0;
+	let logAbort: AbortController | null = null;
+
+	// Инвалидирует текущую операцию и прерывает её сетевые запросы.
+	const cancelLocalRequest = () => {
+		logRequestId += 1;
+		logAbort?.abort();
+		logAbort = null;
+	};
+
+	// Отложенный revoke: браузер может начать скачивание уже после клика.
+	const saveBlob = (blob: Blob, fileName: string) => {
+		const url = URL.createObjectURL(blob);
+		const anchor = document.createElement('a');
+		anchor.href = url;
+		anchor.download = fileName;
+		anchor.click();
+		setTimeout(() => URL.revokeObjectURL(url), 60_000);
+	};
 
 	const loadLogs = async () => {
-		try {
-			logStatus = await fetchLogStatus();
-		} catch (error) {
-			logError = error instanceof Error ? error.message : 'Ошибка получения списка журналов';
+		logError = '';
+		const result = await fetchLogStatus();
+		if (result.ok) {
+			logStatus = result.data;
+			localState = 'idle';
+			return;
 		}
+		logError = logErrorText(result.code) || result.message;
+		localState = 'error';
 	};
 
 	const requestLog = async (file: string) => {
 		const processId = Number(file.replace('.CSV', ''));
 		if (!Number.isInteger(processId) || processId <= 0) return;
+
+		cancelLocalRequest();
 		const requestId = ++logRequestId;
+		logAbort = new AbortController();
+		const signal = logAbort.signal;
+
 		logError = '';
+		logStatus = null;
+		localState = 'starting';
+
 		try {
-			if (!(await startLogDownload(processId))) {
-				logError = 'Не удалось начать загрузку журнала';
+			const start = await startLogDownload(processId, signal);
+			if (requestId !== logRequestId) return;
+
+			if (start.kind === 'error') {
+				logError = logErrorText(start.code) || start.message;
+				localState = 'error';
 				return;
 			}
-			for (let attempt = 0; attempt < 30; attempt += 1) {
+
+			if (start.kind === 'ready') {
+				localState = 'downloading';
+				saveBlob(start.blob, file);
+				localState = 'done';
+				return;
+			}
+
+			logStatus = start.status;
+			localState = 'waiting';
+
+			// Опрос идёт, пока приходит прогресс: фиксированного лимита попыток нет,
+			// поэтому длинная передача не обрывается на 30-м опросе.
+			let lastProgressAt = Date.now();
+			let lastStatus = start.status?.status ?? '';
+			let lastReceived = start.status?.received ?? 0;
+
+			for (;;) {
 				await new Promise((resolve) => setTimeout(resolve, 500));
-				if (requestId !== logRequestId) return; // загрузка отменена пользователем
-				logStatus = await fetchLogStatus();
-				if (logStatus?.status === 'completed') {
-					const blob = await downloadLog(processId);
-					const url = URL.createObjectURL(blob);
-					const anchor = document.createElement('a');
-					anchor.href = url;
-					anchor.download = file;
-					anchor.click();
-					URL.revokeObjectURL(url);
+				if (requestId !== logRequestId) return;
+
+				const result = await fetchLogStatus(signal);
+				if (requestId !== logRequestId) return;
+
+				if (!result.ok) {
+					logError = logErrorText(result.code) || result.message;
+					localState = 'error';
 					return;
 				}
-				if (logStatus?.status === 'error') {
-					logError = logErrorText(logStatus.error) || 'Ошибка передачи журнала';
+
+				logStatus = result.data;
+				if (result.data.status !== lastStatus || result.data.received !== lastReceived) {
+					lastStatus = result.data.status;
+					lastReceived = result.data.received;
+					lastProgressAt = Date.now();
+				}
+
+				if (result.data.status === 'completed') {
+					localState = 'downloading';
+					const blob = await downloadLog(processId, signal);
+					if (requestId !== logRequestId) return;
+					saveBlob(blob, file);
+					localState = 'done';
+					return;
+				}
+
+				if (result.data.status === 'error') {
+					logError = logErrorText(result.data.error) || 'Ошибка передачи журнала';
+					localState = 'error';
+					return;
+				}
+
+				if (Date.now() - lastProgressAt > LOG_IDLE_TIMEOUT_MS) {
+					logError = logErrorText('timeout') || 'Превышено время ожидания передачи журнала';
+					localState = 'error';
 					return;
 				}
 			}
-			logError = 'Истекло время ожидания журнала';
 		} catch (error) {
+			if (requestId !== logRequestId) return;
 			logError = error instanceof Error ? error.message : 'Ошибка загрузки журнала';
+			localState = 'error';
+		} finally {
+			if (requestId === logRequestId) logAbort = null;
 		}
 	};
 
 	const cancelLog = async () => {
-		logRequestId += 1;
+		cancelLocalRequest();
+		localState = 'cancelled';
+		logStatus = null;
 		try {
-			await cancelLogDownload();
-			logStatus = await fetchLogStatus();
+			const ok = await cancelLogDownload();
+			if (!ok) {
+				logError = 'Не удалось отменить передачу на контроллере';
+			}
 		} catch (error) {
 			logError = error instanceof Error ? error.message : 'Не удалось отменить загрузку';
 		}
 	};
+
+	// Уход со страницы прерывает локальные запросы: поздний ответ не сохранит файл.
+	$effect(() => () => {
+		cancelLocalRequest();
+	});
 
 	$effect(() => {
 		getInfo()
@@ -104,7 +195,7 @@
 	<div class="glassmorphism panel logs-panel">
 		<div class="logs-header">
 			<h3 class="section-title settings-section-title">Журналы ректификации</h3>
-			{#if logStatus?.status === 'receiving'}
+			{#if localState === 'starting' || localState === 'waiting'}
 				<button class="log-button" type="button" onclick={cancelLog}>Отменить</button>
 			{:else}
 				<button class="log-button" type="button" onclick={loadLogs} disabled={!logsSupported}
@@ -115,9 +206,15 @@
 		{#if !logsSupported}
 			<p class="log-hint">Для журналов требуется версия API SSVC {logsMinApi} или новее.</p>
 		{/if}
-		{#if logStatus?.status === 'receiving'}
-			<p>Загрузка: {logStatus.received} / {logStatus.total}</p>
-		{:else if logStatus?.status === 'error' || logError}
+		{#if localState === 'waiting' || localState === 'downloading'}
+			<p>Загрузка: {logStatus?.received ?? 0} / {logStatus?.total ?? 0}</p>
+		{:else if localState === 'starting'}
+			<p>Запрос журнала…</p>
+		{:else if localState === 'done'}
+			<p>Журнал сохранён.</p>
+		{:else if localState === 'cancelled'}
+			<p>Загрузка отменена.</p>
+		{:else if localState === 'error' || logError || logStatus?.status === 'error'}
 			<p class="log-error"
 				>{logError || logErrorText(logStatus?.error) || 'Ошибка передачи журнала'}</p
 			>
