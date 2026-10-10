@@ -334,6 +334,12 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
       // GET_LOG идут только в Transfer и не ждут mutex телеметрии.
       const bool isLogFrame = doc["request"] == "GET_LOG" || doc["type"] == "file";
 
+      if (!isLogFrame) {
+        // Обычный кадр при дренировании означает, что поток отменённого файла
+        // закончился: сессия освобождается, не дожидаясь таймаута.
+        SsvcLogProtocol::getTransfer().completeDrain("telemetry_resumed", false);
+      }
+
       if (!isLogFrame && xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
         self->lastMessage = std::string(data);
         ESP_LOGV("SsvcConnector", "lastMessage: %s", self->lastMessage.c_str());

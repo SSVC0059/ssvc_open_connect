@@ -330,12 +330,38 @@ void HandlerRegistrator::registerLogHandlers() const
                        // снимка: зависший LIST не должен выглядеть активным.
                        transfer.checkTimeout(millis());
 
-                       if (transfer.snapshot().status == SsvcLogProtocol::Status::IDLE &&
-                           transfer.reserveList(millis()) ==
-                               SsvcLogProtocol::ReserveResult::Accepted) {
-                           // Резерв сделан до постановки команды; при отказе
-                           // очереди он снимается, и клиент получает причину.
-                           if (!SsvcCommandsQueue::getQueue().getLog("", transfer.generation())) {
+                       const bool statusOnly = request->hasParam("statusOnly");
+                       const bool refresh = request->hasParam("refresh");
+
+                       if (refresh && transfer.isFileSession()) {
+                           // Явное обновление списка не вытесняет активную файловую
+                           // сессию: её reset() потерял бы прогресс передачи.
+                           request->send(409, "application/json",
+                                         R"({"error":"log_transfer_busy"})");
+                           return;
+                       }
+
+                       // GET без параметров остаётся совместимым: список запрашивается
+                       // только из IDLE. statusOnly — чистый snapshot без новой
+                       // команды, refresh — явный повторный запрос списка.
+                       const bool needList =
+                           !statusOnly &&
+                           (refresh || transfer.snapshot().status == SsvcLogProtocol::Status::IDLE);
+
+                       if (needList) {
+                           const SsvcLogProtocol::ReserveResult reserved =
+                               transfer.reserveList(millis());
+                           if (reserved == SsvcLogProtocol::ReserveResult::Busy) {
+                               // Занято файловой сессией или дренированием: новый
+                               // список её не вытесняет.
+                               request->send(409, "application/json",
+                                             R"({"error":"log_transfer_busy"})");
+                               return;
+                           }
+                           if (reserved == SsvcLogProtocol::ReserveResult::Accepted &&
+                               !SsvcCommandsQueue::getQueue().getLog("", transfer.generation())) {
+                               // Резерв сделан до постановки команды; при отказе
+                               // очереди он снимается, и клиент получает причину.
                                transfer.releaseReservation();
                                request->send(503, "application/json",
                                              R"({"error":"queue_full"})");

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import {
 		fetchLogStatus,
+		refreshLogList,
 		startLogDownload,
 		downloadLog,
 		cancelLogDownload,
@@ -61,8 +62,10 @@
 	};
 
 	const loadLogs = async () => {
+		// Явное обновление: refresh=1 действительно запрашивает список заново,
+		// а не отдаёт ранее полученный.
 		logError = '';
-		const result = await fetchLogStatus();
+		const result = await refreshLogList();
 		if (result.ok) {
 			logStatus = result.data;
 			localState = 'idle';
@@ -115,7 +118,8 @@
 				await new Promise((resolve) => setTimeout(resolve, 500));
 				if (requestId !== logRequestId) return;
 
-				const result = await fetchLogStatus(signal);
+				// statusOnly: опрос статуса не запускает LIST как побочный эффект.
+				const result = await fetchLogStatus(signal, { statusOnly: true });
 				if (requestId !== logRequestId) return;
 
 				if (!result.ok) {

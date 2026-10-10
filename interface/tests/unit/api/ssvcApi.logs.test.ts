@@ -19,6 +19,7 @@ vi.mock('$lib/stores/user', () => ({
 
 import {
 	fetchLogStatus,
+	refreshLogList,
 	startLogDownload,
 	downloadLog,
 	cancelLogDownload
@@ -85,6 +86,21 @@ describe('ssvcApi — журналы ректификаций (GET_LOG)', () => 
 			const controller = new AbortController();
 			await fetchLogStatus(controller.signal);
 			expect(fetchMock.mock.calls[0][1].signal).toBeDefined();
+		});
+
+		it('statusOnly не даёт опросу запускать список', async () => {
+			fetchMock.mockResolvedValueOnce(jsonResponse({ status: 'receiving', total: 4, received: 1 }));
+			await fetchLogStatus(undefined, { statusOnly: true });
+			expect(fetchMock.mock.calls[0][0]).toBe('/rest/logs?statusOnly=1');
+		});
+
+		it('refreshLogList запрашивает список заново', async () => {
+			fetchMock.mockResolvedValueOnce(
+				jsonResponse({ status: 'list', total: 0, received: 0, files: ['15.CSV'] })
+			);
+			const result = await refreshLogList();
+			expect(fetchMock.mock.calls[0][0]).toBe('/rest/logs?refresh=1');
+			expect(result.ok).toBe(true);
 		});
 
 		it('отдаёт network_error, если запрос не выполнен', async () => {

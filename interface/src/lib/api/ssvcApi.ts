@@ -351,10 +351,10 @@ async function readLogErrorPayload(response: Response): Promise<{ code: string; 
 	return { code: '', message: `HTTP ${response.status}: ${response.statusText}` };
 }
 
-export async function fetchLogStatus(signal?: AbortSignal): Promise<LogStatusResult> {
+async function requestLogStatus(url: string, signal?: AbortSignal): Promise<LogStatusResult> {
 	try {
 		const response = await fetchLogResponse(
-			'/rest/logs',
+			url,
 			{ method: 'GET', headers: getAuthHeaders(), cache: 'no-store' },
 			LOG_STATUS_TIMEOUT_MS,
 			signal
@@ -375,6 +375,27 @@ export async function fetchLogStatus(signal?: AbortSignal): Promise<LogStatusRes
 			message: isAbortError(error) ? 'Запрос статуса журнала прерван' : 'Нет связи с контроллером'
 		};
 	}
+}
+
+/**
+ * Опрос статуса журнала.
+ *
+ * statusOnly=1 обязателен для polling: без него GET из состояния IDLE сам
+ * запускает LIST, и опрос превращается в побочный запрос списка.
+ */
+export async function fetchLogStatus(
+	signal?: AbortSignal,
+	options: { statusOnly?: boolean } = {}
+): Promise<LogStatusResult> {
+	return requestLogStatus(options.statusOnly ? '/rest/logs?statusOnly=1' : '/rest/logs', signal);
+}
+
+/**
+ * Явное обновление списка журналов: refresh=1 запрашивает LIST заново даже при
+ * уже полученном списке. В активной файловой сессии backend отвечает 409.
+ */
+export async function refreshLogList(signal?: AbortSignal): Promise<LogStatusResult> {
+	return requestLogStatus('/rest/logs?refresh=1', signal);
 }
 
 /**

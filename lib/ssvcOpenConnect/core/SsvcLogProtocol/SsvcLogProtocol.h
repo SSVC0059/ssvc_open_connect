@@ -89,8 +89,14 @@ public:
   void abortReservation(const char* reason);
   // Снять резерв без ошибки: запрос отклонён (например, очередь полна).
   void releaseReservation();
-  // Отмена: до отправки резерв снимается, после отправки — DRAINING.
+  // Отмена: до отправки резерв снимается и команда инвалидируется, после
+  // отправки — DRAINING до границы старого потока.
   void cancel();
+
+  /// Завершение дренирования: asError=false — граница потока найдена и сессия
+  /// освобождается; asError=true — фиксируется ошибка с указанной причиной.
+  bool completeDrain(const char* reason, bool asError);
+  bool isDraining() const;
 
   // Сессия занята (резерв, приём или дренирование) — обычные команды ждут.
   bool isBlocked() const;
@@ -413,7 +419,9 @@ inline void Transfer::releaseReservation() {
 inline void Transfer::cancel() {
   std::lock_guard<std::mutex> lock(_mutex);
   if (_status == Status::QUEUED_LIST || _status == Status::QUEUED_FILE) {
-    // Команда ещё не отправлена — резерв снимается без следа.
+    // Команда ещё не отправлена. Поколение инкрементируется: без этого уже
+    // лежащая в очереди команда с прежним generation дошла бы до UART.
+    ++_generation;
     abortLocked(nullptr, false);
     return;
   }
@@ -422,6 +430,26 @@ inline void Transfer::cancel() {
     _status = Status::DRAINING;
     _error.clear();
   }
+}
+
+inline bool Transfer::completeDrain(const char* reason, const bool asError) {
+  std::lock_guard<std::mutex> lock(_mutex);
+  if (_status != Status::DRAINING) {
+    return false;
+  }
+  if (asError) {
+    _status = Status::ERROR;
+    _error = reason == nullptr ? "drained" : reason;
+    _pending = false;
+    return true;
+  }
+  resetLocked();
+  return true;
+}
+
+inline bool Transfer::isDraining() const {
+  std::lock_guard<std::mutex> lock(_mutex);
+  return _status == Status::DRAINING;
 }
 
 inline bool Transfer::isBlocked() const {
@@ -473,6 +501,21 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
   const std::string json(message);
   std::string type;
   if (!detail::extractString(json, "type", type)) {
+    return false;
+  }
+
+  if (_status == Status::DRAINING) {
+    // Идёт отмена: кадры старой передачи только отбрасываются, поздний START не
+    // возрождает операцию. Границей потока считается последний чанк.
+    if (type == "file") {
+      int chunk = 0;
+      if (detail::extractInt(json, "chunk", chunk) && _totalChunks > 0 &&
+          chunk >= _totalChunks) {
+        _status = Status::ERROR;
+        _error = "cancelled";
+        _pending = false;
+      }
+    }
     return false;
   }
 
