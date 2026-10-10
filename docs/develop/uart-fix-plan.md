@@ -1,9 +1,9 @@
 # План исправлений UART SSVC и GET_LOG (по замечаниям кодревью)
 
 Дата: 10 октября 2026 года. Ветка: `feature/api-v1.10-update`.
-Статус: в работе. Фазы 1–4 завершены, проверены сборкой/тестами и закоммичены; текущая — Фаза 5.
+Статус: в работе. Фазы 1–5 завершены, проверены сборкой и закоммичены; текущая — Фаза 6.
 
-Прогресс: Фаза 0 — baseline зафиксирован (`esp32-s3-devkitc-1-16m`, `pio run` собирает и интерфейс); Фаза 1 — коммит `d9f6cf8`; Фаза 2 — коммит `4a106f2`; Фаза 3 — коммит `4aa6517`; Фаза 4 — коммит `2b4308d`.
+Прогресс: Фаза 0 — baseline зафиксирован (`esp32-s3-devkitc-1-16m`, `pio run` собирает и интерфейс); Фаза 1 — коммит `d9f6cf8`; Фаза 2 — коммит `4a106f2`; Фаза 3 — коммит `4aa6517`; Фаза 4 — коммит `2b4308d`; Фаза 5 — коммит `ec09d36`.
 
 Проверки окружения: `pio run` (env `esp32-s3-devkitc-1-16m`) — успешно после каждой фазы. Нативные тесты (`pio test -e native`) компилируются, но в этой среде помечаются `SKIPPED` (нужен тулчейн MSYS2 UCRT64 в PATH) — результат прогона не подтверждён. Интерфейс проверяется `npm --prefix interface run test:run` и `check`.
 
@@ -27,10 +27,10 @@
 | P1 | Таймаут после TX не сбрасывает успех; BIT1 через callback | `commandProcessorTask`, `registerCallbackCommands` | 3 | готово (`4aa6517`) |
 | P1 | Общий BIT9, поиск `"OK"`, нет точного matching; нет expectedBit у STATUS | `commandToExpectedBit`, `registerCallbackCommands`, `_telemetry` | 3 | готово (`4aa6517`) |
 | P1 | Общий `lastMessage`/`lastResponse` без владельца | `SsvcConnector`, `registerCallbackCommands` | 3 | готово (`4aa6517`) |
-| P1 | Побайтовое чтение, mutex до 1 с, пауза 500 мс, MQTT publish в RX | `_telemetry` | 5 | ожидает |
-| P1 | `flush` при backlog > 4096 при ring 8192 | `_telemetry` | 5 | ожидает |
+| P1 | Побайтовое чтение, mutex до 1 с, пауза 500 мс, MQTT publish в RX | `_telemetry` | 5 | готово (`ec09d36`) |
+| P1 | `flush` при backlog > 4096 при ring 8192 | `_telemetry` | 5 | готово (`ec09d36`) |
 | P1 | `emergency_stop` — обычный STOP в FIFO, ошибка enqueue скрыта | `COMMAND_MAP`, `CommandHandler::handleCommand` | 8 | ожидает |
-| P2 | Нет accumulator/resync, transfer timeout только вне чтения | `_telemetry` | 5 | ожидает |
+| P2 | Нет accumulator/resync, transfer timeout только вне чтения | `_telemetry` | 5 | готово (`ec09d36`) |
 | P2 | Запуск задач из конструктора, нет Ready/Failed, стартовая пауза 6 с | `SsvcConnector`, `SsvcCommandsQueue` | 8 | ожидает |
 | P2 | `TIMEOUT` уже ticks + повторный `pdMS_TO_TICKS` | `SsvcCommandsQueue.h`, `pushCommandInQueue` | 3 | готово (`4aa6517`) |
 | F1 | 30 опросов, статус остаётся `receiving`, ошибка скрыта | `ssvcApi.ts`, `RectificationLogs.svelte` | 2 | готово (`4a106f2`) |
@@ -42,10 +42,10 @@
 | B3 | Список навсегда `pending`, ошибки enqueue скрыты | `HandlerRegistrator.cpp`, `SsvcLogProtocol.h` | 4 | готово (`2b4308d`) |
 | B4 | Отмена не изолирует старую сессию | `HandlerRegistrator.cpp`, `SsvcLogProtocol.h`, UI | 6 | частично: откат резерва и `DRAINING` (`2b4308d`); пропуск отменённых команд и завершение дренажа — Фаза 6 |
 | B5 | Signed accumulator в Base64 (UB) | `detail::decodeBase64` | 7 | ожидает |
-| T1 | Устаревший `logTransferActive` | `_telemetry` | 5 | ожидает |
-| T2 | Файловый кадр ждёт общий telemetry mutex | `_telemetry` | 5 | ожидает |
-| T3 | Заполненность RX = «переполнение» | `_telemetry` | 5 | ожидает |
-| T4 | Framing/таймауты неполны | `_telemetry`, `Transfer` | 5 | ожидает |
+| T1 | Устаревший `logTransferActive` | `_telemetry` | 5 | готово (`ec09d36`) |
+| T2 | Файловый кадр ждёт общий telemetry mutex | `_telemetry` | 5 | готово (`ec09d36`) |
+| T3 | Заполненность RX = «переполнение» | `_telemetry` | 5 | частично: `flush` убран, заполненность — только диагностика (`ec09d36`); события `UART_FIFO_OVF`/framing errors не подключены |
+| T4 | Framing/таймауты неполны | `_telemetry`, `Transfer` | 5 | готово (`ec09d36`) |
 | H1 | Копия полного CSV до `reset()`, риск OOM | `Protocol`, `HandlerRegistrator.cpp` | 7 | ожидает |
 
 ### Фаза 0. Подготовка и фиксация фактов
