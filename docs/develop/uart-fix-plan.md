@@ -1,9 +1,9 @@
 # План исправлений UART SSVC и GET_LOG (по замечаниям кодревью)
 
 Дата: 10 октября 2026 года. Ветка: `feature/api-v1.10-update`.
-Статус: в работе. Фазы 1–5 и 8 завершены, проверены сборкой и закоммичены; текущая — Фаза 6.
+Статус: в работе. Фазы 1–6 и 8 завершены, проверены сборкой и закоммичены; текущая — Фаза 7.
 
-Прогресс: Фаза 0 — baseline зафиксирован (`esp32-s3-devkitc-1-16m`, `pio run` собирает и интерфейс); Фаза 1 — коммит `d9f6cf8`; Фаза 2 — коммит `4a106f2`; Фаза 3 — коммит `4aa6517`; Фаза 4 — коммит `2b4308d`; Фаза 5 — коммит `ec09d36`; Фаза 8 — коммит `bd26e9f`.
+Прогресс: Фаза 0 — baseline зафиксирован (`esp32-s3-devkitc-1-16m`, `pio run` собирает и интерфейс); Фаза 1 — коммит `d9f6cf8`; Фаза 2 — коммит `4a106f2`; Фаза 3 — коммит `4aa6517`; Фаза 4 — коммит `2b4308d`; Фаза 5 — коммит `ec09d36`; Фаза 8 — коммит `bd26e9f`; Фаза 6 — коммит `872724d`.
 
 Проверки окружения: `pio run` (env `esp32-s3-devkitc-1-16m`) — успешно после каждой фазы. Нативные тесты (`pio test -e native`) компилируются, но в этой среде помечаются `SKIPPED` (нужен тулчейн MSYS2 UCRT64 в PATH) — результат прогона не подтверждён. Интерфейс проверяется `npm --prefix interface run test:run` и `check`.
 
@@ -35,12 +35,12 @@
 | P2 | `TIMEOUT` уже ticks + повторный `pdMS_TO_TICKS` | `SsvcCommandsQueue.h`, `pushCommandInQueue` | 3 | готово (`4aa6517`) |
 | F1 | 30 опросов, статус остаётся `receiving`, ошибка скрыта | `ssvcApi.ts`, `RectificationLogs.svelte` | 2 | готово (`4a106f2`) |
 | F2 | Стартовый `200 text/csv` поглощается, backend делает `reset()` | `HandlerRegistrator.cpp`, `ssvcApi.ts` | 2 | частично: клиент готов (`4a106f2`), backend `reset()` — Фаза 7 |
-| F3 | Список не ожидается, не восстанавливается после ERROR | `RectificationLogs.svelte`, `HandlerRegistrator.cpp` | 6 | ожидает |
+| F3 | Список не ожидается, не восстанавливается после ERROR | `RectificationLogs.svelte`, `HandlerRegistrator.cpp` | 6 | готово (`872724d`) |
 | F4 | HTTP-ошибки теряются, нет AbortSignal/таймаутов | `ssvcApi.ts` | 2 | готово (`4a106f2`) |
 | B1 | Нет резервирования/сериализации транзакции | `HandlerRegistrator.cpp`, `SsvcCommandsQueue.cpp` | 4 | готово (`2b4308d`) |
 | B2 | `Transfer` не защищён между задачами | `SsvcLogProtocol.h`, `HandlerRegistrator.cpp` | 4 | готово (`2b4308d`) |
 | B3 | Список навсегда `pending`, ошибки enqueue скрыты | `HandlerRegistrator.cpp`, `SsvcLogProtocol.h` | 4 | готово (`2b4308d`) |
-| B4 | Отмена не изолирует старую сессию | `HandlerRegistrator.cpp`, `SsvcLogProtocol.h`, UI | 6 | частично: откат резерва и `DRAINING` (`2b4308d`); пропуск отменённых команд и завершение дренажа — Фаза 6 |
+| B4 | Отмена не изолирует старую сессию | `HandlerRegistrator.cpp`, `SsvcLogProtocol.h`, UI | 6 | готово (`2b4308d`, `872724d`) |
 | B5 | Signed accumulator в Base64 (UB) | `detail::decodeBase64` | 7 | ожидает |
 | T1 | Устаревший `logTransferActive` | `_telemetry` | 5 | готово (`ec09d36`) |
 | T2 | Файловый кадр ждёт общий telemetry mutex | `_telemetry` | 5 | готово (`ec09d36`) |
