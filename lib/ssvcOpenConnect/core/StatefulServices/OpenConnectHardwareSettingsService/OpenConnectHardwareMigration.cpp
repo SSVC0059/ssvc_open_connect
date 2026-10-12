@@ -70,6 +70,33 @@ bool fileLooksValid(FS* fs, JsonDocument& doc) {
     if (!OpenConnectHardwareConfig::isValidI2c7Bit(lcd)) {
         return false;
     }
+    // XKC-25 fields are optional: a config written before the sensors existed has none of them.
+    if (!o["xkc25Sensors"].isNull()) {
+        if (!o["xkc25Sensors"].is<JsonArray>()) {
+            return false;
+        }
+        const JsonArray sensors = o["xkc25Sensors"].as<JsonArray>();
+        if (sensors.size() > OpenConnectHardwareConfig::kMaxXkc25Sensors) {
+            return false;
+        }
+        std::unordered_set<uint8_t> usedPins;
+        for (JsonVariant v : sensors) {
+            if (!v.is<JsonObject>()) {
+                return false;
+            }
+            const JsonObject sensor = v.as<JsonObject>();
+            const unsigned int pin = sensor["gpio"] | 0;
+            if (!OpenConnectHardwareConfig::isValidGpio(pin)) {
+                return false;
+            }
+            if (!OpenConnectHardwareConfig::isValidZoneIndex(sensor["zoneIndex"] | 0)) {
+                return false;
+            }
+            if (!usedPins.insert(static_cast<uint8_t>(pin)).second) {
+                return false;
+            }
+        }
+    }
     if (o["relayPcf8574Addresses"].is<JsonArray>()) {
         const JsonArray ar = o["relayPcf8574Addresses"].as<JsonArray>();
         if (ar.isNull() || ar.size() < 1 || ar.size() > OpenConnectHardwareConfig::kMaxRelayChips) {

@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { getInfo } from '$lib/api/ssvcApi';
+	import { getInfo, infoCacheVersion } from '$lib/api/ssvcApi';
 	import { apiVersionCode } from '$lib/actions/versioning';
 	import type { SsvcOpenConnectInfo } from '$lib/types/ssvc';
 	import AlertTriangle from '~icons/tabler/alert-triangle';
@@ -12,17 +11,26 @@
 	let info = $state<SsvcOpenConnectInfo | null>(null);
 	let loaded = $state(false);
 
-	onMount(() => {
+	$effect(() => {
+		// Перечитываем при каждом сбросе кеша /rest/oc/info: после переподключения
+		// контроллер мог быть заменён или перепрошит, и состояние совместимости
+		// изменилось — компонент уже смонтирован и сам об этом не узнает.
+		void $infoCacheVersion;
+		let cancelled = false;
+		loaded = false;
 		getInfo()
 			.then((value) => {
-				info = value ?? null;
+				if (!cancelled) info = value ?? null;
 			})
 			.catch(() => {
-				info = null;
+				if (!cancelled) info = null;
 			})
 			.finally(() => {
-				loaded = true;
+				if (!cancelled) loaded = true;
 			});
+		return () => {
+			cancelled = true;
+		};
 	});
 
 	const compatibility = $derived(info?.oc.api_compatibility ?? 'unknown');

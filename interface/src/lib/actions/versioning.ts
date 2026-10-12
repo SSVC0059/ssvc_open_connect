@@ -1,4 +1,4 @@
-import { getInfo } from '$lib/api/ssvcApi';
+import { getInfo, infoCacheVersion } from '$lib/api/ssvcApi';
 
 /**
  * Преобразует версию API в целочисленный код major*100+minor.
@@ -18,6 +18,13 @@ export function apiVersionCode(version: number | string): number {
  */
 export function requireVersion(node: HTMLElement, requiredVersion: number | string) {
 	let isInitialized = false;
+
+	// Сброс кеша /rest/oc/info (переподключение к контроллеру) должен перечитать
+	// версию API: устройство могло быть заменено или перепрошито, и уже
+	// применённая блокировка перестала соответствовать действительности.
+	const unsubscribe = infoCacheVersion.subscribe(() => {
+		void checkVersion();
+	});
 
 	const checkVersion = async () => {
 		try {
@@ -74,6 +81,9 @@ export function requireVersion(node: HTMLElement, requiredVersion: number | stri
 				requiredVersion = newRequiredVersion;
 				void checkVersion();
 			}
+		},
+		destroy() {
+			unsubscribe();
 		}
 	};
 }

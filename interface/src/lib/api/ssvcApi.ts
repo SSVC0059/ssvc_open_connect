@@ -1,6 +1,6 @@
 import { page } from '$app/state';
 import { user } from '$lib/stores/user';
-import { get } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 import type { AlarmThresholdsState, TemperatureResponse } from '$lib/types/Sensors';
 import type {
 	OcHardwareConfigResponse,
@@ -13,7 +13,10 @@ import type {
 	SubsystemsState,
 	TelegramConfig,
 	VkConfig,
-	VkPeersResponse
+	VkPeersResponse,
+	Xkc25CalibrationResponse,
+	Xkc25CalibrationStep,
+	Xkc25StatusResponse
 } from '$lib/types/ssvc';
 
 
@@ -28,6 +31,12 @@ export async function fetchSettings(): Promise<SsvcSettings | undefined> {
 }
 
 let infoPromise: Promise<SsvcOpenConnectInfo | undefined> | null = null;
+
+/**
+ * Поколение кеша /rest/oc/info. Увеличивается при сбросе кеша, чтобы уже
+ * смонтированные компоненты могли перечитать версию API и набор возможностей.
+ */
+export const infoCacheVersion = writable(0);
 
 /**
  * Получение информации о версии SSVC и OpenConnect SsvcOpenConnectInfo с кешированием.
@@ -62,6 +71,9 @@ export function getInfo(): Promise<SsvcOpenConnectInfo | undefined> {
  */
 export function resetInfoCache(): void {
 	infoPromise = null;
+	// Будим подписчиков: сброса промиса недостаточно, у уже смонтированных
+	// компонентов остаётся прочитанное ранее состояние совместимости.
+	infoCacheVersion.update((version) => version + 1);
 }
 
 /**
@@ -235,6 +247,69 @@ export async function putHardwareConfig(
 		partial
 	);
 	return response.success ? response.data : null;
+}
+
+/**
+ * Живое состояние датчиков XKC-25: сырой уровень пина, признак заполнения,
+ * статус калибровки и результат предстартовой проверки.
+ */
+export async function fetchXkc25Status(): Promise<Xkc25StatusResponse | null> {
+	const response = await apiFetch<Xkc25StatusResponse>('/rest/oc/xkc25/status', 'GET');
+	return response.success ? response.data : null;
+}
+
+/**
+ * Итог шага мастера калибровки XKC-25.
+ *
+ * apiFetch считает любой не-2xx ответ ошибкой и теряет тело, а шаги калибровки
+ * отвечают осмысленным JSON и при 409/404 (нестабильный сигнал, нет реакции,
+ * датчик недоступен). Поэтому запрос выполняется напрямую и тело читается
+ * независимо от HTTP-статуса.
+ */
+export type Xkc25CalibrationOutcome = {
+	/** HTTP-статус: 200 — шаг выполнен, 409/404/500 — состояние помешало шагу. */
+	status: number;
+	/** Разобранное тело ответа; null — ответ не получен или не является JSON. */
+	body: Xkc25CalibrationResponse | null;
+	/** Текст ошибки транспорта, когда тело недоступно. */
+	error?: string;
+};
+
+export async function postXkc25Calibrate(
+	index: number,
+	step: Xkc25CalibrationStep,
+	timeoutMs?: number
+): Promise<Xkc25CalibrationOutcome> {
+	const payload: { index: number; step: Xkc25CalibrationStep; timeoutMs?: number } = {
+		index,
+		step
+	};
+	if (timeoutMs != null) {
+		payload.timeoutMs = timeoutMs;
+	}
+	try {
+		const response = await fetch('/rest/oc/xkc25/calibrate', {
+			method: 'POST',
+			headers: getAuthHeaders(),
+			body: JSON.stringify(payload)
+		});
+		const text = await response.text();
+		let body: Xkc25CalibrationResponse | null = null;
+		if (text) {
+			try {
+				body = JSON.parse(text) as Xkc25CalibrationResponse;
+			} catch {
+				body = null;
+			}
+		}
+		return { status: response.status, body };
+	} catch (error) {
+		return {
+			status: 0,
+			body: null,
+			error: error instanceof Error ? error.message : 'Unknown error'
+		};
+	}
 }
 
 /**

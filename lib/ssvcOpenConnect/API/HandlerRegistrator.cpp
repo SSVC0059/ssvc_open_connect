@@ -177,13 +177,26 @@ void HandlerRegistrator::registerTelegramBotHandler() const
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
 
+    _server.on("/rest/oc/xkc25/status", HTTP_GET,
+              _securityManager->wrapRequest(
+                  [](AsyncWebServerRequest* request) {
+                      OpenConnectHandler::getXkc25Status(request);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/oc/xkc25/calibrate", HTTP_POST,
+              _securityManager->wrapCallback(
+                  [](AsyncWebServerRequest* request, JsonVariant& json) {
+                      OpenConnectHandler::postXkc25Calibrate(request, json);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
+
     _server.on("/rest/oc/relay/capabilities", HTTP_GET,
               _securityManager->wrapRequest(
                   [](AsyncWebServerRequest* request) {
                       OpenConnectHandler::getRelayCapabilities(request);
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
-
     _server.on("/rest/oc/relay/metadata", HTTP_GET,
               _securityManager->wrapRequest(
                   [](AsyncWebServerRequest* request) {

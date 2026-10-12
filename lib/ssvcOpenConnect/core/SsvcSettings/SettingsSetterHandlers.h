@@ -228,8 +228,9 @@ class SingleIntHandler final : public ParamHandler
 public:
   using Setter = std::function<void(SsvcSettings::Builder&, int)>;
 
-  explicit SingleIntHandler(Setter setter, int lo = INT_MIN, int hi = INT_MAX)
-    : _setter(std::move(setter)), _lo(lo), _hi(hi)
+  explicit SingleIntHandler(Setter setter, int lo = INT_MIN, int hi = INT_MAX,
+                            std::function<bool(int)> predicate = nullptr)
+    : _setter(std::move(setter)), _lo(lo), _hi(hi), _predicate(std::move(predicate))
   {
   }
 
@@ -247,6 +248,13 @@ public:
       ESP_LOGE("SingleIntHandler", "Value %d out of range [%d, %d]", val, _lo, _hi);
       return false;
     }
+    // Дискретные параметры (например predec: 0/7/13) отвергают значения внутри
+    // диапазона, которые спецификация не допускает.
+    if (_predicate && !_predicate(val))
+    {
+      ESP_LOGE("SingleIntHandler", "Value %d rejected by parameter constraint", val);
+      return false;
+    }
     _setter(builder, val);
     return true;
   }
@@ -255,6 +263,7 @@ private:
   Setter _setter;
   int _lo;
   int _hi;
+  std::function<bool(int)> _predicate;
 };
 
 // Для параметров вида "param": [int1, int2, int3]
