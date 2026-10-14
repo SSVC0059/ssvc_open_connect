@@ -1,0 +1,41 @@
+﻿pio : *** [.pio\build\native\test\native\test_rectification_parse\test_main.o] 
+Error 1
+строка:1 знак:1
++ pio test -e native -v 2>pio_build_v.log; Get-Content pio_build_v.log  ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (*** [.pio\build...main.o] Error 1 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Building stage has failed, see errors above. Use `pio test -vvv` option to enab
+le verbose output.
+------ native:native/test_rectification_parse [ERRORED] Took 1.26 seconds -----
+-
+*** [.pio\build\native\test\native\test_ssvc_log_protocol\test_main.o] Error 1
+Building stage has failed, see errors above. Use `pio test -vvv` option to enab
+le verbose output.
+------- native:native/test_ssvc_log_protocol [ERRORED] Took 1.07 seconds ------
+-
+*** [.pio\build\native\test\native\test_stringview\test_main.o] Error 1
+Building stage has failed, see errors above. Use `pio test -vvv` option to enab
+le verbose output.
+---------- native:native/test_stringview [ERRORED] Took 1.10 seconds ----------
+*** [.pio\build\native\test\native\test_uart_api_spec\test_main.o] Error 1
+Building stage has failed, see errors above. Use `pio test -vvv` option to enab
+le verbose output.
+--------- native:native/test_uart_api_spec [ERRORED] Took 1.11 seconds --------
+-
+*** [.pio\build\native\test\native\test_utils\test_main.o] Error 1
+Building stage has failed, see errors above. Use `pio test -vvv` option to enab
+le verbose output.
+------------- native:native/test_utils [ERRORED] Took 1.31 seconds ------------
+-
+=================================== SUMMARY ===================================
+Environment    Test                             Status    Duration
+-------------  -------------------------------  --------  ------------
+native         native/test_rectification_parse  ERRORED   00:00:01.262
+native         native/test_ssvc_log_protocol    ERRORED   00:00:01.067
+native         native/test_stringview           ERRORED   00:00:01.101
+native         native/test_uart_api_spec        ERRORED   00:00:01.114
+native         native/test_utils                ERRORED   00:00:01.312
+================== 5 test cases: 0 succeeded in 00:00:05.857 ==================

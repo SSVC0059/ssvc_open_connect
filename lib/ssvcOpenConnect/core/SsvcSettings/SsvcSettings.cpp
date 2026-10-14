@@ -765,44 +765,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setExtendedHeads(const int val) {
     }
   }
   return *this;
-}
 
-// predec: предекремент (0=выкл, 7=0.07, 13=0.13)
-SsvcSettings::Builder &SsvcSettings::Builder::setPredec(const int val) {
-  const int prevPredec = settings.predec;
-  settings.predec = (val >= 0 && val <= 13) ? val : prevPredec;
-  if (settings.predec != prevPredec) {
-    char buffer[50];
-    std::snprintf(buffer, sizeof(buffer), "predec=%d", settings.predec);
-    ESP_LOGD("SsvcSettings", "setPredec: %s", buffer);
-    if (_isBatchMode) {
-      _pendingCommands.emplace_back(buffer);
-      ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
-    } else {
-      ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
-    }
-  }
-  return *this;
-}
-
-// extended_heads: сброс и снижение (0=выкл, 1=вкл)
-SsvcSettings::Builder &SsvcSettings::Builder::setExtendedHeads(const int val) {
-  const int prevExtendedHeads = settings.extended_heads;
-  settings.extended_heads = (val >= 0 && val <= 1) ? val : prevExtendedHeads;
-  if (settings.extended_heads != prevExtendedHeads) {
-    char buffer[50];
-    std::snprintf(buffer, sizeof(buffer), "extended_heads=%d", settings.extended_heads);
-    ESP_LOGD("SsvcSettings", "setExtendedHeads: %s", buffer);
-    if (_isBatchMode) {
-      _pendingCommands.emplace_back(buffer);
-      ESP_LOGD("SsvcSettings", "Batch queued: %s", buffer);
-    } else {
-      ESP_LOGD("SsvcSettings", "Single send: %s", buffer);
-      SsvcCommandsQueue::getQueue().set(buffer);
-    }
-  }
-  return *this;
 }
 
 SsvcSettings::Builder & SsvcSettings::Builder::setParallel(float timeTurnOn, int period) {

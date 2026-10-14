@@ -22,6 +22,9 @@ struct Xkc25SensorConfig {
     uint8_t levelWithLiquid = 0;    // сырой уровень пина, когда жидкость напротив датчика ЕСТЬ (0/1)
     uint32_t calibratedAt = 0;      // unix-время последней калибровки (0 = никогда)
 
+    /** Переносной датчик: фактическая зона — та ёмкость, на которой он стоит сейчас. */
+    bool sharedAcrossTanks = false;
+
     /**
      * @brief Сравнение полей подключения (без калибровочных).
      *
@@ -62,10 +65,21 @@ struct OpenConnectHardwareConfig {
     bool xkc25AutoPause = true;           // срабатывание → PAUSE отбора
     bool xkc25AbortRectification = false; // срабатывание → прерывание ректификации
 
+    /** Режим реакции на срабатывание датчика: 0 = PAUSE, 1 = ABORT, 2 = NOTIFY. */
+    uint8_t xkc25TriggerAction = 0;
+
+    /** Ёмкость для переносного датчика (sharedAcrossTanks), 0..2. */
+    uint8_t xkc25SharedTankIndex = 0;
+
     /** Режимы проверки перед стартом ректификации при некалиброванных датчиках. */
     static constexpr uint8_t kXkc25GuardOff = 0;   // проверок нет
     static constexpr uint8_t kXkc25GuardWarn = 1;  // старт разрешён, причина — в предупреждении
     static constexpr uint8_t kXkc25GuardBlock = 2; // старт отклоняется
+
+    /** Режим реакции на срабатывание датчика. */
+    static constexpr uint8_t kXkc25ActionPause = 0;  // PAUSE отбора
+    static constexpr uint8_t kXkc25ActionAbort = 1;  // ABORT ректификации
+    static constexpr uint8_t kXkc25ActionNotify = 2; // уведомление без остановки
 
     static bool isValidStartGuardMode(unsigned int mode) { return mode <= kXkc25GuardBlock; }
 
