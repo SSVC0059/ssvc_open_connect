@@ -368,7 +368,12 @@
 		return JSON.stringify(
 			list.map((sensor) => [
 				sensor.enabled,
+				// Источник и бит входят в ключ: иначе переход GPIO → PCF и смена бита
+				// не считались бы правкой подключения (dirty), и калибровка не блокировалась.
+				sensor.pinSource === 1 ? 1 : 0,
 				Number(sensor.gpio),
+				Number(sensor.pcfAddress ?? XKC25_PCF_INPUT_DEFAULT_ADDR),
+				Number(sensor.pcfBit ?? 0),
 				Number(sensor.zoneIndex),
 				sensor.activeLow
 			])
