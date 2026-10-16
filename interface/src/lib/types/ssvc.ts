@@ -258,8 +258,17 @@ export type Xkc25TriggerAction = 0 | 1 | 2;
  */
 export type Xkc25SensorConfig = {
 	enabled: boolean;
-	/** GPIO-пин выхода OUT (жёлтый провод). */
+	/**
+	 * Источник сигнала: 0 — нативный GPIO (`gpio`), 1 — бит входного расширителя
+	 * PCF8574 (`pcfAddress`/`pcfBit`). На KC868-A6 входные сухие контакты — на 0x22.
+	 */
+	pinSource?: 0 | 1;
+	/** GPIO-пин выхода OUT (жёлтый провод) при `pinSource === 0`. */
 	gpio: number;
+	/** 7-битный адрес входного расширителя PCF8574 при `pinSource === 1`. */
+	pcfAddress?: number;
+	/** Бит 0..7 входного расширителя PCF8574 при `pinSource === 1`. */
+	pcfBit?: number;
 	/** true → «жидкость обнаружена» соответствует LOW на пине; результат калибровки. */
 	activeLow: boolean;
 	/** 0..2 → приёмная ёмкость 1/2/3. */
@@ -348,7 +357,15 @@ export type OcHardwareFaultsResponse = {
 export type Xkc25SensorStatus = {
 	index: number;
 	enabled: boolean;
+	/** Источник сигнала: 0 — GPIO, 1 — бит входного расширителя PCF8574. */
+	pinSource: number;
 	gpio: number;
+	/** Адрес входного расширителя PCF8574 (актуален при `pinSource === 1`). */
+	pcfAddress: number;
+	/** Бит входного расширителя PCF8574 (актуален при `pinSource === 1`). */
+	pcfBit: number;
+	/** Человекочитаемая подпись источника: «GPIO 4» / «PCF8574 0x22 · P3». */
+	pinLabel: string;
 	zoneIndex: number;
 	/** Ключ зоны: receiver_tank_1/2/3. */
 	zone: string;

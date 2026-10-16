@@ -20,6 +20,7 @@
 
 #include "components/sensors/AbstractSensor/AbstractSensor.h"
 #include "components/sensors/PollingSubsystem/PollingSubsystem.h"
+#include "components/io/DigitalInput/DigitalInputPin.h"
 #include "core/StatefulServices/OpenConnectHardwareSettingsService/OpenConnectHardwareConfig.h"
 
 class Xkc25Sensor;
@@ -70,9 +71,18 @@ public:
     /** Зона приёмной ёмкости по zoneIndex из конфигурации (0..2): RECEIVER_TANK_1/2/3. */
     static SensorZone zoneFromIndex(uint8_t zoneIndex);
 
-    uint8_t getGpio() const { return _gpio; }
+    uint8_t getGpio() const { return _src.gpio; }
     uint8_t getIndex() const { return _index; }
     bool isActiveLow() const { return _activeLow; }
+
+    /** Источник сигнала: 0 — нативный GPIO, 1 — бит входного расширителя PCF8574. */
+    uint8_t getSource() const { return _src.source; }
+    uint8_t getPcfAddress() const { return _src.pcfAddress; }
+    uint8_t getPcfBit() const { return _src.pcfBit; }
+    bool isPcfSource() const { return _src.isPcf(); }
+
+    /** Человекочитаемая подпись источника: «GPIO 4» / «PCF8574 0x22 · P3». */
+    std::string pinLabel() const { return _src.label(); }
 
     /** Индекс приёмной ёмкости (0..2), за которой датчик закреплён сейчас. */
     uint8_t getZoneIndex() const { return _zoneIndex; }
@@ -152,7 +162,7 @@ public:
     LineProbe probeLine(const char* stage) const;
 
 private:
-    static Address& createAddr(uint8_t pin);
+    static Address& createAddr(const Xkc25SensorConfig& config);
     static std::string makeName(uint8_t index);
 
     /** Уровень по большинству из трёх чтений: одиночное может попасть на перезаряд линии. */
@@ -161,10 +171,9 @@ private:
     /**
      * @brief Приводит пин к рабочему режиму по текущей полярности.
      *
-     * Неактивное состояние обязано читаться определённым уровнем: у активного
-     * низкого это подтяжка вверх, у активного высокого — вниз. Без подтяжки
-     * высокоомная линия (открытый коллектор, неподключённый выход) висит в
-     * воздухе, читается как HIGH и активное состояние от покоя неотличимо.
+     * GPIO: pinMode(INPUT) — подтяжку делает монтаж. PCF8574: подготовка входов
+     * расширителя (write 0xFF). Идемпотентно; вызывается из initialize() и после
+     * калибровки.
      */
     void applyInputMode() const;
 
@@ -172,7 +181,9 @@ private:
     static constexpr uint32_t kRawLogIntervalMs = 5000;
 
     uint8_t _index;
-    uint8_t _gpio;
+    DigitalInputSource _src;
+    /** begin()/read() вызываются и из const-методов (проба линии, калибровка). */
+    mutable DigitalInputPin _pin;
     uint8_t _zoneIndex;
     bool _activeLow;
     /** Один прибор на все ёмкости: зону задаёт общая настройка, а не конфиг слота. */

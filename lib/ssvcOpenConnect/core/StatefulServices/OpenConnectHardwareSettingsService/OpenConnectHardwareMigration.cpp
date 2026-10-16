@@ -108,21 +108,40 @@ bool fileLooksValid(FS* fs, JsonDocument& doc, const char** reason = nullptr) {
         if (sensors.size() > OpenConnectHardwareConfig::kMaxXkc25Sensors) {
             return fail("too many xkc25Sensors");
         }
-        std::unordered_set<uint8_t> usedPins;
+        std::unordered_set<uint32_t> usedInputs;
         for (JsonVariant v : sensors) {
             if (!v.is<JsonObject>()) {
                 return fail("xkc25Sensors entry is not an object");
             }
             const JsonObject sensor = v.as<JsonObject>();
-            const unsigned int pin = sensor["gpio"] | 0;
-            if (!OpenConnectHardwareConfig::isValidGpio(pin)) {
-                return fail("xkc25Sensors gpio out of range");
+            // Entries written before the PCF8574 input support have no pinSource: default GPIO.
+            const unsigned int source = sensor["pinSource"] | 0;
+            if (!Xkc25SensorConfig::isValidPinSource(source)) {
+                return fail("xkc25Sensors pinSource out of range");
             }
             if (!OpenConnectHardwareConfig::isValidZoneIndex(sensor["zoneIndex"] | 0)) {
                 return fail("xkc25Sensors zoneIndex out of range");
             }
-            if (!usedPins.insert(static_cast<uint8_t>(pin)).second) {
-                return fail("xkc25Sensors gpio duplicated");
+            uint32_t inputKey = 0;
+            if (source == Xkc25SensorConfig::kPinSourcePcf8574) {
+                const unsigned int addr = sensor["pcfAddress"] | 0x22;
+                if (!OpenConnectHardwareConfig::isValidI2c7Bit(addr)) {
+                    return fail("xkc25Sensors pcfAddress out of 7-bit range");
+                }
+                const unsigned int bit = sensor["pcfBit"] | 0;
+                if (!Xkc25SensorConfig::isValidPcfBit(bit)) {
+                    return fail("xkc25Sensors pcfBit out of range");
+                }
+                inputKey = 0x200u | (static_cast<uint32_t>(addr) << 3) | bit;
+            } else {
+                const unsigned int pin = sensor["gpio"] | 0;
+                if (!OpenConnectHardwareConfig::isValidGpio(pin)) {
+                    return fail("xkc25Sensors gpio out of range");
+                }
+                inputKey = 0x100u | pin;
+            }
+            if (!usedInputs.insert(inputKey).second) {
+                return fail("xkc25Sensors input duplicated");
             }
         }
     }

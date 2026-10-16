@@ -141,7 +141,10 @@ void OpenConnectHardwareConfig::read(OpenConnectHardwareConfig& s, JsonObject& r
         for (const auto& sensor : s.xkc25Sensors) {
             JsonObject o = arr.add<JsonObject>();
             o["enabled"] = sensor.enabled;
+            o["pinSource"] = sensor.pinSource;
             o["gpio"] = sensor.gpio;
+            o["pcfAddress"] = sensor.pcfAddress;
+            o["pcfBit"] = sensor.pcfBit;
             o["activeLow"] = sensor.activeLow;
             o["zoneIndex"] = sensor.zoneIndex;
             o["calibrated"] = sensor.calibrated;
@@ -292,7 +295,9 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
             return fail();
         }
         std::vector<Xkc25SensorConfig> next;
-        std::unordered_set<uint8_t> usedPins;
+        // Уникальность источника сигнала: GPIO → 0x100|pin, PCF8574 → 0x200|(addr<<3)|bit.
+        // Ключи разных диапазонов не пересекаются, поэтому GPIO и бит расширителя не «схлопываются».
+        std::unordered_set<uint32_t> usedInputs;
         size_t slot = 0;
         for (JsonVariant v : ja) {
             if (!v.is<JsonObject>()) {
@@ -301,20 +306,53 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
             const JsonObject o = v.as<JsonObject>();
             Xkc25SensorConfig sensor;
             sensor.enabled = o["enabled"] | false;
-            const unsigned int rawPin = o["gpio"] | 0;
-            if (!isValidGpio(rawPin)) {
+
+            const unsigned int rawSource = o["pinSource"] | 0;
+            if (!Xkc25SensorConfig::isValidPinSource(rawSource)) {
                 return fail();
             }
-            sensor.gpio = static_cast<uint8_t>(rawPin);
+            sensor.pinSource = static_cast<uint8_t>(rawSource);
+
+            uint32_t inputKey = 0;
+            if (sensor.pinSource == Xkc25SensorConfig::kPinSourcePcf8574) {
+                const unsigned int rawAddr = o["pcfAddress"] | 0x22;
+                if (!isValidI2c7Bit(rawAddr)) {
+                    return fail();
+                }
+                sensor.pcfAddress = static_cast<uint8_t>(rawAddr);
+                const unsigned int rawBit = o["pcfBit"] | 0;
+                if (!Xkc25SensorConfig::isValidPcfBit(rawBit)) {
+                    return fail();
+                }
+                sensor.pcfBit = static_cast<uint8_t>(rawBit);
+
+                // Входной расширитель не может совпадать с релейным: prepareInputs() пишет
+                // 0xFF в тот же чип, что и RelayPortCoordinator, — иначе конфликт записей.
+                for (uint8_t relayAddr : s.relayPcf8574Addresses) {
+                    if (relayAddr == sensor.pcfAddress) {
+                        return fail();
+                    }
+                }
+                inputKey =
+                    0x200u | (static_cast<uint32_t>(sensor.pcfAddress) << 3) | sensor.pcfBit;
+            } else {
+                const unsigned int rawPin = o["gpio"] | 0;
+                if (!isValidGpio(rawPin)) {
+                    return fail();
+                }
+                sensor.gpio = static_cast<uint8_t>(rawPin);
+                inputKey = 0x100u | sensor.gpio;
+            }
+            if (!usedInputs.insert(inputKey).second) {
+                return fail();
+            }
+
             sensor.activeLow = o["activeLow"] | true;
             const unsigned int rawZone = o["zoneIndex"] | 0;
             if (!isValidZoneIndex(rawZone)) {
                 return fail();
             }
             sensor.zoneIndex = static_cast<uint8_t>(rawZone);
-            if (!usedPins.insert(sensor.gpio).second) {
-                return fail();
-            }
 
             // Calibration is runtime data produced by the calibration wizard: PUT can
             // never write it (see 6.1.3). Taking it from the live state keeps the

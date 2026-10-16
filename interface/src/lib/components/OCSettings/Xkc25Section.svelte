@@ -24,6 +24,8 @@
 		sharedTankIndex = $bindable(0),
 		startGuardMode = $bindable<Xkc25StartGuardMode>(1),
 		status = null,
+		/** Адреса PCF8574, занятые выходами реле: входной расширитель не должен с ними совпадать. */
+		relayAddresses = [],
 		/** В редакторе есть несохранённые правки подключения: слоты прошивки ещё не совпадают с UI. */
 		dirty = false,
 		/** Идёт шаг калибровки: родитель на это время приостанавливает опрос статуса. */
@@ -38,6 +40,7 @@
 		sharedTankIndex: number;
 		startGuardMode: Xkc25StartGuardMode;
 		status?: Xkc25StatusResponse | null;
+		relayAddresses?: number[];
 		dirty?: boolean;
 		busy: boolean;
 		stale?: boolean;
@@ -49,6 +52,18 @@
 	const DEFAULT_GPIOS = [4, 5, 6];
 	const GPIO_PINS = Array.from({ length: 40 }, (_, pin) => pin);
 	const ZONE_LABELS = ['Приёмная ёмкость 1', 'Приёмная ёмкость 2', 'Приёмная ёмкость 3'];
+
+	/** Источник сигнала датчика: нативный GPIO или бит входного расширителя PCF8574. */
+	const PIN_SOURCE_GPIO = 0;
+	const PIN_SOURCE_PCF = 1;
+	/** Типовые адреса PCF8574; 0x22 — входной расширитель сухих контактов на KC868-A6. */
+	const PCF_INPUT_DEFAULT_ADDR = 0x22;
+	const PCF_INPUT_ADDRESSES = [0x22, 0x20, 0x21, 0x23, 0x24, 0x25, 0x26, 0x27];
+	const PCF_BITS = Array.from({ length: 8 }, (_, bit) => bit);
+
+	function hexAddr(address: number): string {
+		return `0x${address.toString(16).toUpperCase().padStart(2, '0')}`;
+	}
 
 	/**
 	 * Пины, занятые другими подсистемами платы (I²C, UART, 1-Wire, линии тревоги).
@@ -94,22 +109,62 @@
 		return RESERVED_GPIOS[pin];
 	}
 
-	/** Номер другого датчика на том же пине: конфликт виден ещё до сохранения. */
+	/** Источник сигнала датчика (0 — GPIO, 1 — PCF8574). */
+	function pinSourceOf(sensor: Xkc25SensorConfig): number {
+		return sensor.pinSource === PIN_SOURCE_PCF ? PIN_SOURCE_PCF : PIN_SOURCE_GPIO;
+	}
+
+	function pcfAddressOf(sensor: Xkc25SensorConfig): number {
+		return sensor.pcfAddress ?? PCF_INPUT_DEFAULT_ADDR;
+	}
+
+	function pcfBitOf(sensor: Xkc25SensorConfig): number {
+		return sensor.pcfBit ?? 0;
+	}
+
+	/** Человекочитаемая подпись источника: «GPIO 4» / «PCF8574 0x22 · P3». */
+	function sensorPinLabel(sensor: Xkc25SensorConfig): string {
+		if (pinSourceOf(sensor) === PIN_SOURCE_PCF) {
+			return `PCF8574 ${hexAddr(pcfAddressOf(sensor))} · P${pcfBitOf(sensor)}`;
+		}
+		return `GPIO ${sensor.gpio}`;
+	}
+
+	/** Ключ занятого входа с учётом источника: GPIO и бит расширителя не «схлопываются». */
+	function pinKey(sensor: Xkc25SensorConfig): string {
+		if (pinSourceOf(sensor) === PIN_SOURCE_PCF) {
+			return `p:${pcfAddressOf(sensor)}:${pcfBitOf(sensor)}`;
+		}
+		return `g:${Number(sensor.gpio)}`;
+	}
+
+	/** Номер другого датчика на том же входе: конфликт виден ещё до сохранения. */
 	function duplicateGpioOwner(index: number): number | null {
 		const sensor = sensors[index];
 		if (!sensor) return null;
-		const duplicate = sensors.findIndex(
-			(candidate, i) => i !== index && Number(candidate.gpio) === Number(sensor.gpio)
-		);
+		const key = pinKey(sensor);
+		const duplicate = sensors.findIndex((candidate, i) => i !== index && pinKey(candidate) === key);
 		return duplicate === -1 ? null : duplicate + 1;
 	}
 
 	/**
-	 * Живое состояние сопоставляется по пину, а не по порядку: после добавления или
-	 * удаления датчика нумерация в редакторе и в прошивке расходится до сохранения.
+	 * Живое состояние сопоставляется по источнику и входу, а не по порядку: после
+	 * добавления или удаления датчика нумерация в редакторе и в прошивке расходится.
 	 */
 	function statusFor(sensor: Xkc25SensorConfig): Xkc25SensorStatus | undefined {
-		return status?.sensors?.find((candidate) => candidate.gpio === sensor.gpio);
+		const source = pinSourceOf(sensor);
+		return status?.sensors?.find((candidate) => {
+			if ((candidate.pinSource ?? PIN_SOURCE_GPIO) !== source) return false;
+			if (source === PIN_SOURCE_PCF) {
+				return candidate.pcfAddress === pcfAddressOf(sensor) && candidate.pcfBit === pcfBitOf(sensor);
+			}
+			return candidate.gpio === sensor.gpio;
+		});
+	}
+
+	/** Адрес расширителя занят выходами реле: вход и выход на одном чипе конфликтуют. */
+	function pcfAddressIsRelay(sensor: Xkc25SensorConfig): boolean {
+		return relayAddresses.some((addr) => Number(addr) === pcfAddressOf(sensor));
 	}
 
 	function rawLevelText(rawLevel: number): string {
@@ -151,7 +206,10 @@
 			...sensors,
 			{
 				enabled: true,
+				pinSource: PIN_SOURCE_GPIO,
 				gpio: nextFreeGpio(),
+				pcfAddress: PCF_INPUT_DEFAULT_ADDR,
+				pcfBit: 0,
 				activeLow: true,
 				zoneIndex: nextFreeZone(),
 				calibrated: false
@@ -168,7 +226,7 @@
 	function confirmRemoveSensor(index: number) {
 		const sensor = sensors[index];
 		const details = sensor
-			? ` — GPIO ${sensor.gpio}, ${ZONE_LABELS[sensor.zoneIndex] ?? 'зона не выбрана'}`
+			? ` — ${sensorPinLabel(sensor)}, ${ZONE_LABELS[sensor.zoneIndex] ?? 'зона не выбрана'}`
 			: '';
 		modals.open(ConfirmDialog, {
 			title: `Удаление датчика ${index + 1}`,
@@ -192,9 +250,15 @@
 	function updateSensor(index: number, patch: Partial<Xkc25SensorConfig>) {
 		const current = sensors[index];
 		if (!current) return;
+		const currentSource = pinSourceOf(current);
+		const currentPcfAddr = pcfAddressOf(current);
+		const currentPcfBit = pcfBitOf(current);
 		const wiringChanged =
 			(patch.enabled !== undefined && patch.enabled !== current.enabled) ||
+			(patch.pinSource !== undefined && patch.pinSource !== currentSource) ||
 			(patch.gpio !== undefined && patch.gpio !== current.gpio) ||
+			(patch.pcfAddress !== undefined && patch.pcfAddress !== currentPcfAddr) ||
+			(patch.pcfBit !== undefined && patch.pcfBit !== currentPcfBit) ||
 			(patch.activeLow !== undefined && patch.activeLow !== current.activeLow) ||
 			(patch.zoneIndex !== undefined && patch.zoneIndex !== current.zoneIndex);
 		const next: Xkc25SensorConfig = { ...current, ...patch };
@@ -205,10 +269,35 @@
 		sensors = sensors.map((sensor, i) => (i === index ? next : sensor));
 	}
 
+	function onPinSourceChange(index: number, rawValue: string) {
+		const source = Number(rawValue);
+		if (source !== PIN_SOURCE_GPIO && source !== PIN_SOURCE_PCF) return;
+		const sensor = sensors[index];
+		if (!sensor) return;
+		// При переключении на PCF подставляем адрес/бит по умолчанию, если их ещё нет.
+		updateSensor(index, {
+			pinSource: source,
+			pcfAddress: pcfAddressOf(sensor),
+			pcfBit: pcfBitOf(sensor)
+		});
+	}
+
 	function onGpioChange(index: number, rawValue: string) {
 		const pin = Number(rawValue);
 		if (!Number.isInteger(pin) || pin < 0 || pin > 39) return;
 		updateSensor(index, { gpio: pin });
+	}
+
+	function onPcfAddressChange(index: number, rawValue: string) {
+		const address = Number(rawValue);
+		if (!Number.isInteger(address) || address < 0x08 || address > 0x77) return;
+		updateSensor(index, { pcfAddress: address });
+	}
+
+	function onPcfBitChange(index: number, rawValue: string) {
+		const bit = Number(rawValue);
+		if (!Number.isInteger(bit) || bit < 0 || bit > 7) return;
+		updateSensor(index, { pcfBit: bit });
 	}
 
 	function onZoneChange(index: number, rawValue: string) {
@@ -355,7 +444,8 @@
 		<div class="step-title">1. Датчики уровня</div>
 		<p class="step-hint">
 			XKC-25-NPN — бесконтактный ёмкостный датчик: крепится на внешнюю стенку неметаллической
-			ёмкости (толщина стенки или зазор до 20 мм), питание 5–12 В, выход OUT — на выбранный GPIO.
+			ёмкости (толщина стенки или зазор до 20 мм), питание 5–12 В, выход OUT — на выбранный GPIO
+			или на бит входного расширителя PCF8574 (на KC868-A6 сухие контакты — на 0x22).
 			До трёх датчиков, каждый на своей приёмной ёмкости.
 		</p>
 
@@ -375,8 +465,9 @@
 			<ul class="xkc-sensor-list">
 				{#each sensors as sensor, idx (idx)}
 					{@const live = statusFor(sensor)}
-					{@const reserved = reservedNote(sensor.gpio)}
+					{@const reserved = pinSourceOf(sensor) === PIN_SOURCE_GPIO ? reservedNote(sensor.gpio) : undefined}
 					{@const pinTakenByOther = duplicateGpioOwner(idx)}
+					{@const pinIsRelay = pinSourceOf(sensor) === PIN_SOURCE_PCF && pcfAddressIsRelay(sensor)}
 					<li class="xkc-sensor-card">
 						<div class="xkc-sensor-head">
 							<span class="xkc-sensor-title">Датчик {idx + 1}</span>
@@ -392,21 +483,67 @@
 
 						<div class="xkc-sensor-grid">
 							<label class="form-control">
-								<span class="label-text">Пин выхода OUT</span>
+								<span class="label-text">Источник сигнала</span>
 								<select
 									class="select select-bordered select-sm w-full"
-									value={sensor.gpio}
-									onchange={(e) => onGpioChange(idx, e.currentTarget.value)}
+									value={pinSourceOf(sensor)}
+									onchange={(e) => onPinSourceChange(idx, e.currentTarget.value)}
 									disabled={disabled || busy}
-									aria-label="GPIO датчика {idx + 1}"
+									aria-label="Источник сигнала датчика {idx + 1}"
 								>
-									{#each GPIO_PINS as pin (pin)}
-										<option value={pin}>
-											GPIO {pin}{RESERVED_GPIOS[pin] ? ` — ${RESERVED_GPIOS[pin]}` : ''}
-										</option>
-									{/each}
+									<option value={PIN_SOURCE_GPIO}>GPIO (нативный пин)</option>
+									<option value={PIN_SOURCE_PCF}>PCF8574 (I²C, сухой контакт)</option>
 								</select>
 							</label>
+
+							{#if pinSourceOf(sensor) === PIN_SOURCE_PCF}
+								<label class="form-control">
+									<span class="label-text">Адрес входного расширителя</span>
+									<select
+										class="select select-bordered select-sm w-full"
+										value={pcfAddressOf(sensor)}
+										onchange={(e) => onPcfAddressChange(idx, e.currentTarget.value)}
+										disabled={disabled || busy}
+										aria-label="Адрес PCF8574 датчика {idx + 1}"
+									>
+										{#each PCF_INPUT_ADDRESSES as address (address)}
+											<option value={address}>{hexAddr(address)}</option>
+										{/each}
+									</select>
+								</label>
+
+								<label class="form-control">
+									<span class="label-text">Бит расширителя</span>
+									<select
+										class="select select-bordered select-sm w-full"
+										value={pcfBitOf(sensor)}
+										onchange={(e) => onPcfBitChange(idx, e.currentTarget.value)}
+										disabled={disabled || busy}
+										aria-label="Бит PCF8574 датчика {idx + 1}"
+									>
+										{#each PCF_BITS as bit (bit)}
+											<option value={bit}>P{bit}</option>
+										{/each}
+									</select>
+								</label>
+							{:else}
+								<label class="form-control">
+									<span class="label-text">Пин выхода OUT</span>
+									<select
+										class="select select-bordered select-sm w-full"
+										value={sensor.gpio}
+										onchange={(e) => onGpioChange(idx, e.currentTarget.value)}
+										disabled={disabled || busy}
+										aria-label="GPIO датчика {idx + 1}"
+									>
+										{#each GPIO_PINS as pin (pin)}
+											<option value={pin}>
+												GPIO {pin}{RESERVED_GPIOS[pin] ? ` — ${RESERVED_GPIOS[pin]}` : ''}
+											</option>
+										{/each}
+									</select>
+								</label>
+							{/if}
 
 							<label class="form-control">
 								<span class="label-text">Приёмная ёмкость</span>
@@ -516,12 +653,21 @@
 								<span>GPIO {sensor.gpio} зарезервирован ({reserved}). Проверьте, что пин свободен.</span>
 							</p>
 						{/if}
+						{#if pinIsRelay}
+							<p class="xkc-warn xkc-warn-soft">
+								<AlertTriangle class="h-4 w-4" aria-hidden="true" />
+								<span>
+									Адрес {hexAddr(pcfAddressOf(sensor))} занят выходами реле. Вход датчика и реле не могут
+									делить один расширитель — выберите адрес входного расширителя (на KC868-A6 — 0x22).
+								</span>
+							</p>
+						{/if}
 						{#if pinTakenByOther}
 							<p class="xkc-warn xkc-warn-soft">
 								<AlertTriangle class="h-4 w-4" aria-hidden="true" />
 								<span>
-									GPIO {sensor.gpio} уже занят датчиком {pinTakenByOther}. У каждого датчика должен
-									быть свой пин.
+									{sensorPinLabel(sensor)} уже занят датчиком {pinTakenByOther}. У каждого датчика должен
+									быть свой вход.
 								</span>
 							</p>
 						{/if}

@@ -62,6 +62,8 @@
 	const I2C_MIN = 8;
 	const I2C_MAX = 119;
 	const PCF8574_DEFAULT_ADDRESSES = [0x24, 0x25, 0x26, 0x27, 0x20, 0x21, 0x22, 0x23];
+	/** Адрес входного расширителя PCF8574 по умолчанию (сухие контакты KC868-A6 — 0x22). */
+	const XKC25_PCF_INPUT_DEFAULT_ADDR = 0x22;
 	let bmp581HexInput = $state('');
 	let ds3231HexInput = $state('');
 	let lcd1602HexInput = $state('');
@@ -254,13 +256,37 @@
 			saveError = 'Адреса PCF8574 для реле не должны повторяться: каждый чип должен иметь уникальный I2C адрес.';
 			return;
 		}
-		const xkc25Pins = xkc25Sensors.map((sensor) => Number(sensor.gpio));
-		if (xkc25Pins.some((pin) => !Number.isInteger(pin) || pin < 0 || pin > 39)) {
-			saveError = 'Проверьте пины датчиков уровня: допустимы GPIO 0..39.';
-			return;
+		const xkc25InputKeys: string[] = [];
+		for (const sensor of xkc25Sensors) {
+			const source = sensor.pinSource === 1 ? 1 : 0;
+			if (source === 1) {
+				const address = Number(sensor.pcfAddress ?? XKC25_PCF_INPUT_DEFAULT_ADDR);
+				const bit = Number(sensor.pcfBit ?? 0);
+				if (!Number.isInteger(address) || address < 0x08 || address > 0x77) {
+					saveError = 'Проверьте адрес входного расширителя PCF8574 у датчиков уровня: 0x08..0x77.';
+					return;
+				}
+				if (!Number.isInteger(bit) || bit < 0 || bit > 7) {
+					saveError = 'Проверьте бит входного расширителя PCF8574 у датчиков уровня: 0..7.';
+					return;
+				}
+				if (parsedRelayAddrs.includes(address)) {
+					saveError = `Адрес ${address} занят выходами реле: входной расширитель датчика уровня не может с ним совпадать.`;
+					return;
+				}
+				xkc25InputKeys.push(`p:${address}:${bit}`);
+			} else {
+				const pin = Number(sensor.gpio);
+				if (!Number.isInteger(pin) || pin < 0 || pin > 39) {
+					saveError = 'Проверьте пины датчиков уровня: допустимы GPIO 0..39.';
+					return;
+				}
+				xkc25InputKeys.push(`g:${pin}`);
+			}
 		}
-		if (new Set(xkc25Pins).size !== xkc25Pins.length) {
-			saveError = 'У датчиков уровня не должны повторяться пины: каждый датчик подключается к своему GPIO.';
+		if (new Set(xkc25InputKeys).size !== xkc25InputKeys.length) {
+			saveError =
+				'У датчиков уровня не должны повторяться входы: у каждого датчика свой GPIO или бит расширителя.';
 			return;
 		}
 		if (
@@ -290,7 +316,10 @@
 				// Калибровочные поля не отправляем: прошивка их по PUT игнорирует (см. 6.1.3).
 				xkc25Sensors: xkc25Sensors.map((sensor) => ({
 					enabled: sensor.enabled,
+					pinSource: sensor.pinSource === 1 ? 1 : 0,
 					gpio: Number(sensor.gpio),
+					pcfAddress: Number(sensor.pcfAddress ?? XKC25_PCF_INPUT_DEFAULT_ADDR),
+					pcfBit: Number(sensor.pcfBit ?? 0),
 					activeLow: sensor.activeLow,
 					zoneIndex: Number(sensor.zoneIndex),
 					sharedAcrossTanks: sensor.sharedAcrossTanks === true
@@ -868,6 +897,7 @@
 								bind:startGuardMode={xkc25StartGuardMode}
 								bind:busy={xkc25CalibrationBusy}
 								status={xkc25Status}
+								relayAddresses={cfg?.relayPcf8574Addresses ?? []}
 								stale={xkc25StatusStale}
 								dirty={xkc25Dirty}
 								onStatusRefresh={refreshXkc25Status}

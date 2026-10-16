@@ -5,9 +5,38 @@
 
 static const char* TAG = "XKC25_SENSOR";
 
-AbstractSensor::Address& Xkc25Sensor::createAddr(const uint8_t pin) {
+// Источник входа задаётся конфигом; коды должны совпадать с DigitalInputSourceKind.
+static_assert(Xkc25SensorConfig::kPinSourceGpio == DigitalInputSourceKind::Gpio,
+              "Xkc25SensorConfig and DigitalInputSourceKind disagree on GPIO source");
+static_assert(Xkc25SensorConfig::kPinSourcePcf8574 == DigitalInputSourceKind::Pcf8574,
+              "Xkc25SensorConfig and DigitalInputSourceKind disagree on PCF8574 source");
+
+namespace {
+
+DigitalInputSource sourceFromConfig(const Xkc25SensorConfig& config) {
+    DigitalInputSource source;
+    source.source = config.pinSource;
+    source.gpio = config.gpio;
+    source.pcfAddress = config.pcfAddress;
+    source.pcfBit = config.pcfBit;
+    return source;
+}
+
+} // namespace
+
+AbstractSensor::Address& Xkc25Sensor::createAddr(const Xkc25SensorConfig& config) {
+    // Адрес различает источник так, чтобы SensorManager не путал GPIO и бит расширителя:
+    // GPIO → address[0] = pin; PCF8574 → address[0] = 0x80|bit, address[1] = адрес.
+    // 0x80|bit (128..135) не пересекается с валидными GPIO (0..39).
     static Address a = {};
-    a[0] = pin;
+    a[0] = 0;
+    a[1] = 0;
+    if (config.pinSource == Xkc25SensorConfig::kPinSourcePcf8574) {
+        a[0] = static_cast<uint8_t>(0x80u | (config.pcfBit & 0x07u));
+        a[1] = config.pcfAddress;
+    } else {
+        a[0] = config.gpio;
+    }
     return a;
 }
 
@@ -24,9 +53,9 @@ std::string Xkc25Sensor::makeName(const uint8_t index) {
 }
 
 Xkc25Sensor::Xkc25Sensor(const Xkc25SensorConfig& config, const uint8_t index)
-    : AbstractSensor(createAddr(config.gpio), makeName(index), zoneFromIndex(config.zoneIndex)),
+    : AbstractSensor(createAddr(config), makeName(index), zoneFromIndex(config.zoneIndex)),
       _index(index),
-      _gpio(config.gpio),
+      _src(sourceFromConfig(config)),
       _zoneIndex(config.zoneIndex),
       _activeLow(config.activeLow),
       _sharedAcrossTanks(config.sharedAcrossTanks) {}
@@ -51,18 +80,21 @@ MeasuredValueType Xkc25Sensor::getMeasurementType() const {
 }
 
 void Xkc25Sensor::applyInputMode() const {
-    // Подтяжку линии делает монтаж: внешний резистор к земле для высокоуровневого
-    // выхода (PNP) или к 3.3 В для открытого коллектора (NPN). Прошивка пин не
-    // тянет — иначе внутренние 45 кОм сдвигали бы уровни внешнего делителя.
-    pinMode(_gpio, INPUT);
+    // GPIO: подтяжку линии делает монтаж (внешний резистор) — прошивка пин не тянет.
+    // PCF8574: подготовка входов расширителя (write 0xFF). Оба случая — в DigitalInputPin.
+    _pin.begin(_src);
 }
 
 bool Xkc25Sensor::initialize() {
-    applyInputMode();
+    if (!_pin.begin(_src)) {
+        ESP_LOGE(TAG, "[%s] input source unavailable — initialization failed",
+                 pinLabel().c_str());
+        return false;
+    }
     _isInitialized = true;
     readValue();
-    ESP_LOGI(TAG, "[%s] Initialized on GPIO %u (activeLow=%d, mode=INPUT, подтяжка внешняя)",
-             getName().c_str(), static_cast<unsigned>(_gpio), _activeLow ? 1 : 0);
+    ESP_LOGI(TAG, "[%s] Initialized on %s (activeLow=%d)", getName().c_str(),
+             pinLabel().c_str(), _activeLow ? 1 : 0);
     return true;
 }
 
@@ -79,24 +111,39 @@ void Xkc25Sensor::logRawState() {
     }
     _lastRawLogMs = now;
 
-    const int raw = digitalRead(_gpio);
-    ESP_LOGI(TAG, "[%s] raw: GPIO%u = %d (%s), activeLow=%d -> filled=%s, value=%.0f",
-             getName().c_str(), static_cast<unsigned>(_gpio), raw, raw == HIGH ? "HIGH" : "LOW",
+    bool ok = true;
+    const int raw = _pin.read(ok);
+    if (!ok) {
+        ESP_LOGW(TAG, "[%s] read failed (transport error) — level unknown", pinLabel().c_str());
+        return;
+    }
+    ESP_LOGI(TAG, "[%s] raw: %s = %d (%s), activeLow=%d -> filled=%s, value=%.0f",
+             getName().c_str(), pinLabel().c_str(), raw, raw == HIGH ? "HIGH" : "LOW",
              _activeLow ? 1 : 0, isFilled() ? "YES" : "NO", static_cast<double>(_lastValue));
 }
 
 Xkc25Sensor::LineProbe Xkc25Sensor::probeLine(const char* stage) const {
     LineProbe probe;
 
+    if (!_pin.supportsPullProbe()) {
+        // У PCF8574 нет настраиваемых внутренних подтяжек, а его собственный слабый
+        // ток подтяжки так не тестируется: проба неприменима. Полярность определит
+        // сравнение двух сырых уровней на шаге «с жидкостью».
+        probe.verdict = "проба подтяжкой неприменима (PCF8574)";
+        ESP_LOGI(TAG, "[%s] line probe skipped (%s): %s", getName().c_str(), stage,
+                 probe.verdict.c_str());
+        return probe;
+    }
+
     // Полярность на момент калибровки может быть ещё не определена, поэтому мало
     // одного рабочего режима: снимаем уровень при обеих подтяжках. Одинаковые
     // чтения означают, что линию держит внешний драйвер, разные — что линия
     // высокоомна и уровень в этом состоянии задаёт сама подтяжка.
-    pinMode(_gpio, INPUT_PULLUP);
+    pinMode(_src.gpio, INPUT_PULLUP);
     delay(2); // перезаряд линии после смены подтяжки
     probe.pullUp = readLevelMajority();
 
-    pinMode(_gpio, INPUT_PULLDOWN);
+    pinMode(_src.gpio, INPUT_PULLDOWN);
     delay(2);
     probe.pullDown = readLevelMajority();
 
@@ -120,17 +167,28 @@ Xkc25Sensor::LineProbe Xkc25Sensor::probeLine(const char* stage) const {
 int Xkc25Sensor::readLevelMajority() const {
     // Три чтения подряд: одиночное может попасть на перезаряд линии.
     uint8_t high = 0;
+    uint8_t valid = 0;
     for (uint8_t i = 0; i < 3; ++i) {
-        if (digitalRead(_gpio) == HIGH) {
-            ++high;
+        bool ok = true;
+        const int level = _pin.read(ok);
+        if (ok) {
+            ++valid;
+            if (level == HIGH) {
+                ++high;
+            }
         }
         delay(1);
     }
-    return high >= 2 ? HIGH : LOW;
+    if (valid == 0) {
+        return LOW; // сбой транспорта; проба всё равно помечается недействительной
+    }
+    return (static_cast<unsigned>(high) * 2 >= valid) ? HIGH : LOW;
 }
 
 int Xkc25Sensor::readRawPinLevel() const {
-    return digitalRead(_gpio);
+    bool ok = true;
+    const int level = _pin.read(ok);
+    return ok ? level : -1; // -1 — чтение не удалось (сбой шины), а не уровень 0
 }
 
 void Xkc25Sensor::applyCalibration(const bool activeLow) {
@@ -138,9 +196,12 @@ void Xkc25Sensor::applyCalibration(const bool activeLow) {
     applyInputMode();
 
     // Пересчёт без генерации события фронта: калибровка не является срабатыванием.
-    const int raw = digitalRead(_gpio);
-    _lastValue = (_activeLow ? (raw == LOW) : (raw == HIGH)) ? 1.0f : 0.0f;
-    _dataValid = true;
+    bool ok = true;
+    const int raw = _pin.read(ok);
+    if (ok) {
+        _lastValue = (_activeLow ? (raw == LOW) : (raw == HIGH)) ? 1.0f : 0.0f;
+    }
+    _dataValid = ok;
 
     ESP_LOGI(TAG, "[%s] Calibration applied (activeLow=%d, level=%d)", getName().c_str(),
              _activeLow ? 1 : 0, raw);
@@ -150,12 +211,22 @@ bool Xkc25Sensor::sampleStable(const uint8_t samples, const uint16_t intervalMs,
     if (samples == 0) {
         return false;
     }
-    int first = digitalRead(_gpio);
+    bool ok = true;
+    const int first = _pin.read(ok);
+    if (!ok) {
+        ESP_LOGW(TAG, "[%s] read failed while sampling", pinLabel().c_str());
+        return false;
+    }
     for (uint8_t i = 1; i < samples; ++i) {
         if (intervalMs > 0) {
             delay(intervalMs);
         }
-        const int raw = digitalRead(_gpio);
+        bool stepOk = true;
+        const int raw = _pin.read(stepOk);
+        if (!stepOk) {
+            ESP_LOGW(TAG, "[%s] read failed while sampling", pinLabel().c_str());
+            return false;
+        }
         if (raw != first) {
             ESP_LOGW(TAG, "[%s] Unstable signal: %d then %d", getName().c_str(), first, raw);
             return false;
@@ -169,7 +240,13 @@ void Xkc25Sensor::readValue() {
     if (!_isInitialized) {
         return;
     }
-    const int raw = digitalRead(_gpio);
+    bool ok = true;
+    const int raw = _pin.read(ok);
+    if (!ok) {
+        // Сбой транспорта — не уровень: состояние сохраняем, фронт не генерируем.
+        ESP_LOGW(TAG, "[%s] read failed — keeping previous state", pinLabel().c_str());
+        return;
+    }
     const bool active = _activeLow ? (raw == LOW) : (raw == HIGH);
     const float newValue = active ? 1.0f : 0.0f;
 

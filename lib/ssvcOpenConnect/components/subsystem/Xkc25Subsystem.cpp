@@ -24,11 +24,37 @@ bool isProcessControllable(const RectificationTypes::ProcessState state) {
            state == RectificationTypes::ProcessState::PAUSED;
 }
 
+/** Человекочитаемая подпись входа датчика по его конфигу («GPIO 4» / «PCF8574 0x22 · P3»). */
+std::string sensorInputLabel(const Xkc25SensorConfig& sensor) {
+    DigitalInputSource src;
+    src.source = sensor.pinSource;
+    src.gpio = sensor.gpio;
+    src.pcfAddress = sensor.pcfAddress;
+    src.pcfBit = sensor.pcfBit;
+    return src.label();
+}
+
 /**
  * Чек-лист подключения бесконтактного датчика: показывается, когда уровни совпали
- * и датчик не подтвердил реакцию на жидкость.
+ * и датчик не подтвердил реакцию на жидкость. Пункты зависят от источника сигнала:
+ * у нативного GPIO подтяжку линии делает внешний резистор, у входного PCF8574 — сам
+ * расширитель.
  */
-std::vector<std::string> calibrationChecklist() {
+std::vector<std::string> calibrationChecklist(const bool pcfSource) {
+    if (pcfSource) {
+        return {
+            "Питание датчика DC 5–12 В (коричневый провод) и GND (синий)",
+            "Выход OUT (жёлтый провод) — на входном расширителе PCF8574 (адрес 0x22, сухой контакт)",
+            "Выход открытого коллектора (NPN): вход расширителя уже подтянут к 3.3 В, "
+            "внешний резистор не нужен",
+            "Адрес входного расширителя не занят выходами реле",
+            "Неметаллическая стенка ёмкости, зазор/толщина стенки не более 20 мм",
+            "Чувствительность датчика (винт на корпусе)",
+            "Выбранный бит расширителя соответствует фактическому входу PCF8574",
+            "Для PNP-версии (высокий уровень = напряжение питания) нужен внешний "
+            "транзистор/делитель: подавать 5–12 В на вход расширителя нельзя",
+        };
+    }
     return {
         "Питание датчика DC 5–12 В (коричневый провод)",
         "Три провода: коричневый — VCC, жёлтый — OUT на выбранном GPIO, синий — GND",
@@ -94,8 +120,8 @@ void Xkc25Subsystem::enable() {
         // skip explicitly to avoid holding a pointer to a freed object.
         const std::string key = SensorManager::addressToString(sensor->getAddress());
         if (SensorManager::getInstance().isSensorRegistered(key)) {
-            ESP_LOGW(TAG, "[%s] GPIO %u already in use — skipping", sensor->getName().c_str(),
-                     static_cast<unsigned>(configs[i].gpio));
+            ESP_LOGW(TAG, "[%s] %s already in use — skipping", sensor->getName().c_str(),
+                     sensor->pinLabel().c_str());
             delete sensor;
             continue;
         }
@@ -117,9 +143,9 @@ void Xkc25Subsystem::enable() {
 
         // Текущее состояние после включения: без изменения уровня жидкости рабочий и
         // обесточенный датчик неразличимы, поэтому снимаем только фактическое чтение (6.3.1).
-        ESP_LOGI(TAG, "[%s] Initial state: %s (GPIO %u, raw %d, calibrated=%d)",
+        ESP_LOGI(TAG, "[%s] Initial state: %s (%s, raw %d, calibrated=%d)",
                  sensor->getName().c_str(), sensor->isFilled() ? "liquid present" : "no liquid",
-                 static_cast<unsigned>(configs[i].gpio), sensor->readRawPinLevel(),
+                 sensor->pinLabel().c_str(), sensor->readRawPinLevel(),
                  configs[i].calibrated ? 1 : 0);
     }
 
@@ -218,8 +244,8 @@ void Xkc25Subsystem::pushWarning(const std::string& message) {
 
 void Xkc25Subsystem::notifyTankFilled(const Xkc25Sensor& sensor) const {
     // Переносному датчику важен не номер слота, а ёмкость, на которой он стоит сейчас.
-    pushWarning(zoneLabel(sensor.getZoneIndex()) + " заполнена: жидкость напротив датчика (GPIO " +
-                std::to_string(sensor.getGpio()) + ")");
+    pushWarning(zoneLabel(sensor.getZoneIndex()) + " заполнена: жидкость напротив датчика (" +
+                sensor.pinLabel() + ")");
 }
 
 Xkc25Sensor* Xkc25Subsystem::findSensor(const uint8_t index) const {
@@ -306,7 +332,7 @@ Xkc25CalibrationResult Xkc25Subsystem::recordLevelWithoutLiquid(const uint8_t se
             "Линия не удерживается внешним резистором: в покое уровень задаёт только "
             "внутренняя подтяжка. Добавьте резистор — к земле для высокоуровневого выхода, "
             "к 3.3 В для открытого коллектора — и повторите калибровку";
-        result.checklist = calibrationChecklist();
+        result.checklist = calibrationChecklist(sensor->isPcfSource());
         return result;
     }
 
@@ -407,7 +433,7 @@ Xkc25CalibrationResult Xkc25Subsystem::recordLevelWithLiquid(const uint8_t senso
                  probeSummary.c_str());
         result.code = Xkc25CalibrationCode::NOT_REACTED;
         result.message = "Датчик не отреагировал: линия не меняет состояние (" + probeSummary + ")";
-        result.checklist = calibrationChecklist();
+        result.checklist = calibrationChecklist(sensor->isPcfSource());
         return result;
     }
 
@@ -523,10 +549,11 @@ Xkc25StartCheck Xkc25Subsystem::checkStart() {
             // У переносного датчика зона — это ёмкость, на которой он стоит сейчас.
             const uint8_t zoneIndex =
                 sensor.sharedAcrossTanks ? cfg.xkc25SharedTankIndex : sensor.zoneIndex;
+            const std::string inputLabel = sensorInputLabel(sensor);
 
             if (!sensor.calibrated) {
-                uncalibrated.push_back("Датчик уровня #" + std::to_string(slot + 1) + " (GPIO " +
-                                       std::to_string(sensor.gpio) + ", " + zoneLabel(zoneIndex) +
+                uncalibrated.push_back("Датчик уровня #" + std::to_string(slot + 1) + " (" +
+                                       inputLabel + ", " + zoneLabel(zoneIndex) +
                                        ") не откалиброван — работа датчика не проверена");
                 continue;
             }
@@ -534,15 +561,24 @@ Xkc25StartCheck Xkc25Subsystem::checkStart() {
             // Уровней всего два, поэтому любое текущее значение совпадёт с одним из
             // калиброванных: проверяем только «уже заполнено» (6.4.4).
             bool filled = false;
+            bool readOk = true;
             if (Xkc25Subsystem* active = _active) {
                 if (Xkc25Sensor* live = active->findSensor(static_cast<uint8_t>(slot))) {
                     filled = live->isFilled();
                 }
             } else {
-                const int raw = digitalRead(sensor.gpio);
-                filled = sensor.activeLow ? (raw == LOW) : (raw == HIGH);
+                DigitalInputSource src;
+                src.source = sensor.pinSource;
+                src.gpio = sensor.gpio;
+                src.pcfAddress = sensor.pcfAddress;
+                src.pcfBit = sensor.pcfBit;
+                const int raw = DigitalInputPin::readOnce(src, readOk);
+                filled = readOk && (sensor.activeLow ? (raw == LOW) : (raw == HIGH));
             }
-            if (filled) {
+            if (!readOk) {
+                // Сбой чтения (шина I²C) — не «заполнено»: сообщаем отдельно, не блокируем.
+                check.warnings.push_back(inputLabel + ": не удалось прочитать вход (сбой шины I²C)");
+            } else if (filled) {
                 // Последствие зависит от выбранного режима: пауза — не единственный вариант.
                 const std::string consequence =
                     cfg.xkc25TriggerAction == OpenConnectHardwareConfig::kXkc25ActionAbort
@@ -609,8 +645,8 @@ void Xkc25Subsystem::syncSharedTankZone() {
         sensor->setZoneIndex(tankIndex);
         ESP_LOGI(TAG, "[%s] Portable sensor moved to %s", sensor->getName().c_str(),
                  zoneLabel(tankIndex).c_str());
-        pushWarning("Датчик уровня переключён на " + zoneLabel(tankIndex) + " (GPIO " +
-                    std::to_string(sensor->getGpio()) + ")");
+        pushWarning("Датчик уровня переключён на " + zoneLabel(tankIndex) + " (" +
+                    sensor->pinLabel() + ")");
     }
 }
 

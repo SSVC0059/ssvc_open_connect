@@ -14,7 +14,17 @@
 /** Настройки одного датчика XKC-25-NPN (бесконтактный ёмкостный датчик уровня). */
 struct Xkc25SensorConfig {
     bool enabled = false;           // датчик подключён и активен
-    uint8_t gpio = 0;               // GPIO-пин, к которому подключён выход OUT (жёлтый провод)
+    /**
+     * Источник сигнала: 0 — нативный GPIO (поле gpio), 1 — бит входного расширителя
+     * PCF8574 (поля pcfAddress/pcfBit). На KC868-A6 входные сухие контакты — на 0x22.
+     * Значения должны совпадать с DigitalInputSourceKind (см. static_assert в Xkc25Sensor.cpp).
+     */
+    static constexpr uint8_t kPinSourceGpio = 0;
+    static constexpr uint8_t kPinSourcePcf8574 = 1;
+    uint8_t pinSource = kPinSourceGpio;
+    uint8_t gpio = 0;               // GPIO-пин выхода OUT (pinSource == kPinSourceGpio)
+    uint8_t pcfAddress = SSVC_XKC25_PCF8574_INPUT_ADDR; // 7-битный адрес входного расширителя (pinSource == kPinSourcePcf8574)
+    uint8_t pcfBit = 0;             // бит 0..7 входного расширителя (pinSource == kPinSourcePcf8574)
     bool activeLow = true;          // true → «жидкость обнаружена» соответствует LOW на пине; результат калибровки
     uint8_t zoneIndex = 0;          // 0..2 → RECEIVER_TANK_1/2/3
     bool calibrated = false;        // калибровка пройдена и сохранена
@@ -25,6 +35,11 @@ struct Xkc25SensorConfig {
     /** Переносной датчик: фактическая зона — та ёмкость, на которой он стоит сейчас. */
     bool sharedAcrossTanks = false;
 
+    static bool isValidPinSource(unsigned int v) { return v <= kPinSourcePcf8574; }
+
+    /** Бит входного расширителя PCF8574 (0..7). */
+    static bool isValidPcfBit(unsigned int bit) { return bit <= 7; }
+
     /**
      * @brief Сравнение полей подключения (без калибровочных).
      *
@@ -32,7 +47,8 @@ struct Xkc25SensorConfig {
      * сравнивается именно эта группа (см. OpenConnectHardwareConfig::update).
      */
     static bool structurallyEqual(const Xkc25SensorConfig& a, const Xkc25SensorConfig& b) {
-        return a.enabled == b.enabled && a.gpio == b.gpio &&
+        return a.enabled == b.enabled && a.pinSource == b.pinSource && a.gpio == b.gpio &&
+               a.pcfAddress == b.pcfAddress && a.pcfBit == b.pcfBit &&
                a.activeLow == b.activeLow && a.zoneIndex == b.zoneIndex;
     }
 };

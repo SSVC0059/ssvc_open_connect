@@ -26,7 +26,11 @@ function liveStatus(overrides: Partial<Xkc25SensorStatus> = {}): Xkc25SensorStat
 	return {
 		index: 0,
 		enabled: true,
+		pinSource: 0,
 		gpio: 4,
+		pcfAddress: 0x22,
+		pcfBit: 0,
+		pinLabel: 'GPIO 4',
 		zoneIndex: 0,
 		zone: 'receiver_tank_1',
 		zoneLabel: 'Приёмная ёмкость 1',

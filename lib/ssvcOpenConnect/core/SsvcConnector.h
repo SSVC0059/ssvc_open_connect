@@ -83,6 +83,16 @@
 #define SSVC_XKC25_GPIO_3 GPIO_NUM_6
 #endif
 
+/**
+ * Default input expander for XKC-25 sensors wired to dry contacts behind a PCF8574
+ * (instead of a native GPIO). On the KinCony KC868-A6 these dry contacts are the input
+ * expander at 0x22 (relays are a separate chip at 0x24). Override with
+ * -DSSVC_XKC25_PCF8574_INPUT_ADDR=<addr> in platformio.ini.
+ */
+#ifndef SSVC_XKC25_PCF8574_INPUT_ADDR
+#define SSVC_XKC25_PCF8574_INPUT_ADDR 0x22
+#endif
+
 /** First (or only) PCF8574 relay/output port when PINOUT_USE_GPIO=0. Extra chips: another port + role. */
 #ifndef SSVC_RELAY_PCF8574_I2C_ADDR
 #define SSVC_RELAY_PCF8574_I2C_ADDR 0x24

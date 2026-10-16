@@ -472,9 +472,20 @@ void appendXkc25SensorStatus(JsonObject o, size_t slot, const Xkc25SensorConfig&
                              uint8_t sharedTankIndex, Xkc25Sensor* live) {
     // У переносного датчика фактическая зона — та ёмкость, на которой он стоит сейчас.
     const uint8_t zoneIndex = cfg.sharedAcrossTanks ? sharedTankIndex : cfg.zoneIndex;
+    DigitalInputSource src;
+    src.source = cfg.pinSource;
+    src.gpio = cfg.gpio;
+    src.pcfAddress = cfg.pcfAddress;
+    src.pcfBit = cfg.pcfBit;
+    const std::string pinLabel = src.label();
+
     o["index"] = static_cast<unsigned>(slot);
     o["enabled"] = cfg.enabled;
+    o["pinSource"] = cfg.pinSource;
     o["gpio"] = cfg.gpio;
+    o["pcfAddress"] = cfg.pcfAddress;
+    o["pcfBit"] = cfg.pcfBit;
+    o["pinLabel"] = pinLabel.c_str();
     o["zoneIndex"] = zoneIndex;
     o["zone"] = Xkc25Subsystem::zoneKey(zoneIndex).c_str();
     o["zoneLabel"] = Xkc25Subsystem::zoneLabel(zoneIndex).c_str();

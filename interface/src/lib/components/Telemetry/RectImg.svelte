@@ -238,7 +238,7 @@
                     liveSensors.length > 0 ? liveSensors.every((sensor) => sensor.calibrated) : undefined,
                 // Датчик переставляется между ёмкостями: индикатор показывает ёмкость, где он стоит сейчас.
                 shared: liveSensors.some((sensor) => sensor.sharedAcrossTanks === true),
-                pins: liveSensors.map((sensor) => sensor.gpio)
+                pins: liveSensors.map((sensor) => sensor.pinLabel ?? `GPIO ${sensor.gpio}`)
             };
         })
     );
@@ -265,10 +265,10 @@
         filled: boolean;
         calibrated?: boolean;
         shared?: boolean;
-        pins: number[];
+        pins: string[];
     }): string {
         const state = tank.filled ? 'жидкость напротив датчика есть' : 'жидкости напротив датчика нет';
-        const pins = tank.pins.length > 0 ? `, GPIO ${tank.pins.join(', ')}` : '';
+        const pins = tank.pins.length > 0 ? `, ${tank.pins.join(', ')}` : '';
         const calibration = tank.calibrated === false ? ', датчик не откалиброван' : '';
         const portable = tank.shared ? ', датчик переносной' : '';
         return `${tank.label}: ${state}${pins}${calibration}${portable}`;
@@ -328,7 +328,7 @@
 					</span>
 					{#if tank.pins.length > 0}
 						<span class="tank-panel-pins">
-							{#if tank.shared}переносной · {/if}GPIO {tank.pins.join(', ')}
+							{#if tank.shared}переносной · {/if}{tank.pins.join(', ')}
 						</span>
 					{/if}
 				</li>
