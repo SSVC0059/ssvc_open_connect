@@ -180,6 +180,13 @@ private:
     /** Минимальный интервал между строками журнала с сырым уровнем. */
     static constexpr uint32_t kRawLogIntervalMs = 5000;
 
+    /**
+     * Сколько подряд одинаковых чтений нужно, чтобы принять новый уровень.
+     * При быстром опросе (~100 мс) гасит дребезг контакта/фронт: 3 × 100 мс ≈ 300 мс,
+     * что укладывается во время реакции датчика (≤ 500 мс).
+     */
+    static constexpr uint8_t kDebounceSamples = 3;
+
     uint8_t _index;
     DigitalInputSource _src;
     /** begin()/read() вызываются и из const-методов (проба линии, калибровка). */
@@ -189,6 +196,9 @@ private:
     /** Один прибор на все ёмкости: зону задаёт общая настройка, а не конфиг слота. */
     bool _sharedAcrossTanks;
     float _lastValue = 0.0f;
+    /** Кандидат уровня для дебаунса и число подряд подтвердивших его чтений. */
+    float _debounceValue = 0.0f;
+    uint8_t _debounceCount = 0;
     /** Время последней записи сырого уровня в журнал (0 — ещё не писали). */
     uint32_t _lastRawLogMs = 0;
     IXkc25LevelObserver* _observer = nullptr;

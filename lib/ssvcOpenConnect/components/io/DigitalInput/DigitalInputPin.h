@@ -49,6 +49,14 @@ public:
     /** @return level (0/1); @p ok is false only when the transport failed (PCF). */
     int read(bool& ok) const;
 
+    /**
+     * @brief Read the whole 8-bit PCF8574 port (0..255) in one transaction.
+     *
+     * Diagnostic aid: shows whether *any* bit of the expander changes. Returns -1
+     * and sets @p ok=false for a GPIO source or on a failed transaction.
+     */
+    int readPortByte(bool& ok) const;
+
     /** Internal pull-up/pull-down probing is only meaningful for a GPIO. */
     bool supportsPullProbe() const { return !_source.isPcf(); }
 

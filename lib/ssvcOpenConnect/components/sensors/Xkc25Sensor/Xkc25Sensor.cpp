@@ -1,6 +1,7 @@
 #include "Xkc25Sensor.h"
 
 #include <Arduino.h>
+#include <cstdio>
 #include <esp_log.h>
 
 static const char* TAG = "XKC25_SENSOR";
@@ -117,9 +118,22 @@ void Xkc25Sensor::logRawState() {
         ESP_LOGW(TAG, "[%s] read failed (transport error) — level unknown", pinLabel().c_str());
         return;
     }
-    ESP_LOGI(TAG, "[%s] raw: %s = %d (%s), activeLow=%d -> filled=%s, value=%.0f",
+    // Для PCF8574 дополнительно печатаем весь байт порта: видно, меняется ли вообще
+    // хоть один бит расширителя (диагностика разводки входов A1..A6 = P0..P5).
+    std::string portText = "n/a";
+    if (_src.isPcf()) {
+        bool pok = true;
+        const int port = _pin.readPortByte(pok);
+        if (pok) {
+            char buf[8];
+            std::snprintf(buf, sizeof(buf), "0x%02X", static_cast<unsigned>(port));
+            portText = buf;
+        }
+    }
+    ESP_LOGI(TAG, "[%s] raw: %s = %d (%s), port=%s, activeLow=%d -> filled=%s, value=%.0f",
              getName().c_str(), pinLabel().c_str(), raw, raw == HIGH ? "HIGH" : "LOW",
-             _activeLow ? 1 : 0, isFilled() ? "YES" : "NO", static_cast<double>(_lastValue));
+             portText.c_str(), _activeLow ? 1 : 0, isFilled() ? "YES" : "NO",
+             static_cast<double>(_lastValue));
 }
 
 Xkc25Sensor::LineProbe Xkc25Sensor::probeLine(const char* stage) const {
@@ -200,6 +214,9 @@ void Xkc25Sensor::applyCalibration(const bool activeLow) {
     const int raw = _pin.read(ok);
     if (ok) {
         _lastValue = (_activeLow ? (raw == LOW) : (raw == HIGH)) ? 1.0f : 0.0f;
+        // Калибровка — не измерение: уровень принимаем сразу, дебаунс сбрасываем.
+        _debounceValue = _lastValue;
+        _debounceCount = kDebounceSamples;
     }
     _dataValid = ok;
 
@@ -252,13 +269,31 @@ void Xkc25Sensor::readValue() {
 
     // Первое измерение задаёт исходное состояние и событием не считается: иначе
     // загрузка с уже заполненной ёмкостью воспринималась бы как фронт.
-    const bool hasPreviousValue = _dataValid;
-    const bool valueChanged = hasPreviousValue && (newValue != _lastValue);
+    if (!_dataValid) {
+        _lastValue = newValue;
+        _debounceValue = newValue;
+        _debounceCount = kDebounceSamples;
+        _dataValid = true;
+        return;
+    }
+
+    // Дебаунс при быстром опросе: уровень принимается только после kDebounceSamples
+    // подряд одинаковых чтений — контакт не «дребезжит» на фронт/спад.
+    if (newValue != _debounceValue) {
+        _debounceValue = newValue;
+        _debounceCount = 1;
+        return;
+    }
+    if (_debounceCount < kDebounceSamples) {
+        ++_debounceCount;
+        return;
+    }
+    if (newValue == _lastValue) {
+        return;
+    }
 
     _lastValue = newValue;
-    _dataValid = true;
-
-    if (valueChanged && _observer != nullptr) {
+    if (_observer != nullptr) {
         ESP_LOGI(TAG, "[%s] Level changed: raw %d (%s) -> %s (value %.0f, activeLow=%d)",
                  getName().c_str(), raw, raw == HIGH ? "HIGH" : "LOW", active ? "FILLED" : "CLEAR",
                  static_cast<double>(_lastValue), _activeLow ? 1 : 0);

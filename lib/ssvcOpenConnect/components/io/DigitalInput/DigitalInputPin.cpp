@@ -67,8 +67,19 @@ int DigitalInputPin::read(bool& ok) const {
     return digitalRead(_source.gpio);
 }
 
-int DigitalInputPin::readOnce(const DigitalInputSource& source, bool& ok) {
-    if (source.isPcf()) {
+int DigitalInputPin::readPortByte(bool& ok) const {
+    if (!_source.isPcf()) {
+        ok = false;
+        return -1;
+    }
+    I2CBusSubsystem::Guard bus(I2CBusSubsystem::getInstance());
+    _pcf.setBus(bus.wire());
+    uint8_t value = 0;
+    ok = _pcf.readPort(value);
+    return ok ? static_cast<int>(value) : -1;
+}
+
+int DigitalInputPin::readOnce(const DigitalInputSource& source, bool& ok) {    if (source.isPcf()) {
         I2CBusSubsystem::Guard bus(I2CBusSubsystem::getInstance());
         Pcf8574Input pcf;
         pcf.setBus(bus.wire());

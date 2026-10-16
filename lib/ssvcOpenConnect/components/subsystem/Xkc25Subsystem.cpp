@@ -138,7 +138,7 @@ void Xkc25Subsystem::enable() {
         }
 
         SensorManager::getInstance().registerSensor(sensor);
-        SensorCoordinator::getInstance().registerPollingSubsystem(sensor);
+        // В SensorCoordinator не регистрируем: входы опрашивает быстрая задача подсистемы.
         _sensors.push_back(sensor);
 
         // Текущее состояние после включения: без изменения уровня жидкости рабочий и
@@ -161,12 +161,52 @@ void Xkc25Subsystem::enable() {
     SensorCoordinator::getInstance().registerPollingSubsystem(&_watcher);
 
     _enabled = true;
-    ESP_LOGI(TAG, "XKC-25 subsystem started with %zu sensor(s)", _sensors.size());
+
+    // Быстрый опрос входов: централизованный цикл (10 с) для датчика уровня слишком медленный.
+    _fastPollStop = false;
+    if (_fastPollTask == nullptr) {
+        const BaseType_t created = xTaskCreatePinnedToCore(fastPollTaskEntry, "xkc25_poll",
+                                                           kFastPollStackWords, this,
+                                                           tskIDLE_PRIORITY + 1, &_fastPollTask, 1);
+        if (created != pdPASS) {
+            ESP_LOGE(TAG, "Failed to create fast-poll task (err=%d)", static_cast<int>(created));
+            _fastPollTask = nullptr;
+        }
+    }
+
+    ESP_LOGI(TAG, "XKC-25 subsystem started with %zu sensor(s), fast poll %u ms",
+             _sensors.size(), static_cast<unsigned>(kFastPollIntervalMs));
+}
+
+void Xkc25Subsystem::fastPollTaskEntry(void* arg) {
+    static_cast<Xkc25Subsystem*>(arg)->fastPollLoop();
+    vTaskDelete(nullptr);
+}
+
+void Xkc25Subsystem::fastPollLoop() {
+    while (!_fastPollStop) {
+        // _sensors стабилен на всё время работы задачи (набор меняется только при enable).
+        for (Xkc25Sensor* sensor : _sensors) {
+            if (sensor != nullptr) {
+                sensor->poll();
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(kFastPollIntervalMs));
+    }
 }
 
 void Xkc25Subsystem::disable() {
     if (!_enabled) return;
     _enabled = false;
+
+    // Останавливаем быстрый опрос и даём задаче завершиться самой (vTaskDelete(nullptr)),
+    // чтобы не удалять её в момент, когда она держит мьютекс шины.
+    _fastPollStop = true;
+    if (_fastPollTask != nullptr) {
+        vTaskDelay(pdMS_TO_TICKS(2 * kFastPollIntervalMs));
+        _fastPollTask = nullptr;
+    }
+
     _sensorsOnAlert = 0;
     _pauseIssuedByXkc = false;
     _processWasRunning = false;

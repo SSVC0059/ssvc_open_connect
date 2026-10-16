@@ -9,6 +9,9 @@
 #include <string>
 #include <vector>
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 /**
  * Машинные коды итога шага калибровки (поле Xkc25CalibrationResult::code).
  * API сопоставляет код с HTTP-статусом ответа, UI показывает message.
@@ -132,6 +135,18 @@ private:
     /** Отслеживает переход процесса в RUNNING и уведомляет о старте без калибровки. */
     void checkProcessTransition();
 
+    /**
+     * @brief Быстрый опрос входов XKC-25 (отдельная задача, ~100 мс).
+     *
+     * Централизованный опрос SensorCoordinator идёт раз в 10 с — для датчика уровня
+     * это слишком медленно (реакция должна быть практически мгновенной). Поэтому
+     * датчики опрашивает собственная задача подсистемы; в SensorCoordinator они не
+     * регистрируются. Пороги алертов всё равно проверяются в цикле координатора
+     * (AlarmMonitor обходит SensorManager), данные там уже свежие.
+     */
+    static void fastPollTaskEntry(void* arg);
+    void fastPollLoop();
+
     /** Проверка целостности конфигурации после загрузки (6.3); пишет файл только при изменении. */
     void runBootAutocheck();
 
@@ -163,6 +178,10 @@ private:
 
     std::vector<Xkc25Sensor*> _sensors;
     ProcessWatcher _watcher{*this};
+    /** Задача быстрого опроса входов; nullptr — не запущена. */
+    TaskHandle_t _fastPollTask = nullptr;
+    /** Сигнал задаче быстрого опроса завершиться при disable(). */
+    volatile bool _fastPollStop = false;
     /**
      * Проба линии на шаге «без жидкости» (индекс датчика → уровни при обеих
      * подтяжках и вердикт). Нужна на шаге «с жидкостью»: сравнение проб в двух
@@ -185,6 +204,9 @@ private:
     static constexpr uint16_t kCalibrationSampleIntervalMs = 20;
     static constexpr uint32_t kVerifyReturnDefaultTimeoutMs = 5000;
     static constexpr uint16_t kVerifyReturnPollMs = 100;
+    /** Период быстрого опроса входов: 100 мс × дебаунс 3 ≈ 300 мс до реакции. */
+    static constexpr uint32_t kFastPollIntervalMs = 100;
+    static constexpr uint32_t kFastPollStackWords = 4096;
 
     static constexpr auto TAG = "Xkc25Subsystem";
 };
