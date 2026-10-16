@@ -4,6 +4,7 @@ import { get, writable } from 'svelte/store';
 import type { AlarmThresholdsState, TemperatureResponse } from '$lib/types/Sensors';
 import type {
 	OcHardwareConfigResponse,
+	OcHardwareFaultsResponse,
 	SendCommandResponse,
 	RelayRuleMetadata,
 	SsvcOpenConnectInfo,
@@ -233,6 +234,19 @@ export async function getSubsystemState(): Promise<SubsystemsState | null> {
 
 export async function fetchHardwareConfig(): Promise<OcHardwareConfigResponse | null> {
 	const response = await apiFetch<OcHardwareConfigResponse>('/rest/oc/hardware-config', 'GET');
+	return response.success ? response.data : null;
+}
+
+/**
+ * Активные аппаратные сбои: устройство не подтверждает адрес (NACK),
+ * не обнаружено или недоступна сама шина I²C.
+ *
+ * Проверки в конфиге показывают только «ответил/не ответил» в момент запроса,
+ * а этот список содержит сбои, которые уже зафиксированы монитором аварий
+ * (в том числе при повторных попытках дисплея/RTC).
+ */
+export async function fetchHardwareFaults(): Promise<OcHardwareFaultsResponse | null> {
+	const response = await apiFetch<OcHardwareFaultsResponse>('/rest/oc/hardware-faults', 'GET');
 	return response.success ? response.data : null;
 }
 
@@ -627,5 +641,51 @@ export async function apiFetch<T>(url: string, method: string = 'GET', body?: un
 	} catch (error) {
 		console.error(`API error (${method} ${url}):`, error);
 		return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+	}
+}
+
+// ======================== Перезагрузка контроллера ======================== //
+
+/**
+ * Команда перезагрузки контроллера.
+ *
+ * Устройство уходит в перезапуск сразу после приёма команды и штатно рвёт
+ * соединение, не отдав тело ответа, поэтому обрыв связи ошибкой не считаем:
+ * команда уже доставлена. Ошибка — только явный HTTP-отказ устройства
+ * (например 401 без авторизации).
+ */
+export async function requestRestart(): Promise<{ ok: boolean; error?: string }> {
+	try {
+		const response = await fetch('/rest/restart', {
+			method: 'POST',
+			headers: getAuthHeaders()
+		});
+		if (response.ok) return { ok: true };
+		return { ok: false, error: `HTTP ${response.status}: ${response.statusText}` };
+	} catch {
+		return { ok: true };
+	}
+}
+
+/**
+ * Опрос «контроллер жив»: нужен после перезагрузки, когда штатная связь
+ * (WebSocket) ещё не восстановилась. Запрос ограничен по времени, иначе
+ * обращение к выключенному устройству висит до таймаута браузера.
+ */
+export async function pingDevice(timeoutMs = 2000): Promise<boolean> {
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), timeoutMs);
+	try {
+		const response = await fetch('/rest/oc/info', {
+			method: 'GET',
+			headers: getAuthHeaders(),
+			cache: 'no-store',
+			signal: controller.signal
+		});
+		return response.ok;
+	} catch {
+		return false;
+	} finally {
+		clearTimeout(timer);
 	}
 }

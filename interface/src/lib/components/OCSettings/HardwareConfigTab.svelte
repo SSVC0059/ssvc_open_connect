@@ -2,21 +2,23 @@
 
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fetchHardwareConfig, fetchXkc25Status, putHardwareConfig } from '$lib/api/ssvcApi';
+	import {
+		fetchHardwareConfig,
+		fetchHardwareFaults,
+		fetchXkc25Status,
+		putHardwareConfig
+	} from '$lib/api/ssvcApi';
 	import type {
 		OcHardwareConfigResponse,
+		OcHardwareFaultsResponse,
 		Xkc25SensorConfig,
 		Xkc25StartGuardMode,
 		Xkc25StatusResponse,
 		Xkc25TriggerAction
 	} from '$lib/types/ssvc';
-	import { page } from '$app/state';
-	import { user } from '$lib/stores/user';
 	import { modals } from 'svelte-modals';
-	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import RebootProgressDialog from '$lib/components/RebootProgressDialog.svelte';
 	import Xkc25Section from '$lib/components/OCSettings/Xkc25Section.svelte';
-	import Power from '~icons/tabler/reload';
-	import Cancel from '~icons/tabler/x';
 	import CircleCheck from '~icons/tabler/circle-check';
 	import CircleX from '~icons/tabler/circle-x';
 
@@ -40,6 +42,13 @@
 	/** Последний опрос статуса не удался: живые данные показываем как устаревшие. */
 	let xkc25StatusStale = $state(false);
 	let xkc25CalibrationBusy = $state(false);
+
+	/**
+	 * Активные аппаратные сбои. Проверки внутри конфига отвечают лишь на вопрос
+	 * «устройство ответило в момент запроса», а здесь — то, что монитор аварий
+	 * уже зафиксировал (включая повторные попытки дисплея, RTC и реле).
+	 */
+	let hardwareFaults = $state<OcHardwareFaultsResponse | null>(null);
 
 	type HardwareSectionId = 'bmp581' | 'ds3231' | 'lcd1602' | 'relay' | 'xkc25';
 	type MobilePanel = 'list' | 'editor';
@@ -139,6 +148,18 @@
 		}
 	}
 
+	async function refreshHardwareFaults() {
+		try {
+			const next = await fetchHardwareFaults();
+			// Сбой опроса не сбрасывает список: показываем последние известные данные.
+			if (next) {
+				hardwareFaults = next;
+			}
+		} catch {
+			// Список сбоев — вспомогательный: ошибку сети здесь молча пропускаем.
+		}
+	}
+
 	async function load() {
 		isLoading = true;
 		loadError = '';
@@ -163,6 +184,7 @@
 				syncXkc25State(cfg);
 			}
 			await refreshXkc25Status();
+			await refreshHardwareFaults();
 		} catch (err) {
 			loadError = err instanceof Error ? err.message : 'Ошибка загрузки';
 		} finally {
@@ -189,6 +211,18 @@
 		if (selectedSection !== 'xkc25' && xkc25CalibrationBusy) {
 			xkc25CalibrationBusy = false;
 		}
+	});
+
+	/**
+	 * Сбои появляются и снимаются асинхронно (у дисплея — повторные попытки
+	 * с нарастающей паузой), поэтому список обновляем и по таймеру.
+	 */
+	$effect(() => {
+		if (isLoading) return;
+		const timer = setInterval(() => {
+			void refreshHardwareFaults();
+		}, 5000);
+		return () => clearInterval(timer);
 	});
 
 	onMount(() => {
@@ -278,25 +312,18 @@
 		}
 	}
 
+	/**
+	 * Перезагрузка контроллера: диалог сам отправляет команду и показывает шкалу,
+	 * пока устройство не вернётся на связь. Данные перечитываем только после
+	 * возврата — иначе запросы уходят в перезагружающийся контроллер.
+	 */
 	function openRestartModal() {
-		modals.open(ConfirmDialog, {
+		modals.open(RebootProgressDialog, {
 			title: 'Перезагрузка устройства',
-			message:
-				'После изменения оборудования нужна перезагрузка контроллера. Перезагрузить сейчас?',
-			labels: {
-				cancel: { label: 'Позже', icon: Cancel },
-				confirm: { label: 'Перезагрузить', icon: Power }
-			},
-			onConfirm: () => {
-				modals.close();
-				void fetch('/rest/restart', {
-					method: 'POST',
-					headers: {
-						Authorization: page.data.features.security
-							? 'Bearer ' + $user.bearer_token
-							: 'Basic'
-					}
-				});
+			message: 'После изменения оборудования нужна перезагрузка контроллера. Перезагрузить сейчас?',
+			onFinished: async () => {
+				await load();
+				await onSaved?.();
 			}
 		});
 	}
@@ -340,6 +367,44 @@
 		if (xkc25AllCalibrated) healthy += 1;
 		return healthy;
 	});
+
+	const activeHardwareFaults = $derived(hardwareFaults?.faults ?? []);
+	const i2cBusDown = $derived(hardwareFaults?.i2cBusActive === false);
+	/** Кто ответил на шине в момент последнего опроса — для локализации сбоя. */
+	const i2cScanLabel = $derived(
+		(hardwareFaults?.i2cScan ?? []).map((address) => formatHexAddress(address)).join(', ')
+	);
+
+	const FAULT_ROLE_LABELS: Record<string, string> = {
+		i2c_bus: 'Шина I²C',
+		lcd1602: 'Дисплей LCD1602',
+		ds3231: 'Часы DS3231',
+		bmp581: 'Датчик давления BMP581'
+	};
+
+	/** Роли расширителей реле нумерованы: `pcf8574_port0` … `pcf8574_port7`. */
+	function faultRoleLabel(role: string): string {
+		const known = FAULT_ROLE_LABELS[role];
+		if (known) return known;
+		const portMatch = /^pcf8574_port(\d+)$/.exec(role);
+		if (portMatch) {
+			return `Расширитель PCF8574 №${Number(portMatch[1]) + 1}`;
+		}
+		return role;
+	}
+
+	/**
+	 * Подпись под полем адреса: показывает, во что разобрано введённое значение.
+	 * Нужна из-за неоднозначности записи без префикса: «27» — это десятичное 27
+	 * (0x1B), а не 0x27 (39).
+	 */
+	function addressEcho(raw: string): string {
+		const parsed = parseI2cAddress(raw);
+		if (parsed == null) {
+			return 'Не разобран: укажите 0xNN или число 8..119';
+		}
+		return `Распознан адрес ${formatHexAddress(parsed)} (десятичное ${parsed})`;
+	}
 
 	function addRelayChip() {
 		if (!cfg || cfg.relayPcf8574Addresses.length >= MAX_RELAY_CHIPS) return;
@@ -552,6 +617,39 @@
 				</div>
 			{/if}
 
+			{#if i2cBusDown || activeHardwareFaults.length > 0}
+				<div class="alert alert-error py-2 hardware-faults" role="alert">
+					<div class="hardware-faults-body">
+						{#if i2cBusDown}
+							<span class="hardware-faults-title">
+								Шина I²C недоступна: устройства на ней не опрашиваются.
+							</span>
+						{/if}
+						{#if activeHardwareFaults.length > 0}
+							<span class="hardware-faults-title">
+								Аппаратные сбои: {activeHardwareFaults.length}
+							</span>
+							<ul class="hardware-faults-list">
+								{#each activeHardwareFaults as fault (fault.role + ':' + fault.address)}
+									<li>
+										<span class="hardware-faults-role">{faultRoleLabel(fault.role)}</span>
+										{#if fault.address > 0}
+											<span class="hardware-faults-addr">{formatHexAddress(fault.address)}</span>
+										{/if}
+										<span class="hardware-faults-code">{fault.codeLabel}</span>
+									</li>
+								{/each}
+							</ul>
+						{/if}
+						{#if hardwareFaults && !i2cBusDown}
+							<span class="hardware-faults-scan">
+								Отвечают на шине: {i2cScanLabel || 'никто'}
+							</span>
+						{/if}
+					</div>
+				</div>
+			{/if}
+
 			<div class="hardware-layout">
 				{#if !isNarrowLayout || mobilePanel === 'list'}
 					<div class="sections-list">
@@ -649,6 +747,7 @@
 										disabled={disabled}
 									/>
 									<span class="label-text-alt">Например: 0x46, 0x47 (допустимо также 70, 71)</span>
+									<span class="label-text-alt address-echo">{addressEcho(bmp581HexInput)}</span>
 								</label>
 							</div>
 
@@ -690,6 +789,7 @@
 										disabled={disabled}
 									/>
 									<span class="label-text-alt">По умолчанию: 0x68 (104)</span>
+									<span class="label-text-alt address-echo">{addressEcho(ds3231HexInput)}</span>
 								</label>
 							</div>
 
@@ -746,6 +846,7 @@
 										disabled={disabled}
 									/>
 									<span class="label-text-alt">По умолчанию: 0x27 (39)</span>
+									<span class="label-text-alt address-echo">{addressEcho(lcd1602HexInput)}</span>
 								</label>
 							</div>
 
@@ -845,6 +946,9 @@
 														onblur={() => commitRelayAddress(chipIdx)}
 														disabled={disabled || relayLocked}
 													/>
+													<span class="label-text-alt address-echo">
+														{addressEcho(relayHexInputs[chipIdx] ?? '')}
+													</span>
 												</label>
 											</div>
 											<button
@@ -895,6 +999,9 @@
 </div>
 
 <style lang="scss">
+	/* Цвета — из токенов daisyUI 5 (`--color-*`): короткие имена daisyUI 4
+	   (`--b1`, `--b3`, `--bc`, `--p`, `--su`, `--er`) в теме не определены, поэтому
+	   `hsl(var(--b3))` и подобные значения браузер молча отбрасывал. */
 	.hardware-config {
 		width: 100%;
 	}
@@ -919,7 +1026,7 @@
 
 	.hardware-subtitle {
 		font-size: 0.9rem;
-		color: hsl(var(--bc) / 0.85);
+		color: color-mix(in srgb, var(--color-base-content) 85%, transparent);
 	}
 
 	.hardware-layout {
@@ -940,9 +1047,9 @@
 
 	.sections-list,
 	.section-editor {
-		border: 1px solid hsl(var(--b3));
+		border: 1px solid var(--color-base-300);
 		border-radius: 0.75rem;
-		background: hsl(var(--b1));
+		background: var(--color-base-100);
 		padding: 0.75rem;
 	}
 
@@ -960,21 +1067,21 @@
 		width: 100%;
 		min-height: 74px;
 		padding: 0.75rem;
-		border: 1px solid hsl(var(--b3));
+		border: 1px solid var(--color-base-300);
 		border-radius: 0.6rem;
 		text-align: left;
-		background: hsl(var(--b1));
+		background: var(--color-base-100);
 		transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 	}
 
 	.section-item:hover {
-		border-color: hsl(var(--p) / 0.5);
+		border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
 	}
 
 	.section-item.active {
-		border-color: hsl(var(--p));
-		background: hsl(var(--p) / 0.1);
-		box-shadow: inset 3px 0 0 hsl(var(--p));
+		border-color: var(--color-primary);
+		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+		box-shadow: inset 3px 0 0 var(--color-primary);
 	}
 
 	.section-row-divider {
@@ -998,7 +1105,7 @@
 
 	.section-item-summary {
 		font-size: 0.86rem;
-		color: hsl(var(--bc) / 0.85);
+		color: color-mix(in srgb, var(--color-base-content) 85%, transparent);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -1015,7 +1122,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.6rem;
-		border-top: 1px solid hsl(var(--b3));
+		border-top: 1px solid var(--color-base-300);
 		padding-top: 0.75rem;
 	}
 
@@ -1031,7 +1138,7 @@
 
 	.step-hint {
 		font-size: 0.86rem;
-		color: hsl(var(--bc) / 0.85);
+		color: color-mix(in srgb, var(--color-base-content) 85%, transparent);
 	}
 
 	.label-cb {
@@ -1060,7 +1167,7 @@
 		justify-content: space-between;
 		gap: 0.75rem;
 		padding: 0.65rem;
-		border: 1px solid hsl(var(--b3));
+		border: 1px solid var(--color-base-300);
 		border-radius: 0.6rem;
 	}
 
@@ -1092,16 +1199,64 @@
 	}
 
 	.chip-probe-ok {
-		color: hsl(var(--su));
+		color: var(--color-success);
 	}
 
 	.chip-probe-fail {
-		color: hsl(var(--er));
+		color: var(--color-error);
 	}
 
 	.chip-probe-unknown {
-		color: hsl(var(--bc) / 0.65);
+		color: color-mix(in srgb, var(--color-base-content) 65%, transparent);
 		font-size: 0.72rem;
+	}
+
+	.address-echo {
+		color: color-mix(in srgb, var(--color-base-content) 70%, transparent);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.hardware-faults-body {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.hardware-faults-title {
+		font-weight: 600;
+	}
+
+	.hardware-faults-list {
+		margin: 0;
+		padding-left: 1.1rem;
+		list-style: disc;
+		font-size: 0.85rem;
+	}
+
+	.hardware-faults-list li {
+		display: flex;
+		align-items: baseline;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+	}
+
+	.hardware-faults-role {
+		font-weight: 600;
+	}
+
+	.hardware-faults-addr {
+		font-variant-numeric: tabular-nums;
+		opacity: 0.85;
+	}
+
+	.hardware-faults-code {
+		opacity: 0.9;
+	}
+
+	.hardware-faults-scan {
+		font-size: 0.8rem;
+		font-variant-numeric: tabular-nums;
+		opacity: 0.85;
 	}
 
 	.mobile-editor-nav {
@@ -1111,9 +1266,9 @@
 		gap: 0.5rem;
 		padding: 0.65rem;
 		margin-bottom: 0.35rem;
-		border: 1px solid hsl(var(--b3));
+		border: 1px solid var(--color-base-300);
 		border-radius: 0.6rem;
-		background: hsl(var(--b1));
+		background: var(--color-base-100);
 	}
 
 	.mobile-editor-title-wrap {
@@ -1124,7 +1279,7 @@
 
 	.mobile-editor-caption {
 		font-size: 0.75rem;
-		color: hsl(var(--bc) / 0.7);
+		color: color-mix(in srgb, var(--color-base-content) 70%, transparent);
 	}
 
 	.mobile-editor-title {
@@ -1141,7 +1296,7 @@
 
 	.mobile-editor-summary {
 		font-size: 0.8rem;
-		color: hsl(var(--bc) / 0.75);
+		color: color-mix(in srgb, var(--color-base-content) 75%, transparent);
 	}
 
 	.mobile-nav-actions {
@@ -1151,11 +1306,11 @@
 		flex-wrap: wrap;
 		padding: 0.25rem;
 		border-radius: 0.5rem;
-		background: hsl(var(--b1));
+		background: var(--color-base-100);
 	}
 
 	.mobile-nav-btn {
-		background: hsl(var(--b1));
+		background: var(--color-base-100);
 	}
 
 	@media (max-width: 960px) {

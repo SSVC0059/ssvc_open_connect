@@ -221,6 +221,12 @@ constexpr uint32_t kSilenceStepMs = 1000;
   bool discardingOversize = false;
   int errorCounter = 0;
   uint32_t lastSilenceMs = millis();
+  // Буфер чтения переживает проходы внешнего цикла: байты, оставшиеся после
+  // '\n' в уже прочитанном блоке, обрабатываются до следующего чтения. Иначе
+  // при нескольких кадрах в одном блоке начало следующего кадра молча терялось.
+  uint8_t rxChunk[kRxChunkBytes];
+  int rxLen = 0;
+  int rxPos = 0;
 
   while (true) {
     // Зависшая сессия переводится в ошибку независимо от потока байтов.
@@ -239,29 +245,36 @@ constexpr uint32_t kSilenceStepMs = 1000;
     const TickType_t frameStart = xTaskGetTickCount();
 
     while (!lineReady) {
-      uint8_t chunk[kRxChunkBytes];
-      const int len = uart_read_bytes(SSVC_OPEN_CONNECT_UART_NUM, chunk, sizeof(chunk),
-                                      pdMS_TO_TICKS(UART_READ_TIMEOUT_MS));
-      if (len <= 0) {
-        // Тишина на RX: сессия проверяется по таймауту, а связь — по числу секунд
-        // тишины (шаг учёта отделён от частоты коротких чтений).
-        SsvcLogProtocol::getTransfer().checkTimeout(millis());
-        if (lineLength == 0 && millis() - lastSilenceMs >= kSilenceStepMs) {
-          lastSilenceMs = millis();
-          ++errorCounter;
-          if (errorCounter >= kErrorThreshold && !self->uartCommunicationError) {
-            ESP_LOGW("SsvcConnector", "uartCommunicationError=true (тишина RX)");
-            SsvcCommandsQueue::getQueue().scheduleUartRetryTimer();
-            AlarmMonitor::getInstance().raiseHardwareFault(HardwareFaultCode::UART_LINK_LOST, 0,
-                                                           "ssvc_uart");
-            self->uartCommunicationError = true;
+      // Чтение выполняется только когда текущий блок исчерпан: непрочитанный
+      // остаток (байты после '\n' в том же блоке) не выбрасывается, а
+      // разбирается в следующем проходе.
+      if (rxPos >= rxLen) {
+        rxLen = uart_read_bytes(SSVC_OPEN_CONNECT_UART_NUM, rxChunk, sizeof(rxChunk),
+                                pdMS_TO_TICKS(UART_READ_TIMEOUT_MS));
+        rxPos = 0;
+        if (rxLen <= 0) {
+          // Тишина на RX: сессия проверяется по таймауту, а связь — по числу секунд
+          // тишины (шаг учёта отделён от частоты коротких чтений).
+          SsvcLogProtocol::getTransfer().checkTimeout(millis());
+          if (lineLength == 0 && millis() - lastSilenceMs >= kSilenceStepMs) {
+            lastSilenceMs = millis();
+            ++errorCounter;
+            if (errorCounter >= kErrorThreshold && !self->uartCommunicationError) {
+              ESP_LOGW("SsvcConnector", "uartCommunicationError=true (тишина RX)");
+              SsvcCommandsQueue::getQueue().scheduleUartRetryTimer();
+              AlarmMonitor::getInstance().raiseHardwareFault(HardwareFaultCode::UART_LINK_LOST, 0,
+                                                             "ssvc_uart");
+              self->uartCommunicationError = true;
+            }
           }
+          break;
         }
-        break;
       }
 
-      for (int i = 0; i < len; ++i) {
-        const char symbol = static_cast<char>(chunk[i]);
+      // Выход по '\n' оставляет rxPos после перевода строки, поэтому остаток
+      // блока сохраняется для следующего кадра.
+      while (rxPos < rxLen) {
+        const char symbol = static_cast<char>(rxChunk[rxPos++]);
 
         if (discardingOversize) {
           // Хвост слишком длинного кадра отбрасывается до перевода строки.
@@ -309,7 +322,9 @@ constexpr uint32_t kSilenceStepMs = 1000;
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, data);
     if (error) {
-      ESP_LOGE("SsvcConnector", "Ошибка десериализации: %s", error.c_str());
+      // Печатается и сам кадр: без него неясно, что пришло — мусор, обрезанная
+      // строка или не-JSON ответ устройства (ограничено 200 символами).
+      ESP_LOGE("SsvcConnector", "Ошибка десериализации: %s (кадр: %.200s)", error.c_str(), data);
 
       // Кадры лог-сессии не считаются потерей связи: телеметрия в это время
       // штатно приостановлена. Порог — по подряд идущим ошибкам.
@@ -369,7 +384,17 @@ constexpr uint32_t kSilenceStepMs = 1000;
             doc["request"].is<const char*>() ? std::string(doc["request"].as<const char*>())
                                              : std::string();
         if (doc["request"] == "GET_LOG") {
-          SsvcLogProtocol::getTransfer().consume(data, millis());
+          auto &transfer = SsvcLogProtocol::getTransfer();
+          const SsvcLogProtocol::Status before = transfer.status();
+          transfer.consume(data, millis());
+          // Лог-кадры намеренно не печатаются целиком, но при переводе сессии в
+          // ошибку кадр нужен: иначе причина (invalid_start, unexpected_file)
+          // видна только кодом, без исходных данных.
+          if (before != SsvcLogProtocol::Status::ERROR &&
+              transfer.status() == SsvcLogProtocol::Status::ERROR) {
+            ESP_LOGW("SsvcConnector", "GET_LOG: %s (кадр: %.200s)",
+                     transfer.error().c_str(), data);
+          }
         } else if (doc["request"] == "GET_SETTINGS" && doc["result"] == "OK") {
           ESP_LOGV("SsvcConnector", "GET_SETTINGS: SEND BIT10");
           xEventGroupSetBits(eventGroup, BIT10);
@@ -403,7 +428,14 @@ constexpr uint32_t kSilenceStepMs = 1000;
             true);
         }
       } else if (doc["type"] == "file") {
-        SsvcLogProtocol::getTransfer().consume(data, millis());
+        auto &transfer = SsvcLogProtocol::getTransfer();
+        const SsvcLogProtocol::Status before = transfer.status();
+        transfer.consume(data, millis());
+        if (before != SsvcLogProtocol::Status::ERROR &&
+            transfer.status() == SsvcLogProtocol::Status::ERROR) {
+          ESP_LOGW("SsvcConnector", "GET_LOG: %s (кадр: %.200s)",
+                   transfer.error().c_str(), data);
+        }
       } else {
         if (doc["common"]["cfg_chgd"]) {
           ESP_LOGV("SsvcConnector",
@@ -414,6 +446,11 @@ constexpr uint32_t kSilenceStepMs = 1000;
         xEventGroupSetBits(eventGroup, BIT0);
       }
     }
+
+    // Кадр обработан — аккумулятор строки начинает следующий кадр с нуля.
+    // Без сброса байты всех последующих кадров дописывались к предыдущему,
+    // пока не срабатывал порог 1024 («хвост отброшен»).
+    lineLength = 0;
 
     // Паузу задаёт само чтение (uart_read_bytes с таймаутом): фиксированная
     // задержка на кадр больше не тормозит поток файла и backlog.
@@ -485,4 +522,16 @@ std::string SsvcConnector::getLastResponse() {
 
 std::string SsvcConnector::getLastResponseRequest() {
   return withMutex([this] { return lastResponseRequest; }, "getLastResponseRequest");
+}
+
+void SsvcConnector::getResponseSnapshot(std::string& payload, std::string& request) {
+  if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+    payload = lastResponse;
+    request = lastResponseRequest;
+    xSemaphoreGive(mutex);
+  } else {
+    ESP_LOGE("SsvcConnector", "getResponseSnapshot: не удалось захватить мьютекс");
+    payload.clear();
+    request.clear();
+  }
 }

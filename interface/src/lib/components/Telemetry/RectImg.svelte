@@ -6,21 +6,31 @@
         SensorMap,
         TemperatureResponse, ThresholdSettings} from '$lib/types/Sensors';
     import {fetchAlarmThresholds} from "$lib/api/ssvcApi";
-    import type {Xkc25StatusResponse} from '$lib/types/ssvc';
+    import type {Xkc25SensorStatus, Xkc25StatusResponse} from '$lib/types/ssvc';
 
-    const { telemetry, temperatureResponse, alarmThresholds, xkc25Status = null } = $props<{
-		telemetry: SsvcTelemetryMessage | null;
-		temperatureResponse: TemperatureResponse | null;
+    /**
+     * Схема рисуется только при живых данных: родитель монтирует компонент внутри
+     * `{#if telemetry && temperatureResponse}` (см. routes/oc/telemetry/Ssvc.svelte),
+     * поэтому пропсы объявлены без null — иначе типы не выводятся, и каждый пропс
+     * молча становится `any`.
+     */
+    type RectImgProps = {
+		telemetry: SsvcTelemetryMessage;
+		temperatureResponse: TemperatureResponse;
         alarmThresholds?: AlarmThresholdsState | null;
 		xkc25Status?: Xkc25StatusResponse | null;
-	}>();
+	};
+
+    const { telemetry, temperatureResponse, alarmThresholds, xkc25Status = null }: RectImgProps = $props();
 
 	let headsBeginSelected = $derived(telemetry.type === "heads")
 	let lateHeadsBeginSelected = $derived(telemetry.type === "late_heads")
 	let heartsBeginSelected = $derived(telemetry.type === "hearts")
 	let tailsBeginSelected = $derived(telemetry.type === "tails")
 
-	let tails_support = $derived(telemetry.volume.hasOwnProperty("tails"))
+	// В типе volume необязателен (прошивки без хвостов шлют late_heads): нет данных —
+	// сосуд 3 не рисуем.
+	let tails_support = $derived(telemetry.volume?.hasOwnProperty("tails") ?? false)
 
 	// tca
 	let tcaTempValue = $derived(getMaxTemperatureByZone("act"));
@@ -192,12 +202,26 @@
         return Object.entries(sensorMap).filter(([, details]) => details.type === 'level');
     }
 
+    /**
+     * «Жидкость напротив датчика» по живому чтению пина и полярности.
+     * Карта датчиков (/rest/sensor) обновляется только в цикле опроса прошивки (раз в 10 с),
+     * а статус XKC-25 читает пин в момент запроса — без этого индикатор запаздывал
+     * относительно реального состояния жидкости. undefined — живого чтения нет.
+     */
+    function sensorFilled(sensor: Xkc25SensorStatus): boolean | undefined {
+        if (!sensor.live || sensor.rawLevel < 0) return undefined;
+        return sensor.activeLow ? sensor.rawLevel === 0 : sensor.rawLevel === 1;
+    }
+
     const tankIndicators = $derived.by(() =>
         TANK_ZONES.map((zone, index) => {
             const entries = levelSensorEntries(zone);
             const liveSensors = (xkc25Status?.sensors ?? []).filter(
                 (sensor) => sensor.zoneIndex === index && sensor.enabled
             );
+            const liveFilled = liveSensors
+                .map(sensorFilled)
+                .filter((value): value is boolean => value !== undefined);
             return {
                 index,
                 zone,
@@ -205,7 +229,10 @@
                 label: `Ёмкость ${index + 1} · Приёмная ёмкость ${index + 1}`,
                 hasSensor: entries.length > 0 || liveSensors.length > 0,
                 // Несколько датчиков в зоне: ёмкость заполнена, если сработал хотя бы один.
-                filled: entries.some(([, details]) => Number(details.v) >= 1),
+                filled:
+                    liveFilled.length > 0
+                        ? liveFilled.some(Boolean)
+                        : entries.some(([, details]) => Number(details.v) >= 1),
                 // Калибровка известна только из статуса XKC-25: без него не приглушаем.
                 calibrated:
                     liveSensors.length > 0 ? liveSensors.every((sensor) => sensor.calibrated) : undefined,
@@ -442,15 +469,25 @@
 						class="sensor-text">{columnThermalValue.toFixed(2)}</text>
 		</g>
 	</g>
-<!--	Капли Хвосты-->
+	<!--
+		Капли показывают, в какой приёмный сосуд идёт отбор на текущем этапе.
+		Соответствие «этап — сосуд» задаётся координатами капель, а не порядком отрисовки,
+		поэтому каждая капля нарисована над своим сосудом (TANK_GEOMETRY):
+		  головы и подголовники → сосуд 1 (0.8, 199.6);
+		  тело (hearts)          → сосуд 2 (193.14, 309.44);
+		  хвосты                 → сосуд 3 (0.8, 368.23, только при поддержке хвостов).
+		Капля падает на 60px (анимация dropFall) и оказывается внутри своей ёмкости;
+		капля хвостов скрыта вместе с сосудом 3, если прошивка не поддерживает хвосты.
+	-->
+	<!--	Капли Хвосты → сосуд 3-->
 	<path class={`
 								cls-6
-								${tailsBeginSelected ? "water-drop" : "hidden-element"}
+								${tailsBeginSelected && tails_support ? "water-drop" : "hidden-element"}
 								drop-1
 							`}
 		d="M28,349.42h0c-1.33,1.64-3.48,1.64-4.81,0h0c-1.33-1.64-1.33-4.31,0-5.95l2.4-3.7,2.4,3.7c1.33,1.64,1.33,4.31,0,5.95Z" />
 
-	<!--	Капли Головы-->
+	<!--	Капли Тело (hearts) → сосуд 2-->
 	<path class={`
 								cls-6
 								${heartsBeginSelected ? "water-drop" : "hidden-element"}
@@ -458,7 +495,7 @@
 							`}
 		d="M220,290.14h0c-1.33,1.64-3.48,1.64-4.81,0h0c-1.33-1.64-1.33-4.31,0-5.95l2.4-3.7,2.4,3.7c1.33,1.64,1.33,4.31,0,5.95Z"/>
 
-	<!--	Капли Тело-->
+	<!--	Капли Головы и подголовники → сосуд 1-->
 	<path class={`
 								cls-6
 								${headsBeginSelected || lateHeadsBeginSelected  ? "water-drop" : "hidden-element"}
@@ -806,15 +843,19 @@
     .tank-overlay {
         position: absolute;
         right: 0.15rem;
-        bottom: 0.15rem;
+        /* Блок приподнят над нижним краем схемы: у самой кромки подписи «прилипали»
+           к границе картинки и читались как обрезанные. */
+        bottom: 2rem;
         margin-bottom: 0;
         /* Узкая колонка в свободном правом нижнем углу схемы: не накрывает ёмкости и куб. */
         max-width: 34%;
         padding: 0.3rem 0.4rem;
         border-radius: 0.4rem;
-        /* Полупрозрачная подложка: элементы схемы под панелью остаются видны. */
-        background: hsl(var(--b1));
-        background: color-mix(in srgb, hsl(var(--b1)) 78%, transparent);
+        /* Полупрозрачная подложка: элементы схемы под панелью остаются видны.
+           Токен daisyUI 5: короткие имена (--b1) в теме не определены, с ними
+           браузер отбрасывал объявление и текст ложился прямо на схему. */
+        background: var(--color-base-100);
+        background: color-mix(in srgb, var(--color-base-100) 78%, transparent);
         backdrop-filter: blur(3px);
         font-size: 0.62rem;
         line-height: 1.15;

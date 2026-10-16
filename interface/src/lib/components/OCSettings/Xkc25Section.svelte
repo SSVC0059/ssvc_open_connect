@@ -118,6 +118,17 @@
 		return 'нет данных';
 	}
 
+	/**
+	 * «Жидкость напротив датчика» по текущему уровню пина и полярности.
+	 * Поле `filled` прошивка считает в цикле опроса датчиков (раз в 10 с), а `rawLevel`
+	 * читается в момент запроса — из-за этого вердикт отставал от подписи «Сигнал на пине»
+	 * и менялся только со следующим циклом опроса.
+	 */
+	function liveFilled(sensor: Xkc25SensorStatus): boolean {
+		if (sensor.rawLevel < 0) return sensor.filled;
+		return sensor.activeLow ? sensor.rawLevel === 0 : sensor.rawLevel === 1;
+	}
+
 	function nextFreeGpio(): number {
 		const used = new Set(sensors.map((sensor) => sensor.gpio));
 		const preferred = DEFAULT_GPIOS.find((pin) => !used.has(pin));
@@ -467,12 +478,12 @@
 						</p>
 
 						{#if live && live.live}
-							<div class="xkc-live">
+							<div class="xkc-live" class:xkc-live-warn={!live.calibrated}>
 								<span class="xkc-live-item">
 									Сигнал на пине: <strong>{rawLevelText(live.rawLevel)}</strong>
 								</span>
-								<span class="xkc-live-item" class:filled={live.filled}>
-									{live.filled ? 'Жидкость напротив датчика есть' : 'Жидкости напротив датчика нет'}
+								<span class="xkc-live-item" class:filled={liveFilled(live)}>
+									{liveFilled(live) ? 'Жидкость напротив датчика есть' : 'Жидкости напротив датчика нет'}
 								</span>
 								{#if !live.calibrated}
 									<span class="xkc-live-hint">
@@ -518,7 +529,7 @@
 						<div class="xkc-sensor-actions">
 							<button
 								type="button"
-								class="btn btn-sm btn-outline"
+								class="btn btn-sm btn-primary"
 								onclick={() => openWizard(idx)}
 								disabled={disabled || dirty || busy || !sensor.enabled}
 							>
@@ -526,7 +537,7 @@
 							</button>
 							<button
 								type="button"
-								class="btn btn-sm btn-ghost"
+								class="btn btn-sm btn-outline btn-error"
 								onclick={() => confirmRemoveSensor(idx)}
 								disabled={disabled || busy}
 							>
@@ -762,6 +773,12 @@
 </div>
 
 <style lang="scss">
+	/**
+	 * Цвета берём из токенов daisyUI 5 (`--color-*`): короткие имена daisyUI 4
+	 * (`--b3`, `--bc`, `--wa`, `--er`, `--su`) в теме не определены, поэтому
+	 * `hsl(var(--b3))` и подобные значения молча отбрасывались браузером —
+	 * рамки и предупреждения выглядели неоформленными.
+	 */
 	.xkc-section {
 		display: flex;
 		flex-direction: column;
@@ -772,7 +789,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.6rem;
-		border-top: 1px solid hsl(var(--b3));
+		border-top: 1px solid var(--color-base-300);
 		padding-top: 0.75rem;
 	}
 
@@ -788,7 +805,7 @@
 
 	.step-hint {
 		font-size: 0.86rem;
-		color: hsl(var(--bc) / 0.85);
+		color: color-mix(in srgb, var(--color-base-content) 85%, transparent);
 	}
 
 	.label-cb {
@@ -800,7 +817,7 @@
 
 	.xkc-empty {
 		font-size: 0.9rem;
-		color: hsl(var(--bc) / 0.75);
+		color: color-mix(in srgb, var(--color-base-content) 75%, transparent);
 	}
 
 	.xkc-sensor-list {
@@ -824,7 +841,7 @@
 		flex-direction: column;
 		gap: 0.6rem;
 		padding: 0.75rem;
-		border: 1px solid hsl(var(--b3));
+		border: 1px solid var(--color-base-300);
 		border-radius: 0.6rem;
 	}
 
@@ -864,33 +881,66 @@
 	.xkc-live {
 		display: flex;
 		align-items: center;
-		gap: 0.6rem;
+		gap: 0.3rem 1rem;
 		flex-wrap: wrap;
 		font-size: 0.86rem;
-		padding: 0.4rem 0.6rem;
+		padding: 0.45rem 0.7rem;
+		border: 1px solid var(--color-base-300);
 		border-radius: 0.5rem;
-		background: hsl(var(--b2));
+		background: var(--color-base-200);
+	}
+
+	/* Сырой уровень пина — не измерение, а состояние железа: у неоткалиброванного
+	   датчика блок получает предупреждающий тон, а не нейтральный серый. */
+	.xkc-live-warn {
+		border-color: color-mix(in srgb, var(--color-warning) 60%, transparent);
+		background: color-mix(in srgb, var(--color-warning) 14%, transparent);
+	}
+
+	.xkc-live-item {
+		font-weight: 500;
 	}
 
 	.xkc-live-item.filled {
-		font-weight: 600;
-		color: hsl(var(--er));
+		font-weight: 700;
+		color: var(--color-error);
 	}
 
+	/* Пояснения идут отдельной строкой под значениями: в общей строке они терялись. */
 	.xkc-live-hint {
-		color: hsl(var(--bc) / 0.7);
+		flex-basis: 100%;
+		color: color-mix(in srgb, var(--color-base-content) 85%, transparent);
 	}
 
 	.xkc-warn {
 		display: flex;
-		align-items: center;
-		gap: 0.35rem;
+		align-items: flex-start;
+		gap: 0.4rem;
+		padding: 0.4rem 0.6rem;
+		border: 1px solid color-mix(in srgb, var(--color-warning) 55%, transparent);
+		border-radius: 0.5rem;
+		background: color-mix(in srgb, var(--color-warning) 14%, transparent);
 		font-size: 0.86rem;
-		color: hsl(var(--wa));
+		line-height: 1.25;
+		color: var(--color-base-content);
 	}
 
+	.xkc-warn :global(svg) {
+		flex: 0 0 auto;
+		margin-top: 0.1rem;
+		color: var(--color-warning);
+	}
+
+	/* Второстепенные предупреждения (занятый пин, зарезервированный GPIO) —
+	   нейтральный тон: они не должны спорить с калибровкой. */
 	.xkc-warn-soft {
-		color: hsl(var(--bc) / 0.7);
+		border-color: var(--color-base-300);
+		background: var(--color-base-200);
+		color: color-mix(in srgb, var(--color-base-content) 80%, transparent);
+	}
+
+	.xkc-warn-soft :global(svg) {
+		color: color-mix(in srgb, var(--color-base-content) 55%, transparent);
 	}
 
 	.xkc-wizard {
@@ -898,9 +948,9 @@
 		flex-direction: column;
 		gap: 0.6rem;
 		padding: 0.75rem;
-		border: 1px dashed hsl(var(--b3));
+		border: 1px dashed var(--color-base-300);
 		border-radius: 0.6rem;
-		background: hsl(var(--b2) / 0.4);
+		background: color-mix(in srgb, var(--color-base-200) 40%, transparent);
 	}
 
 	.xkc-wizard-head {
@@ -929,19 +979,19 @@
 	.xkc-wizard-steps li {
 		padding: 0.15rem 0.5rem;
 		border-radius: 999px;
-		background: hsl(var(--b3));
-		color: hsl(var(--bc) / 0.75);
+		background: var(--color-base-300);
+		color: color-mix(in srgb, var(--color-base-content) 75%, transparent);
 	}
 
 	.xkc-wizard-steps li.active {
-		background: hsl(var(--p) / 0.2);
-		color: hsl(var(--bc));
+		background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+		color: var(--color-base-content);
 		font-weight: 600;
 	}
 
 	.xkc-wizard-steps li.done {
-		background: hsl(var(--su) / 0.2);
-		color: hsl(var(--bc));
+		background: color-mix(in srgb, var(--color-success) 20%, transparent);
+		color: var(--color-base-content);
 	}
 
 	.xkc-wizard-actions {
@@ -953,7 +1003,7 @@
 
 	.xkc-checklist {
 		font-size: 0.84rem;
-		color: hsl(var(--bc) / 0.85);
+		color: color-mix(in srgb, var(--color-base-content) 85%, transparent);
 	}
 
 	.xkc-checklist-title {

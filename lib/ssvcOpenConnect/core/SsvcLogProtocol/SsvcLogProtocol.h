@@ -272,32 +272,86 @@ inline bool extractInt(const std::string& json, const char* key, int& value) {
   return true;
 }
 
-inline void extractFiles(const std::string& json, std::vector<std::string>& files) {
-  const std::string marker = "\"files\"";
+/**
+ * Разбор массива строк по ключу: `"files":["15.CSV","16.CSV"]`.
+ *
+ * Границы массива определяются по структуре (ключ → `:` → `[` → элементы через
+ * запятую → `]`), а не по первой попавшейся скобке, и учитывается экранирование
+ * внутри строк. Повреждённый массив возвращает false — вызывающий обязан выдать
+ * ошибку, а не пустой список.
+ */
+inline bool parseStringArray(const std::string& json, const std::string& key,
+                             std::vector<std::string>& out) {
+  out.clear();
+  const std::string marker = "\"" + key + "\"";
   const std::size_t keyPosition = json.find(marker);
   if (keyPosition == std::string::npos) {
-    return;
+    return false;
   }
-  const std::size_t openingBracket = json.find('[', keyPosition + marker.size());
-  if (openingBracket == std::string::npos) {
-    return;
+  const std::size_t colon = json.find(':', keyPosition + marker.size());
+  if (colon == std::string::npos) {
+    return false;
   }
-  const std::size_t closingBracket = json.find(']', openingBracket + 1);
-  if (closingBracket == std::string::npos) {
-    return;
+  std::size_t cursor = colon + 1;
+  while (cursor < json.size() && std::isspace(static_cast<unsigned char>(json[cursor]))) {
+    ++cursor;
   }
-  std::size_t cursor = openingBracket + 1;
-  while (cursor < closingBracket) {
-    const std::size_t openingQuote = json.find('"', cursor);
-    if (openingQuote == std::string::npos || openingQuote >= closingBracket) {
-      break;
+  if (cursor >= json.size() || json[cursor] != '[') {
+    return false;
+  }
+  ++cursor;
+
+  while (true) {
+    while (cursor < json.size() && std::isspace(static_cast<unsigned char>(json[cursor]))) {
+      ++cursor;
     }
-    const std::size_t closingQuote = json.find('"', openingQuote + 1);
-    if (closingQuote == std::string::npos || closingQuote > closingBracket) {
-      break;
+    if (cursor >= json.size()) {
+      return false;  // массив не закрыт
     }
-    files.emplace_back(json.substr(openingQuote + 1, closingQuote - openingQuote - 1));
-    cursor = closingQuote + 1;
+    if (json[cursor] == ']') {
+      return true;  // в том числе пустой массив
+    }
+    if (json[cursor] != '"') {
+      return false;  // элемент обязан быть строкой
+    }
+
+    ++cursor;
+    std::string value;
+    bool closed = false;
+    while (cursor < json.size()) {
+      const char symbol = json[cursor++];
+      if (symbol == '\\') {
+        if (cursor >= json.size()) {
+          break;  // экранирование оборвано
+        }
+        value.push_back(json[cursor++]);
+        continue;
+      }
+      if (symbol == '"') {
+        closed = true;
+        break;
+      }
+      value.push_back(symbol);
+    }
+    if (!closed) {
+      return false;
+    }
+    out.push_back(std::move(value));
+
+    while (cursor < json.size() && std::isspace(static_cast<unsigned char>(json[cursor]))) {
+      ++cursor;
+    }
+    if (cursor >= json.size()) {
+      return false;
+    }
+    if (json[cursor] == ',') {
+      ++cursor;
+      continue;
+    }
+    if (json[cursor] == ']') {
+      return true;
+    }
+    return false;  // между элементами только ',' или конец массива
   }
 }
 
@@ -588,8 +642,13 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
       if (_request != RequestKind::List) {
         return false;  // список не запрашивали — кадр не для этой сессии
       }
-      _files.clear();
-      detail::extractFiles(json, _files);
+      // Строгий разбор: повреждённый массив — это явная ошибка, а не «пустой
+      // список» (раньше ручной обход скобок молча возвращал неполный результат).
+      if (!detail::parseStringArray(json, "files", _files)) {
+        _status = Status::ERROR;
+        _error = "invalid_list";
+        return false;
+      }
       _status = Status::LIST_RECEIVED;
       return true;
     }
@@ -600,8 +659,11 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
       }
       int total = 0;
       std::string file;
+      // Отсутствие/нечитаемость полей — повреждённый кадр. А вот total == 0 —
+      // это не повреждение: у пустого журнала ноль чанков, и раньше такой файл
+      // было невозможно скачать (передача падала с invalid_start).
       if (!detail::extractInt(json, "total", total) ||
-          !detail::extractString(json, "file", file) || total <= 0) {
+          !detail::extractString(json, "file", file) || total < 0) {
         _status = Status::ERROR;
         _error = "invalid_start";
         return false;
@@ -618,6 +680,12 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
       _totalChunks = total;
       _receivedChunks = 0;
       _data.clear();
+      if (total == 0) {
+        // Пустой журнал: чанков не будет, поэтому передача завершается сразу.
+        _status = Status::COMPLETED;
+        _completedAtMs = nowMs;
+        return true;
+      }
       _status = Status::RECEIVING;
       return true;
     }

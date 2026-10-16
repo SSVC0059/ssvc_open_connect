@@ -61,6 +61,42 @@ const char* hardwareFaultCodeLabel(const HardwareFaultCode code) {
 
 OpenConnectHandler::OpenConnectHandler() = default;
 
+/**
+ * Активные аппаратные сбои.
+ *
+ * До этого список читали только сам модуль дисплея (чтобы показать первую ошибку на
+ * экране) и RelayRuleEngine — в интерфейсе причина отказа оборудования не отображалась,
+ * и приходилось смотреть serial-лог.
+ */
+void OpenConnectHandler::getHardwareFaults(AsyncWebServerRequest* request)
+{
+    AsyncJsonResponse* response = new AsyncJsonResponse();
+    JsonObject root = response->getRoot();
+
+    JsonArray faults = root["faults"].to<JsonArray>();
+    for (const auto& fault : AlarmMonitor::getInstance().getActiveHardwareFaults()) {
+        JsonObject item = faults.add<JsonObject>();
+        item["code"] = hardwareFaultCodeKey(fault.code);
+        item["codeLabel"] = hardwareFaultCodeLabel(fault.code);
+        item["address"] = fault.i2c_addr;
+        item["role"] = fault.role.c_str();
+    }
+    root["count"] = faults.size();
+    // Шина отдельным полем: при выключенной подсистеме i2c_bus отказы устройств
+    // не поднимаются, и пустой список сбоев читается иначе.
+    I2CBusSubsystem& bus = I2CBusSubsystem::getInstance();
+    root["i2cBusActive"] = bus.isActive();
+
+    // Список ответивших адресов: по нему видно, выпало одно устройство или вся шина.
+    JsonArray scan = root["i2cScan"].to<JsonArray>();
+    for (const uint8_t address : bus.scanAddresses(false)) {
+        scan.add(address);
+    }
+
+    response->setLength();
+    request->send(response);
+}
+
 void OpenConnectHandler::getInfo(AsyncWebServerRequest* request)
 {
     AsyncJsonResponse* response = new AsyncJsonResponse();
@@ -320,6 +356,9 @@ void OpenConnectHandler::getHardwareConfig(AsyncWebServerRequest* request) {
     svc.read([&](OpenConnectHardwareConfig& s) {
         OpenConnectHardwareConfig::read(s, root);
         needs = s.pendingReboot;
+        // Все проверки идут одной пачкой под блокировкой шины, иначе рабочий
+        // поток дисплея/RTC вклинится между beginTransmission() и endTransmission().
+        I2CBusSubsystem::Guard bus(I2CBusSubsystem::getInstance());
         TwoWire* w = I2CBusSubsystem::getInstance().getWire();
         if (s.pressureSensorEnabled) {
             bool bmpOk = false;
@@ -380,6 +419,7 @@ void OpenConnectHandler::putHardwareConfig(AsyncWebServerRequest* request, JsonV
     OpenConnectHardwareSettingsService::instance().read([&](OpenConnectHardwareConfig& s) {
         OpenConnectHardwareConfig::read(s, root);
         needs = s.pendingReboot;
+        I2CBusSubsystem::Guard bus(I2CBusSubsystem::getInstance());
         TwoWire* w = I2CBusSubsystem::getInstance().getWire();
         if (s.pressureSensorEnabled) {
             bool bmpOk = false;

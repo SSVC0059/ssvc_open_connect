@@ -129,6 +129,10 @@ public:
   /// Поле request ответа, сохранённого в lastResponse ("" — если поля не было).
   std::string getLastResponseRequest();
 
+  /// Согласованный снимок ответа: payload и его request берутся под одним lock,
+  /// чтобы сопоставление ответа с командой не гонялось с новой телеметрией.
+  void getResponseSnapshot(std::string& payload, std::string& request);
+
   bool uartCommunicationError;
 
   static bool sendCommand(const char *command);

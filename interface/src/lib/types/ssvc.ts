@@ -315,6 +315,35 @@ export type OcHardwareConfigResponse = {
 	needsReboot: boolean;
 };
 
+/** Коды аппаратных сбоев; совпадают с HardwareFaultCode в прошивке. */
+export type OcHardwareFaultCode =
+	| 'none'
+	| 'i2c_nack'
+	| 'i2c_bus_down'
+	| 'device_not_present'
+	| 'uart_link_lost'
+	| 'unknown';
+
+/** Один активный аппаратный сбой. */
+export type OcHardwareFault = {
+	code: OcHardwareFaultCode;
+	/** Подпись кода для интерфейса (формируется прошивкой). */
+	codeLabel: string;
+	/** 7-битный адрес I²C; 0 — сбой не привязан к конкретному устройству. */
+	address: number;
+	/** Роль устройства: `lcd1602`, `ds3231`, `pcf8574_relay`, `bmp581`, `i2c_bus`. */
+	role: string;
+};
+
+/** Ответ GET /rest/oc/hardware-faults. */
+export type OcHardwareFaultsResponse = {
+	faults: OcHardwareFault[];
+	count: number;
+	i2cBusActive: boolean;
+	/** Адреса, ответившие на опрос шины в момент запроса (для диагностики). */
+	i2cScan?: number[];
+};
+
 /** Живое состояние одного датчика XKC-25 (GET /rest/oc/xkc25/status). */
 export type Xkc25SensorStatus = {
 	index: number;

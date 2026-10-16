@@ -9,6 +9,7 @@
 		LOG_IDLE_TIMEOUT_MS
 	} from '$lib/api/ssvcApi';
 	import type { SsvcLogStatus, OcApiFeature } from '$lib/types/ssvc';
+	import Download from '~icons/tabler/download';
 
 	// Локальное состояние операции отделено от backend-снапшота: устаревший
 	// «receiving» с контроллера не должен перекрывать уже показанную ошибку.
@@ -19,6 +20,17 @@
 	let localState = $state<LocalLogState>('idle');
 	// Снапшот возможностей устройства из /rest/oc/info (см. SsvcApiCapabilities).
 	let apiFeatures = $state<OcApiFeature[]>([]);
+	/** Возможности устройства прочитаны (или запрос упал): только после этого решаем про автозагрузку. */
+	let featuresLoaded = $state(false);
+	/** Автозагрузка списка выполняется один раз при входе на страницу. */
+	let autoLoadDone = false;
+
+	// Список и передача файла — разные операции, поэтому индикаторы прогресса не общие:
+	// «идёт получение списка» и «скачивается файл 72.CSV» должны читаться по-разному.
+	let listLoading = $state(false);
+	let activeFile = $state<string | null>(null);
+	/** Передачу можно прервать: в этот момент кнопка меняется на «Отменить». */
+	const transferInProgress = $derived(localState === 'starting' || localState === 'waiting');
 
 	// Журналы (GET_LOG) доступны с UART API 1.10 и только в дежурном режиме.
 	// Решение принимает возможность get_log: сравнение версии как числа
@@ -72,6 +84,7 @@
 		logError = '';
 		logStatus = null;
 		localState = 'starting';
+		listLoading = true;
 
 		try {
 			const result = await refreshLogList(signal);
@@ -133,7 +146,10 @@
 			logError = error instanceof Error ? error.message : 'Ошибка получения списка журналов';
 			localState = 'error';
 		} finally {
-			if (requestId === logRequestId) logAbort = null;
+			if (requestId === logRequestId) {
+				logAbort = null;
+				listLoading = false;
+			}
 		}
 	};
 
@@ -147,8 +163,8 @@
 		const signal = logAbort.signal;
 
 		logError = '';
-		logStatus = null;
 		localState = 'starting';
+		activeFile = file;
 
 		try {
 			const start = await startLogDownload(processId, signal);
@@ -223,7 +239,10 @@
 			logError = error instanceof Error ? error.message : 'Ошибка загрузки журнала';
 			localState = 'error';
 		} finally {
-			if (requestId === logRequestId) logAbort = null;
+			if (requestId === logRequestId) {
+				logAbort = null;
+				activeFile = null;
+			}
 		}
 	};
 
@@ -231,6 +250,8 @@
 		cancelLocalRequest();
 		localState = 'cancelled';
 		logStatus = null;
+		listLoading = false;
+		activeFile = null;
 		try {
 			const ok = await cancelLogDownload();
 			if (!ok) {
@@ -253,7 +274,18 @@
 			})
 			.catch(() => {
 				apiFeatures = [];
+			})
+			.finally(() => {
+				featuresLoaded = true;
 			});
+	});
+
+	// Список журналов нужен сразу при входе на страницу, а не после клика:
+	// ждём только снапшот возможностей, чтобы не дёргать неподдерживаемый API.
+	$effect(() => {
+		if (autoLoadDone || !featuresLoaded || !logsSupported) return;
+		autoLoadDone = true;
+		void loadLogs();
 	});
 </script>
 
@@ -261,43 +293,94 @@
 	<div class="glassmorphism panel logs-panel">
 		<div class="logs-header">
 			<h3 class="section-title settings-section-title">Журналы ректификации</h3>
-			{#if localState === 'starting' || localState === 'waiting'}
-				<button class="log-button" type="button" onclick={cancelLog}>Отменить</button>
-			{:else}
-				<button class="log-button" type="button" onclick={loadLogs} disabled={!logsSupported}
-					>Обновить</button
-				>
-			{/if}
+			<div class="logs-actions">
+				{#if transferInProgress}
+					<button class="btn btn-sm btn-outline" type="button" onclick={cancelLog}>Отменить</button>
+				{:else}
+					<button
+						class="btn btn-sm btn-primary"
+						type="button"
+						onclick={loadLogs}
+						disabled={!logsSupported || listLoading}
+					>
+						{#if listLoading}
+							<span class="loading loading-spinner loading-xs" aria-hidden="true"></span>
+						{/if}
+						Обновить
+					</button>
+				{/if}
+			</div>
 		</div>
+
 		{#if !logsSupported}
 			<p class="log-hint">Для журналов требуется версия API SSVC {logsMinApi} или новее.</p>
 		{/if}
-		{#if localState === 'waiting' || localState === 'downloading'}
-			{#if (logStatus?.total ?? 0) > 0}
-				<p>Загрузка: {logStatus?.received ?? 0} / {logStatus?.total ?? 0}</p>
-			{:else}
-				<p>Получение списка журналов…</p>
+
+		{#if listLoading}
+			<div class="logs-status" role="status" aria-live="polite">
+				<span class="loading loading-spinner loading-md text-primary" aria-hidden="true"></span>
+				<span>Получение списка журналов…</span>
+			</div>
+		{:else if localState === 'waiting' || localState === 'downloading'}
+			<div class="logs-status" role="status" aria-live="polite">
+				<span class="loading loading-spinner loading-md text-primary" aria-hidden="true"></span>
+				<span>
+					{#if activeFile}
+						Загрузка журнала {activeFile}
+					{:else}
+						Получение списка журналов…
+					{/if}
+					{#if (logStatus?.total ?? 0) > 0}
+						: {logStatus?.received ?? 0} / {logStatus?.total ?? 0}
+					{/if}
+				</span>
+			</div>
+			{#if activeFile && (logStatus?.total ?? 0) > 0}
+				<progress
+					class="progress progress-primary w-full"
+					value={logStatus?.received ?? 0}
+					max={logStatus?.total ?? 0}
+				></progress>
 			{/if}
-		{:else if localState === 'starting'}
-			<p>Запрос данных с контроллера…</p>
 		{:else if localState === 'done'}
-			<p>Журнал сохранён.</p>
+			<p class="log-hint">Журнал сохранён.</p>
 		{:else if localState === 'cancelled'}
-			<p>Загрузка отменена.</p>
+			<p class="log-hint">Загрузка отменена.</p>
 		{:else if localState === 'error' || logError || logStatus?.status === 'error'}
 			<p class="log-error"
 				>{logError || logErrorText(logStatus?.error) || 'Ошибка передачи журнала'}</p
 			>
 		{:else if logStatus?.files}
-			<div class="logs-list">
-				{#each logStatus.files as file}
-					<button class="log-button" type="button" onclick={() => requestLog(file)}
-						>{file}</button
-					>
-				{/each}
+			<div class="logs-list-head">
+				<span class="logs-count">Доступно журналов: {logStatus.files.length}</span>
+				<span class="log-hint">Нажмите на файл, чтобы скачать его</span>
 			</div>
+			{#if logStatus.files.length === 0}
+				<p class="log-hint">На контроллере нет сохранённых журналов.</p>
+			{:else}
+				<ul class="logs-grid">
+					{#each logStatus.files as file (file)}
+						<li>
+							<button
+								class="log-file"
+								class:log-file-active={activeFile === file}
+								type="button"
+								title="Скачать {file}"
+								onclick={() => requestLog(file)}
+							>
+								{#if activeFile === file}
+									<span class="loading loading-spinner loading-xs" aria-hidden="true"></span>
+								{:else}
+									<Download class="h-4 w-4 shrink-0 opacity-70" aria-hidden="true" />
+								{/if}
+								<span class="log-file-name">{file}</span>
+							</button>
+						</li>
+					{/each}
+				</ul>
+			{/if}
 		{:else}
-			<p>Нажмите «Обновить», чтобы получить список журналов.</p>
+			<p class="log-hint">Список журналов пока не получен.</p>
 		{/if}
 	</div>
 </div>
@@ -325,6 +408,12 @@
 			flex-wrap: wrap;
 		}
 
+		.logs-actions {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.5rem;
+		}
+
 		.log-hint {
 			font-size: 0.85rem;
 			opacity: 0.75;
@@ -336,16 +425,86 @@
 			font-weight: 600;
 		}
 
-		.logs-list {
+		.logs-status {
 			display: flex;
+			align-items: center;
+			gap: 0.6rem;
+			margin: 0.5rem 0;
+			font-size: 0.92rem;
+		}
+
+		.logs-list-head {
+			display: flex;
+			align-items: baseline;
+			justify-content: space-between;
+			gap: 0.75rem;
 			flex-wrap: wrap;
-			gap: 0.5rem;
 			margin-top: 0.5rem;
 		}
 
-		.log-button:disabled {
+		.logs-count {
+			font-weight: 600;
+			font-size: 0.92rem;
+		}
+
+		/**
+		 * Файлов может быть много (десятки), поэтому список — сетка с переносом,
+		 * а не одна строка: колонки подстраиваются под ширину экрана, а длинный
+		 * список прокручивается внутри панели и не растягивает страницу.
+		 */
+		.logs-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+			gap: 0.5rem;
+			list-style: none;
+			margin: 0.5rem 0 0;
+			padding: 0;
+			max-height: 22rem;
+			overflow-y: auto;
+		}
+
+		.log-file {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+			width: 100%;
+			padding: 0.45rem 0.6rem;
+			border: 1px solid var(--border-color, var(--color-base-300));
+			border-radius: 0.5rem;
+			background: transparent;
+			color: inherit;
+			text-align: left;
+			cursor: pointer;
+			transition:
+				border-color 0.15s ease,
+				background-color 0.15s ease;
+		}
+
+		/* Токены daisyUI 5: короткие имена (--p, --b3) в теме не определены. */
+		.log-file:hover:not(:disabled) {
+			border-color: color-mix(in srgb, var(--color-primary) 60%, transparent);
+			background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+		}
+
+		.log-file:focus-visible {
+			outline: 2px solid var(--color-primary);
+			outline-offset: 2px;
+		}
+
+		.log-file-active {
+			border-color: var(--color-primary);
+			background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+		}
+
+		.log-file:disabled {
 			opacity: 0.5;
 			cursor: not-allowed;
+		}
+
+		.log-file-name {
+			font-weight: 600;
+			font-size: 0.9rem;
+			font-variant-numeric: tabular-nums;
 		}
 	}
 </style>

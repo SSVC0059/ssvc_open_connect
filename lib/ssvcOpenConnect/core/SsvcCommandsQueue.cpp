@@ -94,6 +94,17 @@ const char *requestNameFor(const SsvcCommandType type) {
   }
 }
 
+/// Глагол команды из поля request ответа ("" — если запрос пустой).
+///
+/// Контроллер повторяет в request всю команду вместе с параметрами
+/// (документация: `"request": "SET heads=[1,2]"`), поэтому «STATUS OpenConnect»
+/// или «STATUS v:  0.2.8.0» — это ответ на STATUS, а не чужая команда. Сверять
+/// и различать нужно только первое слово.
+std::string requestVerb(const std::string& request) {
+  const std::size_t space = request.find_first_of(" \t");
+  return space == std::string::npos ? request : request.substr(0, space);
+}
+
 } // namespace
 
 // Инициализация статической карты команд
@@ -426,9 +437,9 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
                                                      pdFALSE, cmd->timeout);
 
         if ((bits & expectedBit) != 0) {
-          MutexLock lock(mutex);
-
-          // Обработка ответа через зарегистрированные callback'и
+          // Callback'и читают lastMessage/lastResponse сами: getLast* берут
+          // блокировку внутри. Внешний захват того же нерекурсивного mutex
+          // приводил к отказу внутреннего захвата и «пустому» ответу.
           auto it = self->bitCallbacks.find(expectedBit);
           ESP_LOGV(TAG, "Callback found: %d",
                    it != self->bitCallbacks.end());
@@ -524,7 +535,9 @@ void SsvcCommandsQueue::registerCallbackCommands() {
 
   // Бит для всех команд с успешным выполнением
   registerBitHandler(BIT9, [this](SsvcCommand *cmd) {
-    const std::string message = SsvcConnector::getConnector().getLastResponse();
+    std::string message;
+    std::string responseRequest;
+    SsvcConnector::getConnector().getResponseSnapshot(message, responseRequest);
     if (message.empty()) {
       ESP_LOGW(TAG, "BIT9: пустой снимок ответа");
       return false;
@@ -537,12 +550,14 @@ void SsvcCommandsQueue::registerCallbackCommands() {
     }
 
     // Ответ должен относиться к отправленной команде: если контроллер указал
-    // request, он обязан совпасть — иначе это ответ другой команды.
-    const std::string responseRequest =
-        SsvcConnector::getConnector().getLastResponseRequest();
+    // request, его глагол обязан совпасть — иначе это ответ другой команды.
+    // Параметры в request не сравниваются: контроллер повторяет команду целиком
+    // («STATUS OpenConnect», «SET heads=[1,2]»). payload и request берутся одним
+    // снимком, поэтому проверка не гоняется с телеметрией.
     const std::string expectedRequest = requestNameFor(cmd->type);
-    if (!responseRequest.empty() && !expectedRequest.empty() &&
-        responseRequest != expectedRequest) {
+    const std::string responseVerb = requestVerb(responseRequest);
+    if (!responseVerb.empty() && !expectedRequest.empty() &&
+        responseVerb != expectedRequest) {
       ESP_LOGW(TAG, "BIT9: ответ %s не соответствует команде %s",
                responseRequest.c_str(), expectedRequest.c_str());
       return false;
@@ -550,7 +565,8 @@ void SsvcCommandsQueue::registerCallbackCommands() {
 
     //      Если в полученном ответе будет SET, значит был запрос изменения
     //      настроек, а значит их нужно будет перечитать заново
-    if (std::string(response["request"] | "") == "SET") {
+    const std::string responseRequestField = response["request"] | "";
+    if (requestVerb(responseRequestField) == "SET") {
       if (_settingsTimer == nullptr) {
         // Создание одноразового таймера
         _settingsTimer =

@@ -177,6 +177,13 @@ void HandlerRegistrator::registerTelegramBotHandler() const
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
 
+    _server.on("/rest/oc/hardware-faults", HTTP_GET,
+              _securityManager->wrapRequest(
+                  [](AsyncWebServerRequest* request) {
+                      OpenConnectHandler::getHardwareFaults(request);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
+
     _server.on("/rest/oc/xkc25/status", HTTP_GET,
               _securityManager->wrapRequest(
                   [](AsyncWebServerRequest* request) {
@@ -322,7 +329,13 @@ void HandlerRegistrator::registerLogHandlers() const
     // LOG_TOTAL_RAW_MAX байт остаются занятыми, пока клиент не запросит иное.
     constexpr unsigned long kCompletedHoldMs = 5UL * 60UL * 1000UL;
 
-    _server.on("/rest/logs", HTTP_GET,
+    // Точный матчер обязателен. Обычная строка даёт BackwardCompatible-матчер
+    // (`_value == path || path.startsWith(_value + "/")`), а этот обработчик
+    // зарегистрирован раньше "/rest/logs/*". Тогда GET /rest/logs/72 попадал бы
+    // сюда и вместо файла возвращал список (200 + files), из-за чего клиент
+    // показывал «Контроллер вернул не CSV». С exact-матчером специфичный путь
+    // /rest/logs/<id> достаётся обработчику файла.
+    _server.on(AsyncURIMatcher::exact("/rest/logs"), HTTP_GET,
                _securityManager->wrapRequest(
                    [statusName](AsyncWebServerRequest* request) {
                        if (!SsvcApiCapabilities::featureAvailable(

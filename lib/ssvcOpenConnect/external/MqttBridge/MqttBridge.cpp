@@ -6,16 +6,38 @@ static MqttBridge *s_instance = nullptr;
 /**
  * @brief Приватный конструктор для синглтона.
  */
-MqttBridge::MqttBridge(MqttSettingsService *settingsService) : _settingsService(settingsService)
+MqttBridge::MqttBridge(MqttSettingsService *settingsService) : _settingsService(nullptr)
 {
-    if (_settingsService == nullptr)
+    attachSettingsService(settingsService);
+}
+
+/**
+ * @brief Привязывает MqttSettingsService и обработчики клиента.
+ *
+ * Идемпотентна: повторный вызов с тем же сервисом ничего не делает. Именно через
+ * неё «догоняет» инициализация, если синглтон был создан вызовом getInstance()
+ * без сервиса (телеметрия стартует раньше, чем готов MqttSettingsService).
+ */
+void MqttBridge::attachSettingsService(MqttSettingsService *settingsService)
+{
+    if (settingsService == nullptr)
     {
         ESP_LOGE(TAG, "MqttSettingsService must be provided on first instantiation.");
         return;
     }
+    if (_settingsService == settingsService)
+    {
+        return;
+    }
 
-    PsychicMqttClient *client = _settingsService->getMqttClient();
+    PsychicMqttClient *client = settingsService->getMqttClient();
+    if (client == nullptr)
+    {
+        ESP_LOGE(TAG, "MqttSettingsService has no MQTT client; publish stays disabled.");
+        return;
+    }
 
+    _settingsService = settingsService;
 
     client->onMessage(
         [](char *topic, char *payload, int retain, int qos, bool dup) {
@@ -30,7 +52,7 @@ MqttBridge::MqttBridge(MqttSettingsService *settingsService) : _settingsService(
         }
     );
 
-    ESP_LOGD(TAG, "MqttBridge initialized.");
+    ESP_LOGD(TAG, "MqttBridge attached to MqttSettingsService.");
 }
 
 MqttBridge &MqttBridge::getInstance(MqttSettingsService *settingsService)
@@ -38,6 +60,10 @@ MqttBridge &MqttBridge::getInstance(MqttSettingsService *settingsService)
     if (s_instance == nullptr)
     {
         s_instance = new MqttBridge(settingsService);
+    }
+    else if (settingsService != nullptr)
+    {
+        s_instance->attachSettingsService(settingsService);
     }
     return *s_instance;
 }
@@ -65,7 +91,9 @@ uint16_t MqttBridge::publish(const char *topic, const char *payload, uint8_t qos
     // Проверка наличия подключения к сервису, но НЕ к MQTT-брокеру.
     if (!_settingsService)
     {
-        ESP_LOGE(TAG, "Cannot publish to %s: MqttSettingsService is not initialized.", topic);
+        // MQTT ещё не инициализирован (телеметрия публикует кадры до создания
+        // MqttSettingsService) — штатное состояние загрузки, а не ошибка.
+        ESP_LOGV(TAG, "MQTT not configured yet, skip publish to %s", topic);
         return 0;
     }
 

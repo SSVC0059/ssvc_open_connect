@@ -23,7 +23,10 @@ bool BMP581Sensor::initialize() {
         return false;
     }
 
-    TwoWire* wire = _bus->getWire();
+    // Библиотека BMP581 делает многословные транзакции, их нельзя прерывать
+    // чужой передачей по той же шине.
+    I2CBusSubsystem::Guard bus(*_bus);
+    TwoWire* wire = bus.wire();
     const uint8_t i2c_addr = getI2CAddress();
 
     ESP_LOGI(TAG, "[%s] Initializing BMP581 at address 0x%02X...", getName().c_str(), i2c_addr);
@@ -59,9 +62,12 @@ void BMP581Sensor::poll() {
 }
 
 void BMP581Sensor::readValue() {
-    if (!_isInitialized) return;
+    if (!_isInitialized || _bus == nullptr) return;
 
     const uint8_t i2c_addr = getI2CAddress();
+
+    // Считывание регистров BMP581 — одна непрерываемая транзакция.
+    I2CBusSubsystem::Guard bus(*_bus);
 
     if (_bmp.performReading()) {
         // Прямой перевод из Паскалей в мм рт. ст.
