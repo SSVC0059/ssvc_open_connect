@@ -99,6 +99,9 @@ struct OpenConnectHardwareConfig {
 
     static bool isValidStartGuardMode(unsigned int mode) { return mode <= kXkc25GuardBlock; }
 
+    /** Реакция на срабатывание: 0 = PAUSE, 1 = ABORT, 2 = NOTIFY. */
+    static bool isValidTriggerAction(unsigned int action) { return action <= kXkc25ActionNotify; }
+
     uint8_t xkc25StartGuardMode = kXkc25GuardWarn;
 
     static bool isValidI2c7Bit(unsigned int addr) { return addr >= 0x08 && addr <= 0x77; }

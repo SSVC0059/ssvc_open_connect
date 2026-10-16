@@ -37,7 +37,10 @@ bool xkc25SensorsEqual(const std::vector<Xkc25SensorConfig>& a, const std::vecto
         return false;
     }
     for (size_t i = 0; i < a.size(); ++i) {
-        if (a[i].calibrated != b[i].calibrated ||
+        // sharedAcrossTanks меняет поведение датчика (переносной), но калибровку не
+        // затрагивает — поэтому входит в обнаружение изменений, но не в structurallyEqual.
+        if (a[i].sharedAcrossTanks != b[i].sharedAcrossTanks ||
+            a[i].calibrated != b[i].calibrated ||
             a[i].levelWithoutLiquid != b[i].levelWithoutLiquid ||
             a[i].levelWithLiquid != b[i].levelWithLiquid ||
             a[i].calibratedAt != b[i].calibratedAt) {
@@ -45,6 +48,23 @@ bool xkc25SensorsEqual(const std::vector<Xkc25SensorConfig>& a, const std::vecto
         }
     }
     return true;
+}
+
+/**
+ * Смена признака «переносной датчик» требует пересоздания датчика при включении
+ * подсистемы, поэтому это reboot-поле — но калибровку оно не сбрасывает.
+ */
+bool xkc25SharedFlagsDiffer(const std::vector<Xkc25SensorConfig>& a,
+                            const std::vector<Xkc25SensorConfig>& b) {
+    if (a.size() != b.size()) {
+        return true;
+    }
+    for (size_t i = 0; i < a.size(); ++i) {
+        if (a[i].sharedAcrossTanks != b[i].sharedAcrossTanks) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool anyXkc25Enabled(const std::vector<Xkc25SensorConfig>& sensors) {
@@ -62,7 +82,8 @@ bool rebootFieldsDiffer(const OpenConnectHardwareConfig& a, const OpenConnectHar
            a.rtcEnabled != b.rtcEnabled || a.ds3231I2cAddress != b.ds3231I2cAddress ||
            a.oledEnabled != b.oledEnabled ||
            a.lcd1602Enabled != b.lcd1602Enabled || a.lcd1602I2cAddress != b.lcd1602I2cAddress ||
-           xkc25SensorsDiffer(a.xkc25Sensors, b.xkc25Sensors);
+           xkc25SensorsDiffer(a.xkc25Sensors, b.xkc25Sensors) ||
+           xkc25SharedFlagsDiffer(a.xkc25Sensors, b.xkc25Sensors);
 }
 
 void syncSubsystemNvsAtmSensor(bool pressureOn) {
@@ -151,10 +172,13 @@ void OpenConnectHardwareConfig::read(OpenConnectHardwareConfig& s, JsonObject& r
             o["levelWithoutLiquid"] = sensor.levelWithoutLiquid;
             o["levelWithLiquid"] = sensor.levelWithLiquid;
             o["calibratedAt"] = sensor.calibratedAt;
+            o["sharedAcrossTanks"] = sensor.sharedAcrossTanks;
         }
     }
     root["xkc25AutoPause"] = s.xkc25AutoPause;
     root["xkc25AbortRectification"] = s.xkc25AbortRectification;
+    root["xkc25TriggerAction"] = s.xkc25TriggerAction;
+    root["xkc25SharedTankIndex"] = s.xkc25SharedTankIndex;
     root["xkc25StartGuardMode"] = s.xkc25StartGuardMode;
 }
 
@@ -353,6 +377,7 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
                 return fail();
             }
             sensor.zoneIndex = static_cast<uint8_t>(rawZone);
+            sensor.sharedAcrossTanks = o["sharedAcrossTanks"] | false;
 
             // Calibration is runtime data produced by the calibration wizard: PUT can
             // never write it (see 6.1.3). Taking it from the live state keeps the
@@ -391,6 +416,36 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
         const bool v = root["xkc25AbortRectification"].as<bool>();
         if (v != s.xkc25AbortRectification) {
             s.xkc25AbortRectification = v;
+            changed = true;
+        }
+    }
+
+    if (!root["xkc25TriggerAction"].isNull()) {
+        if (!root["xkc25TriggerAction"].is<unsigned int>()) {
+            return fail();
+        }
+        const unsigned int rawAction = root["xkc25TriggerAction"].as<unsigned int>();
+        if (!isValidTriggerAction(rawAction)) {
+            return fail();
+        }
+        const uint8_t action = static_cast<uint8_t>(rawAction);
+        if (action != s.xkc25TriggerAction) {
+            s.xkc25TriggerAction = action;
+            changed = true;
+        }
+    }
+
+    if (!root["xkc25SharedTankIndex"].isNull()) {
+        if (!root["xkc25SharedTankIndex"].is<unsigned int>()) {
+            return fail();
+        }
+        const unsigned int rawTank = root["xkc25SharedTankIndex"].as<unsigned int>();
+        if (!isValidZoneIndex(rawTank)) {
+            return fail();
+        }
+        const uint8_t tank = static_cast<uint8_t>(rawTank);
+        if (tank != s.xkc25SharedTankIndex) {
+            s.xkc25SharedTankIndex = tank;
             changed = true;
         }
     }
