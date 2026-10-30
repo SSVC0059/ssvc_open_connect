@@ -68,6 +68,31 @@
 #define SSVC_PINOUT_ALARM_GPIO_CRITICAL GPIO_NUM_13
 #endif
 
+/**
+ * Default GPIOs for the optional XKC-25-NPN level sensors (open-collector NPN output).
+ * Up to three sensors, each on its own pin; slot N belongs to the N-th sensor.
+ * Override per board with -DSSVC_XKC25_GPIO_1/2/3=<pin> in platformio.ini.
+ */
+#ifndef SSVC_XKC25_GPIO_1
+#define SSVC_XKC25_GPIO_1 GPIO_NUM_4
+#endif
+#ifndef SSVC_XKC25_GPIO_2
+#define SSVC_XKC25_GPIO_2 GPIO_NUM_5
+#endif
+#ifndef SSVC_XKC25_GPIO_3
+#define SSVC_XKC25_GPIO_3 GPIO_NUM_6
+#endif
+
+/**
+ * Default input expander for XKC-25 sensors wired to dry contacts behind a PCF8574
+ * (instead of a native GPIO). On the KinCony KC868-A6 these dry contacts are the input
+ * expander at 0x22 (relays are a separate chip at 0x24). Override with
+ * -DSSVC_XKC25_PCF8574_INPUT_ADDR=<addr> in platformio.ini.
+ */
+#ifndef SSVC_XKC25_PCF8574_INPUT_ADDR
+#define SSVC_XKC25_PCF8574_INPUT_ADDR 0x22
+#endif
+
 /** First (or only) PCF8574 relay/output port when PINOUT_USE_GPIO=0. Extra chips: another port + role. */
 #ifndef SSVC_RELAY_PCF8574_I2C_ADDR
 #define SSVC_RELAY_PCF8574_I2C_ADDR 0x24
@@ -93,11 +118,30 @@ extern EventGroupHandle_t eventGroup;
 
 class SsvcConnector {
 public:
+  /// Состояние UART-тракта: явная готовность вместо «singleton уже создан».
+  enum class LinkState { NotReady, Ready, Failed };
+
   static SsvcConnector &getConnector();
+
+  /// Однократная явная инициализация: драйвер → приёмная задача → Ready.
+  /// Вызывается из SsvcOpenConnect::begin() после готовности зависимостей, а не
+  /// из конструктора: до готовности тракта singleton не отправляет команд.
+  bool begin();
+
+  bool isReady() const { return _linkState == LinkState::Ready; }
+  bool hasFailed() const { return _linkState == LinkState::Failed; }
+  LinkState linkState() const { return _linkState; }
 
   std::string getLastMessage();
 
   std::string getLastResponse();
+
+  /// Поле request ответа, сохранённого в lastResponse ("" — если поля не было).
+  std::string getLastResponseRequest();
+
+  /// Согласованный снимок ответа: payload и его request берутся под одним lock,
+  /// чтобы сопоставление ответа с командой не гонялось с новой телеметрией.
+  void getResponseSnapshot(std::string& payload, std::string& request);
 
   bool uartCommunicationError;
 
@@ -106,17 +150,24 @@ public:
 private:
   explicit SsvcConnector();
 
-  void InitUartDriver();
-  void initSsvcController();
+  bool InitUartDriver();
+  bool initSsvcController();
+
+  /// Сохранить кадр ответа вместе с его request одним снимком под mutex.
+  void storeResponse(const std::string& payload, const std::string& request);
 
   [[noreturn]] static void _telemetry(void *pvParameters);
 
   static SsvcConnector *_ssvcConnector;
   QueueHandle_t command_queue{};
 
+  /// Текущее состояние тракта; выставляется один раз в begin().
+  LinkState _linkState{LinkState::NotReady};
+
   std::string lastMessage;
   std::string lastSettings;
   std::string lastResponse;
+  std::string lastResponseRequest;
 
   struct SpiRamAllocator final : ArduinoJson::Allocator {
     virtual ~SpiRamAllocator() = default;

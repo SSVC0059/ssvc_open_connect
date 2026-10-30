@@ -14,3 +14,4 @@
 *   [OpenConnect](openconnect.md)
 *   [Профили (Profiles)](profiles.md)
 *   [Файлы (Files)](files.md)
+*   [Журналы (Logs)](logs.md)

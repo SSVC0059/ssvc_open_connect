@@ -2,14 +2,23 @@
 
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fetchHardwareConfig, putHardwareConfig } from '$lib/api/ssvcApi';
-	import type { OcHardwareConfigResponse } from '$lib/types/ssvc';
-	import { page } from '$app/state';
-	import { user } from '$lib/stores/user';
+	import {
+		fetchHardwareConfig,
+		fetchHardwareFaults,
+		fetchXkc25Status,
+		putHardwareConfig
+	} from '$lib/api/ssvcApi';
+	import type {
+		OcHardwareConfigResponse,
+		OcHardwareFaultsResponse,
+		Xkc25SensorConfig,
+		Xkc25StartGuardMode,
+		Xkc25StatusResponse,
+		Xkc25TriggerAction
+	} from '$lib/types/ssvc';
 	import { modals } from 'svelte-modals';
-	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-	import Power from '~icons/tabler/reload';
-	import Cancel from '~icons/tabler/x';
+	import RebootProgressDialog from '$lib/components/RebootProgressDialog.svelte';
+	import Xkc25Section from '$lib/components/OCSettings/Xkc25Section.svelte';
 	import CircleCheck from '~icons/tabler/circle-check';
 	import CircleX from '~icons/tabler/circle-x';
 
@@ -22,10 +31,29 @@
 	let isLoading = $state(true);
 	let isSaving = $state(false);
 
-	type HardwareSectionId = 'bmp581' | 'ds3231' | 'lcd1602' | 'relay';
+	/** Состояние секции XKC-25 держим отдельно: поля конфига необязательные, а редактору нужны значения. */
+	let xkc25Sensors = $state<Xkc25SensorConfig[]>([]);
+	/** Реакция на срабатывание — взаимоисключающий режим: 0 уведомление / 1 пауза / 2 остановка. */
+	let xkc25TriggerAction = $state<Xkc25TriggerAction>(1);
+	/** Ёмкость, на которой сейчас стоит переносной датчик (один прибор на все ёмкости). */
+	let xkc25SharedTankIndex = $state(0);
+	let xkc25StartGuardMode = $state<Xkc25StartGuardMode>(1);
+	let xkc25Status = $state<Xkc25StatusResponse | null>(null);
+	/** Последний опрос статуса не удался: живые данные показываем как устаревшие. */
+	let xkc25StatusStale = $state(false);
+	let xkc25CalibrationBusy = $state(false);
+
+	/**
+	 * Активные аппаратные сбои. Проверки внутри конфига отвечают лишь на вопрос
+	 * «устройство ответило в момент запроса», а здесь — то, что монитор аварий
+	 * уже зафиксировал (включая повторные попытки дисплея, RTC и реле).
+	 */
+	let hardwareFaults = $state<OcHardwareFaultsResponse | null>(null);
+
+	type HardwareSectionId = 'bmp581' | 'ds3231' | 'lcd1602' | 'relay' | 'xkc25';
 	type MobilePanel = 'list' | 'editor';
 
-	const sectionOrder: HardwareSectionId[] = ['bmp581', 'ds3231', 'lcd1602', 'relay'];
+	const sectionOrder: HardwareSectionId[] = ['bmp581', 'ds3231', 'lcd1602', 'relay', 'xkc25'];
 	let selectedSection = $state<HardwareSectionId>('bmp581');
 	let isNarrowLayout = $state(false);
 	let mobilePanel = $state<MobilePanel>('list');
@@ -34,6 +62,8 @@
 	const I2C_MIN = 8;
 	const I2C_MAX = 119;
 	const PCF8574_DEFAULT_ADDRESSES = [0x24, 0x25, 0x26, 0x27, 0x20, 0x21, 0x22, 0x23];
+	/** Адрес входного расширителя PCF8574 по умолчанию (сухие контакты KC868-A6 — 0x22). */
+	const XKC25_PCF_INPUT_DEFAULT_ADDR = 0x22;
 	let bmp581HexInput = $state('');
 	let ds3231HexInput = $state('');
 	let lcd1602HexInput = $state('');
@@ -90,6 +120,48 @@
 		relayHexInputs = cfg.relayPcf8574Addresses.map((a) => formatHexAddress(a));
 	});
 
+	/**
+	 * Переносит поля XKC-25 из ответа контроллера в состояние редактора.
+	 * Вызывается только при загрузке и после сохранения, чтобы не затирать
+	 * несохранённые правки секции при изменении других полей конфига.
+	 */
+	function syncXkc25State(config: OcHardwareConfigResponse) {
+		xkc25Sensors = (config.xkc25Sensors ?? []).map((sensor) => ({ ...sensor }));
+		const action = config.xkc25TriggerAction;
+		xkc25TriggerAction = action === 0 || action === 1 || action === 2 ? action : 1;
+		const tank = Number(config.xkc25SharedTankIndex ?? 0);
+		xkc25SharedTankIndex = tank === 0 || tank === 1 || tank === 2 ? tank : 0;
+		const mode = config.xkc25StartGuardMode;
+		xkc25StartGuardMode = mode === 0 || mode === 1 || mode === 2 ? mode : 1;
+	}
+
+	async function refreshXkc25Status() {
+		try {
+			const next = await fetchXkc25Status();
+			if (next) {
+				xkc25Status = next;
+				xkc25StatusStale = false;
+				return;
+			}
+			// Ответа с данными нет: держим прежние значения, но помечаем их устаревшими.
+			xkc25StatusStale = true;
+		} catch {
+			xkc25StatusStale = true;
+		}
+	}
+
+	async function refreshHardwareFaults() {
+		try {
+			const next = await fetchHardwareFaults();
+			// Сбой опроса не сбрасывает список: показываем последние известные данные.
+			if (next) {
+				hardwareFaults = next;
+			}
+		} catch {
+			// Список сбоев — вспомогательный: ошибку сети здесь молча пропускаем.
+		}
+	}
+
 	async function load() {
 		isLoading = true;
 		loadError = '';
@@ -111,7 +183,10 @@
 				if (cfg.lcd1602I2cAddress == null || Number.isNaN(Number(cfg.lcd1602I2cAddress))) {
 					cfg.lcd1602I2cAddress = 0x27;
 				}
+				syncXkc25State(cfg);
 			}
+			await refreshXkc25Status();
+			await refreshHardwareFaults();
 		} catch (err) {
 			loadError = err instanceof Error ? err.message : 'Ошибка загрузки';
 		} finally {
@@ -121,6 +196,35 @@
 
 	$effect(() => {
 		load();
+	});
+
+	/** Живой уровень пина нужен только в открытой секции XKC-25: опрос ~1 Гц. */
+	$effect(() => {
+		// Во время шага калибровки опрос не нужен: он даёт лишнюю нагрузку и гонку за состояние.
+		if (selectedSection !== 'xkc25' || isLoading || xkc25CalibrationBusy) return;
+		const timer = setInterval(() => {
+			void refreshXkc25Status();
+		}, 1000);
+		return () => clearInterval(timer);
+	});
+
+	/** Секция размонтируется при переходе к другому модулю: занятость калибровки снимаем. */
+	$effect(() => {
+		if (selectedSection !== 'xkc25' && xkc25CalibrationBusy) {
+			xkc25CalibrationBusy = false;
+		}
+	});
+
+	/**
+	 * Сбои появляются и снимаются асинхронно (у дисплея — повторные попытки
+	 * с нарастающей паузой), поэтому список обновляем и по таймеру.
+	 */
+	$effect(() => {
+		if (isLoading) return;
+		const timer = setInterval(() => {
+			void refreshHardwareFaults();
+		}, 5000);
+		return () => clearInterval(timer);
 	});
 
 	onMount(() => {
@@ -152,6 +256,48 @@
 			saveError = 'Адреса PCF8574 для реле не должны повторяться: каждый чип должен иметь уникальный I2C адрес.';
 			return;
 		}
+		const xkc25InputKeys: string[] = [];
+		for (const sensor of xkc25Sensors) {
+			const source = sensor.pinSource === 1 ? 1 : 0;
+			if (source === 1) {
+				const address = Number(sensor.pcfAddress ?? XKC25_PCF_INPUT_DEFAULT_ADDR);
+				const bit = Number(sensor.pcfBit ?? 0);
+				if (!Number.isInteger(address) || address < 0x08 || address > 0x77) {
+					saveError = 'Проверьте адрес входного расширителя PCF8574 у датчиков уровня: 0x08..0x77.';
+					return;
+				}
+				if (!Number.isInteger(bit) || bit < 0 || bit > 7) {
+					saveError = 'Проверьте бит входного расширителя PCF8574 у датчиков уровня: 0..7.';
+					return;
+				}
+				if (parsedRelayAddrs.includes(address)) {
+					saveError = `Адрес ${address} занят выходами реле: входной расширитель датчика уровня не может с ним совпадать.`;
+					return;
+				}
+				xkc25InputKeys.push(`p:${address}:${bit}`);
+			} else {
+				const pin = Number(sensor.gpio);
+				if (!Number.isInteger(pin) || pin < 0 || pin > 39) {
+					saveError = 'Проверьте пины датчиков уровня: допустимы GPIO 0..39.';
+					return;
+				}
+				xkc25InputKeys.push(`g:${pin}`);
+			}
+		}
+		if (new Set(xkc25InputKeys).size !== xkc25InputKeys.length) {
+			saveError =
+				'У датчиков уровня не должны повторяться входы: у каждого датчика свой GPIO или бит расширителя.';
+			return;
+		}
+		if (
+			xkc25Sensors.some(
+				(sensor) =>
+					!Number.isInteger(sensor.zoneIndex) || sensor.zoneIndex < 0 || sensor.zoneIndex > 2
+			)
+		) {
+			saveError = 'Проверьте привязку датчиков уровня к приёмным ёмкостям (1..3).';
+			return;
+		}
 		cfg.bmp581I2cAddress = bmpAddr;
 		cfg.ds3231I2cAddress = rtcAddr;
 		cfg.lcd1602I2cAddress = lcdAddr;
@@ -166,11 +312,27 @@
 				rtcEnabled: cfg.rtcEnabled,
 				ds3231I2cAddress: Number(cfg.ds3231I2cAddress),
 				lcd1602Enabled: cfg.lcd1602Enabled,
-				lcd1602I2cAddress: Number(cfg.lcd1602I2cAddress)
+				lcd1602I2cAddress: Number(cfg.lcd1602I2cAddress),
+				// Калибровочные поля не отправляем: прошивка их по PUT игнорирует (см. 6.1.3).
+				xkc25Sensors: xkc25Sensors.map((sensor) => ({
+					enabled: sensor.enabled,
+					pinSource: sensor.pinSource === 1 ? 1 : 0,
+					gpio: Number(sensor.gpio),
+					pcfAddress: Number(sensor.pcfAddress ?? XKC25_PCF_INPUT_DEFAULT_ADDR),
+					pcfBit: Number(sensor.pcfBit ?? 0),
+					activeLow: sensor.activeLow,
+					zoneIndex: Number(sensor.zoneIndex),
+					sharedAcrossTanks: sensor.sharedAcrossTanks === true
+				})),
+				xkc25TriggerAction,
+				xkc25SharedTankIndex,
+				xkc25StartGuardMode
 			});
 			if (next) {
 				cfg = next;
+				syncXkc25State(next);
 			}
+			await refreshXkc25Status();
 			await onSaved?.();
 		} catch (err) {
 			saveError = err instanceof Error ? err.message : 'Ошибка сохранения';
@@ -179,31 +341,55 @@
 		}
 	}
 
+	/**
+	 * Перезагрузка контроллера: диалог сам отправляет команду и показывает шкалу,
+	 * пока устройство не вернётся на связь. Данные перечитываем только после
+	 * возврата — иначе запросы уходят в перезагружающийся контроллер.
+	 */
 	function openRestartModal() {
-		modals.open(ConfirmDialog, {
+		modals.open(RebootProgressDialog, {
 			title: 'Перезагрузка устройства',
-			message:
-				'После изменения оборудования нужна перезагрузка контроллера. Перезагрузить сейчас?',
-			labels: {
-				cancel: { label: 'Позже', icon: Cancel },
-				confirm: { label: 'Перезагрузить', icon: Power }
-			},
-			onConfirm: () => {
-				modals.close();
-				void fetch('/rest/restart', {
-					method: 'POST',
-					headers: {
-						Authorization: page.data.features.security
-							? 'Bearer ' + $user.bearer_token
-							: 'Basic'
-					}
-				});
+			message: 'После изменения оборудования нужна перезагрузка контроллера. Перезагрузить сейчас?',
+			onFinished: async () => {
+				await load();
+				await onSaved?.();
 			}
 		});
 	}
 
 	const relayLocked = $derived(cfg?.capabilities?.relayOptionsAvailable !== true);
 	const showRebootBanner = $derived(cfg?.needsReboot === true || cfg?.pendingReboot === true);
+
+	/**
+	 * Структурный ключ подключения: пока он расходится с прошивкой, слоты датчиков
+	 * в редакторе и в контроллере не совпадают, и калибровать нельзя.
+	 */
+	function xkc25WiringKey(list: Xkc25SensorConfig[]): string {
+		return JSON.stringify(
+			list.map((sensor) => [
+				sensor.enabled,
+				// Источник и бит входят в ключ: иначе переход GPIO → PCF и смена бита
+				// не считались бы правкой подключения (dirty), и калибровка не блокировалась.
+				sensor.pinSource === 1 ? 1 : 0,
+				Number(sensor.gpio),
+				Number(sensor.pcfAddress ?? XKC25_PCF_INPUT_DEFAULT_ADDR),
+				Number(sensor.pcfBit ?? 0),
+				Number(sensor.zoneIndex),
+				sensor.activeLow
+			])
+		);
+	}
+
+	const xkc25Dirty = $derived(
+		xkc25WiringKey(xkc25Sensors) !== xkc25WiringKey(cfg?.xkc25Sensors ?? [])
+	);
+
+	const xkc25EnabledSensors = $derived(xkc25Sensors.filter((sensor) => sensor.enabled));
+	/** У GPIO нет подтверждения наличия датчика: подтверждением считаем пройденную калибровку. */
+	const xkc25AllCalibrated = $derived(
+		xkc25EnabledSensors.length > 0 &&
+			xkc25EnabledSensors.every((sensor) => sensor.calibrated === true)
+	);
 
 	const healthyModules = $derived.by(() => {
 		if (!cfg) return 0;
@@ -212,8 +398,47 @@
 		if (cfg.rtcEnabled && cfg.ds3231ProbeOk === true) healthy += 1;
 		if (cfg.lcd1602Enabled && cfg.lcd1602ProbeOk === true) healthy += 1;
 		if (cfg.userRelayPcfEnabled && cfg.relayHardwareOk === true) healthy += 1;
+		if (xkc25AllCalibrated) healthy += 1;
 		return healthy;
 	});
+
+	const activeHardwareFaults = $derived(hardwareFaults?.faults ?? []);
+	const i2cBusDown = $derived(hardwareFaults?.i2cBusActive === false);
+	/** Кто ответил на шине в момент последнего опроса — для локализации сбоя. */
+	const i2cScanLabel = $derived(
+		(hardwareFaults?.i2cScan ?? []).map((address) => formatHexAddress(address)).join(', ')
+	);
+
+	const FAULT_ROLE_LABELS: Record<string, string> = {
+		i2c_bus: 'Шина I²C',
+		lcd1602: 'Дисплей LCD1602',
+		ds3231: 'Часы DS3231',
+		bmp581: 'Датчик давления BMP581'
+	};
+
+	/** Роли расширителей реле нумерованы: `pcf8574_port0` … `pcf8574_port7`. */
+	function faultRoleLabel(role: string): string {
+		const known = FAULT_ROLE_LABELS[role];
+		if (known) return known;
+		const portMatch = /^pcf8574_port(\d+)$/.exec(role);
+		if (portMatch) {
+			return `Расширитель PCF8574 №${Number(portMatch[1]) + 1}`;
+		}
+		return role;
+	}
+
+	/**
+	 * Подпись под полем адреса: показывает, во что разобрано введённое значение.
+	 * Нужна из-за неоднозначности записи без префикса: «27» — это десятичное 27
+	 * (0x1B), а не 0x27 (39).
+	 */
+	function addressEcho(raw: string): string {
+		const parsed = parseI2cAddress(raw);
+		if (parsed == null) {
+			return 'Не разобран: укажите 0xNN или число 8..119';
+		}
+		return `Распознан адрес ${formatHexAddress(parsed)} (десятичное ${parsed})`;
+	}
 
 	function addRelayChip() {
 		if (!cfg || cfg.relayPcf8574Addresses.length >= MAX_RELAY_CHIPS) return;
@@ -286,6 +511,7 @@
 		if (id === 'bmp581') return 'Датчик давления (BMP581)';
 		if (id === 'ds3231') return 'Часы реального времени (DS3231)';
 		if (id === 'lcd1602') return 'LCD1602 (I2C дисплей)';
+		if (id === 'xkc25') return 'Датчики уровня (XKC-25)';
 		return 'Реле / PCF8574';
 	}
 
@@ -294,6 +520,10 @@
 		if (id === 'bmp581') return cfg.pressureSensorEnabled ? 'Включен' : 'Выключен';
 		if (id === 'ds3231') return cfg.rtcEnabled ? 'Включен' : 'Выключен';
 		if (id === 'lcd1602') return cfg.lcd1602Enabled ? 'Включен' : 'Выключен';
+		if (id === 'xkc25') {
+			if (xkc25EnabledSensors.length === 0) return 'Выключен';
+			return xkc25AllCalibrated ? 'Включен' : 'Не откалиброван';
+		}
 		if (relayLocked) return 'Зарезервирован';
 		return cfg.userRelayPcfEnabled ? 'Включен' : 'Выключен';
 	}
@@ -318,6 +548,11 @@
 			if (cfg.lcd1602ProbeOk === false) return 'badge-error';
 			return 'badge-warning';
 		}
+		if (id === 'xkc25') {
+			if (xkc25EnabledSensors.length === 0) return 'badge-ghost';
+			// У GPIO нет пробинга: подтверждением считаем пройденную калибровку.
+			return xkc25AllCalibrated ? 'badge-success' : 'badge-warning';
+		}
 		if (relayLocked) return 'badge-ghost';
 		if (!cfg.userRelayPcfEnabled) return 'badge-ghost';
 		if (cfg.relayHardwareOk === true) return 'badge-success';
@@ -336,6 +571,10 @@
 		if (id === 'lcd1602') {
 			const address = cfg.lcd1602I2cAddress ?? 0x27;
 			return `I2C ${formatHexAddress(address)} (${address})`;
+		}
+		if (id === 'xkc25') {
+			if (xkc25Sensors.length === 0) return 'Датчики не добавлены';
+			return `${xkc25Sensors.length} из 3 · включено ${xkc25EnabledSensors.length}`;
 		}
 		const chips = cfg.relayPcf8574Addresses.length;
 		return `${chips} чип(ов)`;
@@ -390,7 +629,7 @@
 				<div>
 					<h3 class="hardware-title">Конфигурация оборудования</h3>
 					<p class="hardware-subtitle">
-						Активные и подтвержденные модули: {healthyModules} из 4
+						Активные и подтвержденные модули: {healthyModules} из 5
 					</p>
 				</div>
 				<button
@@ -409,6 +648,39 @@
 			{#if saveError}
 				<div class="alert alert-error py-2">
 					<span>{saveError}</span>
+				</div>
+			{/if}
+
+			{#if i2cBusDown || activeHardwareFaults.length > 0}
+				<div class="alert alert-error py-2 hardware-faults" role="alert">
+					<div class="hardware-faults-body">
+						{#if i2cBusDown}
+							<span class="hardware-faults-title">
+								Шина I²C недоступна: устройства на ней не опрашиваются.
+							</span>
+						{/if}
+						{#if activeHardwareFaults.length > 0}
+							<span class="hardware-faults-title">
+								Аппаратные сбои: {activeHardwareFaults.length}
+							</span>
+							<ul class="hardware-faults-list">
+								{#each activeHardwareFaults as fault (fault.role + ':' + fault.address)}
+									<li>
+										<span class="hardware-faults-role">{faultRoleLabel(fault.role)}</span>
+										{#if fault.address > 0}
+											<span class="hardware-faults-addr">{formatHexAddress(fault.address)}</span>
+										{/if}
+										<span class="hardware-faults-code">{fault.codeLabel}</span>
+									</li>
+								{/each}
+							</ul>
+						{/if}
+						{#if hardwareFaults && !i2cBusDown}
+							<span class="hardware-faults-scan">
+								Отвечают на шине: {i2cScanLabel || 'никто'}
+							</span>
+						{/if}
+					</div>
 				</div>
 			{/if}
 
@@ -509,6 +781,7 @@
 										disabled={disabled}
 									/>
 									<span class="label-text-alt">Например: 0x46, 0x47 (допустимо также 70, 71)</span>
+									<span class="label-text-alt address-echo">{addressEcho(bmp581HexInput)}</span>
 								</label>
 							</div>
 
@@ -550,6 +823,7 @@
 										disabled={disabled}
 									/>
 									<span class="label-text-alt">По умолчанию: 0x68 (104)</span>
+									<span class="label-text-alt address-echo">{addressEcho(ds3231HexInput)}</span>
 								</label>
 							</div>
 
@@ -606,6 +880,7 @@
 										disabled={disabled}
 									/>
 									<span class="label-text-alt">По умолчанию: 0x27 (39)</span>
+									<span class="label-text-alt address-echo">{addressEcho(lcd1602HexInput)}</span>
 								</label>
 							</div>
 
@@ -619,6 +894,31 @@
 									</div>
 								{/if}
 							</div>
+						{:else if selectedSection === 'xkc25'}
+							<Xkc25Section
+								bind:sensors={xkc25Sensors}
+								bind:triggerAction={xkc25TriggerAction}
+								bind:sharedTankIndex={xkc25SharedTankIndex}
+								bind:startGuardMode={xkc25StartGuardMode}
+								bind:busy={xkc25CalibrationBusy}
+								status={xkc25Status}
+								relayAddresses={cfg?.relayPcf8574Addresses ?? []}
+								stale={xkc25StatusStale}
+								dirty={xkc25Dirty}
+								onStatusRefresh={refreshXkc25Status}
+								{disabled}
+							/>
+
+							{#if showRebootBanner}
+								<div class="editor-step">
+									<div class="alert alert-warning py-2" role="status">
+										<span>Изменения применятся после перезагрузки.</span>
+										<button type="button" class="btn btn-xs btn-neutral" onclick={openRestartModal}>
+											Перезагрузить
+										</button>
+									</div>
+								</div>
+							{/if}
 						{:else}
 							<div class="editor-step">
 								<div class="step-title">1. Состояние</div>
@@ -681,6 +981,9 @@
 														onblur={() => commitRelayAddress(chipIdx)}
 														disabled={disabled || relayLocked}
 													/>
+													<span class="label-text-alt address-echo">
+														{addressEcho(relayHexInputs[chipIdx] ?? '')}
+													</span>
 												</label>
 											</div>
 											<button
@@ -731,6 +1034,9 @@
 </div>
 
 <style lang="scss">
+	/* Цвета — из токенов daisyUI 5 (`--color-*`): короткие имена daisyUI 4
+	   (`--b1`, `--b3`, `--bc`, `--p`, `--su`, `--er`) в теме не определены, поэтому
+	   `hsl(var(--b3))` и подобные значения браузер молча отбрасывал. */
 	.hardware-config {
 		width: 100%;
 	}
@@ -755,7 +1061,7 @@
 
 	.hardware-subtitle {
 		font-size: 0.9rem;
-		color: hsl(var(--bc) / 0.85);
+		color: color-mix(in srgb, var(--color-base-content) 85%, transparent);
 	}
 
 	.hardware-layout {
@@ -776,9 +1082,9 @@
 
 	.sections-list,
 	.section-editor {
-		border: 1px solid hsl(var(--b3));
+		border: 1px solid var(--color-base-300);
 		border-radius: 0.75rem;
-		background: hsl(var(--b1));
+		background: var(--color-base-100);
 		padding: 0.75rem;
 	}
 
@@ -796,21 +1102,21 @@
 		width: 100%;
 		min-height: 74px;
 		padding: 0.75rem;
-		border: 1px solid hsl(var(--b3));
+		border: 1px solid var(--color-base-300);
 		border-radius: 0.6rem;
 		text-align: left;
-		background: hsl(var(--b1));
+		background: var(--color-base-100);
 		transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 	}
 
 	.section-item:hover {
-		border-color: hsl(var(--p) / 0.5);
+		border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
 	}
 
 	.section-item.active {
-		border-color: hsl(var(--p));
-		background: hsl(var(--p) / 0.1);
-		box-shadow: inset 3px 0 0 hsl(var(--p));
+		border-color: var(--color-primary);
+		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+		box-shadow: inset 3px 0 0 var(--color-primary);
 	}
 
 	.section-row-divider {
@@ -834,7 +1140,7 @@
 
 	.section-item-summary {
 		font-size: 0.86rem;
-		color: hsl(var(--bc) / 0.85);
+		color: color-mix(in srgb, var(--color-base-content) 85%, transparent);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -851,7 +1157,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.6rem;
-		border-top: 1px solid hsl(var(--b3));
+		border-top: 1px solid var(--color-base-300);
 		padding-top: 0.75rem;
 	}
 
@@ -867,7 +1173,7 @@
 
 	.step-hint {
 		font-size: 0.86rem;
-		color: hsl(var(--bc) / 0.85);
+		color: color-mix(in srgb, var(--color-base-content) 85%, transparent);
 	}
 
 	.label-cb {
@@ -885,6 +1191,9 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.6rem;
+		list-style: none;
+		margin: 0;
+		padding: 0;
 	}
 
 	.relay-chip-row {
@@ -893,7 +1202,7 @@
 		justify-content: space-between;
 		gap: 0.75rem;
 		padding: 0.65rem;
-		border: 1px solid hsl(var(--b3));
+		border: 1px solid var(--color-base-300);
 		border-radius: 0.6rem;
 	}
 
@@ -925,16 +1234,64 @@
 	}
 
 	.chip-probe-ok {
-		color: hsl(var(--su));
+		color: var(--color-success);
 	}
 
 	.chip-probe-fail {
-		color: hsl(var(--er));
+		color: var(--color-error);
 	}
 
 	.chip-probe-unknown {
-		color: hsl(var(--bc) / 0.65);
+		color: color-mix(in srgb, var(--color-base-content) 65%, transparent);
 		font-size: 0.72rem;
+	}
+
+	.address-echo {
+		color: color-mix(in srgb, var(--color-base-content) 70%, transparent);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.hardware-faults-body {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.hardware-faults-title {
+		font-weight: 600;
+	}
+
+	.hardware-faults-list {
+		margin: 0;
+		padding-left: 1.1rem;
+		list-style: disc;
+		font-size: 0.85rem;
+	}
+
+	.hardware-faults-list li {
+		display: flex;
+		align-items: baseline;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+	}
+
+	.hardware-faults-role {
+		font-weight: 600;
+	}
+
+	.hardware-faults-addr {
+		font-variant-numeric: tabular-nums;
+		opacity: 0.85;
+	}
+
+	.hardware-faults-code {
+		opacity: 0.9;
+	}
+
+	.hardware-faults-scan {
+		font-size: 0.8rem;
+		font-variant-numeric: tabular-nums;
+		opacity: 0.85;
 	}
 
 	.mobile-editor-nav {
@@ -944,9 +1301,9 @@
 		gap: 0.5rem;
 		padding: 0.65rem;
 		margin-bottom: 0.35rem;
-		border: 1px solid hsl(var(--b3));
+		border: 1px solid var(--color-base-300);
 		border-radius: 0.6rem;
-		background: hsl(var(--b1));
+		background: var(--color-base-100);
 	}
 
 	.mobile-editor-title-wrap {
@@ -957,7 +1314,7 @@
 
 	.mobile-editor-caption {
 		font-size: 0.75rem;
-		color: hsl(var(--bc) / 0.7);
+		color: color-mix(in srgb, var(--color-base-content) 70%, transparent);
 	}
 
 	.mobile-editor-title {
@@ -974,7 +1331,7 @@
 
 	.mobile-editor-summary {
 		font-size: 0.8rem;
-		color: hsl(var(--bc) / 0.75);
+		color: color-mix(in srgb, var(--color-base-content) 75%, transparent);
 	}
 
 	.mobile-nav-actions {
@@ -984,11 +1341,11 @@
 		flex-wrap: wrap;
 		padding: 0.25rem;
 		border-radius: 0.5rem;
-		background: hsl(var(--b1));
+		background: var(--color-base-100);
 	}
 
 	.mobile-nav-btn {
-		background: hsl(var(--b1));
+		background: var(--color-base-100);
 	}
 
 	@media (max-width: 960px) {

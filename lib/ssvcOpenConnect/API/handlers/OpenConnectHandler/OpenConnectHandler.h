@@ -34,6 +34,10 @@ class OpenConnectHandler
         static void postRelayOverride(AsyncWebServerRequest* request, JsonVariant& json);
         static void getHardwareConfig(AsyncWebServerRequest* request);
         static void putHardwareConfig(AsyncWebServerRequest* request, JsonVariant& json);
+        /** Активные аппаратные сбои (I²C, отсутствующее устройство) — для интерфейса. */
+        static void getHardwareFaults(AsyncWebServerRequest* request);
+        static void getXkc25Status(AsyncWebServerRequest* request);
+        static void postXkc25Calibrate(AsyncWebServerRequest* request, JsonVariant& json);
 };
 
 

@@ -1,4 +1,4 @@
-# SSVC0059_V2 UART API Версия 1.9
+# SSVC0059_V2 UART API Версия 1.10
 
 
 Документация UART API для SSVC0059_V2
@@ -29,6 +29,7 @@
 - `VERSION`
 - `GET_SETTINGS`
 - `SET`
+- `GET_LOG`
 
 ---
 
@@ -116,8 +117,8 @@
     "result": "OK",
     "manufacturer": "SmartModule",
     "model": "SSVC0059_V2",
-    "version": "2.2.37",
-    "api": "1.9"
+    "version": "2.2.55",
+    "api": "1.10"
   }
   ```
 
@@ -615,9 +616,9 @@ SET <параметр1>=<значение1>,<параметр2>=<значени�
 #### Примеры корректных команд
 
 ```text
-SET heads=[30.0,180],hearts=[2.5,5],formula=1
+SET heads=[30.0,180],hearts=[2.5,5],formula=2
 SET heads=[60.0,360],hearts=[2.0,4],hyst=0.19,formula=0
-SET heads=[20.5,245],hearts=[1.5,3],hyst=0.25,decrement=20,formula=1,tank_mmhg=50,heads_timer=36000,hearts_timer=30,start_delay=18000,hearts_finish_temp=93.0,formula_start_temp=84.0,valve_bw=[10000,11000,12000]
+SET heads=[20.5,245],hearts=[1.5,3],hyst=0.25,decrement=20,formula=2,tank_mmhg=50,heads_timer=36000,hearts_timer=30,start_delay=18000,hearts_finish_temp=93.0,formula_start_temp=84.0,valve_bw=[10000,11000,12000]
 SET formula=1
 SET formula=0
 SET tank_mmhg=50
@@ -634,7 +635,7 @@ SET valve_bw=[10000,11000,12000]
 #### Примеры команд с ошибками
 
 ```text
-SET heads=[60.0,360],hearts=[2.0,4],hyst=0.19,decrement=30,formula=3
+SET heads=[60.0,360],hearts=[2.0,4],hyst=0.19,decrement=30,formula=2
 SET heads=[100.0,180],hearts=[2.5,5],formula=1
 SET heads=[99.9,1000],hearts=[2.5,5]
 SET heads=[99.1,99],hearts=[2.5,5],formula=1
@@ -713,7 +714,7 @@ SET valve_bw=[10000,11000,21000]
     "backlight": "active",
     "valve_bw": [1100, 1200, 1300],
     "extended_heads": 0,
-    "predec": 13
+    "predec": 13,
   }
 }
 ```
@@ -986,6 +987,94 @@ SET valve_bw=[10000,11000,21000]
 
 ---
 
+### `GET_LOG`
+
+Команда `GET_LOG` обрабатывается только когда контроллер находится в дежурном режиме.
+
+Команда используется для удаленного скачивания файлов логов процессов, сохраненных на SD-карте контроллера под именами, соответствующими номеру процесса (например, `15.CSV`), либо для получения списка доступных логов.
+
+Максимальная длина строки запроса — 30 символов, включая завершающие символы переноса строки (`\r\n`, `\n`) и нулевой символ.
+
+#### Особенности выполнения команды
+
+* **Блокировка телеметрии**: На время выполнения запроса регулярная отправка фоновой телеметрии приостанавливается. Отправка телеметрии автоматически возобновляется сразу после отправки последнего пакета данных или пакета ошибки.
+* **Лимиты буфера передачи (900 байт)**:
+  * В **режиме вывода файла** данные кодируются в Base64 порциями (чанками) по **600 байт** исходных данных, что после конвертации дает **800 байт** текстовой строки. С учётом JSON-обертки длина отправляемого пакета гарантированно не превышает **890 байт**.
+  * В **режиме списка файлов** размер итогового JSON-пакета строго контролируется прошивкой и не может превышать **900 байт**. Если файлов на карте памяти больше, список будет безопасно обрезан на последнем поместившемся файле без нарушения валидности JSON.
+
+#### Общий формат команды
+
+```text
+GET_LOG <номер_процесса>
+```
+
+Номер процесса отделяется пробелом.
+* **Если номер процесса НЕ указан**: контроллер возвращает список доступных CSV-файлов в одном JSON-пакете.
+* **Если номер процесса указан**: запускается пакетная передача содержимого выбранного файла, закодированная в Base64.
+
+---
+
+### РЕЖИМ 1: Запрос списка файлов
+
+*Пример запроса:*
+```text
+GET_LOG
+```
+
+#### Формат ответа (один JSON-пакет)
+Контроллер возвращает массив имен доступных логов с расширением `.CSV`:
+
+```json
+{"type":"response","request":"GET_LOG","result":"LIST","files":["15.CSV","16.CSV","17.CSV"]}
+```
+
+---
+
+### РЕЖИМ 2: Скачивание конкретного лога
+
+*Пример запроса:*
+```text
+GET_LOG 15
+```
+
+#### Схема пакетной передачи файла
+Передача файла происходит в полностью структурированном JSON-виде и состоит из двух фаз. Принимающая сторона определяет окончание по достижении счетчика пакетов.
+
+#### 1. Стартовый пакет (Метаданные)
+Первым пакетом контроллер сообщает имя файла, а также **общее количество пакетов** (`total`), которые будут отправлены в рамках этой сессии.
+
+```json
+{"type":"response","request":"GET_LOG","result":"START","file":"15.CSV","total":335}
+```
+*Где `total` — расчетное количество пакетов данных.*
+
+#### 2. Пакеты с данными (`file`)
+Сразу после стартового пакета контроллер начинает последовательную передачу чанков данных. Каждый чанк содержит порядковый номер (`chunk`, начиная с 1) и данные в формате Base64 (`data`):
+
+```json
+{"type":"file","chunk":1,"data":"VjsyLjMuMjgKSDswLDI1ClBSRTswLDEzClYxOzExMDAwClYyOzEyMDAwClYzOzEzNTAwCgrd8uDvO8Lw5ez/O9Iu7vLh7vDgO8rr4O/g7SDu8urw+/I7z+Xw6O7kO9Hq7vDu8fL8IO7y4e7w4DvE4OLr5e3o5TvE4OLr5e3o5SDiIOrz4eU70sQxO9LEMjvSxDEg6u7w8OXq9uj/O9LEMiDq7vDw5er26P87w9POLCDxO9POLCDxO9HTziwg8TvR7+jw8vPu5+3u8fL8O87x8uDt7uLq4DvC8eXj7iDu8fLg7e7i7uo70+/w5ebk5e3o6QoxOzA6MDA6MDA7MCwwMDs5LDQwOzEwMDs5LDQwJTs3NDEsMzs3NTEsMzs3Nyw1MDs4MywxOTs3OCwxNDs4Myw0OTswMDAwOzAwMDA7MDAwMDs0NCwwOzA7MDswCjE7MDowMTowMDswLDAwOzksNDA="}
+{"type":"file","chunk":2,"data":"OzEwMDs5LDQwJTs3NDEsMzs3NTEsMzs3Nyw1NDs4MywyNTs3OCwwODs4Myw1NTswMDE4OzAwMDA7MDAwMDs0MywwOzA7MDswCjE7MDowMzowMDswLDAwOzksNDA7MTAwOzksNDAlOzc0MSwzOzc1MSwzOzc3LDM4OzgzLDMxOzc4LDAyOzgzLDYxOzAwMTg7MDAwMDswMDAwOzGyLDA7MDswOzAKMTswOjA0OjAwOzAsMDA7OSw0MDsxMDA7OSw0MCU7NzQxLDM7NzUxLDM7NzcsMzg7ODMsMzE7NzgsMDI7ODMsNjE7MDAyODswMDAwOzAwMDA7NDMsMDswOzA7MAoxOzA6MDU6MDA7MCwwMDs5LDQwOzEwMDs5LDQwJTs3NDEsMzs3NTEsMzs3NywzODs4MywzMTs3OCwwMjs4Myw2MTswMDI4OzAwMDA7MDAwMDs0MywwOzA7MDswCjE7MDowNjowMDswLDAwOzksNDA7MTAwOzksNDAlOzc0MSwzOzc1MSwzOzc3LDM4OzgzLDMxOzc4LDAyOzgzLDYxOzAwMzc7MDAwMDswMDAwOzQzLDA7MDswOzAKMTswOjA3OjAwOzAsMDA7OSwzMDsxMDA7OSwzMCU7NzQxLDM7NzUxLDM7NzcsMzg7ODMsMzg7NzgsMDI7ODMsNjg7MDA0NjswMDAwOzAwMDA7NDMsMDswOzA7MAoxOzA6MDg6MDA7MCwwMDs5LDMwOzEwMDs5LDMwJTs3NDEsMzs3NTEsMzs3NywzODs4MywzODs3OCwwMjs4Myw2ODsw"}
+...
+{"type":"file","chunk":335,"data":"MDQ2OzAwMDA7MDAwMDs0MywwOzA7MDswCjE7MDowOTowMDswLDAwOzksMzA7MTAwOzksMzAlOzc0MSw0Ozc1MSw0Ozc3LDM4OzgzLDM4Ozc4LDAxOzgzLDY3OzAwNTY7MDAwMDswMDAwOzQzLDA7MDswOzAKMTswOjEwOjAwOzAsMDA7OSwzMDsxMDA7OSwzMCU7NzQxLDQ7NzUxLDQ7NzcsMzg7ODMsMzg7NzgsMDE7ODMsNjc7MDA1NjswMDAwOzAwMDA7NDMsMDswOzA7MAoxOzA6MTE6MDA7MCwwMDs5LDMwOzEwMDs5LDMwJTs3NDEsNDs3NTEsNDs3NywzODs4MywzODs3OCwwMTs4Myw2NzswMDY1OzAwMDA7MDAwMDs0MywwOzA7MDswCjE7MDoxMjowMDswLDAwOzksMzA7MTAwOzksMzAlOzc0MSw0Ozc1MSw0Ozc3LDMxOzgzLDY4Ozc3LDk0OzgzLDY3OzAwNzQ7MDAwMDswMDAwOzQzLDA7MDswOzAKMTswOjEzOjAwOzAsMDA7OSwzMDsxMDA7OSwzMCU7NzQxLDQ7NzUxLDQ7NzcsMzE7ODMsMzg7NzcsOTQ7ODMsNjc7MDA3NDswMDAwOzAwMDA7NDMsMDswOzA7MAoxOzA6MTQ6MDA7MCwwMDs5LDMwOzEwMDs5LDMwJTs3NDEsNDs3NTEsNDs3NywzMTs4Myw0NDs3Nyw5NDs4Myw3MzswMDgzOzAwMDA7MDAwMDs0MywwOzA7MDswCg=="}
+```
+
+Принимающая сторона должна декодировать поле `data` каждого чанка из Base64 и последовательно записывать результат в файл. Передача считается успешно завершенной, когда принят пакет, у которого значение `chunk` равно значению `total` из стартового пакета.
+
+---
+
+### Обработка ошибок выполнения команды
+
+В случае возникновения нештатных ситуаций во время работы с SD-картой или парсинга команды, контроллер немедленно прекращает выполнение операции, возобновляет телеметрию и отправляет JSON-пакет с кодом ошибки:
+
+```json
+{"type":"response","request":"GET_LOG","result":"<код_ошибки>","code":<код_системной_ошибки>}
+```
+
+#### Возможные коды ошибок (`result`):
+* `err_num` — Ошибка парсинга номера файла (передан нечисловой параметр или параметр отсутствует при запросе файла).
+* `err_mnt` — Ошибка монтирования файловой системы SD-карты. Поле `code` содержит код возврата FatFS (`FRESULT`).
+* `err_nf` — Запрошенный файл не найден на SD-карте, либо не удалось прочесть/открыть корневую директорию логов. Поле `code` содержит код возврата FatFS.
+* `err_int` — Внутренняя аппаратная ошибка в процессе передачи файла (например, внезапный сбой чтения физического сектора SD-карты во время чтения лога).
 
 ## Cтруктура телеметрии (JSON)
 

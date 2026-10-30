@@ -23,9 +23,9 @@
 
 // Целевая версия API, которую реализует прошивка, и минимальная версия
 // устройства, с которой она сохраняет работоспособность. Обе — строки вида
-// "1.9", потому что версия обязана разбираться без дробной арифметики.
+// "1.10", потому что версия обязана разбираться без дробной арифметики.
 #ifndef SSVC_API_VERSION_TARGET
-#define SSVC_API_VERSION_TARGET "1.9"
+#define SSVC_API_VERSION_TARGET "1.10"
 #endif
 
 #ifndef SSVC_API_VERSION_MIN
@@ -46,6 +46,7 @@ enum class SsvcFeature : int {
     TankMmhgAct,       // tank_mmhg_act в телеметрии
     FormulaAuto92Plus, // formula=2 (авто 92+)
     HeartsPreemptCnt,  // preempt_cnt в телеметрии тела
+    GetLog,            // команда GET_LOG
     Count
 };
 
@@ -67,7 +68,7 @@ struct FeatureInfo {
 // tank_mmhg_act, formula_start_temp, release_* и heads_final присутствуют уже
 // в README 1.7, поэтому они базовые; в 1.8 добавлен только extended_heads
 // (плюс поля телеметрии preempt_cnt / late_heads_finished), в 1.9 — predec и
-// значение formula=2.
+// значение formula=2, в 1.10 — команда GET_LOG.
 constexpr FeatureInfo FEATURE_INFO[FEATURE_COUNT] = {
     {"base", {1, 7}},               // набор 1.7: базовые команды и параметры
     {"formula", {1, 7}},            // formula=0/1
@@ -75,7 +76,8 @@ constexpr FeatureInfo FEATURE_INFO[FEATURE_COUNT] = {
     {"extended_heads", {1, 8}},     // extended_heads=0/1
     {"tank_mmhg_act", {1, 7}},      // tank_mmhg_act в телеметрии
     {"formula_auto92", {1, 9}},     // formula=2 (авто 92+)
-    {"hearts_preempt_cnt", {1, 8}}  // preempt_cnt, late_heads_finished в телах
+    {"hearts_preempt_cnt", {1, 8}}, // preempt_cnt, late_heads_finished в телах
+    {"get_log", {1, 10}}            // команда GET_LOG
 };
 
 // Именованные коды возможностей: позволяют проверять возможность из модулей,
@@ -87,6 +89,7 @@ constexpr int FEATURE_EXTENDED_HEADS = static_cast<int>(SsvcFeature::ExtendedHea
 constexpr int FEATURE_TANK_MMHG_ACT = static_cast<int>(SsvcFeature::TankMmhgAct);
 constexpr int FEATURE_FORMULA_AUTO92 = static_cast<int>(SsvcFeature::FormulaAuto92Plus);
 constexpr int FEATURE_HEARTS_PREEMPT_CNT = static_cast<int>(SsvcFeature::HeartsPreemptCnt);
+constexpr int FEATURE_GET_LOG = static_cast<int>(SsvcFeature::GetLog);
 
 inline ApiVersion parseOr(const char* text, const ApiVersion& fallback) {
     ApiVersion parsed;
@@ -101,7 +104,7 @@ inline ApiVersion minSupportedApiVersion() {
 
 /** Версия API, которую реализует прошивка. */
 inline ApiVersion targetApiVersion() {
-    static const ApiVersion version = parseOr(SSVC_API_VERSION_TARGET, ApiVersion{1, 9});
+    static const ApiVersion version = parseOr(SSVC_API_VERSION_TARGET, ApiVersion{1, 10});
     return version;
 }
 

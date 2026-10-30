@@ -16,8 +16,12 @@
  **/
 
 #include "SsvcCommandsQueue.h"
+#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
 
 #include "SsvcOpenConnect.h"
+
+#include <cstdlib>
+#include <limits>
 
 #define TAG "SsvcCommandsQueue"
 
@@ -52,23 +56,77 @@ static std::string utf8_to_win1251(const std::string& utf8) {
     return win1251;
 }
 
+namespace {
+
+/// START/NEXT/RESUME неидемпотентны: повтор после неоднозначной отправки запрещён.
+bool isIdempotentRetry(const SsvcCommandType type) {
+  switch (type) {
+  case SsvcCommandType::START:
+  case SsvcCommandType::NEXT:
+  case SsvcCommandType::RESUME:
+    return false;
+  default:
+    return true;
+  }
+}
+
+/// Имя request, которым контроллер помечает ответ на эту команду ("" — неизвестно).
+const char *requestNameFor(const SsvcCommandType type) {
+  switch (type) {
+  case SsvcCommandType::STOP:
+    return "STOP";
+  case SsvcCommandType::START:
+    return "START";
+  case SsvcCommandType::PAUSE:
+    return "PAUSE";
+  case SsvcCommandType::RESUME:
+    return "RESUME";
+  case SsvcCommandType::NEXT:
+    return "NEXT";
+  case SsvcCommandType::AT:
+    return "AT";
+  case SsvcCommandType::SET:
+    return "SET";
+  case SsvcCommandType::STATUS:
+    return "STATUS";
+  default:
+    return "";
+  }
+}
+
+/// Глагол команды из поля request ответа ("" — если запрос пустой).
+///
+/// Контроллер повторяет в request всю команду вместе с параметрами
+/// (документация: `"request": "SET heads=[1,2]"`), поэтому «STATUS OpenConnect»
+/// или «STATUS v:  0.2.8.0» — это ответ на STATUS, а не чужая команда. Сверять
+/// и различать нужно только первое слово.
+std::string requestVerb(const std::string& request) {
+  const std::size_t space = request.find_first_of(" \t");
+  return space == std::string::npos ? request : request.substr(0, space);
+}
+
+} // namespace
+
 // Инициализация статической карты команд
-const std::map<std::string, std::function<void(const std::string&)>> SsvcCommandsQueue::COMMAND_MAP = {
-    {"at",           [](const std::string&){ getQueue().at(); }},
-    {"next",         [](const std::string&){ getQueue().next(); }},
-    {"pause",        [](const std::string&){ getQueue().pause(); }},
-    {"stop",         [](const std::string&){ getQueue().stop(); }},
-    {"start",        [](const std::string&){ getQueue().start(); }},
-    {"resume",       [](const std::string&){ getQueue().resume(); }},
-    {"version",      [](const std::string&){ getQueue().version(); }},
-    {"get_settings", [](const std::string&){ getQueue().getSettings(); }},
-    {"settings",     [](const std::string&){ getQueue().getSettings(); }},
-    {"emergency_stop", [](const std::string&){ getQueue().stop(); }},
-    {"status",       [](const std::string& params){ getQueue().status(params); }},
-    {"set",          [](const std::string& params){ getQueue().set(params); }}
+const std::map<std::string, std::function<bool(const std::string&)>> SsvcCommandsQueue::COMMAND_MAP = {
+    {"at",           [](const std::string&){ return getQueue().at(); }},
+    {"next",         [](const std::string&){ return getQueue().next(); }},
+    {"pause",        [](const std::string&){ return getQueue().pause(); }},
+    {"stop",         [](const std::string&){ return getQueue().stop(); }},
+    {"start",        [](const std::string&){ return getQueue().start(); }},
+    {"resume",       [](const std::string&){ return getQueue().resume(); }},
+    {"version",      [](const std::string&){ return getQueue().version(); }},
+    {"get_settings", [](const std::string&){ return getQueue().getSettings(); }},
+    {"settings",     [](const std::string&){ return getQueue().getSettings(); }},
+    {"emergency_stop", [](const std::string&){ return getQueue().emergencyStop(); }},
+    {"status",       [](const std::string& params){ return getQueue().status(params); }},
+    {"set",          [](const std::string& params){ return getQueue().set(params); }},
+    {"get_log",      [](const std::string& params){ return getQueue().getLog(params); }}
 };
 
 SsvcCommandsQueue::SsvcCommandsQueue() {
+  // Конструктор только создаёт очереди и регистрирует обработчики: задача-воркер
+  // поднимается в begin() после готовности зависимостей.
   command_queue = xQueueCreate(COMMAND_QUEUE_LENGTH, COMMAND_QUEUE_ITEM_SIZE);
   if (command_queue == nullptr) {
     ESP_LOGE(TAG, "Failed to create command queue!");
@@ -76,17 +134,72 @@ SsvcCommandsQueue::SsvcCommandsQueue() {
     ESP_LOGI(TAG, "Command queue created successfully");
   }
 
-  xTaskCreatePinnedToCore(
+  safety_queue = xQueueCreate(COMMAND_QUEUE_LENGTH, COMMAND_QUEUE_ITEM_SIZE);
+  if (safety_queue == nullptr) {
+    ESP_LOGE(TAG, "Failed to create safety queue!");
+  }
+
+  registerCallbackCommands();
+}
+
+bool SsvcCommandsQueue::begin() {
+  if (_ready) {
+    return true; // Инициализация идемпотентна
+  }
+  if (command_queue == nullptr || safety_queue == nullptr) {
+    // Без очередей воркеру нечего обслуживать: честный отказ вместо работы с
+    // нулевым дескриптором.
+    _failed = true;
+    ESP_LOGE(TAG, "begin: очередь не создана, состояние Failed");
+    return false;
+  }
+
+  TaskHandle_t processorTask = nullptr;
+  const BaseType_t created = xTaskCreatePinnedToCore(
       commandProcessorTask,
       "CmdProcessor",
       4096,
-      this,                                    
-      (tskIDLE_PRIORITY),
-      nullptr,
+      this,
+      (tskIDLE_PRIORITY + 1),
+      &processorTask,
       1
   );
+  if (created != pdPASS || processorTask == nullptr) {
+    _failed = true;
+    ESP_LOGE(TAG, "begin: не удалось создать CmdProcessor, состояние Failed");
+    return false;
+  }
 
-  registerCallbackCommands();
+  _ready = true;
+  ESP_LOGI(TAG, "begin: обработчик команд готов (Ready)");
+  return true;
+}
+
+bool SsvcCommandsQueue::emergencyStop() {
+  // Аварийная команда идёт приоритетным путём: отдельная очередь (воркер берёт
+  // её первой) и новое поколение safety, чтобы неотправленные START/NEXT/RESUME
+  // не «догнали» остановку. Поколение применяется только после успешной
+  // постановки: иначе при отказе STOP не ушёл бы, а догоняющие команды уже были
+  // бы инвалидированы.
+  const unsigned long safetyEpoch = _safetyEpoch + 1;
+
+  auto *cmd = new SsvcCommand();
+  cmd->type = SsvcCommandType::STOP;
+  cmd->attempt_count = 1;
+  cmd->timeout = TIMEOUT;
+  cmd->safetyEpoch = safetyEpoch;
+
+  if (safety_queue == nullptr ||
+      xQueueSend(safety_queue, &cmd, pdMS_TO_TICKS(1000)) != pdPASS) {
+    ESP_LOGE(TAG, "emergencyStop: не удалось поставить STOP в safety-очередь");
+    delete cmd;
+    rememberRejection("safety_rejected", "emergency_stop", "", "");
+    return false;
+  }
+
+  _safetyEpoch = safetyEpoch;
+  ESP_LOGW(TAG, "emergencyStop: STOP поставлен вне общего FIFO");
+  return true;
 }
 
 /**
@@ -153,18 +266,64 @@ void SsvcCommandsQueue::scheduleUartRetryTimer() const {
 void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
   auto *self = static_cast<SsvcCommandsQueue *>(pvParameters);
   SsvcCommand *cmd = nullptr;
-  vTaskDelay(pdMS_TO_TICKS(6000));
+  // Пауза при откладывании обычной команды: за это время воркер успевает
+  // опросить safety-очередь и извлечь зарезервированный GET_LOG.
+  constexpr uint32_t kDeferRetryMs = 100;
 
   while (true) {
-    if (xQueueReceive(self->command_queue, &cmd, portMAX_DELAY) == pdPASS) {
-      ESP_LOGD(TAG, "Processing command of type: %d", cmd->type);
-      bool command_success = false;
+    // Приоритет аварийных команд: safety-очередь забирается без ожидания, до
+    // общего FIFO, поэтому STOP не зависит от накопленных обычных команд.
+    if (xQueueReceive(self->safety_queue, &cmd, 0) != pdPASS) {
+      if (xQueueReceive(self->command_queue, &cmd, pdMS_TO_TICKS(500)) != pdPASS) {
+        // Пока очередь пуста, проверяется deadline незавершённой лог-сессии:
+        // потерянный LIST/START не должен оставить её занятой без HTTP-polling.
+        SsvcLogProtocol::getTransfer().checkTimeout(millis());
+        continue;
+      }
+    }
 
-      while (cmd->attempt_count != 0) {
-        cmd->attempt_count--;
+    ESP_LOGD(TAG, "Processing command of type: %d", cmd->type);
+    bool command_success = false;
 
-        // Отправка команды в зависимости от типа
-        switch (cmd->type) {
+    // Команда отменённой или устаревшей лог-сессии до отправки не доходит.
+    if (cmd->generation != 0 &&
+        cmd->generation != SsvcLogProtocol::getTransfer().generation()) {
+      ESP_LOGW(TAG, "Command %d из отменённой сессии пропущена",
+               static_cast<int>(cmd->type));
+      delete cmd;
+      continue;
+    }
+
+    // Неотправленная неидемпотентная команда, устаревшая после аварийной
+    // остановки, не «догоняет» STOP: опасен именно догоняющий START/NEXT/RESUME.
+    if (!isIdempotentRetry(cmd->type) && cmd->safetyEpoch != self->_safetyEpoch) {
+      ESP_LOGW(TAG, "Command %d устарела после emergency_stop и отброшена",
+               static_cast<int>(cmd->type));
+      delete cmd;
+      continue;
+    }
+
+    // Обычные команды не вклиниваются в активную лог-сессию. Команда возвращается
+    // в хвост очереди, а не удерживается в цикле: воркер продолжает опрашивать
+    // safety-очередь и способен извлечь зарезервированный GET_LOG. Удержание
+    // блокировало и приоритет STOP, и саму лог-сессию до её таймаута.
+    if (cmd->type != SsvcCommandType::GET_LOG && cmd->type != SsvcCommandType::STOP &&
+        SsvcLogProtocol::getTransfer().isBlocked()) {
+      SsvcLogProtocol::getTransfer().checkTimeout(millis());
+      vTaskDelay(pdMS_TO_TICKS(kDeferRetryMs));
+      // Слот освободился при извлечении команды, но его мог занять другой
+      // постановщик — повтор до успешного возврата.
+      while (xQueueSendToBack(self->command_queue, &cmd, 0) != pdPASS) {
+        vTaskDelay(pdMS_TO_TICKS(kDeferRetryMs));
+      }
+      continue;
+    }
+
+    while (cmd->attempt_count != 0) {
+      cmd->attempt_count--;
+
+      // Отправка команды в зависимости от типа
+      switch (cmd->type) {
         case SsvcCommandType::GET_SETTINGS:
           command_success =
               SsvcConnector::sendCommand("GET_SETTINGS\n");
@@ -180,6 +339,12 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
           command_success = SsvcConnector::sendCommand("VERSION\n");
           break;
         case SsvcCommandType::STOP:
+          // STOP не ждёт файловую сессию (см. проверку выше). Если она активна,
+          // передача переводится в дренирование: кадры старого потока не должны
+          // завершить её «успешно».
+          if (SsvcLogProtocol::getTransfer().isFileSession()) {
+            SsvcLogProtocol::getTransfer().cancel();
+          }
           command_success = SsvcConnector::sendCommand("STOP\n");
           break;
         case SsvcCommandType::START:
@@ -204,6 +369,46 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
               SsvcConnector::sendCommand(oss.str().c_str());
           break;
         }
+        case SsvcCommandType::GET_LOG: {
+          auto &transfer = SsvcLogProtocol::getTransfer();
+          // generation != 0 означает, что резерв сессии уже сделан в REST.
+          // Переход QUEUED_* -> WAITING_* выполняется до записи в UART, чтобы
+          // состояние не разошлось с фактом отправки.
+          const bool reserved = cmd->generation != 0;
+          std::string request;
+
+          if (cmd->parameters.empty()) {
+            if (!reserved && !transfer.beginList(millis())) {
+              command_success = false;
+              break;
+            }
+            if (!SsvcLogProtocol::formatListRequest(request)) {
+              command_success = false;
+              break;
+            }
+          } else {
+            char* end = nullptr;
+            const long processNumber = std::strtol(cmd->parameters.c_str(), &end, 10);
+            if (end == cmd->parameters.c_str() || *end != '\0' ||
+                processNumber <= 0 || processNumber > std::numeric_limits<int>::max() ||
+                !SsvcLogProtocol::formatFileRequest(static_cast<int>(processNumber), request) ||
+                (!reserved && !transfer.beginFile(static_cast<int>(processNumber), millis()))) {
+              command_success = false;
+              break;
+            }
+          }
+
+          if (reserved) {
+            transfer.markSent();
+          }
+          command_success = SsvcConnector::sendCommand(request.c_str());
+          if (!command_success) {
+            // Запись не прошла — резерв откатывается, чтобы клиент не ждал
+            // ответа, которого не будет.
+            transfer.abortReservation("uart_write_failed");
+          }
+          break;
+        }
         }
         ESP_LOGD(TAG, "Send result: %d", command_success);
 
@@ -214,19 +419,27 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
           continue;
         }
 
+        if (cmd->type == SsvcCommandType::GET_LOG) {
+          break;
+        }
+
         // Ожидание ответа с определенным битом
-        EventBits_t expectedBit = self->commandToExpectedBit[cmd->type];
+        const EventBits_t expectedBit = self->commandToExpectedBit[cmd->type];
         ESP_LOGV(TAG, "Waiting for response with bit: %d",
                  expectedBit);
         const EventBits_t responseMask = expectedBit | BIT1;
 
+        // Успешная запись в UART ещё не означает выполнение команды: результат
+        // сбрасывается перед ожиданием, а BIT1 (отказ устройства) не
+        // маршрутизируется в callback ожидаемого бита.
+        command_success = false;
         const EventBits_t bits = xEventGroupWaitBits(eventGroup, responseMask, pdTRUE,
-                                               pdFALSE, cmd->timeout);
+                                                     pdFALSE, cmd->timeout);
 
-        if ((bits & responseMask) != 0) {
-          MutexLock lock(mutex);
-
-          // Обработка ответа через зарегистрированные callback'и
+        if ((bits & expectedBit) != 0) {
+          // Callback'и читают lastMessage/lastResponse сами: getLast* берут
+          // блокировку внутри. Внешний захват того же нерекурсивного mutex
+          // приводил к отказу внутреннего захвата и «пустому» ответу.
           auto it = self->bitCallbacks.find(expectedBit);
           ESP_LOGV(TAG, "Callback found: %d",
                    it != self->bitCallbacks.end());
@@ -238,10 +451,24 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
             ESP_LOGW(TAG, "No callback handler for bit %d",
                      expectedBit);
           }
+        } else if ((bits & BIT1) != 0) {
+          ESP_LOGW(TAG, "Command %d rejected by device (BIT1)",
+                   static_cast<int>(cmd->type));
+        } else {
+          ESP_LOGW(TAG, "Command %d: no response, outcome unknown",
+                   static_cast<int>(cmd->type));
         }
 
         if (command_success) {
           ESP_LOGV(TAG, "Command %d executed successfully",
+                   static_cast<int>(cmd->type));
+          break;
+        }
+
+        // Неидемпотентную команду нельзя повторять после отправки: контроллер
+        // мог её выполнить, а ответ потеряться.
+        if (!isIdempotentRetry(cmd->type)) {
+          ESP_LOGW(TAG, "Command %d: retry skipped after uncertain outcome",
                    static_cast<int>(cmd->type));
           break;
         }
@@ -252,10 +479,9 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
       }
 
       delete cmd;
-    }
-    // Логирование использования стека задачи
-    const UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(nullptr);
-    ESP_LOGD(TAG, "CmdProcessor Task: Stack High Water Mark: %u bytes", stackHighWaterMark);
+      // Логирование использования стека задачи
+      const UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(nullptr);
+      ESP_LOGD(TAG, "CmdProcessor Task: Stack High Water Mark: %u bytes", stackHighWaterMark);
   }
 }
 
@@ -271,8 +497,13 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
 void SsvcCommandsQueue::registerCallbackCommands() {
   // Регистрация обработчика для GET_SETTINGS ответов
   registerBitHandler(BIT10, [](SsvcCommand *cmd) {
-    const std::string _message = SsvcConnector::getConnector().getLastMessage();
-    SsvcSettings::init().load(_message);
+    const std::string message = SsvcConnector::getConnector().getLastMessage();
+    if (message.empty()) {
+      // Снимок недоступен (mutex занят) — не подменяем настройки пустым кадром.
+      ESP_LOGW(TAG, "BIT10: пустой снимок кадра GET_SETTINGS");
+      return false;
+    }
+    SsvcSettings::init().load(message);
     return true;
   });
 
@@ -304,10 +535,38 @@ void SsvcCommandsQueue::registerCallbackCommands() {
 
   // Бит для всех команд с успешным выполнением
   registerBitHandler(BIT9, [this](SsvcCommand *cmd) {
-    const std::string _message = SsvcConnector::getConnector().getLastResponse();
+    std::string message;
+    std::string responseRequest;
+    SsvcConnector::getConnector().getResponseSnapshot(message, responseRequest);
+    if (message.empty()) {
+      ESP_LOGW(TAG, "BIT9: пустой снимок ответа");
+      return false;
+    }
+
+    JsonDocument response;
+    if (deserializeJson(response, message)) {
+      ESP_LOGW(TAG, "BIT9: ответ не разобран как JSON");
+      return false;
+    }
+
+    // Ответ должен относиться к отправленной команде: если контроллер указал
+    // request, его глагол обязан совпасть — иначе это ответ другой команды.
+    // Параметры в request не сравниваются: контроллер повторяет команду целиком
+    // («STATUS OpenConnect», «SET heads=[1,2]»). payload и request берутся одним
+    // снимком, поэтому проверка не гоняется с телеметрией.
+    const std::string expectedRequest = requestNameFor(cmd->type);
+    const std::string responseVerb = requestVerb(responseRequest);
+    if (!responseVerb.empty() && !expectedRequest.empty() &&
+        responseVerb != expectedRequest) {
+      ESP_LOGW(TAG, "BIT9: ответ %s не соответствует команде %s",
+               responseRequest.c_str(), expectedRequest.c_str());
+      return false;
+    }
+
     //      Если в полученном ответе будет SET, значит был запрос изменения
     //      настроек, а значит их нужно будет перечитать заново
-    if (_message.find("SET") != std::string::npos) {
+    const std::string responseRequestField = response["request"] | "";
+    if (requestVerb(responseRequestField) == "SET") {
       if (_settingsTimer == nullptr) {
         // Создание одноразового таймера
         _settingsTimer =
@@ -339,7 +598,7 @@ void SsvcCommandsQueue::registerCallbackCommands() {
         }
       }
     }
-    const bool result = _message.find("OK") != std::string::npos;
+    const bool result = std::string(response["result"] | "") == "OK";
     _cmdSetResult = result;
     return result;
   });
@@ -354,14 +613,16 @@ void SsvcCommandsQueue::registerCallbackCommands() {
 /**
  * @brief Единая точка постановки команды в очередь и единственное место gate.
  *
- * Проверка версии API стоит здесь, а не в set(): новая
+ * Проверка версии API стоит здесь, а не в set()/getLog(): новая
  * версионозависимая команда не сможет её обойти. Для SET из пакета
- * исключаются поля, которых нет на устройстве.
+ * исключаются поля, которых нет на устройстве, для GET_LOG проверяется
+ * наличие возможности.
  *
  * @param type Тип команды (например, SET, GET_SETTINGS и т.д.)
  * @param parameters Параметры команды (строка).
  * @param attempt_count Количество попыток при неудаче.
  * @param timeout Тайм-аут ожидания ответа (в тиках).
+ * @param generation Номер лог-сессии для GET_LOG (0 — команда вне сессии).
  * @param skippedOut Приёмник отброшенных по версии API полей SET. Владелец —
  *        вызывающая операция; nullptr означает, что отчёт не нужен. Общий
  *        накопитель здесь недопустим: HTTP, MQTT и профили идут из разных задач.
@@ -371,6 +632,7 @@ bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
                                            const std::string& parameters,
                                            const int attempt_count,
                                            const TickType_t timeout,
+                                           const unsigned long generation,
                                            std::vector<std::string>* skippedOut) const
 {
   const SsvcSettings& settings = SsvcSettings::init();
@@ -419,6 +681,23 @@ bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
                skippedList.c_str());
     }
     effectiveParameters = filtered;
+  } else if (type == SsvcCommandType::GET_LOG) {
+    if (!SsvcApiCapabilities::featureAvailable(deviceCode, SsvcApiCapabilities::FEATURE_GET_LOG)) {
+      const std::string requiredApi = SsvcUartApiSpec::formatApiVersion(
+          SsvcApiCapabilities::featureMinVersion(SsvcApiCapabilities::FEATURE_GET_LOG));
+      ESP_LOGW(TAG, "GET_LOG недоступен: устройство на API %s, требуется %s", deviceApi.c_str(),
+               requiredApi.c_str());
+      rememberRejection("feature_unsupported", "get_log", requiredApi, deviceApi);
+      return false;
+    }
+  }
+
+  // Тракт должен быть явно готов: до begin() команды не ставятся, а отказ виден
+  // вызывающему (REST отвечает ошибкой, а не «accepted»).
+  if (!_ready || command_queue == nullptr) {
+    rememberRejection("not_ready", "", "", "");
+    ESP_LOGW(TAG, "Команда %d отклонена: очередь не готова", static_cast<int>(type));
+    return false;
   }
 
   ESP_LOGD(TAG, "Attempting to enqueue command type: %d", static_cast<int>(type));
@@ -426,11 +705,17 @@ bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
   cmd->type = type;
   cmd->parameters = effectiveParameters;
   cmd->attempt_count = attempt_count;
-  cmd->timeout = pdMS_TO_TICKS(timeout);
+  // timeout приходит уже в тиках (SsvcCommand/TIMEOUT): повторный pdMS_TO_TICKS
+  // удлинял ожидание при tick != 1 мс.
+  cmd->timeout = timeout;
+  cmd->generation = generation;
+  cmd->safetyEpoch = _safetyEpoch;
 
   if (xQueueSend(command_queue, &cmd, pdMS_TO_TICKS(1000)) != pdPASS) {
     ESP_LOGE(TAG, "Failed to send command to queue! Queue might be full.");
     delete cmd;
+    // Причина видна REST-слою: 503 с queue_full вместо «accepted».
+    rememberRejection("queue_full", "", "", "");
     return false;
   }
 
@@ -461,9 +746,9 @@ void SsvcCommandsQueue::rememberRejection(const std::string& reason,
  * @param attempt_count Количество попыток.
  * @param timeout Тайм-аут ожидания (в тиках).
  */
-void SsvcCommandsQueue::getSettings(const int attempt_count, const TickType_t timeout) const
+bool SsvcCommandsQueue::getSettings(const int attempt_count, const TickType_t timeout) const
 {
-  pushCommandInQueue(SsvcCommandType::GET_SETTINGS, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::GET_SETTINGS, "", attempt_count, timeout);
 }
 
 /**
@@ -471,10 +756,11 @@ void SsvcCommandsQueue::getSettings(const int attempt_count, const TickType_t ti
  *
  * @param attempt_count Количество попыток.
  * @param timeout Тайм-аут ожидания (в тиках).
+ * @return true, если команда поставлена в очередь.
  */
-void SsvcCommandsQueue::next(const int attempt_count, const TickType_t timeout) const
+bool SsvcCommandsQueue::next(const int attempt_count, const TickType_t timeout) const
 {
-  pushCommandInQueue(SsvcCommandType::NEXT, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::NEXT, "", attempt_count, timeout);
 }
 
 /**
@@ -482,10 +768,11 @@ void SsvcCommandsQueue::next(const int attempt_count, const TickType_t timeout) 
  *
  * @param attempt_count Количество попыток.
  * @param timeout Тайм-аут ожидания (в тиках).
+ * @return true, если команда поставлена в очередь.
  */
-void SsvcCommandsQueue::pause(const int attempt_count, const TickType_t timeout) const
+bool SsvcCommandsQueue::pause(const int attempt_count, const TickType_t timeout) const
 {
-  pushCommandInQueue(SsvcCommandType::PAUSE, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::PAUSE, "", attempt_count, timeout);
 }
 
 /**
@@ -493,10 +780,11 @@ void SsvcCommandsQueue::pause(const int attempt_count, const TickType_t timeout)
  *
  * @param attempt_count Количество попыток.
  * @param timeout Тайм-аут ожидания (в тиках).
+ * @return true, если команда поставлена в очередь.
  */
-void SsvcCommandsQueue::stop(const int attempt_count, const TickType_t timeout) const
+bool SsvcCommandsQueue::stop(const int attempt_count, const TickType_t timeout) const
 {
-  pushCommandInQueue(SsvcCommandType::STOP, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::STOP, "", attempt_count, timeout);
 }
 
 /**
@@ -505,9 +793,9 @@ void SsvcCommandsQueue::stop(const int attempt_count, const TickType_t timeout) 
  * @param attempt_count Количество попыток.
  * @param timeout Тайм-аут ожидания (в тиках).
  */
-void SsvcCommandsQueue::start(const int attempt_count, const TickType_t timeout) const
+bool SsvcCommandsQueue::start(const int attempt_count, const TickType_t timeout) const
 {
-  pushCommandInQueue(SsvcCommandType::START, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::START, "", attempt_count, timeout);
 }
 
 /**
@@ -515,10 +803,11 @@ void SsvcCommandsQueue::start(const int attempt_count, const TickType_t timeout)
  *
  * @param attempt_count Количество попыток.
  * @param timeout Тайм-аут ожидания (в тиках).
+ * @return true, если команда поставлена в очередь.
  */
-void SsvcCommandsQueue::resume(const int attempt_count,const TickType_t timeout) const
+bool SsvcCommandsQueue::resume(const int attempt_count,const TickType_t timeout) const
 {
-  pushCommandInQueue(SsvcCommandType::RESUME, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::RESUME, "", attempt_count, timeout);
 }
 
 /**
@@ -526,10 +815,11 @@ void SsvcCommandsQueue::resume(const int attempt_count,const TickType_t timeout)
  *
  * @param attempt_count Количество попыток.
  * @param timeout Тайм-аут ожидания (в тиках).
+ * @return true, если команда поставлена в очередь.
  */
-void SsvcCommandsQueue::version(const int attempt_count, const TickType_t timeout) const
+bool SsvcCommandsQueue::version(const int attempt_count, const TickType_t timeout) const
 {
-  pushCommandInQueue(SsvcCommandType::VERSION, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::VERSION, "", attempt_count, timeout);
 }
 
 /**
@@ -538,9 +828,9 @@ void SsvcCommandsQueue::version(const int attempt_count, const TickType_t timeou
  * @param attempt_count Количество попыток.
  * @param timeout Тайм-аут ожидания (в тиках).
  */
-void SsvcCommandsQueue::at(const int attempt_count, const TickType_t timeout) const
+bool SsvcCommandsQueue::at(const int attempt_count, const TickType_t timeout) const
 {
-  pushCommandInQueue(SsvcCommandType::AT, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::AT, "", attempt_count, timeout);
 }
 
 /**
@@ -560,7 +850,8 @@ bool SsvcCommandsQueue::set(const std::string& parameters, const int attempt_cou
                             std::vector<std::string>* skippedOut) const
 {
   ESP_LOGD(TAG, "Set command called with parameters: %s", parameters.c_str());
-  return pushCommandInQueue(SsvcCommandType::SET, parameters, attempt_count, timeout, skippedOut);
+  return pushCommandInQueue(SsvcCommandType::SET, parameters, attempt_count, timeout, 0,
+                            skippedOut);
 }
 
 /**
@@ -570,9 +861,26 @@ bool SsvcCommandsQueue::set(const std::string& parameters, const int attempt_cou
  * @param attempt_count Количество попыток.
  * @param timeout Тайм-аут ожидания (в тиках).
  */
-void SsvcCommandsQueue::status(const std::string& parameters, const int attempt_count,
+bool SsvcCommandsQueue::status(const std::string& parameters, const int attempt_count,
                                const TickType_t timeout) const {
-  pushCommandInQueue(SsvcCommandType::STATUS, utf8_to_win1251(parameters), attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::STATUS, utf8_to_win1251(parameters), attempt_count, timeout);
+}
+
+/**
+ * @brief Добавляет в очередь команду GET_LOG.
+ *
+ * Проверка возможности выполняется в pushCommandInQueue — единой точке gate.
+ *
+ * @param parameters Параметры команды.
+ * @param generation Номер зарезервированной лог-сессии (0 — без резерва).
+ * @param attempt_count Количество попыток.
+ * @param timeout Тайм-аут ожидания (в тиках).
+ * @return true, если команда поставлена в очередь.
+ */
+bool SsvcCommandsQueue::getLog(const std::string& parameters, const unsigned long generation,
+                               const int attempt_count, const TickType_t timeout) const {
+  return pushCommandInQueue(SsvcCommandType::GET_LOG, parameters, attempt_count, timeout,
+                            generation);
 }
 
 /**

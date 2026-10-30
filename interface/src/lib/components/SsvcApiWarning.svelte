@@ -35,7 +35,7 @@
 
 	const compatibility = $derived(info?.oc.api_compatibility ?? 'unknown');
 	const deviceApi = $derived(info?.ssvc.api ?? '');
-	const requiredApi = $derived(info?.oc.api_min ?? '1.9');
+	const requiredApi = $derived(info?.oc.api_min ?? '1.10');
 	const targetApi = $derived(info?.oc.api_target ?? '');
 
 	// unknown — контроллер не ответил или прошивка настолько старая, что не отдаёт

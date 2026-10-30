@@ -50,6 +50,7 @@ private:
     void registerTelegramBotHandler() const;
     void registerProfileHandler() const;
     void registerFileHandler() const;
+    void registerLogHandlers() const;
 };
 
 #endif

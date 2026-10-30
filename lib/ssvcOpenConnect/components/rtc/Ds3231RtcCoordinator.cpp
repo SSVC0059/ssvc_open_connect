@@ -121,7 +121,8 @@ void Ds3231RtcCoordinator::performSyncFromSystemUtc() {
         return;
     }
 
-    TwoWire* w = I2CBusSubsystem::getInstance().getWire();
+    I2CBusSubsystem::Guard bus(I2CBusSubsystem::getInstance());
+    TwoWire* w = bus.wire();
     if (!w) {
         ESP_LOGW(TAG, "No I²C bus — skip RTC write");
         return;
@@ -166,7 +167,8 @@ void Ds3231RtcCoordinator::performBootstrapFromRtc() {
         return;
     }
 
-    TwoWire* w = I2CBusSubsystem::getInstance().getWire();
+    I2CBusSubsystem::Guard bus(I2CBusSubsystem::getInstance());
+    TwoWire* w = bus.wire();
     if (!w) {
         ESP_LOGW(TAG, "RTC enabled but I²C bus inactive");
         return;

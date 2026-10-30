@@ -1,21 +1,23 @@
 <script lang="ts">
 		import RectImg from '$lib/components/Telemetry/RectImg.svelte';
-		import type { SsvcOpenConnectMessage } from '$lib/types/ssvc.ts';
-        import {
-            fetchAlarmThresholds,
-            fetchSensorsTemperatureByZone,
-            fetchTelemetry
-        } from '$lib/api/ssvcApi';
+		import type { SsvcOpenConnectMessage, Xkc25StatusResponse } from '$lib/types/ssvc.ts';
+		import {
+			fetchAlarmThresholds,
+			fetchSensorsTemperatureByZone,
+			fetchTelemetry,
+			fetchXkc25Status
+		} from '$lib/api/ssvcApi';
 		import Control from '$lib/components/Telemetry/Control.svelte';
 		import ValveParameters from '$lib/components/Telemetry/ValveParameters.svelte';
 		import { getDescriptionStage, getStageDescription } from '$lib/utils/ssvcHelper';
 		import ThermalSensors from '$lib/components/Telemetry/ThermalSensors.svelte';
-        import type {AlarmThresholdsState, TemperatureResponse} from '$lib/types/Sensors';
+			import type {AlarmThresholdsState, TemperatureResponse} from '$lib/types/Sensors';
 		import ApiVersionGuard from '$lib/components/ApiVersionGuard.svelte';
 
 		let data = $state<SsvcOpenConnectMessage | null>();
 		let temperatureResponse = $state<TemperatureResponse | null>();
-        let alarmThresholds = $state<AlarmThresholdsState | null>();
+		let alarmThresholds = $state<AlarmThresholdsState | null>();
+		let xkc25Status = $state<Xkc25StatusResponse | null>(null);
 
 		let telemetry = $derived(data?.telemetry)
 		let status = $derived(data?.status)
@@ -39,9 +41,22 @@
         };
 
 		// Функция для перезагрузки данных
-		const reloadSensors = async () => {
+			const reloadSensors = async () => {
 			try {
 				temperatureResponse = await fetchSensorsTemperatureByZone();
+			} catch (err) {
+				if (err instanceof Error) {
+				}
+			}
+		};
+
+		// Статус XKC-25 нужен индикаторам заполнения: он несёт признак калибровки датчиков.
+		const reloadXkc25Status = async () => {
+			try {
+				const next = await fetchXkc25Status();
+				if (next) {
+					xkc25Status = next;
+				}
 			} catch (err) {
 				if (err instanceof Error) {
 				}
@@ -89,13 +104,16 @@
 		}
 
 		$effect(() => {
-
 			loadTelemetry();
 			reloadSensors()
             loadAlarmThresholds();
+			reloadXkc25Status();
 
 			const telemetryInt = setInterval(() => loadTelemetry(), BASE_INTERVAL);
-			const thermal_sensors = setInterval(() => reloadSensors(), TEMPERATURE_REQUEST_INTERVAL);
+			const thermal_sensors = setInterval(() => {
+				reloadSensors();
+				reloadXkc25Status();
+			}, TEMPERATURE_REQUEST_INTERVAL);
 
 			return () => {
 				clearInterval(telemetryInt);
@@ -121,10 +139,10 @@
 										 message="Версия API SSVC не поддерживается. Обновите прошивку SSVC на актуальную"></ApiVersionGuard>
 		<div class="status-right">
 			<span class="status-item">
-				<span class="label">T1:</span> {telemetry?.common.tp1}°C
+				<span class="label">T1:</span> {telemetry?.common.tp1?.toFixed(2)}°C
 			</span>
 			<span class="status-item">
-				<span class="label">T2:</span> {telemetry?.common.tp2}°C
+				<span class="label">T2:</span> {telemetry?.common.tp2?.toFixed(2)}°C
 			</span>
             {#if telemetry?.tank_mmhg}
                 <span class="status-item">
@@ -148,11 +166,11 @@
 								<div class="readings-list">
 									<div class="reading-item">
 										<span class="reading-label">Колонна</span>
-										<span class="reading-value">{telemetry.common.tp1}°C</span>
+										<span class="reading-value">{telemetry.common.tp1.toFixed(2)}°C</span>
 									</div>
 									<div class="reading-item">
 										<span class="reading-label">Куб</span>
-										<span class="reading-value">{telemetry.common.tp2}°C</span>
+										<span class="reading-value">{telemetry.common.tp2.toFixed(2)}°C</span>
 									</div>
 									{#if telemetry.tank_mmhg}
 										<div class="reading-item">
@@ -175,7 +193,7 @@
 					<h2 class="panel-title">{getStageDescription(telemetry? telemetry.type : "")}</h2>
 						{#if telemetry && temperatureResponse}
 							<div class="svg-container">
-								<RectImg telemetry={telemetry} temperatureResponse={temperatureResponse} alarmThresholds={alarmThresholds}/>
+								<RectImg telemetry={telemetry} temperatureResponse={temperatureResponse} alarmThresholds={alarmThresholds} {xkc25Status}/>
 							</div>
 						{/if}
 				</div>
@@ -248,8 +266,8 @@
 					</div>
 				</div>
 			</div>
-		</div>
-	</main>
+			</div>
+		</main>
 </div>
 
 <style lang="scss">

@@ -2,22 +2,35 @@
 
     import type {SsvcTelemetryMessage} from '$lib/types/ssvc';
     import type {AlarmThresholdsState,
+        SensorDetails,
         SensorMap,
         TemperatureResponse, ThresholdSettings} from '$lib/types/Sensors';
     import {fetchAlarmThresholds} from "$lib/api/ssvcApi";
+    import type {Xkc25SensorStatus, Xkc25StatusResponse} from '$lib/types/ssvc';
 
-    const { telemetry, temperatureResponse, alarmThresholds } = $props<{
-		telemetry: SsvcTelemetryMessage | null;
-		temperatureResponse: TemperatureResponse | null;
+    /**
+     * Схема рисуется только при живых данных: родитель монтирует компонент внутри
+     * `{#if telemetry && temperatureResponse}` (см. routes/oc/telemetry/Ssvc.svelte),
+     * поэтому пропсы объявлены без null — иначе типы не выводятся, и каждый пропс
+     * молча становится `any`.
+     */
+    type RectImgProps = {
+		telemetry: SsvcTelemetryMessage;
+		temperatureResponse: TemperatureResponse;
         alarmThresholds?: AlarmThresholdsState | null;
-	}>();
+		xkc25Status?: Xkc25StatusResponse | null;
+	};
+
+    const { telemetry, temperatureResponse, alarmThresholds, xkc25Status = null }: RectImgProps = $props();
 
 	let headsBeginSelected = $derived(telemetry.type === "heads")
 	let lateHeadsBeginSelected = $derived(telemetry.type === "late_heads")
 	let heartsBeginSelected = $derived(telemetry.type === "hearts")
 	let tailsBeginSelected = $derived(telemetry.type === "tails")
 
-	let tails_support = $derived(telemetry.volume.hasOwnProperty("tails"))
+	// В типе volume необязателен (прошивки без хвостов шлют late_heads): нет данных —
+	// сосуд 3 не рисуем.
+	let tails_support = $derived(telemetry.volume?.hasOwnProperty("tails") ?? false)
 
 	// tca
 	let tcaTempValue = $derived(getMaxTemperatureByZone("act"));
@@ -138,7 +151,10 @@
         }
 
         const sensorMap: SensorMap = temperatureResponse[zone];
-        const sensorEntries = Object.entries(sensorMap); // [[address, temp], ...]
+        // Датчики уровня (XKC-25) отдают 0.0/1.0 и в температурную шкалу не входят.
+        const sensorEntries = Object.entries(sensorMap).filter(
+            ([, details]) => details.type !== 'level'
+        ); // [[address, temp], ...]
 
         if (sensorEntries.length === 0) {
             return 0;
@@ -160,7 +176,166 @@
         isCriticalTankTemp = tankThermalValue > tankCriticalTemp;
     });
 
+    // Приёмные ёмкости: индикация заполнения по датчикам уровня (XKC-25).
+    type TankIndicatorMode = 'all' | 'filled' | 'hidden';
+
+    const TANK_ZONES = ['receiver_tank_1', 'receiver_tank_2', 'receiver_tank_3'] as const;
+    const TANK_INDICATOR_WIDTH = 7;
+
+    /**
+     * Геометрия приёмных ёмкостей на схеме (viewBox 280×470): индикатор рисуется
+     * полосой справа от ёмкости, подпись — под ней.
+     */
+    const TANK_GEOMETRY = [
+        { x: 0.8, y: 199.6, width: 48.09, height: 58.93 },
+        { x: 193.14, y: 309.44, width: 48.09, height: 58.93 },
+        { x: 0.8, y: 368.23, width: 48.09, height: 58.93 }
+    ];
+
+    let indicatorMode = $state<TankIndicatorMode>('all');
+    let highlightedTank = $state<number | null>(null);
+
+    /** Датчики уровня в зоне: их нельзя путать с температурными в той же карте. */
+    function levelSensorEntries(zone: string): [string, SensorDetails][] {
+        const sensorMap = temperatureResponse?.[zone];
+        if (!sensorMap) return [];
+        return Object.entries(sensorMap).filter(([, details]) => details.type === 'level');
+    }
+
+    /**
+     * «Жидкость напротив датчика» по живому чтению пина и полярности.
+     * Карта датчиков (/rest/sensor) обновляется только в цикле опроса прошивки (раз в 10 с),
+     * а статус XKC-25 читает пин в момент запроса — без этого индикатор запаздывал
+     * относительно реального состояния жидкости. undefined — живого чтения нет.
+     */
+    function sensorFilled(sensor: Xkc25SensorStatus): boolean | undefined {
+        if (!sensor.live || sensor.rawLevel < 0) return undefined;
+        return sensor.activeLow ? sensor.rawLevel === 0 : sensor.rawLevel === 1;
+    }
+
+    const tankIndicators = $derived.by(() =>
+        TANK_ZONES.map((zone, index) => {
+            const entries = levelSensorEntries(zone);
+            const liveSensors = (xkc25Status?.sensors ?? []).filter(
+                (sensor) => sensor.zoneIndex === index && sensor.enabled
+            );
+            const liveFilled = liveSensors
+                .map(sensorFilled)
+                .filter((value): value is boolean => value !== undefined);
+            return {
+                index,
+                zone,
+                geometry: TANK_GEOMETRY[index],
+                label: `Ёмкость ${index + 1} · Приёмная ёмкость ${index + 1}`,
+                hasSensor: entries.length > 0 || liveSensors.length > 0,
+                // Несколько датчиков в зоне: ёмкость заполнена, если сработал хотя бы один.
+                filled:
+                    liveFilled.length > 0
+                        ? liveFilled.some(Boolean)
+                        : entries.some(([, details]) => Number(details.v) >= 1),
+                // Калибровка известна только из статуса XKC-25: без него не приглушаем.
+                calibrated:
+                    liveSensors.length > 0 ? liveSensors.every((sensor) => sensor.calibrated) : undefined,
+                // Датчик переставляется между ёмкостями: индикатор показывает ёмкость, где он стоит сейчас.
+                shared: liveSensors.some((sensor) => sensor.sharedAcrossTanks === true),
+                pins: liveSensors.map((sensor) => sensor.pinLabel ?? `GPIO ${sensor.gpio}`)
+            };
+        })
+    );
+
+    const visibleTankIndicators = $derived(
+        tankIndicators.filter((tank) => {
+            if (!tank.hasSensor || indicatorMode === 'hidden') return false;
+            // Ёмкость 3 появляется на схеме только при поддержке отбора хвостов.
+            if (tank.index === 2 && !tails_support) return false;
+            if (indicatorMode === 'filled') return tank.filled;
+            return true;
+        })
+    );
+
+    function tankIndicatorClass(tank: { filled: boolean; calibrated?: boolean }): string {
+        const classes = ['tank-level-indicator'];
+        if (tank.filled) classes.push('tank-filled');
+        if (tank.calibrated === false) classes.push('tank-uncalibrated');
+        return classes.join(' ');
+    }
+
+    function tankHint(tank: {
+        label: string;
+        filled: boolean;
+        calibrated?: boolean;
+        shared?: boolean;
+        pins: string[];
+    }): string {
+        const state = tank.filled ? 'жидкость напротив датчика есть' : 'жидкости напротив датчика нет';
+        const pins = tank.pins.length > 0 ? `, ${tank.pins.join(', ')}` : '';
+        const calibration = tank.calibrated === false ? ', датчик не откалиброван' : '';
+        const portable = tank.shared ? ', датчик переносной' : '';
+        return `${tank.label}: ${state}${pins}${calibration}${portable}`;
+    }
+
+    function toggleTankHighlight(index: number) {
+        highlightedTank = highlightedTank === index ? null : index;
+    }
+
 </script>
+<div class="svg-stage">
+{#if tankIndicators.some((tank) => tank.hasSensor)}
+	<div class="tank-panel tank-overlay">
+		<div class="tank-panel-head">
+			<span class="tank-panel-title">Приёмные ёмкости</span>
+			<div class="tank-panel-modes" role="group" aria-label="Отображение индикаторов заполнения">
+				<button
+					type="button"
+					class="btn btn-xs {indicatorMode === 'all' ? 'btn-primary' : 'btn-ghost'}"
+					aria-pressed={indicatorMode === 'all'}
+					onclick={() => (indicatorMode = 'all')}
+				>
+					Все
+				</button>
+				<button
+					type="button"
+					class="btn btn-xs {indicatorMode === 'filled' ? 'btn-primary' : 'btn-ghost'}"
+					aria-pressed={indicatorMode === 'filled'}
+					onclick={() => (indicatorMode = 'filled')}
+				>
+					Только заполненные
+				</button>
+				<button
+					type="button"
+					class="btn btn-xs {indicatorMode === 'hidden' ? 'btn-primary' : 'btn-ghost'}"
+					aria-pressed={indicatorMode === 'hidden'}
+					onclick={() => (indicatorMode = 'hidden')}
+				>
+					Скрыть
+				</button>
+			</div>
+		</div>
+		<ul class="tank-panel-list">
+			{#each tankIndicators.filter((tank) => tank.hasSensor) as tank (tank.zone)}
+				<li
+					class="tank-panel-item"
+					class:filled={tank.filled}
+					class:uncalibrated={tank.calibrated === false}
+				>
+					<span class="tank-panel-label">{tank.label}</span>
+					<span class="tank-panel-state">
+						{tank.calibrated === false
+							? 'Датчик не откалиброван'
+							: tank.filled
+								? 'Заполнено'
+								: 'Пусто'}
+					</span>
+					{#if tank.pins.length > 0}
+						<span class="tank-panel-pins">
+							{#if tank.shared}переносной · {/if}{tank.pins.join(', ')}
+						</span>
+					{/if}
+				</li>
+			{/each}
+		</ul>
+	</div>
+{/if}
 <svg id="Layer_2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 280 470" class="svg-column">
 	<defs>
 		<linearGradient id="linear-gradient" x1="121.01" y1="301.03" x2="121.01" y2="40.04" gradientUnits="userSpaceOnUse">
@@ -233,7 +408,7 @@
 					} d="M279.7,247.48h-38.48v-19.19h38.48v19.19ZM242.19,246.51h36.53v-17.24h-36.53v17.24Z"/>
 	<g>
 		<text x="260" y="242"
-					class="sensor-text">{waterInTempValue}</text>
+					class="sensor-text">{waterInTempValue.toFixed(2)}</text>
 	</g>
 	<g>
 		<path class={`
@@ -242,7 +417,7 @@
 					} d="M140.25,351.54h-38.48v-19.19h38.48v19.19ZM102.74,350.56h36.53v-17.24h-36.53v17.24Z"/>
 		<g>
 			<text x="121.5" y="347"
-						class="sensor-text">{tankThermalValue}</text>
+						class="sensor-text">{tankThermalValue.toFixed(2)}</text>
 		</g>
 	</g>
 	{#if telemetry.tank_mmhg}
@@ -268,7 +443,7 @@
 					} d="M87.36,44.25h-38.48v-19.19h38.48v19.19ZM49.85,43.27h36.53v-17.24h-36.53v17.24Z"/>
 		<g>
 			<text x="69" y="40"
-						class="sensor-text">{waterOutTempValue}</text>
+						class="sensor-text">{waterOutTempValue.toFixed(2)}</text>
 		</g>
 	</g>
 	<g>
@@ -278,7 +453,7 @@
 					} d="M140.25,18.83h-38.48v-19.19h38.48v19.19ZM102.74,17.85h36.53v-17.24h-36.53v17.24Z"/>
 		<g>
 			<text x="121.5" y="14"
-						class="sensor-text">{tcaTempValue}</text>
+						class="sensor-text">{tcaTempValue.toFixed(2)}</text>
 		</g>
 	</g>
 	<g>
@@ -291,18 +466,28 @@
 		</g>
 		<g>
 			<text x="121.5" y="186.5"
-						class="sensor-text">{columnThermalValue}</text>
+						class="sensor-text">{columnThermalValue.toFixed(2)}</text>
 		</g>
 	</g>
-<!--	Капли Хвосты-->
+	<!--
+		Капли показывают, в какой приёмный сосуд идёт отбор на текущем этапе.
+		Соответствие «этап — сосуд» задаётся координатами капель, а не порядком отрисовки,
+		поэтому каждая капля нарисована над своим сосудом (TANK_GEOMETRY):
+		  головы и подголовники → сосуд 1 (0.8, 199.6);
+		  тело (hearts)          → сосуд 2 (193.14, 309.44);
+		  хвосты                 → сосуд 3 (0.8, 368.23, только при поддержке хвостов).
+		Капля падает на 60px (анимация dropFall) и оказывается внутри своей ёмкости;
+		капля хвостов скрыта вместе с сосудом 3, если прошивка не поддерживает хвосты.
+	-->
+	<!--	Капли Хвосты → сосуд 3-->
 	<path class={`
 								cls-6
-								${tailsBeginSelected ? "water-drop" : "hidden-element"}
+								${tailsBeginSelected && tails_support ? "water-drop" : "hidden-element"}
 								drop-1
 							`}
 		d="M28,349.42h0c-1.33,1.64-3.48,1.64-4.81,0h0c-1.33-1.64-1.33-4.31,0-5.95l2.4-3.7,2.4,3.7c1.33,1.64,1.33,4.31,0,5.95Z" />
 
-	<!--	Капли Головы-->
+	<!--	Капли Тело (hearts) → сосуд 2-->
 	<path class={`
 								cls-6
 								${heartsBeginSelected ? "water-drop" : "hidden-element"}
@@ -310,7 +495,7 @@
 							`}
 		d="M220,290.14h0c-1.33,1.64-3.48,1.64-4.81,0h0c-1.33-1.64-1.33-4.31,0-5.95l2.4-3.7,2.4,3.7c1.33,1.64,1.33,4.31,0,5.95Z"/>
 
-	<!--	Капли Тело-->
+	<!--	Капли Головы и подголовники → сосуд 1-->
 	<path class={`
 								cls-6
 								${headsBeginSelected || lateHeadsBeginSelected  ? "water-drop" : "hidden-element"}
@@ -320,7 +505,53 @@
 
 	<circle class="cls-8" cx="24.84" cy="150.68" r="4.81"/>
 	<circle class="cls-8" cx="217.18" cy="159.1" r="4.81"/>
+
+	<!-- Индикаторы заполнения приёмных ёмкостей (XKC-25) -->
+	{#each visibleTankIndicators as tank (tank.zone)}
+		<g
+			class={tankIndicatorClass(tank)}
+			class:tank-highlighted={highlightedTank === tank.index}
+			role="button"
+			tabindex="0"
+			aria-label={tankHint(tank)}
+			onclick={() => toggleTankHighlight(tank.index)}
+			onkeydown={(event) => {
+				if (event.key === 'Enter' || event.key === ' ') {
+					event.preventDefault();
+					toggleTankHighlight(tank.index);
+				}
+			}}
+		>
+			<title>{tankHint(tank)}</title>
+			<rect
+				class="tank-level-frame"
+				x={tank.geometry.x + tank.geometry.width + 3}
+				y={tank.geometry.y}
+				width={TANK_INDICATOR_WIDTH}
+				height={tank.geometry.height}
+				rx="1.5"
+			/>
+			<rect
+				class="tank-level-fill"
+				class:tank-pulse={tank.filled}
+				x={tank.geometry.x + tank.geometry.width + 4}
+				y={tank.geometry.y + 1}
+				width={TANK_INDICATOR_WIDTH - 2}
+				height={tank.geometry.height - 2}
+				rx="1"
+			/>
+			<!-- Одна строка под ёмкостью: подписи не должны наползать на линии схемы. -->
+			<text
+				class="tank-level-label"
+				x={tank.geometry.x + tank.geometry.width / 2}
+				y={tank.geometry.y + tank.geometry.height + 5}
+			>
+				Ёмкость {tank.index + 1}{tank.shared ? ' · переносной' : ''}
+			</text>
+		</g>
+	{/each}
 </svg>
+</div>
 
 <style lang="scss">
     @use "$lib/styles/base/variables" as v;
@@ -484,6 +715,178 @@
 
     .cls-6, .cls-10 {
         fill: var(--cyan-500);
+    }
+
+    /* Индикаторы заполнения приёмных ёмкостей (XKC-25) */
+    .tank-level-indicator {
+        cursor: pointer;
+
+        .tank-level-frame {
+            fill: var(--white);
+            stroke: var(--black);
+            stroke-width: 1px;
+        }
+
+        .tank-level-fill {
+            fill: var(--cyan-500);
+            opacity: 0.25;
+        }
+
+        &.tank-filled {
+            .tank-level-frame {
+                stroke: var(--red-700);
+            }
+
+            .tank-level-fill {
+                fill: var(--red-600);
+                opacity: 0.85;
+            }
+        }
+
+        /* Датчик не откалиброван: индикатор приглушён и не выдаёт вердикт о железе. */
+        &.tank-uncalibrated {
+            opacity: 0.45;
+        }
+
+        &.tank-highlighted .tank-level-frame {
+            stroke: var(--primary-500);
+            stroke-width: 2px;
+        }
+    }
+
+    .tank-level-fill.tank-pulse {
+        animation: tankFillPulse 1s infinite alternate;
+    }
+
+    @keyframes tankFillPulse {
+        from { opacity: 0.5; }
+        to { opacity: 0.95; }
+    }
+
+    .tank-level-label {
+        font-family: Arial, sans-serif;
+        font-size: 5px;
+        fill: var(--black);
+        text-anchor: middle;
+        pointer-events: none;
+    }
+
+    .tank-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .tank-panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .tank-panel-title {
+        font-weight: 600;
+    }
+
+    .tank-panel-modes {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        flex-wrap: wrap;
+    }
+
+    .tank-panel-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .tank-panel-item {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+
+        &.filled .tank-panel-state {
+            color: var(--red-600);
+            font-weight: 600;
+        }
+
+        &.uncalibrated {
+            opacity: 0.7;
+        }
+    }
+
+    .tank-panel-pins {
+        opacity: 0.75;
+    }
+
+    /**
+     * Данные по ёмкостям накладываются ВЕРХНИМ слоем на схему: панель вынута из потока,
+     * поэтому SVG больше не сдвигается вниз и не вылезает за рамку. Место — свободный
+     * правый нижний угол картинки; фон полупрозрачный, поэтому элементы схемы под
+     * панелью остаются видимыми и текст их не перекрывает.
+     */
+    .svg-stage {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .tank-overlay {
+        position: absolute;
+        right: 0.15rem;
+        /* Блок приподнят над нижним краем схемы: у самой кромки подписи «прилипали»
+           к границе картинки и читались как обрезанные. */
+        bottom: 2rem;
+        margin-bottom: 0;
+        /* Узкая колонка в свободном правом нижнем углу схемы: не накрывает ёмкости и куб. */
+        max-width: 34%;
+        padding: 0.3rem 0.4rem;
+        border-radius: 0.4rem;
+        /* Полупрозрачная подложка: элементы схемы под панелью остаются видны.
+           Токен daisyUI 5: короткие имена (--b1) в теме не определены, с ними
+           браузер отбрасывал объявление и текст ложился прямо на схему. */
+        background: var(--color-base-100);
+        background: color-mix(in srgb, var(--color-base-100) 78%, transparent);
+        backdrop-filter: blur(3px);
+        font-size: 0.62rem;
+        line-height: 1.15;
+        pointer-events: auto;
+
+        .tank-panel-title {
+            font-size: 0.66rem;
+        }
+
+        .tank-panel-head {
+            gap: 0.25rem;
+        }
+
+        .tank-panel-modes {
+            gap: 0.15rem;
+        }
+
+        .tank-panel-modes .btn {
+            height: 1.15rem;
+            min-height: 1.15rem;
+            padding: 0 0.25rem;
+            font-size: 0.6rem;
+        }
+
+        .tank-panel-list {
+            gap: 0.05rem;
+        }
+
+        .tank-panel-item {
+            gap: 0.25rem;
+        }
     }
 
 </style>

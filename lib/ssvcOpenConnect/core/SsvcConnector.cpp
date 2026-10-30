@@ -18,6 +18,7 @@
 #include "SsvcConnector.h"
 #include "SsvcOpenConnect.h"
 #include "core/AlarmMonitor/AlarmMonitor.h"
+#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
 
 #include <esp_intr_alloc.h>
 
@@ -25,10 +26,11 @@
 SsvcConnector *SsvcConnector::_ssvcConnector = nullptr;
 
 SsvcConnector::SsvcConnector() {
+  // Конструктор только обнуляет состояние: UART-драйвер и задачи поднимаются в
+  // begin(), после готовности зависимостей (см. SsvcOpenConnect::begin).
   uartCommunicationError = false;
   lastSettings = "";
   lastMessage = "";
-  InitUartDriver();
 }
 
 SsvcConnector &SsvcConnector::getConnector() {
@@ -38,7 +40,32 @@ SsvcConnector &SsvcConnector::getConnector() {
   return *_ssvcConnector; // Возвращаем указатель на экземпляр
 }
 
-void SsvcConnector::InitUartDriver() {
+bool SsvcConnector::begin() {
+  if (_linkState == LinkState::Ready) {
+    return true; // Инициализация идемпотентна
+  }
+  if (_linkState == LinkState::Failed) {
+    return false; // Повторять заведомо неудачную инициализацию не пробуем
+  }
+
+  ESP_LOGI("SsvcConnector", "begin: инициализация UART-тракта");
+  if (!InitUartDriver()) {
+    _linkState = LinkState::Failed;
+    ESP_LOGE("SsvcConnector", "begin: InitUartDriver failed -> Failed");
+    return false;
+  }
+  if (!initSsvcController()) {
+    _linkState = LinkState::Failed;
+    ESP_LOGE("SsvcConnector", "begin: initSsvcController failed -> Failed");
+    return false;
+  }
+
+  _linkState = LinkState::Ready;
+  ESP_LOGI("SsvcConnector", "begin: тракт готов (Ready)");
+  return true;
+}
+
+bool SsvcConnector::InitUartDriver() {
 #if BOARD_KINCONY_KC868_A6
   constexpr int kUartIntrFlags = ESP_INTR_FLAG_LOWMED;
   const char *kBoardTag = "KC868-A6";
@@ -95,7 +122,7 @@ void SsvcConnector::InitUartDriver() {
              "InitUartDriver: uart_param_config FAILED uart=%d err=%s (0x%x)",
              static_cast<int>(SSVC_OPEN_CONNECT_UART_NUM), esp_err_to_name(ret),
              static_cast<unsigned>(ret));
-    return;
+    return false;
   }
   ESP_LOGI("SsvcConnector", "InitUartDriver: uart_param_config OK");
 
@@ -111,7 +138,7 @@ void SsvcConnector::InitUartDriver() {
     ESP_LOGE("SsvcConnector",
              "InitUartDriver: uart_set_pin FAILED err=%s (0x%x)", esp_err_to_name(ret),
              static_cast<unsigned>(ret));
-    return;
+    return false;
   }
   ESP_LOGI("SsvcConnector", "InitUartDriver: uart_set_pin OK");
 
@@ -132,7 +159,7 @@ void SsvcConnector::InitUartDriver() {
     ESP_LOGE("SsvcConnector",
              "InitUartDriver: uart_driver_install FAILED err=%s (0x%x)",
              esp_err_to_name(ret), static_cast<unsigned>(ret));
-    return;
+    return false;
   }
   ESP_LOGI("SsvcConnector", "InitUartDriver: uart_driver_install OK");
 
@@ -149,116 +176,201 @@ void SsvcConnector::InitUartDriver() {
   ESP_LOGI("SsvcConnector", "InitUartDriver: settle delay done");
 #endif
 
-  ESP_LOGI("SsvcConnector", "InitUartDriver: complete, calling initSsvcController()");
-  ESP_LOGV("SsvcConnector", "Starting loop task");
-
-  SsvcConnector::initSsvcController();
+  ESP_LOGI("SsvcConnector", "InitUartDriver: драйвер готов");
+  return true;
 }
 
 // CRON
-void SsvcConnector::initSsvcController() {
+bool SsvcConnector::initSsvcController() {
   ESP_LOGV("SsvcConnector", "start _telemetry task");
   //     Запуск сбора телеметрии
-  xTaskCreatePinnedToCore(
+  TaskHandle_t telemetryTask = nullptr;
+  const BaseType_t created = xTaskCreatePinnedToCore(
       SsvcConnector::_telemetry, // Function that should be called
       "TelemetryTask",           // Name of the task (for debugging)
       4096,                      // Stack size (bytes)
       this,                      // Pass reference to this class instance
       (tskIDLE_PRIORITY + 1),    // task priority
-      nullptr,                   // Task handle
+      &telemetryTask,            // Task handle
       1                          // Pin to application core
   );
+  // Отказ создания задачи виден как Failed: без приёмника UART тракт нерабочий.
+  if (created != pdPASS || telemetryTask == nullptr) {
+    ESP_LOGE("SsvcConnector", "initSsvcController: не удалось создать TelemetryTask");
+    return false;
+  }
+  ESP_LOGI("SsvcConnector", "initSsvcController: TelemetryTask запущена");
+  return true;
 }
 
-constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
+// Короткое блочное чтение: RX не должен просыпаться редко. Тишина учитывается
+// отдельным шагом — иначе частота опроса напрямую задавала бы порог потери связи.
+constexpr uint32_t UART_READ_TIMEOUT_MS = 200;
+constexpr uint32_t kSilenceStepMs = 1000;
 
 [[noreturn]] void SsvcConnector::_telemetry(void *pvParameters) {
   auto *self = static_cast<SsvcConnector *>(pvParameters);
-  static char data[1024];        // Буфер для данных
+  // Аккумулятор строки живёт между проходами: неполный хвост кадра не теряется
+  // и не разбирается как новый кадр.
+  constexpr std::size_t kMaxLineBytes = 1024;
+  constexpr std::size_t kRxChunkBytes = 128;
+  constexpr unsigned kFrameTimeoutMs = 5000;
+  constexpr int kErrorThreshold = 5;
+  static char lineBuffer[kMaxLineBytes];
+  std::size_t lineLength = 0;
+  bool discardingOversize = false;
   int errorCounter = 0;
+  uint32_t lastSilenceMs = millis();
+  // Буфер чтения переживает проходы внешнего цикла: байты, оставшиеся после
+  // '\n' в уже прочитанном блоке, обрабатываются до следующего чтения. Иначе
+  // при нескольких кадрах в одном блоке начало следующего кадра молча терялось.
+  uint8_t rxChunk[kRxChunkBytes];
+  int rxLen = 0;
+  int rxPos = 0;
 
   while (true) {
-    size_t data_len = 0;
-    uart_get_buffered_data_len(SSVC_OPEN_CONNECT_UART_NUM, &data_len);
-    if (data_len > SSVC_OPEN_CONNECT_BUF_SIZE) {
-      ESP_LOGE("SsvcConnector", "Buffer overflow detected, clearing buffer!");
-      uart_flush(SSVC_OPEN_CONNECT_UART_NUM); // Очистка буфера
+    // Зависшая сессия переводится в ошибку независимо от потока байтов.
+    SsvcLogProtocol::getTransfer().checkTimeout(millis());
+
+    // Заполненность кольцевого буфера — только диагностика: ring 8192 больше
+    // порога SSVC_OPEN_CONNECT_BUF_SIZE, поэтому данные не выбрасываются.
+    std::size_t buffered = 0;
+    uart_get_buffered_data_len(SSVC_OPEN_CONNECT_UART_NUM, &buffered);
+    if (buffered > SSVC_OPEN_CONNECT_BUF_SIZE) {
+      ESP_LOGW("SsvcConnector", "UART backlog: %u байт", static_cast<unsigned>(buffered));
     }
 
-    memset(data, 0, sizeof(data));
-    int idx = 0;
-    TickType_t lastByteTime = xTaskGetTickCount();
-    bool lineReadTimedOut = false;
+    // Полная строка собирается из блоков; парсеру передаётся только она.
+    bool lineReady = false;
+    const TickType_t frameStart = xTaskGetTickCount();
 
-    while (true) {
-      // Чтение одного байта за раз
-      const int len = uart_read_bytes(SSVC_OPEN_CONNECT_UART_NUM,
-                                (uint8_t *)&data[idx], 1, pdMS_TO_TICKS(100));
-      if (len > 0) {
-        lastByteTime = xTaskGetTickCount();
-        // Если встретили символ переноса строки, завершаем чтение
-        if (data[idx] == '\n') {
-          data[idx] = '\0'; // Завершаем строку
+    while (!lineReady) {
+      // Чтение выполняется только когда текущий блок исчерпан: непрочитанный
+      // остаток (байты после '\n' в том же блоке) не выбрасывается, а
+      // разбирается в следующем проходе.
+      if (rxPos >= rxLen) {
+        rxLen = uart_read_bytes(SSVC_OPEN_CONNECT_UART_NUM, rxChunk, sizeof(rxChunk),
+                                pdMS_TO_TICKS(UART_READ_TIMEOUT_MS));
+        rxPos = 0;
+        if (rxLen <= 0) {
+          // Тишина на RX: сессия проверяется по таймауту, а связь — по числу секунд
+          // тишины (шаг учёта отделён от частоты коротких чтений).
+          SsvcLogProtocol::getTransfer().checkTimeout(millis());
+          if (lineLength == 0 && millis() - lastSilenceMs >= kSilenceStepMs) {
+            lastSilenceMs = millis();
+            ++errorCounter;
+            if (errorCounter >= kErrorThreshold && !self->uartCommunicationError) {
+              ESP_LOGW("SsvcConnector", "uartCommunicationError=true (тишина RX)");
+              SsvcCommandsQueue::getQueue().scheduleUartRetryTimer();
+              AlarmMonitor::getInstance().raiseHardwareFault(HardwareFaultCode::UART_LINK_LOST, 0,
+                                                             "ssvc_uart");
+              self->uartCommunicationError = true;
+            }
+          }
           break;
         }
-        idx++;
-        // Проверка на переполнение буфера
-        if (idx >= sizeof(data) - 1) {
-          data[sizeof(data) - 1] = '\0'; // Ограничиваем строку
+      }
+
+      // Выход по '\n' оставляет rxPos после перевода строки, поэтому остаток
+      // блока сохраняется для следующего кадра.
+      while (rxPos < rxLen) {
+        const char symbol = static_cast<char>(rxChunk[rxPos++]);
+
+        if (discardingOversize) {
+          // Хвост слишком длинного кадра отбрасывается до перевода строки.
+          if (symbol == '\n') {
+            discardingOversize = false;
+            lineLength = 0;
+          }
+          continue;
+        }
+
+        if (symbol == '\r') {
+          continue;
+        }
+        if (symbol == '\n') {
+          lineReady = true;
           break;
         }
-      } else {
-        // Таймаут: если долго нет данных — выходим (SSVC выключен)
-        if ((xTaskGetTickCount() - lastByteTime) > pdMS_TO_TICKS(UART_READ_TIMEOUT_MS)) {
-          lineReadTimedOut = true;
-          break;
+        if (lineLength >= sizeof(lineBuffer) - 1) {
+          ESP_LOGW("SsvcConnector", "Кадр длиннее %u байт: хвост отброшен",
+                   static_cast<unsigned>(sizeof(lineBuffer)));
+          lineLength = 0;
+          discardingOversize = true;
+          continue;
         }
-        vTaskDelay(pdMS_TO_TICKS(100));
+        lineBuffer[lineLength++] = symbol;
+      }
+
+      // Deadline кадра не продлевается новыми байтами: склейка мусора в одну
+      // «строку» не может длиться бесконечно.
+      if (!lineReady && (xTaskGetTickCount() - frameStart) > pdMS_TO_TICKS(kFrameTimeoutMs)) {
+        ESP_LOGW("SsvcConnector", "Кадр не завершён за %d мс", kFrameTimeoutMs);
+        lineLength = 0;
+        discardingOversize = true;
+        break;
       }
     }
+
+    if (!lineReady) {
+      continue;
+    }
+
+    lineBuffer[lineLength] = '\0';
+    const char* data = lineBuffer;
 
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, data);
     if (error) {
-      // Порог — по *подряд* идущим ошибкам; успешный кадр сбрасывает счётчик ниже.
-      // Таймаут чтения строки без единого байта (тишина на RX) учитывается сильнее.
-      constexpr int errorThreshold = 5;
-      if (lineReadTimedOut && idx == 0) {
-        errorCounter += 2;
-      } else {
-        errorCounter++;
-      }
-      ESP_LOGE("SsvcConnector", "Ошибка десериализации: %s", error.c_str());
+      // Печатается и сам кадр: без него неясно, что пришло — мусор, обрезанная
+      // строка или не-JSON ответ устройства (ограничено 200 символами).
+      ESP_LOGE("SsvcConnector", "Ошибка десериализации: %s (кадр: %.200s)", error.c_str(), data);
 
-      if (errorCounter >= errorThreshold) {
-        if (!self->uartCommunicationError) {
-          ESP_LOGW("SsvcConnector",
-                   "uartCommunicationError=true (errors=%d, threshold=%d)",
-                   errorCounter, errorThreshold);
-          SsvcCommandsQueue::getQueue().scheduleUartRetryTimer();
-          AlarmMonitor::getInstance().raiseHardwareFault(
-              HardwareFaultCode::UART_LINK_LOST, 0, "ssvc_uart");
+      // Кадры лог-сессии не считаются потерей связи: телеметрия в это время
+      // штатно приостановлена. Порог — по подряд идущим ошибкам.
+      if (!SsvcLogProtocol::getTransfer().isBlocked()) {
+        errorCounter++;
+
+        if (errorCounter >= kErrorThreshold) {
+          if (!self->uartCommunicationError) {
+            ESP_LOGW("SsvcConnector",
+                     "uartCommunicationError=true (errors=%d, threshold=%d)",
+                     errorCounter, kErrorThreshold);
+            SsvcCommandsQueue::getQueue().scheduleUartRetryTimer();
+            AlarmMonitor::getInstance().raiseHardwareFault(
+                HardwareFaultCode::UART_LINK_LOST, 0, "ssvc_uart");
+          }
+          self->uartCommunicationError = true;
         }
-        self->uartCommunicationError = true;
       }
     } else {
       errorCounter = 0;
 
-      ESP_LOGV("SsvcConnector", "Начало вывода данных");
-      ESP_LOGV("SsvcConnector", "%s", data);
-      ESP_LOGV("SsvcConnector", "Конец вывода данных");
+      // Классификация выполняется до общего mailbox и подробного лога: файловые
+      // кадры идут только в Transfer и не тратят время на печать payload.
+      const bool isLogFrame = doc["request"] == "GET_LOG" || doc["type"] == "file";
 
-      if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+      if (!isLogFrame) {
+        ESP_LOGV("SsvcConnector", "Начало вывода данных");
+        ESP_LOGV("SsvcConnector", "%s", data);
+        ESP_LOGV("SsvcConnector", "Конец вывода данных");
+        // Обычный кадр при дренировании означает, что поток отменённого файла
+        // закончился: сессия освобождается, не дожидаясь таймаута.
+        SsvcLogProtocol::getTransfer().completeDrain("telemetry_resumed", false);
+      }
+
+      if (!isLogFrame && xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
         self->lastMessage = std::string(data);
         ESP_LOGV("SsvcConnector", "lastMessage: %s", self->lastMessage.c_str());
         xSemaphoreGive(mutex); // Копирование данных
-      } else {
+      } else if (!isLogFrame) {
         ESP_LOGE("SsvcConnector",
                  "Не удалось захватить мьютекс для lastMessage");
       }
 
-      // SSVC появился после ошибки связи — запрашиваем настройки и версию
-      if (self->uartCommunicationError) {
+      // SSVC появился после ошибки связи — запрашиваем настройки и версию, но
+      // не вклиниваемся в активную лог-сессию: она сама освободит транзакцию.
+      if (self->uartCommunicationError && !SsvcLogProtocol::getTransfer().isBlocked()) {
         ESP_LOGI("SsvcConnector", "SSVC connected, requesting settings and version");
         SsvcCommandsQueue::getQueue().getSettings();
         SsvcCommandsQueue::getQueue().version();
@@ -266,34 +378,64 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
       }
       self->uartCommunicationError = false;
       if (doc["type"] == "response") {
-        if (doc["request"] == "GET_SETTINGS") {
+        // request сохраняется вместе с payload: Queue сверяет ответ с активной
+        // командой, а не полагается на «OK» в произвольном кадре.
+        const std::string responseRequest =
+            doc["request"].is<const char*>() ? std::string(doc["request"].as<const char*>())
+                                             : std::string();
+        if (doc["request"] == "GET_LOG") {
+          auto &transfer = SsvcLogProtocol::getTransfer();
+          const SsvcLogProtocol::Status before = transfer.status();
+          transfer.consume(data, millis());
+          // Лог-кадры намеренно не печатаются целиком, но при переводе сессии в
+          // ошибку кадр нужен: иначе причина (invalid_start, unexpected_file)
+          // видна только кодом, без исходных данных.
+          if (before != SsvcLogProtocol::Status::ERROR &&
+              transfer.status() == SsvcLogProtocol::Status::ERROR) {
+            ESP_LOGW("SsvcConnector", "GET_LOG: %s (кадр: %.200s)",
+                     transfer.error().c_str(), data);
+          }
+        } else if (doc["request"] == "GET_SETTINGS" && doc["result"] == "OK") {
           ESP_LOGV("SsvcConnector", "GET_SETTINGS: SEND BIT10");
           xEventGroupSetBits(eventGroup, BIT10);
+        } else if (doc["request"] == "GET_SETTINGS") {
+          // Ответ без успеха: настройки из него не загружаются, команда
+          // завершается как ошибка устройства, а не подменой payload.
+          ESP_LOGW("SsvcConnector", "GET_SETTINGS: результат %s",
+                   doc["result"] | "?");
+          xEventGroupSetBits(eventGroup, BIT1);
         } else if (doc["request"] == "VERSION") {
           ESP_LOGV("SsvcConnector", "result: SEND BIT11 start");
-          ESP_LOGV("SsvcConnector", "END BIT11 lastMessage: %s",
-                   self->lastMessage.c_str());
-          self->lastResponse = std::string(data);
+          self->storeResponse(std::string(data), responseRequest);
           xEventGroupSetBits(eventGroup, BIT11);
           ESP_LOGV("SsvcConnector", "result: SEND BIT11 -end");
 
         } else if (doc["result"] == "OK") {
           ESP_LOGV("SsvcConnector", "result: SEND BIT9 start");
-          ESP_LOGV("SsvcConnector", "END BIT9 lastMessage: %s",
-                   self->lastMessage.c_str());
-          self->lastResponse = std::string(data);
+          self->storeResponse(std::string(data), responseRequest);
           xEventGroupSetBits(eventGroup, BIT9);
           ESP_LOGV("SsvcConnector", "result: SEND BIT9 -end");
         } else {
           ESP_LOGV("SsvcConnector", "ERROR send command");
           xEventGroupSetBits(eventGroup, BIT1);
         }
-        // Отправка ответа на MQTT
-        (void)MqttBridge::getInstance().publish(
-          MQTT_RSP_TOPIC,
-          data,
-          1,
-          true);
+        // Кадры лог-сессии в MQTT не публикуются: это служебный обмен.
+        if (!isLogFrame) {
+          (void)MqttBridge::getInstance().publish(
+            MQTT_RSP_TOPIC,
+            data,
+            1,
+            true);
+        }
+      } else if (doc["type"] == "file") {
+        auto &transfer = SsvcLogProtocol::getTransfer();
+        const SsvcLogProtocol::Status before = transfer.status();
+        transfer.consume(data, millis());
+        if (before != SsvcLogProtocol::Status::ERROR &&
+            transfer.status() == SsvcLogProtocol::Status::ERROR) {
+          ESP_LOGW("SsvcConnector", "GET_LOG: %s (кадр: %.200s)",
+                   transfer.error().c_str(), data);
+        }
       } else {
         if (doc["common"]["cfg_chgd"]) {
           ESP_LOGV("SsvcConnector",
@@ -305,11 +447,24 @@ constexpr uint32_t UART_READ_TIMEOUT_MS = 5000;
       }
     }
 
-    vTaskDelay(pdMS_TO_TICKS(500)); 
+    // Кадр обработан — аккумулятор строки начинает следующий кадр с нуля.
+    // Без сброса байты всех последующих кадров дописывались к предыдущему,
+    // пока не срабатывал порог 1024 («хвост отброшен»).
+    lineLength = 0;
+
+    // Паузу задаёт само чтение (uart_read_bytes с таймаутом): фиксированная
+    // задержка на кадр больше не тормозит поток файла и backlog.
+    taskYIELD();
   }
 }
 
 bool SsvcConnector::sendCommand(const char *command) {
+  // Защита от команд через частично созданный singleton: до Ready тракт не
+  // используется, а отказ виден вызывающему как false.
+  if (_ssvcConnector == nullptr || !_ssvcConnector->isReady()) {
+    ESP_LOGE("SsvcConnector", "sendCommand: UART не готов, команда отклонена");
+    return false;
+  }
   char *commandCopy = strdup(command);
   if (!commandCopy) {
     ESP_LOGE("SsvcConnector", "Ошибка копирования команды");
@@ -326,6 +481,57 @@ bool SsvcConnector::sendCommand(const char *command) {
   return result;
 }
 
-std::string SsvcConnector::getLastMessage() { return lastMessage; }
+namespace {
+/**
+ * Выполняет чтение под общим mutex.
+ *
+ * Снимок строки берётся целиком под блокировкой: возврат ссылки или чтение без
+ * mutex давали гонку с задачей телеметрии. Пустой результат — признак неудачи
+ * захвата, вызывающий обязан обработать его как «снимок недоступен».
+ */
+template <typename Getter>
+std::string withMutex(Getter&& getter, const char* what) {
+  std::string snapshot;
+  if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+    snapshot = getter();
+    xSemaphoreGive(mutex);
+  } else {
+    ESP_LOGE("SsvcConnector", "%s: не удалось захватить мьютекс", what);
+  }
+  return snapshot;
+}
+} // namespace
 
-std::string SsvcConnector::getLastResponse() { return lastResponse; }
+void SsvcConnector::storeResponse(const std::string& payload, const std::string& request) {
+  if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+    lastResponse = payload;
+    lastResponseRequest = request;
+    xSemaphoreGive(mutex);
+  } else {
+    ESP_LOGE("SsvcConnector", "storeResponse: не удалось захватить мьютекс");
+  }
+}
+
+std::string SsvcConnector::getLastMessage() {
+  return withMutex([this] { return lastMessage; }, "getLastMessage");
+}
+
+std::string SsvcConnector::getLastResponse() {
+  return withMutex([this] { return lastResponse; }, "getLastResponse");
+}
+
+std::string SsvcConnector::getLastResponseRequest() {
+  return withMutex([this] { return lastResponseRequest; }, "getLastResponseRequest");
+}
+
+void SsvcConnector::getResponseSnapshot(std::string& payload, std::string& request) {
+  if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+    payload = lastResponse;
+    request = lastResponseRequest;
+    xSemaphoreGive(mutex);
+  } else {
+    ESP_LOGE("SsvcConnector", "getResponseSnapshot: не удалось захватить мьютекс");
+    payload.clear();
+    request.clear();
+  }
+}

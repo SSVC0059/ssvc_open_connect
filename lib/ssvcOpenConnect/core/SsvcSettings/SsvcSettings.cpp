@@ -765,6 +765,7 @@ SsvcSettings::Builder &SsvcSettings::Builder::setExtendedHeads(const int val) {
     }
   }
   return *this;
+
 }
 
 SsvcSettings::Builder & SsvcSettings::Builder::setParallel(float timeTurnOn, int period) {

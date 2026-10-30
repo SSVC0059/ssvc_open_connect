@@ -4,15 +4,20 @@ import { get, writable } from 'svelte/store';
 import type { AlarmThresholdsState, TemperatureResponse } from '$lib/types/Sensors';
 import type {
 	OcHardwareConfigResponse,
+	OcHardwareFaultsResponse,
 	SendCommandResponse,
 	RelayRuleMetadata,
 	SsvcOpenConnectInfo,
 	SsvcOpenConnectMessage,
+	SsvcLogStatus,
 	SsvcSettings,
 	SubsystemsState,
 	TelegramConfig,
 	VkConfig,
-	VkPeersResponse
+	VkPeersResponse,
+	Xkc25CalibrationResponse,
+	Xkc25CalibrationStep,
+	Xkc25StatusResponse
 } from '$lib/types/ssvc';
 
 
@@ -232,6 +237,19 @@ export async function fetchHardwareConfig(): Promise<OcHardwareConfigResponse | 
 	return response.success ? response.data : null;
 }
 
+/**
+ * Активные аппаратные сбои: устройство не подтверждает адрес (NACK),
+ * не обнаружено или недоступна сама шина I²C.
+ *
+ * Проверки в конфиге показывают только «ответил/не ответил» в момент запроса,
+ * а этот список содержит сбои, которые уже зафиксированы монитором аварий
+ * (в том числе при повторных попытках дисплея/RTC).
+ */
+export async function fetchHardwareFaults(): Promise<OcHardwareFaultsResponse | null> {
+	const response = await apiFetch<OcHardwareFaultsResponse>('/rest/oc/hardware-faults', 'GET');
+	return response.success ? response.data : null;
+}
+
 export async function putHardwareConfig(
 	partial: Partial<
 		Omit<OcHardwareConfigResponse, 'capabilities' | 'needsReboot' | 'schemaVersion'>
@@ -243,6 +261,69 @@ export async function putHardwareConfig(
 		partial
 	);
 	return response.success ? response.data : null;
+}
+
+/**
+ * Живое состояние датчиков XKC-25: сырой уровень пина, признак заполнения,
+ * статус калибровки и результат предстартовой проверки.
+ */
+export async function fetchXkc25Status(): Promise<Xkc25StatusResponse | null> {
+	const response = await apiFetch<Xkc25StatusResponse>('/rest/oc/xkc25/status', 'GET');
+	return response.success ? response.data : null;
+}
+
+/**
+ * Итог шага мастера калибровки XKC-25.
+ *
+ * apiFetch считает любой не-2xx ответ ошибкой и теряет тело, а шаги калибровки
+ * отвечают осмысленным JSON и при 409/404 (нестабильный сигнал, нет реакции,
+ * датчик недоступен). Поэтому запрос выполняется напрямую и тело читается
+ * независимо от HTTP-статуса.
+ */
+export type Xkc25CalibrationOutcome = {
+	/** HTTP-статус: 200 — шаг выполнен, 409/404/500 — состояние помешало шагу. */
+	status: number;
+	/** Разобранное тело ответа; null — ответ не получен или не является JSON. */
+	body: Xkc25CalibrationResponse | null;
+	/** Текст ошибки транспорта, когда тело недоступно. */
+	error?: string;
+};
+
+export async function postXkc25Calibrate(
+	index: number,
+	step: Xkc25CalibrationStep,
+	timeoutMs?: number
+): Promise<Xkc25CalibrationOutcome> {
+	const payload: { index: number; step: Xkc25CalibrationStep; timeoutMs?: number } = {
+		index,
+		step
+	};
+	if (timeoutMs != null) {
+		payload.timeoutMs = timeoutMs;
+	}
+	try {
+		const response = await fetch('/rest/oc/xkc25/calibrate', {
+			method: 'POST',
+			headers: getAuthHeaders(),
+			body: JSON.stringify(payload)
+		});
+		const text = await response.text();
+		let body: Xkc25CalibrationResponse | null = null;
+		if (text) {
+			try {
+				body = JSON.parse(text) as Xkc25CalibrationResponse;
+			} catch {
+				body = null;
+			}
+		}
+		return { status: response.status, body };
+	} catch (error) {
+		return {
+			status: 0,
+			body: null,
+			error: error instanceof Error ? error.message : 'Unknown error'
+		};
+	}
 }
 
 /**
@@ -290,6 +371,205 @@ export async function fetchRelayRuleMetadata(): Promise<RelayRuleMetadata | null
 export async function sendTelemetryCommand(command: string): Promise<ApiResponse<unknown>> {
 
 	return await apiFetch<unknown>('/rest/commands', 'POST', { commands: command });
+}
+
+/** Результат запроса статуса журнала: данные контроллера или сохранённая причина отказа. */
+export type LogStatusResult =
+	| { ok: true; data: SsvcLogStatus }
+	| { ok: false; httpStatus: number | null; code: string; message: string };
+
+/** Результат старта загрузки: 202 (запущено), 200 text/csv (готов сразу) или ошибка. */
+export type LogDownloadStart =
+	| { kind: 'accepted'; status: SsvcLogStatus | null }
+	| { kind: 'ready'; blob: Blob }
+	| { kind: 'error'; httpStatus: number | null; code: string; message: string };
+
+// Таймауты GET_LOG-пути: статус отвечает быстро, тело CSV может идти долго.
+// Клиентский idle timeout (LOG_IDLE_TIMEOUT_MS) больше backend-ового TRANSFER_TIMEOUT_MS
+// (10 с), чтобы ошибку контроллера успел сообщить сам backend.
+const LOG_STATUS_TIMEOUT_MS = 5000;
+const LOG_CSV_TIMEOUT_MS = 60000;
+export const LOG_IDLE_TIMEOUT_MS = 15000;
+
+const isAbortError = (error: unknown): boolean =>
+	error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError');
+
+/**
+ * fetch с собственным таймаутом и поддержкой внешнего AbortSignal.
+ *
+ * Общий apiFetch намеренно не меняется: у него другое поведение ошибок,
+ * а GET_LOG-путь обязан отличать таймаут от HTTP-отказа.
+ */
+async function fetchLogResponse(
+	url: string,
+	init: RequestInit,
+	timeoutMs: number,
+	signal?: AbortSignal
+): Promise<Response> {
+	const controller = new AbortController();
+	const timer = setTimeout(
+		() => controller.abort(new DOMException('timeout', 'TimeoutError')),
+		timeoutMs
+	);
+	const abortFromCaller = () => controller.abort(new DOMException('cancelled', 'AbortError'));
+	if (signal) {
+		if (signal.aborted) {
+			abortFromCaller();
+		} else {
+			signal.addEventListener('abort', abortFromCaller, { once: true });
+		}
+	}
+	try {
+		return await fetch(url, { ...init, signal: controller.signal });
+	} finally {
+		clearTimeout(timer);
+		signal?.removeEventListener('abort', abortFromCaller);
+	}
+}
+
+/** Код и сообщение отказа backend ({"error":"..."}), иначе HTTP-статус. */
+async function readLogErrorPayload(response: Response): Promise<{ code: string; message: string }> {
+	try {
+		const payload = await response.json();
+		if (payload && typeof payload.error === 'string') {
+			return { code: payload.error, message: payload.error };
+		}
+	} catch {
+		// Тело не JSON — ограничиваемся HTTP-статусом.
+	}
+	return { code: '', message: `HTTP ${response.status}: ${response.statusText}` };
+}
+
+async function requestLogStatus(url: string, signal?: AbortSignal): Promise<LogStatusResult> {
+	try {
+		const response = await fetchLogResponse(
+			url,
+			{ method: 'GET', headers: getAuthHeaders(), cache: 'no-store' },
+			LOG_STATUS_TIMEOUT_MS,
+			signal
+		);
+		if (!response.ok) {
+			return {
+				ok: false,
+				httpStatus: response.status,
+				...(await readLogErrorPayload(response))
+			};
+		}
+		return { ok: true, data: (await response.json()) as SsvcLogStatus };
+	} catch (error) {
+		return {
+			ok: false,
+			httpStatus: null,
+			code: isAbortError(error) ? 'aborted' : 'network_error',
+			message: isAbortError(error) ? 'Запрос статуса журнала прерван' : 'Нет связи с контроллером'
+		};
+	}
+}
+
+/**
+ * Опрос статуса журнала.
+ *
+ * statusOnly=1 обязателен для polling: без него GET из состояния IDLE сам
+ * запускает LIST, и опрос превращается в побочный запрос списка.
+ */
+export async function fetchLogStatus(
+	signal?: AbortSignal,
+	options: { statusOnly?: boolean } = {}
+): Promise<LogStatusResult> {
+	return requestLogStatus(options.statusOnly ? '/rest/logs?statusOnly=1' : '/rest/logs', signal);
+}
+
+/**
+ * Явное обновление списка журналов: refresh=1 запрашивает LIST заново даже при
+ * уже полученном списке. В активной файловой сессии backend отвечает 409.
+ */
+export async function refreshLogList(signal?: AbortSignal): Promise<LogStatusResult> {
+	return requestLogStatus('/rest/logs?refresh=1', signal);
+}
+
+/**
+ * Первый запрос журнала. Различает готовый CSV (200) и запущенную передачу (202),
+ * чтобы готовый файл сохранялся сразу и polling не запускался.
+ */
+export async function startLogDownload(
+	processId: number,
+	signal?: AbortSignal
+): Promise<LogDownloadStart> {
+	try {
+		const response = await fetchLogResponse(
+			`/rest/logs/${processId}`,
+			{ method: 'GET', headers: getAuthHeaders(), cache: 'no-store' },
+			LOG_CSV_TIMEOUT_MS,
+			signal
+		);
+
+		const contentType = response.headers.get('content-type') ?? '';
+		if (response.ok && contentType.startsWith('text/csv')) {
+			return { kind: 'ready', blob: await response.blob() };
+		}
+
+		if (response.status === 202) {
+			let status: SsvcLogStatus | null = null;
+			try {
+				status = (await response.json()) as SsvcLogStatus;
+			} catch {
+				status = null;
+			}
+			return { kind: 'accepted', status };
+		}
+
+		if (response.ok) {
+			return {
+				kind: 'error',
+				httpStatus: response.status,
+				code: '',
+				message: 'Контроллер вернул не CSV'
+			};
+		}
+
+		return {
+			kind: 'error',
+			httpStatus: response.status,
+			...(await readLogErrorPayload(response))
+		};
+	} catch (error) {
+		return {
+			kind: 'error',
+			httpStatus: null,
+			code: isAbortError(error) ? 'aborted' : 'network_error',
+			message: isAbortError(error) ? 'Запрос журнала прерван' : 'Нет связи с контроллером'
+		};
+	}
+}
+
+export async function downloadLog(processId: number, signal?: AbortSignal): Promise<Blob> {
+	const response = await fetchLogResponse(
+		`/rest/logs/${processId}`,
+		{ method: 'GET', headers: getAuthHeaders(), cache: 'no-store' },
+		LOG_CSV_TIMEOUT_MS,
+		signal
+	);
+	if (!response.ok || response.headers.get('content-type')?.startsWith('text/csv') !== true) {
+		throw new Error(`Не удалось скачать журнал: HTTP ${response.status}`);
+	}
+	return response.blob();
+}
+
+/**
+ * Отмена текущей передачи журнала (сброс состояния на OpenConnect).
+ */
+export async function cancelLogDownload(signal?: AbortSignal): Promise<boolean> {
+	try {
+		const response = await fetchLogResponse(
+			'/rest/logs',
+			{ method: 'DELETE', headers: getAuthHeaders(), cache: 'no-store' },
+			LOG_STATUS_TIMEOUT_MS,
+			signal
+		);
+		return response.ok;
+	} catch {
+		return false;
+	}
 }
 
 /**
@@ -361,5 +641,51 @@ export async function apiFetch<T>(url: string, method: string = 'GET', body?: un
 	} catch (error) {
 		console.error(`API error (${method} ${url}):`, error);
 		return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+	}
+}
+
+// ======================== Перезагрузка контроллера ======================== //
+
+/**
+ * Команда перезагрузки контроллера.
+ *
+ * Устройство уходит в перезапуск сразу после приёма команды и штатно рвёт
+ * соединение, не отдав тело ответа, поэтому обрыв связи ошибкой не считаем:
+ * команда уже доставлена. Ошибка — только явный HTTP-отказ устройства
+ * (например 401 без авторизации).
+ */
+export async function requestRestart(): Promise<{ ok: boolean; error?: string }> {
+	try {
+		const response = await fetch('/rest/restart', {
+			method: 'POST',
+			headers: getAuthHeaders()
+		});
+		if (response.ok) return { ok: true };
+		return { ok: false, error: `HTTP ${response.status}: ${response.statusText}` };
+	} catch {
+		return { ok: true };
+	}
+}
+
+/**
+ * Опрос «контроллер жив»: нужен после перезагрузки, когда штатная связь
+ * (WebSocket) ещё не восстановилась. Запрос ограничен по времени, иначе
+ * обращение к выключенному устройству висит до таймаута браузера.
+ */
+export async function pingDevice(timeoutMs = 2000): Promise<boolean> {
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), timeoutMs);
+	try {
+		const response = await fetch('/rest/oc/info', {
+			method: 'GET',
+			headers: getAuthHeaders(),
+			cache: 'no-store',
+			signal: controller.signal
+		});
+		return response.ok;
+	} catch {
+		return false;
+	} finally {
+		clearTimeout(timer);
 	}
 }

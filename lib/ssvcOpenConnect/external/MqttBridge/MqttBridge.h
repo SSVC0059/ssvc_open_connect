@@ -66,6 +66,11 @@ private:
 
     explicit MqttBridge(MqttSettingsService *settingsService);
 
+    /// Привязать сервис настроек MQTT и подписки клиента. Идемпотентно: нужен,
+    /// чтобы синглтон, созданный без сервиса (ранний вызов getInstance()), мог
+    /// получить его позже, а не остаться навсегда с null-сервисом.
+    void attachSettingsService(MqttSettingsService *settingsService);
+
     void onMqttConnect(bool sessionPresent);
 
     void onMqttMessage(char *topic, char *payload, int retain, int qos, bool dup);

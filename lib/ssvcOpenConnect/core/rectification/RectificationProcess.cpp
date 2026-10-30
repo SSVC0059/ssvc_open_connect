@@ -302,12 +302,15 @@ void RectificationProcess::update(void* pvParameters)
 
     if (bits & BIT0)
     {
+      // Снимок кадра берётся до общей критической секции: getLastMessage() сам
+      // синхронизируется с задачей телеметрии, а повторный захват того же
+      // нерекурсивного mutex внутри секции не проходил (таймаут 1 с) — кадр
+      // читался пустым и разбор JSON всегда падал.
+      const std::string message = self->_ssvcConnector->getLastMessage();
+      ESP_LOGV(TAG, "Received message: %s", message.c_str());
+
       if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000)) == pdTRUE)
       {
-        std::string message;
-        message = self->_ssvcConnector->getLastMessage();
-        ESP_LOGV(TAG, "Received message: %s", message.c_str());
-
         JsonDocument telemetry(&self->_spiRamAllocator);
         DeserializationError error = deserializeJson(telemetry, message);
         if (error)

@@ -2,6 +2,12 @@
 #include <AsyncJson.h>
 #include <Features.h>
 #include "handlers/VkBot/VkBotHandler.h"
+#include "core/SsvcCommandsQueue.h"
+#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
+#include "core/SsvcSettings/SsvcSettings.h"
+
+#include <cstdlib>
+#include <limits>
 
 #define TAG "HandlerRegistrar"
 
@@ -40,6 +46,7 @@ void HandlerRegistrator::registerAllHandlers() const
     registerTelegramBotHandler();
     registerProfileHandler();
     registerFileHandler();
+    registerLogHandlers();
 
     ESP_LOGI(TAG, "All HTTP handlers registered successfully");
 }
@@ -170,13 +177,33 @@ void HandlerRegistrator::registerTelegramBotHandler() const
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
 
+    _server.on("/rest/oc/hardware-faults", HTTP_GET,
+              _securityManager->wrapRequest(
+                  [](AsyncWebServerRequest* request) {
+                      OpenConnectHandler::getHardwareFaults(request);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/oc/xkc25/status", HTTP_GET,
+              _securityManager->wrapRequest(
+                  [](AsyncWebServerRequest* request) {
+                      OpenConnectHandler::getXkc25Status(request);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/oc/xkc25/calibrate", HTTP_POST,
+              _securityManager->wrapCallback(
+                  [](AsyncWebServerRequest* request, JsonVariant& json) {
+                      OpenConnectHandler::postXkc25Calibrate(request, json);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
+
     _server.on("/rest/oc/relay/capabilities", HTTP_GET,
               _securityManager->wrapRequest(
                   [](AsyncWebServerRequest* request) {
                       OpenConnectHandler::getRelayCapabilities(request);
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
-
     _server.on("/rest/oc/relay/metadata", HTTP_GET,
               _securityManager->wrapRequest(
                   [](AsyncWebServerRequest* request) {
@@ -276,4 +303,231 @@ void HandlerRegistrator::registerProfileHandler() const
 void HandlerRegistrator::registerFileHandler() const
 {
     _fileHandler.registerHandlers(_server, _securityManager);
+}
+
+void HandlerRegistrator::registerLogHandlers() const
+{
+    const auto statusName = [](const SsvcLogProtocol::Status status) -> const char* {
+        switch (status) {
+        case SsvcLogProtocol::Status::IDLE:
+            return "idle";
+        case SsvcLogProtocol::Status::LIST_RECEIVED:
+            return "list";
+        case SsvcLogProtocol::Status::COMPLETED:
+            return "completed";
+        case SsvcLogProtocol::Status::ERROR:
+            return "error";
+        default:
+            // Все состояния «в работе» (резерв, ожидание LIST/START, приём,
+            // дренирование) отдаются как receiving: UI продолжает опрос, а не
+            // подменяет прогресс устаревшим списком.
+            return "receiving";
+        }
+    };
+
+    // Готовый журнал удерживается в памяти ограниченное время: иначе до
+    // LOG_TOTAL_RAW_MAX байт остаются занятыми, пока клиент не запросит иное.
+    constexpr unsigned long kCompletedHoldMs = 5UL * 60UL * 1000UL;
+
+    // Точный матчер обязателен. Обычная строка даёт BackwardCompatible-матчер
+    // (`_value == path || path.startsWith(_value + "/")`), а этот обработчик
+    // зарегистрирован раньше "/rest/logs/*". Тогда GET /rest/logs/72 попадал бы
+    // сюда и вместо файла возвращал список (200 + files), из-за чего клиент
+    // показывал «Контроллер вернул не CSV». С exact-матчером специфичный путь
+    // /rest/logs/<id> достаётся обработчику файла.
+    _server.on(AsyncURIMatcher::exact("/rest/logs"), HTTP_GET,
+               _securityManager->wrapRequest(
+                   [statusName](AsyncWebServerRequest* request) {
+                       if (!SsvcApiCapabilities::featureAvailable(
+                               SsvcSettings::init().getSsvcApiVersionCode(),
+                               SsvcApiCapabilities::FEATURE_GET_LOG)) {
+                           // Отказ сообщает, чего именно не хватает: UI показывает
+                           // «требуется API x.y, устройство сообщает z».
+                           const String requiredApi =
+                               SsvcUartApiSpec::formatApiVersion(SsvcApiCapabilities::featureMinVersion(
+                                       SsvcApiCapabilities::FEATURE_GET_LOG))
+                                   .c_str();
+                           const String deviceApi = SsvcSettings::init().getSsvcApiVersion().c_str();
+                           request->send(409, "application/json",
+                                         String("{\"error\":\"api_version_unsupported\","
+                                                "\"feature\":\"get_log\",\"required_api\":\"") +
+                                             requiredApi + "\",\"device_api\":\"" + deviceApi + "\"}");
+                           return;
+                       }
+
+                       auto& transfer = SsvcLogProtocol::getTransfer();
+                       // Deadline незавершённых ожиданий проверяется до чтения
+                       // снимка: зависший LIST не должен выглядеть активным.
+                       transfer.checkTimeout(millis());
+                       transfer.releaseExpiredResult(millis(), kCompletedHoldMs);
+
+                       const bool statusOnly = request->hasParam("statusOnly");
+                       const bool refresh = request->hasParam("refresh");
+
+                       if (refresh && transfer.isFileSession()) {
+                           // Явное обновление списка не вытесняет активную файловую
+                           // сессию: её reset() потерял бы прогресс передачи.
+                           request->send(409, "application/json",
+                                         R"({"error":"log_transfer_busy"})");
+                           return;
+                       }
+
+                       // GET без параметров остаётся совместимым: список запрашивается
+                       // только из IDLE. statusOnly — чистый snapshot без новой
+                       // команды, refresh — явный повторный запрос списка.
+                       const bool needList =
+                           !statusOnly &&
+                           (refresh || transfer.snapshot().status == SsvcLogProtocol::Status::IDLE);
+
+                       if (needList) {
+                           const SsvcLogProtocol::ReserveResult reserved =
+                               transfer.reserveList(millis());
+                           if (reserved == SsvcLogProtocol::ReserveResult::Busy) {
+                               // Занято файловой сессией или дренированием: новый
+                               // список её не вытесняет.
+                               request->send(409, "application/json",
+                                             R"({"error":"log_transfer_busy"})");
+                               return;
+                           }
+                           if (reserved == SsvcLogProtocol::ReserveResult::Accepted &&
+                               !SsvcCommandsQueue::getQueue().getLog("", transfer.generation())) {
+                               // Резерв сделан до постановки команды; при отказе
+                               // очереди он снимается, и клиент получает причину.
+                               transfer.releaseReservation();
+                               request->send(503, "application/json",
+                                             R"({"error":"queue_full"})");
+                               return;
+                           }
+                       }
+
+                       const SsvcLogProtocol::Snapshot snap = transfer.snapshot();
+                       JsonDocument response;
+                       response["status"] = statusName(snap.status);
+                       response["total"] = snap.totalChunks;
+                       response["received"] = snap.receivedChunks;
+                       if (!snap.error.empty()) {
+                           response["error"] = snap.error;
+                       }
+                       if (snap.status == SsvcLogProtocol::Status::LIST_RECEIVED) {
+                           JsonArray files = response["files"].to<JsonArray>();
+                           for (const auto& file : snap.files) {
+                               files.add(file);
+                           }
+                       }
+                       String serialized;
+                       serializeJson(response, serialized);
+                       request->send(200, "application/json", serialized);
+                   },
+                   AuthenticationPredicates::IS_AUTHENTICATED));
+
+    _server.on("/rest/logs/*", HTTP_GET,
+               _securityManager->wrapRequest(
+                   [statusName](AsyncWebServerRequest* request) {
+                       const String prefix = "/rest/logs/";
+                       const String process = request->url().substring(prefix.length());
+                       char* end = nullptr;
+                       const long processNumber = std::strtol(process.c_str(), &end, 10);
+                       if (end == process.c_str() || *end != '\0' || processNumber <= 0 ||
+                           processNumber > std::numeric_limits<int>::max()) {
+                           request->send(400, "application/json", R"({"error":"invalid_process_id"})");
+                           return;
+                       }
+
+                       if (!SsvcApiCapabilities::featureAvailable(
+                               SsvcSettings::init().getSsvcApiVersionCode(),
+                               SsvcApiCapabilities::FEATURE_GET_LOG)) {
+                           // Отказ сообщает, чего именно не хватает: UI показывает
+                           // «требуется API x.y, устройство сообщает z».
+                           const String requiredApi =
+                               SsvcUartApiSpec::formatApiVersion(SsvcApiCapabilities::featureMinVersion(
+                                       SsvcApiCapabilities::FEATURE_GET_LOG))
+                                   .c_str();
+                           const String deviceApi = SsvcSettings::init().getSsvcApiVersion().c_str();
+                           request->send(409, "application/json",
+                                         String("{\"error\":\"api_version_unsupported\","
+                                                "\"feature\":\"get_log\",\"required_api\":\"") +
+                                             requiredApi + "\",\"device_api\":\"" + deviceApi + "\"}");
+                           return;
+                       }
+
+                       auto& transfer = SsvcLogProtocol::getTransfer();
+                       const std::string expectedName = process.c_str() + std::string(".CSV");
+                       transfer.checkTimeout(millis());
+                       transfer.releaseExpiredResult(millis(), kCompletedHoldMs);
+
+                       // Резерв до enqueue: повторный запрос того же файла получает
+                       // текущий статус без новой команды, чужой запрос — 409.
+                       const SsvcLogProtocol::ReserveResult reserved =
+                           transfer.reserveFile(static_cast<int>(processNumber), millis());
+
+                       if (reserved == SsvcLogProtocol::ReserveResult::Unavailable) {
+                           request->send(400, "application/json",
+                                         R"({"error":"invalid_process_id"})");
+                           return;
+                       }
+
+                       if (reserved == SsvcLogProtocol::ReserveResult::Busy) {
+                           request->send(409, "application/json",
+                                         R"({"error":"log_transfer_busy"})");
+                           return;
+                       }
+
+                       if (reserved == SsvcLogProtocol::ReserveResult::Accepted &&
+                           !SsvcCommandsQueue::getQueue().getLog(std::to_string(processNumber),
+                                                                 transfer.generation())) {
+                           // Очередь отказала — резерв снимается до ответа, чтобы
+                           // сессия не осталась занятой без команды.
+                           transfer.releaseReservation();
+                           request->send(503, "application/json",
+                                         R"({"error":"queue_full"})");
+                           return;
+                       }
+
+                       const SsvcLogProtocol::Snapshot snap = transfer.snapshot();
+                       if (snap.status == SsvcLogProtocol::Status::COMPLETED &&
+                           snap.fileName == expectedName) {
+                           // Копия берётся под lock, а результат остаётся в Transfer:
+                           // обрыв HTTP или повторный GET того же процесса отдаёт те же
+                           // байты без новой UART-команды. Ресурс освобождается при новом
+                           // резерве или отмене. Пиковая память — исходный буфер плюс эта
+                           // копия; потоковая выдача требует замера heap (не подтверждено).
+                           const std::string data = transfer.dataCopy();
+                           String csv(data.c_str(), static_cast<unsigned int>(data.size()));
+                           String disposition =
+                               String("attachment; filename=\"") + expectedName.c_str() + "\"";
+                           auto* response = request->beginResponse(200, "text/csv", csv);
+                           response->addHeader("Content-Disposition", disposition);
+                           request->send(response);
+                           return;
+                       }
+
+                       JsonDocument response;
+                       response["status"] = statusName(snap.status);
+                       response["total"] = snap.totalChunks;
+                       response["received"] = snap.receivedChunks;
+                       if (!snap.error.empty()) {
+                           response["error"] = snap.error;
+                       }
+                       String serialized;
+                       serializeJson(response, serialized);
+                       request->send(202, "application/json", serialized);
+                   },
+                   AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // Отмена текущей передачи журнала (GET_LOG). До отправки резерв снимается,
+    // после отправки сессия переходит в DRAINING: новый запрос не принимается,
+    // пока не показана граница старого потока кадров.
+    _server.on("/rest/logs", HTTP_DELETE,
+               _securityManager->wrapRequest(
+                   [statusName](AsyncWebServerRequest* request) {
+                       auto& transfer = SsvcLogProtocol::getTransfer();
+                       transfer.cancel();
+                       const SsvcLogProtocol::Snapshot snap = transfer.snapshot();
+                       JsonDocument response;
+                       response["status"] = statusName(snap.status);
+                       String serialized;
+                       serializeJson(response, serialized);
+                       request->send(200, "application/json", serialized);
+                   },
+                   AuthenticationPredicates::IS_AUTHENTICATED));
 }

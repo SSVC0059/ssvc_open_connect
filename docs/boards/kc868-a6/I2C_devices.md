@@ -6,7 +6,7 @@
 
 | Устройство        | Адрес | Примечание |
 |-------------------|-------|------------|
-| Входы (сухие контакты) | 0x22 | опционально |
+| Входы (сухие контакты) | 0x22 | входной расширитель для дискретных датчиков уровня XKC-25: драйвер [`Pcf8574Input`](https://github.com/SSVC0059/ssvc_open_connect/blob/main/lib/ssvcOpenConnect/components/io/Pcf8574/Pcf8574Input.h), роль для алармов `pcf8574_in`. Адрес по умолчанию — `SSVC_XKC25_PCF8574_INPUT_ADDR` (0x22). **Не должен совпадать с адресом реле**: иначе `prepareInputs()` пишет 0xFF в тот же чип, что и `RelayPortCoordinator`. |
 | Реле / выходы (PCF8574) | по умолчанию **0x24** | драйвер [`Pcf8574RelayPort`](https://github.com/SSVC0059/ssvc_open_connect/blob/main/lib/ssvcOpenConnect/components/io/Pcf8574RelayPort.h); роль для алармов задаётся макросом `SSVC_RELAY_PCF8574_DEVICE_ROLE` (по умолчанию `pcf8574_port0`). Дополнительные микросхемы — отдельный адрес и роль. |
 | GP8403 DAC        | 0x58  | план |
 | Дисплей / MQ / др.| —     | документировать при добавлении |
@@ -16,6 +16,7 @@
 1. Не вызывать `Wire.begin` в драйвере — использовать `I2CBusSubsystem::getWire()` и проверять `isActive()`.
 2. При критичных сбоях (NACK, пропала шина) — `AlarmMonitor::raiseHardwareFault(code, addr, "stable_role_string")`; при восстановлении — `clearHardwareFault`.
 3. Несколько PCF8574: для каждого чипа — свой экземпляр `Pcf8574RelayPort(i2cAddr, role)` и свои макросы/конфиг в `platformio.ini`.
+4. **Входной PCF8574 (сухие контакты):** чип квази-двунаправленный — бит читается как вход, только пока в него записана 1. Выделенный входной расширитель один раз переводится в режим входов (`Pcf8574Input::prepareInputs()`, запись `0xFF`), после чего чтение — это `requestFrom(addr, 1)`. Общий адрес с выходным расширителем реле недопустим. Сбой чтения — это не уровень 0: `DigitalInputPin::read()` возвращает `ok = false`, а `AlarmMonitor` получает `I2C_NACK` с ролью `pcf8574_in`.
 
 См. также [GPIO_Pinout.md](GPIO_Pinout.md).
 

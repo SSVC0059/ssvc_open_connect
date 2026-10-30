@@ -30,6 +30,9 @@
 #include <vector>
 
 #define ATTEMPT_COUNT 3
+// Таймаут ожидания ответа задан в тиках: значение по умолчанию уже
+// сконвертировано, поэтому повторный pdMS_TO_TICKS над ним в
+// pushCommandInQueue давал неверную длительность при tick != 1 мс.
 #define TIMEOUT pdMS_TO_TICKS(3000)
 #define GET_SETTINGS_REQUEST_TIMER 30000
 
@@ -44,7 +47,8 @@ enum class SsvcCommandType
   NEXT,
   AT,
   SET,
-  STATUS
+  STATUS,
+  GET_LOG
 };
 
 struct SsvcCommand
@@ -53,6 +57,13 @@ struct SsvcCommand
   std::string parameters;
   int attempt_count = 0;
   TickType_t timeout = TIMEOUT;
+  /// Номер сессии GET_LOG, под которую сделан резерв (0 — команда вне сессии).
+  /// По нему воркер отбрасывает отменённые и устаревшие лог-команды.
+  unsigned long generation = 0;
+  /// Поколение safety: снимок _safetyEpoch на момент постановки. Неотправленная
+  /// неидемпотентная команда с устаревшим поколением отбрасывается после
+  /// аварийной остановки.
+  unsigned long safetyEpoch = 0;
 };
 
 class MutexLock
@@ -79,31 +90,48 @@ public:
     return queue;
   }
 
-  void getSettings(int attempt_count = ATTEMPT_COUNT,
+  /// Явная инициализация: очередь → задача-воркер → Ready. Вызывается из
+  /// SsvcOpenConnect::begin() после готовности зависимостей, а не из конструктора.
+  bool begin();
+
+  bool isReady() const { return _ready; }
+  bool hasFailed() const { return _failed; }
+
+  /// Аварийная остановка: приоритетный путь вне общего FIFO.
+  /// Ставится в отдельную safety-очередь, которую воркер забирает первой, и не
+  /// ждёт накопленных обычных команд. @return true, если STOP принят к отправке.
+  bool emergencyStop();
+
+  /// @return true, если команда поставлена в очередь.
+  bool getSettings(int attempt_count = ATTEMPT_COUNT,
                    TickType_t timeout = TIMEOUT) const;
 
-  void next(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool next(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
-  void stop(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool stop(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
-  void start(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool start(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
-  void pause(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool pause(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
-  void resume(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool resume(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
-  void version(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool version(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
-  void at(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool at(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
 
   /// @return true, если команда поставлена в очередь; false — отброшена по версии API.
-  /// @param skippedOut необязательный приёмник отброшенных полей SET (принадлежит
-  ///        вызывающей операции, поэтому отчёт не смешивается между запросами).
   bool set(const std::string& parameters, int attempt_count = ATTEMPT_COUNT,
            TickType_t timeout = TIMEOUT,
            std::vector<std::string>* skippedOut = nullptr) const;
 
-  void status(const std::string& parameters, int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool status(const std::string& parameters, int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+
+  /// @return true, если команда поставлена в очередь; false — функция недоступна на устройстве.
+  /// generation — номер сессии, зарезервированной через Transfer::reserve*;
+  /// команда с устаревшим generation отбрасывается воркером до отправки.
+  bool getLog(const std::string& parameters = "", unsigned long generation = 0,
+              int attempt_count = 1, TickType_t timeout = TIMEOUT) const;
 
   UBaseType_t availableCommands() const
   {
@@ -124,10 +152,10 @@ public:
    */
   std::string lastRejectionReason() const { return _lastRejectionReason; }
 
-  /// Возможность, которой не хватило ("extended_heads", "predec", ...).
+  /// Возможность, которой не хватило ("get_log", "extended_heads", "predec", ...).
   std::string lastRejectedFeature() const { return _lastRejectedFeature; }
 
-  /// Фактическая и требуемая версия API из последней отбраковки ("1.7" / "1.9").
+  /// Фактическая и требуемая версия API из последней отбраковки ("1.7" / "1.10").
   std::string lastRejectedDeviceApi() const { return _lastRejectedDeviceApi; }
 
   std::string lastRejectedRequiredApi() const { return _lastRejectedRequiredApi; }
@@ -140,14 +168,32 @@ public:
     }
   }
 
-  static const std::map<std::string, std::function<void(const std::string&)>> COMMAND_MAP;
+  /// Команда возвращает результат постановки в очередь: REST отвечает ошибкой
+  /// при отказе, а не «accepted» независимо от фактической отправки.
+  static const std::map<std::string, std::function<bool(const std::string&)>> COMMAND_MAP;
 
 private:
   QueueHandle_t command_queue;
+  /// Отдельная очередь аварийных команд: воркер забирает её прежде общего FIFO,
+  /// поэтому STOP не зависит от накопленных обычных команд.
+  QueueHandle_t safety_queue{};
+  bool _ready{false};
+  bool _failed{false};
+  /// Поколение safety: инкремент при emergencyStop инвалидирует неотправленные
+  /// START/NEXT/RESUME, устаревшие после аварийной остановки.
+  unsigned long _safetyEpoch{0};
   TimerHandle_t _settingsTimer = nullptr;
   mutable TimerHandle_t _uartRetryTimer = nullptr;
   static constexpr UBaseType_t COMMAND_QUEUE_LENGTH = 50;
-  static constexpr UBaseType_t COMMAND_QUEUE_ITEM_SIZE = sizeof(SsvcCommand);
+  /**
+   * @brief Размер элемента очереди — указателя на команду, а не объекта.
+   *
+   * FreeRTOS копирует элемент побайтово и не вызывает конструктор копирования
+   * std::string, поэтому очередь владеет указателями, а объект живёт в куче
+   * до delete в commandProcessorTask. Размер обязан совпадать с адресом,
+   * который передаётся в xQueueSend/xQueueReceive.
+   */
+  static constexpr UBaseType_t COMMAND_QUEUE_ITEM_SIZE = sizeof(SsvcCommand *);
 
   /**
    * @brief Соответствие типов команд и битов событий
@@ -161,6 +207,7 @@ private:
       {SsvcCommandType::NEXT, BIT9},
       {SsvcCommandType::AT, BIT9},
       {SsvcCommandType::SET, BIT9},
+      {SsvcCommandType::STATUS, BIT9},
       {SsvcCommandType::START, BIT9}
   };
 
@@ -208,14 +255,15 @@ private:
   /**
    * @brief Единая точка постановки команды в очередь — и единственное место gate.
    *
-   * Проверка версии API стоит здесь, а не в set(), чтобы новая
+   * Проверка версии API стоит здесь, а не в set()/getLog(), чтобы новая
    * версионозависимая команда не могла её забыть: для SET отбрасываются поля,
-   * отсутствующие на устройстве.
+   * отсутствующие на устройстве, для GET_LOG проверяется возможность.
    *
    * @return true, если команда поставлена в очередь.
    */
   bool pushCommandInQueue(SsvcCommandType type, const std::string& parameters,
                           int attempt_count, TickType_t timeout,
+                          unsigned long generation = 0,
                           std::vector<std::string>* skippedOut = nullptr) const;
 
   /// Диагностика последней отбраковки; читается REST-слоем при отказе.

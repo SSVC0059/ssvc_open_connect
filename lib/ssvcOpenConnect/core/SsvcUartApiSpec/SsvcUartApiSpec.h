@@ -1,5 +1,5 @@
 /**
- * SSVC0059_V2 UART API Specification (v1.9)
+ * SSVC0059_V2 UART API Specification (v1.10)
  * https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.9/README.md
  *
  * Константы и валидация по спецификации API.
@@ -69,6 +69,7 @@ constexpr size_t SET_CMD_MAX_LEN = 300;
 #define SSVC_CMD_VERSION "VERSION"
 #define SSVC_CMD_GET_SETTINGS "GET_SETTINGS"
 #define SSVC_CMD_SET "SET"
+#define SSVC_CMD_GET_LOG "GET_LOG"
 
 // === Валидация (соответствие API) ===
 
