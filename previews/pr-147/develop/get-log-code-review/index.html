@@ -1,0 +1,2864 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Модуль расширения функционала автоматики отбора для ректификации  SSVC0059V2,">
+      
+      
+        <meta name="author" content="thedemoncat">
+      
+      
+        <link rel="canonical" href="https://SSVC0059.github.io/ssvc_open_connect/previews/pr-147/develop/get-log-code-review/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../media/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Get log code review - SSVC Open Connect</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#symget_log-uart-backend-frontend" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="SSVC Open Connect" class="md-header__button md-logo" aria-label="SSVC Open Connect" data-md-component="logo">
+      
+  <img src="../../media/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SSVC Open Connect
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Get log code review
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/SSVC0059/ssvc_open_connect" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SSVC0059/ssvc_open_connect
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Главная
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../preparation/driver/" class="md-tabs__link">
+          
+  
+  
+  Подготовка
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../usage/get_started/" class="md-tabs__link">
+          
+  
+  
+  Первый запуск
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../usage/interfaces/uart/" class="md-tabs__link">
+          
+  
+  
+  Периферия
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../calculator/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Калькулятор ректификации
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../preparation/controller/" class="md-tabs__link">
+          
+  
+  
+  Платы и готовые модули
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../glossary/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Глоссарий
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Для разработчиков
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SSVC Open Connect" class="md-nav__button md-logo" aria-label="SSVC Open Connect" data-md-component="logo">
+      
+  <img src="../../media/logo.png" alt="logo">
+
+    </a>
+    SSVC Open Connect
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/SSVC0059/ssvc_open_connect" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SSVC0059/ssvc_open_connect
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Главная
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подготовка
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Подготовка
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/driver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Прошивка контроллера под OS Windows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Скачивание релиза SSVC Open Connect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/flasher/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Автоматическая установка актуальной версии
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/flasher_manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Автоматическая установка актуальной версии
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/adafruit_webserial_esptool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Прошивка через Adafruit WebSerial ESPTool
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Первый запуск
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Первый запуск
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/get_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Начало работы с контроллером
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/messengers/vk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Уведомления VK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Периферия
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Периферия
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/uart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение к SSVC по UART
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Питание контроллера
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/ds18b20/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Датчик температуры DS18B20
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/bmp581/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Датчик давления BMP581 (I²C)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/rgb_led/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение адресного светодиода
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/ds3231-rtc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Часы реального времени DS3231 (I2C)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../calculator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Калькулятор ректификации
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Платы и готовые модули
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Платы и готовые модули
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модули ESP32-S3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    KC868-A6v3
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    KC868-A6v3
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../boards/kc868-a6/KC868-A6v3-KinCony.ru/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Описание (KinCony)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../boards/kc868-a6/GPIO_Pinout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Распиновка GPIO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../boards/kc868-a6/I2C_devices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    I2C устройства
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Готовые модули
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Готовые модули
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ready_made/connect/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение модуля
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ready_made/din_version/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модуль для установки на DIN рейку
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ready_made/inside_version/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модуль для установки внутри ящика
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Глоссарий
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Для разработчиков
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Сборка прошивки
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Тестирование
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docs-previews/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Превью документации из pull request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../i2c_monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Мониторинг I2C и алертинг (прошивка)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-v1.10-support-plan.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    План поддержки UART API v1.10
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_7" id="__nav_9_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    REST API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Документация по REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Настроек
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Команд
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/sensors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Датчики
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/telegram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Telegram Бота
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/subsystem/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Подсистемы
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/openconnect/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API OpenConnect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Профили
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Файлов
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/logs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Журналов ректификаций
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ssvc_uart_api_docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UART API SSVC (справка)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ssvc-serial-protocol/develop/Readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Протокол UART — примеры (JSON/TXT)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_10" id="__nav_9_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Фронтенд
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Фронтенд
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frontend/frontend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    📑 SCSS Классы и Компоненты Пользовательского Интерфейса
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frontend/styling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Стратегия стилей (Tailwind + DaisyUI)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#symget_log-uart-backend-frontend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Кодревью #sym:GET_LOG: UART → backend → frontend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Компактное ТЗ для агента: решения
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Главные выводы
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Проверенная цепочка и контракт
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#f1-p1-frontend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F1. P1 — frontend бросает длинную передачу и скрывает ошибку
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#f2-p1-get-csv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F2. P1 — стартовый GET теряет уже готовый CSV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#t1-p1-_telemetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        T1. P1 — _telemetry использует устаревший режим передачи
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#t2-p1-mutex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        T2. P1 — приём каждого файлового кадра зависит от общего mutex
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#t3-p2-rx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        T3. P2 — заполненность RX ошибочно трактуется как переполнение
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#t4-p2-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        T4. P2 — timeout и восстановление границы строки неполны
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#b1-p1-uart-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B1. P1 — резервирование и сериализация UART-транзакции отсутствуют
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#b2-p1-transfer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B2. P1 — общий Transfer не защищён от межзадачных гонок
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#b3-p1-pending-enqueue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B3. P1 — список может навсегда остаться pending; ошибки enqueue скрыты
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#b4-p2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B4. P2 — отмена не изолирует старую сессию
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#b5-p2-base64-signed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B5. P2 — декодер Base64 использует неограниченный signed аккумулятор
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#f3-p2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F3. P2 — список не ожидается и плохо восстанавливается после ошибок
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#f4-p2-http" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F4. P2 — HTTP ошибки теряются, продолжения не ограничены временем
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#h1-p1-csv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        H1. P1 — память и выдача больших CSV: риск, требующий измерения
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Что не следует объявлять причиной без проверки
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Предлагаемый порядок исправления
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Проверки для подтверждения на устройстве и будущие регрессионные тесты
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Внешняя проверка технических предпосылок
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>Get log code review</h1>
+
+<div><h3 id="symget_log-uart-backend-frontend">Кодревью <code>#sym:GET_LOG</code>: UART → backend → frontend</h3>
+<p>Дата: 10 октября 2026 года. Ветка: <code>feature/api-v1.10-update</code>, HEAD по контексту: <code>d32b6cd</code>.
+Объект анализа — текущий рабочий код, не только изменения последнего коммита. Номера строк относятся к нему.
+Выполнен статический анализ. Прошивка, браузер на устройстве, сборки и тесты не запускались. Код не исправлялся, коммиты не создавались.
+P1 — блокирует скачивание/надёжность передачи; P2 — нарушает восстановление, отмену или диагностику.
+«Подтверждено» означает наличие дефекта в логике; связь с конкретным наблюдением требует трассы, если указано отдельно.</p>
+<h3 id="_1">Компактное ТЗ для агента: решения</h3>
+<p><strong>Статус:</strong> план реализации, не выполненные исправления. Текущая задача — только документирование; применять кодовые изменения после отдельного поручения. Не делать коммиты, сборки, установки или аппаратные проверки без разрешения. Существующие пользовательские изменения сохранить.
+<strong>Чтение:</strong> для реализации достаточно этого раздела, карты файлов ниже и затрагиваемых функций. Полное ревью читать только при спорном пункте. Номера строк ниже — ориентиры; искать по символам. Не исследовать весь репозиторий заново.
+<strong>Цель:</strong> одна UART-сессия GET_LOG, быстрый RX, явное завершение/ошибка/отмена, повторно доступный CSV. Не добавлять WS, CRC/EOF или менять формат UART. Причину первого отказа малого файла не считать установленной.</p>
+<p><strong>Карта файлов:</strong>
+- <code>Protocol</code> — <code>lib/ssvcOpenConnect/core/SsvcLogProtocol/SsvcLogProtocol.h</code>: <code>Transfer</code>, состояния, Base64, результат.
+- <code>Connector</code> — <code>lib/ssvcOpenConnect/core/SsvcConnector.cpp</code>: <code>_telemetry</code>, RX/framing/маршрутизация.
+- <code>Queue</code> — <code>lib/ssvcOpenConnect/core/SsvcCommandsQueue.cpp</code>: постановка/отправка GET_LOG, сериализация.
+- <code>REST</code> — <code>lib/ssvcOpenConnect/API/HandlerRegistrator.cpp</code>: <code>/rest/logs</code>, <code>/rest/logs/{id}</code>, DELETE.
+- <code>Client</code> — <code>interface/src/lib/api/ssvcApi.ts</code>: start/status/download/cancel.
+- <code>UI</code> — <code>interface/src/routes/oc/logs/RectificationLogs.svelte</code>: ожидание, сохранение, отмена, список.
+- Проверки: <code>test/native/test_ssvc_log_protocol/test_main.cpp</code>, <code>interface/tests/unit/api/ssvcApi.logs.test.ts</code>; UI-сценарии добавить в существующую инфраструктуру, не устанавливать новую.</p>
+<p><strong>1. F1/F2/F4 — исправить клиентский жизненный цикл (<code>Client</code>, <code>UI</code>).</strong>
+- Заменить boolean старта на результат с вариантами: <code>accepted</code> (202 + статус), <code>ready</code> (200 <code>text/csv</code> + Blob), <code>error</code> (HTTP status + backend code/message). Эти имена — предлагаемые, не существующие API.
+- При <code>ready</code> сохранить Blob сразу; polling не запускать. При <code>accepted</code> опрашивать последовательно с интервалом 500 мс; удалить лимит 30 попыток.
+- Timeout ожидания считать от последнего изменения состояния или увеличения <code>received</code>, не от последнего успешного HTTP. Предлагаемый клиентский idle timeout — 15 с при текущем backend timeout 10 с; GET статуса ограничить 5 с. Получение тела CSV ограничить отдельно, например 60 с. Это начальные значения, не свойства UART-контракта.
+- Для каждого fetch использовать AbortSignal; сохранять HTTP/backend ошибки, не превращать их в null/false. Если общий <code>apiFetch</code> нужен другим функциям, менять только GET_LOG-путь, без глобального изменения поведения клиента.
+- Локальный UI-статус отделить от backend snapshot: <code>starting/waiting/downloading/done/error/cancelled</code>. При timeout/ошибке завершить локальное ожидание; ошибка должна отображаться раньше старого <code>receiving</code>.
+- После каждого await проверить поколение операции и состояние отмены, в том числе после получения Blob и перед нажатием ссылки. При новом действии очищать старую ошибку; при уходе со страницы отменять локальные запросы.
+- <strong>Готово:</strong> стартовый 200 сохраняется один раз; передача &gt;30 опросов завершается скачиванием; зависший HTTP ограничен; ошибка видна, старое продолжение не сохраняет файл.</p>
+<p><strong>2. B2/B1/B3 — согласованная сессия (<code>Protocol</code>, <code>Queue</code>, <code>REST</code>).</strong>
+- Использовать один общий mutex сессии вместо широкого архитектурного рефакторинга. Защитить все чтения/переходы/контейнеры Transfer; HTTP получает snapshot по значению, не ссылки. Большой CSV отдавать через отдельный стабильный объект результата, не копировать под mutex на каждом status GET.
+- Не держать mutex во время UART/HTTP/FS ожидания, callback или enqueue. Резервировать под lock, отпустить, поставить команду, при отказе откатить только тот же generation. Queue перед отправкой проверяет generation и допустимое состояние.
+- Разделить состояния: <code>IDLE</code>, <code>QUEUED_LIST</code>, <code>WAITING_LIST</code>, <code>LIST_RECEIVED</code>, <code>QUEUED_FILE</code>, <code>WAITING_START</code>, <code>RECEIVING</code>, <code>COMPLETED</code>, <code>ERROR</code>, <code>DRAINING</code>. Названия внутренние; JSON-схему изменять согласованно с Client/UI.
+- Атомарно записывать <code>generation</code>, вид запроса и process id ДО enqueue. Активный запрос того же файла возвращает текущий статус без повторного enqueue; другого файла — 409. Имя из START не заменяет зарезервированный process id.
+- Queue больше не вызывает безусловный <code>beginFile/reset</code> для уже зарезервированного запроса. Переход в WAITING_START/WAITING_LIST выполнить ДО записи UART; учитывать отказ записи.
+- При enqueue=false вернуть 503 с <code>queue_full</code>, убрать резерв. Для очереди/ожидания LIST/START ввести отдельные deadline; исходная точка — резервирование/отправка соответственно. Предлагаемый предел каждого ожидания — 10 с; timeout должен проверяться независимо от HTTP polling.
+- После отправки GET_LOG не отправлять обычные команды до завершения либо окончания DRAINING. Не ждать терминального состояния в блокирующем цикле: worker продолжает обслуживание, но откладывает обычную отправку. Аварийные команды не блокировать новой политикой молча; сохранить существующий safety-путь, при прерывании файла перейти к дренированию.
+- <strong>Готово:</strong> два клиента создают одну команду; enqueue=false не оставляет busy; потерянные LIST/START заканчиваются ошибкой; snapshot/reset/consume не гоняются; обычные запросы не вклиниваются в файл.</p>
+<p><strong>3. T1/T2/T3/T4 — отделить RX файла от телеметрии (<code>Connector</code>, <code>Protocol</code>).</strong>
+- После разбора JSON сначала классифицировать GET_LOG/LIST/START/file и передать в Transfer; только обычную телеметрию отправлять через <code>lastMessage</code> и общий telemetry mutex. Файловые кадры не должны ждать этот mutex, сетевые callback или подробный лог всего payload.
+- Не запускать GET_SETTINGS/VERSION при восстановлении связи во время зарезервированного/активного/дренируемого GET_LOG: отложить их до освобождения UART-транзакции.
+- Не использовать <code>logTransferActive</code>, вычисленный до блокирующего чтения, для финального delay/учёта ошибок. Брать актуальный snapshot после кадра; при backlog продолжать RX без фиксированной покадровой паузы. При непрерывном потоке оставить короткие ограниченные проходы/уступку планировщику, не делать busy spin.
+- Удалить flush по <code>buffered &gt;4096</code>: это не overflow ring 8192. Подключить обработку реальных UART overflow/buffer-full событий без второго потребителя RX; ошибку записать в сессию, последующее восстановление выполнять в DRAINING, не как успешное завершение.
+- Держать line accumulator между короткими чтениями. Полный JSON разбирать только после <code>\n</code>; учитывать <code>\r\n</code>. Размер 1024 оставить, последнюю позицию зарезервировать под NUL.
+- Внутри ожидания проверять deadline кадра и сессии. Deadline кадра — от первого байта, не продлевается новыми байтами; стартовое значение 5 с. Для RECEIVING сохранить 10 с без валидного прогресса; повреждённые/посторонние байты его не продлевают.
+- При oversize дренировать до следующего <code>\n</code>, не парсить хвост отдельно. При invalid JSON/обрыве ожидаемого файлового кадра выставить явную ошибку и перейти к восстановлению RX; вне файловой сессии не превращать произвольный плохой JSON в GET_LOG-error.
+- Проверять результат consume вместе с состоянием: <code>false</code> может означать посторонний кадр, а не ошибку; ERROR самого парсера не затирать общей ошибкой. Сохранить проверки порядка чанков и завершение по <code>received == total</code>.
+- <strong>Готово:</strong> файл принимается при занятости telemetry mutex; backlog не выбрасывается; START не вызывает старую паузу 500 мс; oversize/нет newline/битый финальный JSON дают ограниченное восстановление и конкретный error code.</p>
+<p><strong>4. B4 — отмена без возрождения сессии (<code>Protocol</code>, <code>Queue</code>, <code>REST</code>, <code>UI</code>).</strong>
+- Queue-команды маркировать generation; DELETE инвалидирует её. Worker пропускает отменённый запрос перед отправкой. Проверку отмены и решение начать отправку согласовать: если отправка уже началась, считать запрос отправленным и дренировать.
+- До отправки отмена освобождает резерв; после отправки — DRAINING вместо reset в IDLE. Не принимать поздний START как новый запрос и не записывать старые чанки в новый результат; блокировать новый GET_LOG/LIST до восстановления границы старого потока.
+- В DRAINING читать и отбрасывать только кадры старой передачи; использовать известный финальный чанк, возобновившуюся телеметрию или проверенное условие восстановления. Не путать backend generation с UART session id: контроллер не возвращает этот generation.
+- Одна произвольная пауза тишины не доказывает конец старой передачи. Если надёжный признак не найден, оставить явный recovery-required/busy, а не объявлять безопасную изоляцию; критерий повторного допуска проверить по протоколу/трассе устройства.
+- UI сначала инвалидирует локальное поколение и abort запросы, затем учитывает ответ DELETE. Отказ отмены показывать явно; не вызывать GET с побочным запуском LIST сразу после отмены.
+- <strong>Готово:</strong> отменённая queued-команда не отправляется; поздний START не возрождает операцию; старая HTTP-операция не сохраняет Blob; новый запрос не смешивается с недренированным UART-потоком.</p>
+<p><strong>5. F3 — явное обновление списка и чистый status (<code>REST</code>, <code>Client</code>, <code>UI</code>).</strong>
+- Минимальный совместимый вариант: добавить к существующему GET <code>/rest/logs</code> режимы <code>statusOnly=1</code> (только snapshot) и <code>refresh=1</code> (явный запрос списка). Это предлагаемые параметры; существующий GET без параметров оставить совместимым.
+- UI polling файла/списка использует только statusOnly. Кнопка «Обновить» вызывает refresh один раз, затем ждёт LIST_RECEIVED/ERROR с deadline; в активной файловой сессии refresh возвращает 409 без reset.
+- Refresh разрешён из IDLE/LIST_RECEIVED/ERROR, если UART уже безопасно освобождён. Повторный refresh при активном запросе списка возвращает его статус, не ставит дубликат. Снимать pending на успехе, отказе enqueue и timeout.
+- Проверять доступную актуальную стадию перед запросом; если данных стадии нет, не изобретать её, а передавать явную ошибку контроллера. UI не должен маскировать её под пустой список.
+- <strong>Готово:</strong> первый клик показывает поздно пришедший список; повторный клик действительно обновляет его; ERROR не блокирует восстановление; чтение статуса не запускает UART-команд.</p>
+<p><strong>6. B5 — безопасный Base64 (<code>Protocol</code>).</strong>
+- Заменить signed accumulator на ограниченный unsigned или декодирование группами по 4 символа. Валидировать алфавит, позицию/число padding и длину; не принимать повреждённый чанк как успешный.
+- Сохранить побайтовый CSV, лимит итогового размера и существующую проверку последовательности чанков. Не менять UART-контракт и не требовать CRC.
+- <strong>Готово:</strong> 600 разнообразных байт восстанавливаются точно; padding для остатков 1/2 байта корректен; плохая Base64 даёт invalid_data. Sanitizer/C++14 проверку выполнять только при разрешённом запуске.</p>
+<p><strong>7. F2/H1 — результат не исчезает при HTTP GET (<code>Protocol</code>, <code>REST</code>).</strong>
+- Убрать reset результата до отправки CSV. Повторный GET того же completed process id отдаёт тот же CSV без новой UART-команды. Результат хранится до явной отмены/замены новой принятой операцией; HTTP-ответ удерживает его ресурс до окончания/обрыва отправки.
+- Не возвращать ссылки на mutable string после освобождения lock и не копировать весь CSV одновременно в несколько строк. Metadata snapshot отделить от ресурса результата; удалить ресурс только после освобождения всех активных HTTP-читателей.
+- H1/OOM не объявлять доказанным. Перед выбором хранения установить доступное heap/PSRAM/FS и механизм streaming текущего HTTP-сервера; не добавлять FS/PSRAM вслепую. Если измерения запрещены, отметить решение по памяти как неподтверждённое.
+- При подтверждённом недостатке RAM использовать доступное временное хранилище с bounded буферами и потоковой выдачей. Проверять открытие, каждую запись, общий лимит и чтение; при отказе явный storage_error, не COMPLETED. Медленные FS-записи не переносить прямо в RX без оценки задержек; при необходимости ограниченная очередь writer с явным backpressure-error, не молчаливая потеря чанков.
+- <strong>Готово:</strong> обрыв HTTP не уничтожает completed; повтор отдаёт идентичные байты; отказ хранения не выдаёт частичный CSV как успешный. Пиковая память не растёт из-за дублирования полного файла; аппаратную проверку не подменять предположением.</p>
+<p><strong>Порядок и минимальная приёмка:</strong>
+1. Client/UI (F1/F2/F4) → синхронизация/reservation/deadlines (B2/B1/B3) → RX (T1–T4) → cancel + list (B4/F3) → Base64 + lifetime/storage (B5/H1). Не смешивать с несвязанным рефакторингом.
+2. Добавить targeted проверки: стартовые 200/202; &gt;30 опросов; 1/599/600/601 байт; duplicate start; enqueue fail; lost LIST/START; cancelled generation; late START; invalid/oversize JSON; повтор CSV после обрыва HTTP. Сравнивать байты, не только boolean/HTTP status.
+3. Без разрешения запусков: предоставить изменения/добавленные проверки и список непроверенных аппаратных условий. Не писать «исправлено на устройстве» или «тесты прошли» без фактического запуска.</p>
+<h3 id="_2">Главные выводы</h3>
+<ul>
+<li><strong>Большой файл может успешно передаваться UART, но никогда не скачаться:</strong> UI ограничен 30 опросами и после прекращения ожидания продолжает показывать <code>receiving</code> (F1).</li>
+<li><strong>Готовый CSV может быть выброшен стартовым запросом:</strong> backend отвечает <code>200 text/csv</code>, frontend принимает только признак успеха, backend сбрасывает результат (F2).</li>
+<li><strong>В <code>_telemetry</code> действительно есть проблемы:</strong> устаревший снимок состояния, блокирующая обработка каждого файлового кадра, недостоверная проверка переполнения и неполная обработка framing/таймаутов (T1–T4).</li>
+<li>Дополнительно нарушены резервирование передачи, межзадачная синхронизация, восстановление списка и отмена (B1–B4).</li>
+<li><strong>Нельзя утверждать, что F2 объясняет первое скачивание любого малого файла.</strong> Из состояния <code>LIST_RECEIVED</code> старт обычно возвращает <code>202</code>, затем polling должен увидеть <code>completed</code>. Для этого случая нужны HTTP/UART данные.</li>
+<li>В проверенном компоненте нет графического спиннера: есть текст «Загрузка: received / total». Он использует REST polling, а не WebSocket. Если на устройстве отображается другой UI, проверить соответствие развёрнутого frontend этой ветке.</li>
+</ul>
+<h3 id="_3">Проверенная цепочка и контракт</h3>
+<ol>
+<li><code>RectificationLogs.svelte:39–45</code> вызывает <code>GET /rest/logs</code>: чтение статуса одновременно может запустить UART-запрос списка.</li>
+<li><code>HandlerRegistrator.cpp:326–350</code> ставит запрос списка только при <code>IDLE</code> без <code>pending</code>, возвращая текущий снимок немедленно.</li>
+<li><code>RectificationLogs.svelte:47–62</code> запускает <code>GET /rest/logs/{id}</code>, затем опрашивает <code>/rest/logs</code>.</li>
+<li><code>SsvcCommandsQueue.cpp:212–244</code> вызывает <code>beginFile()</code> перед UART-отправкой и не ждёт окончания GET_LOG.</li>
+<li><code>SsvcConnector.cpp:281–283,312–313</code> передаёт START и файловые JSON в <code>Transfer::consume()</code>.</li>
+<li><code>SsvcLogProtocol.h:302–329</code> декодирует чанки, накапливает весь CSV в памяти, завершает при <code>received == total</code>.</li>
+<li><code>HandlerRegistrator.cpp:400–414</code> отдаёт готовый CSV следующим GET того же номера и сбрасывает <code>Transfer</code> до отправки HTTP-ответа.</li>
+<li><code>RectificationLogs.svelte:62–70</code> получает Blob и инициирует сохранение через ссылку.</li>
+</ol>
+<p>Сокращения путей ниже:
+- <code>Connector</code> = <code>lib/ssvcOpenConnect/core/SsvcConnector.cpp</code>.
+- <code>Protocol</code> = <code>lib/ssvcOpenConnect/core/SsvcLogProtocol/SsvcLogProtocol.h</code>.
+- <code>Queue</code> = <code>lib/ssvcOpenConnect/core/SsvcCommandsQueue.cpp</code>.
+- <code>REST</code> = <code>lib/ssvcOpenConnect/API/HandlerRegistrator.cpp</code>.
+- <code>UI</code> = <code>interface/src/routes/oc/logs/RectificationLogs.svelte</code>.
+- <code>Client</code> = <code>interface/src/lib/api/ssvcApi.ts</code>.</p>
+<p>Спецификация: <code>docs/ssvc_uart_api_docs.md:990–1080,1088–1090</code>: GET_LOG только в дежурном режиме, телеметрия приостановлена, START → чанки 1..total, перенос строки, до 600 исходных байт/890 байт файлового JSON, список до 900 байт. Отдельного EOF/CRC спецификация не требует. UART-параметры: <code>Connector:49–51,76–82</code>, 115200/8N1, RX ring 8192 байта; размер 4096 определён в <code>SsvcConnector.h:89</code>.</p>
+<h3 id="f1-p1-frontend">F1. P1 — frontend бросает длинную передачу и скрывает ошибку</h3>
+<p><strong>Места:</strong> <code>UI:57–79,118–122</code>; <code>Protocol:369–381</code>.
+<strong>Подтверждено:</strong> всего 30 итераций с задержкой 500 мс плюс длительность HTTP, без продления при росте <code>received</code>. После выхода устанавливается <code>logError</code>, но <code>logStatus</code> остаётся <code>receiving</code>; эта ветка UI имеет приоритет над ошибкой. Дальнейших опросов и скачивания нет.
+<strong>Сценарий:</strong> UART исправно работает дольше окна ожидания → frontend прекращает polling → backend позже получает последний чанк → CSV остаётся готовым, браузер его не запрашивает.
+<strong>Расчёт:</strong> 200 KiB после Base64 требуют около 266,7 KiB передачи; при 115200/8N1 это минимум около 23,7 с даже без JSON и пауз. Окно из 30 коротких HTTP-опросов заведомо недостаточно для таких файлов.
+<strong>Исправление:</strong> ждать по времени отсутствия прогресса, отдельно ограничивать каждый HTTP-запрос; явно завершать локальное состояние ожидания и показывать ошибку. Не подменять это простым увеличением числа попыток.</p>
+<h3 id="f2-p1-get-csv">F2. P1 — стартовый GET теряет уже готовый CSV</h3>
+<p><strong>Места:</strong> <code>Client:292–299</code>; <code>REST:400–414</code>; <code>UI:53–62</code>.
+<strong>Подтверждено:</strong> <code>startLogDownload()</code> возвращает boolean при успешном HTTP, не читая CSV. Backend при совпадающем готовом файле отдаёт CSV и делает <code>reset()</code>. Следующий status GET видит не <code>completed</code>, а сброшенную сессию и может запустить список.
+<strong>Сценарий:</strong> файл остался готовым после F1, повторного захода или предыдущей попытки → первое нажатие забирает и выбрасывает CSV → UI бесполезно ожидает <code>completed</code>. Возможная гонка с быстрым завершением требует трассировки.
+<strong>Исправление:</strong> различать <code>200 text/csv</code> и <code>202 application/json</code>, сохранять Blob сразу при 200. Альтернатива — разделить запуск передачи и получение результата; выдача результата должна поддерживать безопасный повтор после обрыва HTTP.
+<strong>Ограничение:</strong> малый размер сам по себе не вызывает F2; это не доказанная универсальная причина отказа первого малого файла.</p>
+<h3 id="t1-p1-_telemetry">T1. P1 — <code>_telemetry</code> использует устаревший режим передачи</h3>
+<p><strong>Места:</strong> <code>Connector:185–194,238–256,326–327</code>; <code>Queue:212–229</code>.
+<strong>Подтверждено:</strong> <code>logTransferActive</code> вычисляется один раз до блокирующего чтения строки. Между этим и концом итерации очередь может вызвать <code>beginFile()</code>, а <code>consume()</code> — завершить передачу. Задержка и учёт ошибок опираются на старое состояние.
+<strong>Сценарий:</strong> цикл вошёл в чтение при false → другая задача запускает GET_LOG → читается START → применяется ещё 500 мс вместо быстрого чтения. За 500 мс при непрерывном 115200/8N1 поступает до 5760 байт; это ещё помещается в ring 8192, поэтому <strong>одна такая пауза не доказывает потерю</strong>, но резко сокращает запас на блокировки T2.
+<strong>Исправление:</strong> определить единого владельца переходов; резервировать режим до UART-команды, после обработки кадра получать актуальный согласованный статус. При наличии RX backlog сразу продолжать чтение, не делать покадровую фиксированную паузу.</p>
+<h3 id="t2-p1-mutex">T2. P1 — приём каждого файлового кадра зависит от общего mutex</h3>
+<p><strong>Места:</strong> <code>Connector:258–283,312–313</code>; <code>lib/ssvcOpenConnect/core/rectification/RectificationProcess.cpp:305–329,675</code>; <code>Queue:256–274</code>.
+<strong>Подтверждено:</strong> даже <code>type=file</code> сначала проходит логирование и ожидание общего mutex до 1000 мс для <code>lastMessage</code>, и только затем попадает в файловый парсер. Общий mutex используется обработчиком телеметрии и callback команд. При восстановлении связи до разбора START дополнительно ставятся GET_SETTINGS и VERSION.
+<strong>Влияние:</strong> ring 8192 байта даёт примерно 0,71 с номинального запаса при непрерывном входе. Разрешённая секундная блокировка больше этого запаса; вместе с T1 возможна потеря кадра → <code>invalid_chunk</code>/<code>timeout</code>. Фактическая длительность удержания mutex и потеря на устройстве <strong>не измерены</strong>.
+<strong>Исправление:</strong> маршрутизировать GET_LOG/file до общего mailbox телеметрии; не ожидать его mutex для записи файла. Отложить обычные восстановительные запросы до окончания/дренирования GET_LOG; сетевые публикации не должны блокировать RX-путь.</p>
+<h3 id="t3-p2-rx">T3. P2 — заполненность RX ошибочно трактуется как переполнение</h3>
+<p><strong>Места:</strong> <code>Connector:49–51,189–195</code>; <code>SsvcConnector.h:89</code>.
+<strong>Подтверждено:</strong> при backlog &gt;4096 и режиме не RECEIVING вызывается <code>uart_flush()</code>, хотя установлен ring 8192. Это уничтожает накопленные данные, а не проверяет факт аппаратного переполнения. Очередь событий UART отключена (<code>kQueueSize=0</code>).
+<strong>Сценарий:</strong> после отмены/ошибки контроллер досылает файл, либо скопился другой поток → следующий цикл выбрасывает и хвост файла, и следующие ответы/телеметрию. Возможен отказ следующего запроса списка с B3.
+<strong>Исправление:</strong> читать backlog; переполнение обрабатывать по UART-событиям и переводить активную сессию в диагностируемую ошибку. При отмене дренировать старую сессию осознанно, а не удалять произвольный RX backlog вместе с новыми ответами.</p>
+<h3 id="t4-p2-timeout">T4. P2 — timeout и восстановление границы строки неполны</h3>
+<p><strong>Места:</strong> <code>Connector:195–229,231–256,281–283,312–313</code>.
+<strong>Подтверждено:</strong> <code>checkTimeout()</code> вызывается только вне внутреннего чтения. Внутри ограничивается тишина после последнего байта, но не общая длительность неполного кадра. Любой новый байт продлевает чтение; при достижении 1023 байт строка обрывается без дренирования до <code>\n</code>. После 5 с тишины частичная строка разбирается/теряется; возврат <code>consume()</code> игнорируется.
+<strong>Сценарий:</strong> повреждённая строка без <code>\n</code> и редкие байты чаще 5 с удерживают задачу значительно дольше 10-секундного timeout передачи. Невалидный JSON финального чанка не переводит Transfer в ошибку сразу: UI ждёт timeout. После сверхдлинного кадра хвост становится отдельным JSON-кандидатом. Ошибки самого Protocol, например invalid_data, напротив, уже устанавливают ERROR внутри consume().
+<strong>Исправление:</strong> сохраняемый line accumulator, отдельные deadline кадра/передачи, проверки deadline внутри RX ожидания; на превышение длины — дренирование до разделителя, явная ошибка активной сессии. Различать ожидаемую тишину при GET_LOG и повреждение его кадра.
+<strong>Важно:</strong> штатные JSON до 890/900 байт помещаются в 1024; увеличение этого буфера само по себе не исправляет описанные ошибки. T4 проявляется при нарушении framing/тайминга, не при обычном коротком кадре.</p>
+<h3 id="b1-p1-uart-">B1. P1 — резервирование и сериализация UART-транзакции отсутствуют</h3>
+<p><strong>Места:</strong> <code>REST:382–417</code>; <code>Queue:212–244</code>; <code>Protocol:223–232</code>.
+<strong>Подтверждено:</strong> HTTP только ставит команду файла в очередь; до <code>beginFile()</code> состояние не меняется. Повторное нажатие/второй клиент ставят второй GET_LOG. Каждый <code>beginFile()</code> вызывает <code>reset()</code>. После UART-отправки очередь сразу переходит к следующей команде. До START имя файла пустое, поэтому REST разрешает запрос даже другого номера.
+<strong>Сценарий:</strong> двойной клик или два клиента → вторая команда сбрасывает данные первой; также обычные команды могут отправляться во время GET_LOG. Реакция контроллера на такие команды не установлена, но отсутствие резервирования и повторные reset подтверждены.
+<strong>Исправление:</strong> атомарно резервировать номер процесса и состояние QUEUED до enqueue, проверять его результат; тот же файл — статус без новой команды, другой — 409. Удерживать обычные запросы до терминального состояния; отдельно определить политику аварийных команд, не блокировать их бездумно.</p>
+<h3 id="b2-p1-transfer">B2. P1 — общий <code>Transfer</code> не защищён от межзадачных гонок</h3>
+<p><strong>Места:</strong> <code>Protocol:211–214,324–325,336–353,384–394</code>; <code>Connector:283,313</code>; <code>Queue:215–224</code>; <code>REST:326–345,382–421,437</code>.
+<strong>Подтверждено:</strong> UART дописывает <code>std::string</code>, очередь/HTTP сбрасывают его, HTTP читает строки/вектор. Нет общей синхронизации этих операций; mutex в Connector защищает только <code>lastMessage</code>, не <code>Transfer</code>.
+<strong>Сценарий:</strong> DELETE одновременно с <code>_data += decoded</code>, чтение списка одновременно с обновлением, копирование CSV одновременно с новой командой → гонки данных, риск повреждения памяти/неверных снимков.
+<strong>Исправление:</strong> один владелец сессии и очередь сообщений или общий mutex с короткими критическими секциями. Отдавать согласованный snapshot, не ссылки на изменяемые контейнеры. Не держать этот lock во время HTTP/UART/FS ожиданий.</p>
+<h3 id="b3-p1-pending-enqueue">B3. P1 — список может навсегда остаться pending; ошибки enqueue скрыты</h3>
+<p><strong>Места:</strong> <code>REST:326–330,385–390,415–417</code>; <code>Protocol:216–220,369–381</code>; <code>Queue:462–470</code>.
+<strong>Подтверждено:</strong> список остаётся <code>IDLE + pending</code>, timeout работает только для RECEIVING. При отсутствии ответа pending не снимается. REST игнорирует boolean <code>getLog()</code>; отказ очереди для списка оставляет установленный pending, для файла возвращается 202 без реально запущенной передачи.
+<strong>Сценарий:</strong> потеря единственного LIST, переполненная очередь или отказ постановки → повторный список не запускается, файлы получают 409 busy либо клиент ждёт операцию, которой нет.
+<strong>Исправление:</strong> WAITING_LIST/QUEUED со своими deadline; проверка enqueue и откат резерва при отказе; возвращать явную HTTP ошибку. Терминальные ошибки должны разрешать контролируемый повтор.</p>
+<h3 id="b4-p2">B4. P2 — отмена не изолирует старую сессию</h3>
+<p><strong>Места:</strong> <code>REST:432–440</code>; <code>Protocol:262–286,302–314</code>; <code>Queue:212–230</code>; <code>UI:59–69,82–89</code>; <code>Client:316–318</code>.
+<strong>Подтверждено:</strong> DELETE делает только reset. Неотправленная команда остаётся в очереди; поздний START снова принимается даже из IDLE. UI игнорирует false отмены и сразу читает статус: этот GET может начать новый список. Проверка requestId находится только до <code>fetchLogStatus()</code>, не после последующих await.
+<strong>Сценарий:</strong> отмена до отправки → GET_LOG всё равно начинается; отмена и новый запрос → старые чанки попадают в новую сессию; отмена во время HTTP получения → старое продолжение может всё равно инициировать сохранение.
+<strong>Исправление:</strong> отменять неотправленную команду; отправленную сессию дренировать до завершения/тишины, не принимая поздний START как новую. На frontend — проверять поколение после каждого await, отменять HTTP-запросы, учитывать отказ DELETE. Один frontend requestId не может различить старые UART-пакеты без поддержки backend.</p>
+<h3 id="b5-p2-base64-signed">B5. P2 — декодер Base64 использует неограниченный signed аккумулятор</h3>
+<p><strong>Место:</strong> <code>Protocol:95–115</code>.
+<strong>Подтверждено для C++14:</strong> <code>int accumulator</code> сдвигается на 6 на каждом символе, старые биты не убираются. На обычных длинных ненулевых данных значение выходит за допустимые условия signed left shift/становится отрицательным; следующий сдвиг приводит к undefined behavior. Прочитанная <code>compile_commands.json:3–15</code> содержит native <code>-std=gnu++14</code>; стандарт конкретной ESP-сборки не установлен.
+<strong>Влияние:</strong> потенциально неверный CSV, не гарантированный отказ каждой передачи. Тест длинных нулевых данных не выявляет этот дефект.
+<strong>Исправление:</strong> unsigned ограниченный аккумулятор или декодирование четвёрками, корректная проверка padding. Проверять штатный 600-байтовый чанк с разнообразными байтами и sanitizers на C++14.</p>
+<h3 id="f3-p2">F3. P2 — список не ожидается и плохо восстанавливается после ошибок</h3>
+<p><strong>Места:</strong> <code>UI:39–45</code>; <code>REST:326–345</code>.
+<strong>Подтверждено:</strong> «Обновить» делает один GET. Первый ответ часто IDLE, поздний LIST сам не отобразится. В ERROR/LIST_RECEIVED повторный GET не запускает свежий список; <code>loadLogs()</code> не очищает старый <code>logError</code>.
+<strong>Исправление:</strong> отделить явное обновление списка от чистого статуса, ждать LIST/ошибку с deadline; очищать локальную ошибку при новом действии. Проверять актуальную дежурную стадию или возвращать явную причину отказа: UI сейчас проверяет API, но не стадию (<code>UI:16–22</code>, спецификация <code>:992</code>).</p>
+<h3 id="f4-p2-http">F4. P2 — HTTP ошибки теряются, продолжения не ограничены временем</h3>
+<p><strong>Места:</strong> <code>Client:287–299,369–392</code>; <code>UI:53–79</code>.
+<strong>Подтверждено:</strong> ошибки status превращаются в null, старта — в false, backend коды не доходят до UI; <code>apiFetch()</code> сам ловит исключения, поэтому catch в <code>loadLogs()</code> их не увидит. Нет AbortSignal/таймаута fetch; лимит итераций не ограничивает зависший HTTP-запрос.
+<strong>Исправление:</strong> сохранять HTTP статус и error code, различать busy/ошибку сети/ошибку контроллера. Ограничивать каждый запрос и корректно завершать локальный индикатор при отказе.</p>
+<h3 id="h1-p1-csv">H1. P1 — память и выдача больших CSV: риск, требующий измерения</h3>
+<p><strong>Места:</strong> <code>Protocol:16,318–325</code>; <code>REST:406–412</code>.
+Весь файл накапливается в <code>std::string</code>, затем копируется в <code>String csv</code> до reset; возможны дополнительные расходы HTTP-ответа. Лимит 512 KiB не доказывает наличие свободного блока heap. Проверки успешности полного копирования перед отправкой нет; результат сбрасывается ещё до доставки HTTP тела.
+<strong>Степень уверенности:</strong> копирование/ранний reset подтверждены; OOM, число внутренних копий и роль PSRAM не проверены. Это не установленная причина жалобы.
+<strong>Исправление:</strong> bounded-приём во временное файловое хранилище и потоковая выдача с корректным временем жизни; либо проверяемое выделение подходящей памяти. Не удалять единственный результат до возможности безопасного повторного HTTP получения. Проверить heap/free largest block на росте и выдаче.</p>
+<h3 id="_4">Что не следует объявлять причиной без проверки</h3>
+<ul>
+<li>1024-байтовый line buffer не меньше штатного GET_LOG JSON; кадры завершаются NUL. Base64 CSV не содержит буквальных переносов внутри <code>data</code>.</li>
+<li>Отсутствие отдельного EOF/CRC не противоречит найденной спецификации. При корректном START и единственном финальном чанке завершение уже реализовано.</li>
+<li>Отсутствие WS события готовности не ломает данный UI: он ожидает REST статус. Добавление WS не устраняет ошибки сессий и выдачи.</li>
+<li>Немедленный <code>URL.revokeObjectURL()</code> в <code>UI:69</code> — дополнительный браузерный кандидат на проверку, не доказанная основная причина.</li>
+<li>Диагностика редактора о <code>ArduinoJson.h</code>/ESP идентификаторах не является доказательством runtime-сбоя GET_LOG. Найденная база компиляции относится к native; корректность embedded toolchain этим ревью не проверялась.</li>
+</ul>
+<h3 id="_5">Предлагаемый порядок исправления</h3>
+<ol>
+<li>F1/F2/F4: ожидание по прогрессу, корректный 200 CSV, явные ошибки/терминальные состояния UI.</li>
+<li>B1/B2/B3/B4: единая сессия с номером процесса, резерв до enqueue, deadline очереди/списка, безопасная отмена и синхронизация.</li>
+<li>T1–T4: быстрый RX без общего mailbox lock, актуальный режим, framing и диагностируемые UART ошибки. Простое увеличение delay/buffer не решает контракт.</li>
+<li>B5/H1: безопасный Base64 и bounded-хранение/потоковая выдача, проверяемая сохранность результата.
+Вариант минимального REST изменения — сохранять готовый CSV из стартового GET; более ясный контракт — отдельные запуск, чистый статус, выдача результата и отмена. Это предложения, не внесённые изменения.</li>
+</ol>
+<h3 id="_6">Проверки для подтверждения на устройстве и будущие регрессионные тесты</h3>
+<ul>
+<li>Зафиксировать deployed frontend/firmware, API ≥1.10 и дежурный режим. Для первого малого файла снять последовательность GET: статус/Content-Type, START.total, все chunk, достижение completed, повторный GET CSV, размер Blob/сохранение. Не включать заголовки авторизации в отчёт.</li>
+<li>Размеры 1–599, 600, 601 байт; один/два чанка; длинные ненулевые Base64; отдельно уточнить контракт пустого файла (<code>START.total=0</code> сейчас отвергается).</li>
+<li>Передача &gt;15 с с непрерывным ростом received; файл около 200 KiB и около лимита 512 KiB: polling до завершения, побайтовое сравнение CSV с оригиналом.</li>
+<li>UART backlog при запуске, искусственная занятость общего mutex, задержки планировщика: логировать длительность обработки кадра, occupancy и UART overflow, а не только JSON error.</li>
+<li>Пропуск/повреждение START, среднего и последнего чанка, отсутствие <code>\n</code>, редкие байты, тишина: явная причина отказа и ограниченное время восстановления.</li>
+<li>Двойной клик/два клиента, очередь заполнена, потерян LIST, команды восстановления связи во время файла: один GET_LOG на сессию, без повторного reset.</li>
+<li>Отмена до enqueue/после START/во время HTTP; немедленный новый запрос; поздний START/чанки: старая операция не возрождается и не завершает новую.</li>
+<li>Стартовый <code>200 text/csv</code> после уже готового результата; обрыв доставки CSV и повтор: файл не выброшен и доступен повторно.</li>
+<li>HTTP 401/409/500, отсутствующий ответ, смена страницы: ошибка видна, запросы прекращены; сравнить отображаемый «спиннер» с проверенным компонентом.
+Существуют <code>test/native/test_ssvc_log_protocol/test_main.cpp:11–170</code> и <code>interface/tests/unit/api/ssvcApi.logs.test.ts:39–135</code>. Они проверяют изолированный парсер/клиент, но не сквозной жизненный цикл. Тест start 200 сейчас проверяет только boolean, а не сохранение CSV. Нужны компонентные, UART-интеграционные и конкурентные сценарии выше; в рамках ревью они не запускались.</li>
+</ul>
+<h3 id="_7">Внешняя проверка технических предпосылок</h3>
+<ul>
+<li>ESP-IDF UART: <code>uart_flush()</code> очищает RX, заполненность и UART overflow — разные понятия; документация v4.4 использована для сверки семантики, не для установления версии проекта: <code>https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32/api-reference/peripherals/uart.html</code>.</li>
+<li>C++14 signed shift, N4140 §5.8: <code>https://timsong-cpp.github.io/cppwp/n4140/expr.shift</code>.</li>
+<li>Модель межпоточных гонок C++: <code>https://eel.is/c++draft/intro.races</code> и <code>https://eel.is/c++draft/ub.basic</code>.</li>
+</ul></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 by <a href="https://github.com/thedemoncat"  target="_blank" rel="noopener">elims</a> -
+<a href="#__consent">Изменить настройки файлов cookie</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/thedemoncat" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+
+  
+
+<h4>Cookie consent</h4>
+<p>Сайт использует cookie-файлы, чтобы сделать ваше пребывание на нём максимально удобным.  Оставаясь на сайте, вы даёте своё согласие на использование cookie-файлов.</p>
+<input class="md-toggle" type="checkbox" id="__settings" checked>
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+    
+      
+    
+    
+      
+        
+  
+  
+    
+    
+  
+  <li class="task-list-item">
+    <label class="task-list-control">
+      <input type="checkbox" name="github" checked>
+      <span class="task-list-indicator"></span>
+      GitHub
+    </label>
+  </li>
+
+      
+    
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout((function(){document.querySelector("[data-md-component=consent]").hidden=!1}),250);var form=document.forms.consent;for(var action of["submit","reset"])form.addEventListener(action,(function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map((function(e){return[e,!0]})))),location.hash="",location.reload()}))</script>
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "toc.follow", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../calculator/rectification_calculator.js"></script>
+      
+        <script src="../../javascripts/docs-previews-list.js"></script>
+      
+    
+  </body>
+</html>

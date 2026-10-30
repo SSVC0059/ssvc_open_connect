@@ -1,0 +1,3070 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Модуль расширения функционала автоматики отбора для ректификации  SSVC0059V2,">
+      
+      
+        <meta name="author" content="thedemoncat">
+      
+      
+        <link rel="canonical" href="https://SSVC0059.github.io/ssvc_open_connect/previews/pr-147/develop/uart-fix-plan/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../media/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>План исправлений UART SSVC и GET_LOG (по замечаниям кодревью) - SSVC Open Connect</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#uart-ssvc-get_log" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="SSVC Open Connect" class="md-header__button md-logo" aria-label="SSVC Open Connect" data-md-component="logo">
+      
+  <img src="../../media/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SSVC Open Connect
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              План исправлений UART SSVC и GET_LOG (по замечаниям кодревью)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/SSVC0059/ssvc_open_connect" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SSVC0059/ssvc_open_connect
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Главная
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../preparation/driver/" class="md-tabs__link">
+          
+  
+  
+  Подготовка
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../usage/get_started/" class="md-tabs__link">
+          
+  
+  
+  Первый запуск
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../usage/interfaces/uart/" class="md-tabs__link">
+          
+  
+  
+  Периферия
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../calculator/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Калькулятор ректификации
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../preparation/controller/" class="md-tabs__link">
+          
+  
+  
+  Платы и готовые модули
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../glossary/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Глоссарий
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Для разработчиков
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SSVC Open Connect" class="md-nav__button md-logo" aria-label="SSVC Open Connect" data-md-component="logo">
+      
+  <img src="../../media/logo.png" alt="logo">
+
+    </a>
+    SSVC Open Connect
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/SSVC0059/ssvc_open_connect" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SSVC0059/ssvc_open_connect
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Главная
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подготовка
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Подготовка
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/driver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Прошивка контроллера под OS Windows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Скачивание релиза SSVC Open Connect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/flasher/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Автоматическая установка актуальной версии
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/flasher_manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Автоматическая установка актуальной версии
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/adafruit_webserial_esptool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Прошивка через Adafruit WebSerial ESPTool
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Первый запуск
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Первый запуск
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/get_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Начало работы с контроллером
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/messengers/vk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Уведомления VK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Периферия
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Периферия
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/uart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение к SSVC по UART
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Питание контроллера
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/ds18b20/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Датчик температуры DS18B20
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/bmp581/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Датчик давления BMP581 (I²C)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/rgb_led/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение адресного светодиода
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/ds3231-rtc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Часы реального времени DS3231 (I2C)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../calculator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Калькулятор ректификации
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Платы и готовые модули
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Платы и готовые модули
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модули ESP32-S3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    KC868-A6v3
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    KC868-A6v3
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../boards/kc868-a6/KC868-A6v3-KinCony.ru/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Описание (KinCony)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../boards/kc868-a6/GPIO_Pinout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Распиновка GPIO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../boards/kc868-a6/I2C_devices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    I2C устройства
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Готовые модули
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Готовые модули
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ready_made/connect/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение модуля
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ready_made/din_version/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модуль для установки на DIN рейку
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ready_made/inside_version/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модуль для установки внутри ящика
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Глоссарий
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Для разработчиков
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Сборка прошивки
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Тестирование
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docs-previews/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Превью документации из pull request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../i2c_monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Мониторинг I2C и алертинг (прошивка)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-v1.10-support-plan.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    План поддержки UART API v1.10
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_7" id="__nav_9_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    REST API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Документация по REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Настроек
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Команд
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/sensors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Датчики
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/telegram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Telegram Бота
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/subsystem/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Подсистемы
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/openconnect/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API OpenConnect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Профили
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Файлов
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/logs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Журналов ректификаций
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ssvc_uart_api_docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UART API SSVC (справка)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ssvc-serial-protocol/develop/Readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Протокол UART — примеры (JSON/TXT)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_10" id="__nav_9_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Фронтенд
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Фронтенд
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frontend/frontend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    📑 SCSS Классы и Компоненты Пользовательского Интерфейса
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frontend/styling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Стратегия стилей (Tailwind + DaisyUI)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Правила ведения работ
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Карта замечаний → фазы
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Фаза 0. Подготовка и фиксация фактов
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-p0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Фаза 1 (P0). Размер элемента очереди команд — блокер
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-f1f2f4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Фаза 2 (F1/F2/F4). Клиентский жизненный цикл
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-p1p2-matching-payload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Фаза 3 (P1/P2). Семантика ответа: ложный успех, matching, владение payload
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-b2b1b3-deadlines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Фаза 4 (B2/B1/B3). Согласованная сессия: резервирование, синхронизация, deadlines
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-t1t4-p1p2-rx-framer-overflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Фаза 5 (T1–T4, P1/P2). RX: маршрутизация, framer, overflow, таймауты
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-b4f3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Фаза 6 (B4/F3). Отмена и обновление списка
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-b5h1-base64" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Фаза 7 (B5/H1). Base64 и время жизни результата
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-p2p1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Фаза 8 (P2/P1). Запуск, готовность и аварийные команды
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Фаза 9. Проверки и приёмка
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-dea98e5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Фаза 10. Ремонт по итогам кодревью (коммит dea98e5)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Порядок и зависимости
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Риски
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Открытые вопросы
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#todo-get_log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TODO: остаточные улучшения (GET_LOG)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<div><h1 id="uart-ssvc-get_log">План исправлений UART SSVC и GET_LOG (по замечаниям кодревью)</h1>
+<p>Дата: 10 октября 2026 года. Ветка: <code>feature/api-v1.10-update</code>.
+Статус: фазы 1–10 выполнены в объёме, возможном без железа; Фаза 9 (приёмка) ограничена доступными проверками, Фаза 10 — ремонт по итогам кодревью собственных изменений.</p>
+<p>Прогресс: Фаза 0 — baseline зафиксирован (<code>esp32-s3-devkitc-1-16m</code>, <code>pio run</code> собирает и интерфейс); Фаза 1 — коммит <code>d9f6cf8</code>; Фаза 2 — коммит <code>4a106f2</code>; Фаза 3 — коммит <code>4aa6517</code>; Фаза 4 — коммит <code>2b4308d</code>; Фаза 5 — коммит <code>ec09d36</code>; Фаза 6 — коммит <code>872724d</code>; Фаза 7 — коммит <code>2059f21</code>; Фаза 8 — коммит <code>bd26e9f</code>; Фаза 9 — коммит <code>9fc539b</code>; Фаза 10 — коммит <code>dea98e5</code>.</p>
+<p>Проверки окружения: <code>pio run</code> (env <code>esp32-s3-devkitc-1-16m</code>) — успешно после каждой фазы. Нативные тесты (<code>pio test -e native</code>) компилируются, но в этой среде помечаются <code>SKIPPED</code> (нужен тулчейн MSYS2 UCRT64 в PATH) — результат прогона не подтверждён. Интерфейс проверяется <code>npm --prefix interface run test:run</code> и <code>check</code>.</p>
+<p>Обозначения статуса в карте: <code>готово</code> — изменение внесено и проверено (указан коммит); <code>частично</code> — закрыта часть пункта; <code>ожидает</code> — фаза не начата.
+Источники (образцы, не редактируются): <code>docs/develop/get-log-code-review.md</code> (F1–F4, B1–B5, T1–T4, H1) и <code>docs/develop/uart-architecture-proposal.md</code> (P0, P1×6, P2×3).
+Область: <code>lib/ssvcOpenConnect/core/SsvcConnector.{h,cpp}</code>, <code>SsvcCommandsQueue.{h,cpp}</code>, <code>SsvcLogProtocol/SsvcLogProtocol.h</code>, <code>API/HandlerRegistrator.cpp</code>, <code>API/handlers/CommandHandler/CommandHandler.cpp</code>, <code>interface/src/lib/api/ssvcApi.ts</code>, <code>interface/src/routes/oc/logs/RectificationLogs.svelte</code>, <code>src/main.cpp</code>.</p>
+<h3 id="_1">Правила ведения работ</h3>
+<ul>
+<li>Не менять UART-формат, JSON-envelope, REST-контракт прошивки устройства; не добавлять WS, CRC/EOF, RS485/DE.</li>
+<li>Не смешивать фазы: каждая фаза — отдельные изменения и отдельная проверка.</li>
+<li>Номера строк в источниках — ориентиры; точкой входа считать имена символов.</li>
+<li>Пока не сделана Фаза 1, результаты нагрузочных испытаний текущего тракта недействительны.</li>
+<li>Всё, что требует железа/замеров, помечать как непроверенное, а не «исправлено».</li>
+</ul>
+<h3 id="_2">Карта замечаний → фазы</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Суть</th>
+<th>Места</th>
+<th>Фаза</th>
+<th>Статус</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P0</td>
+<td>Размер элемента очереди vs <code>&amp;cmd</code></td>
+<td><code>SsvcCommandsQueue.h</code> (<code>COMMAND_QUEUE_ITEM_SIZE</code>), <code>commandProcessorTask</code></td>
+<td>1</td>
+<td>готово (<code>d9f6cf8</code>)</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>Таймаут после TX не сбрасывает успех; BIT1 через callback</td>
+<td><code>commandProcessorTask</code>, <code>registerCallbackCommands</code></td>
+<td>3</td>
+<td>готово (<code>4aa6517</code>)</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>Общий BIT9, поиск <code>"OK"</code>, нет точного matching; нет expectedBit у STATUS</td>
+<td><code>commandToExpectedBit</code>, <code>registerCallbackCommands</code>, <code>_telemetry</code></td>
+<td>3</td>
+<td>готово (<code>4aa6517</code>)</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>Общий <code>lastMessage</code>/<code>lastResponse</code> без владельца</td>
+<td><code>SsvcConnector</code>, <code>registerCallbackCommands</code></td>
+<td>3</td>
+<td>готово (<code>4aa6517</code>)</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>Побайтовое чтение, mutex до 1 с, пауза 500 мс, MQTT publish в RX</td>
+<td><code>_telemetry</code></td>
+<td>5</td>
+<td>готово (<code>ec09d36</code>)</td>
+</tr>
+<tr>
+<td>P1</td>
+<td><code>flush</code> при backlog &gt; 4096 при ring 8192</td>
+<td><code>_telemetry</code></td>
+<td>5</td>
+<td>готово (<code>ec09d36</code>)</td>
+</tr>
+<tr>
+<td>P1</td>
+<td><code>emergency_stop</code> — обычный STOP в FIFO, ошибка enqueue скрыта</td>
+<td><code>COMMAND_MAP</code>, <code>CommandHandler::handleCommand</code></td>
+<td>8</td>
+<td>готово (<code>bd26e9f</code>)</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>Нет accumulator/resync, transfer timeout только вне чтения</td>
+<td><code>_telemetry</code></td>
+<td>5</td>
+<td>готово (<code>ec09d36</code>)</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>Запуск задач из конструктора, нет Ready/Failed, стартовая пауза 6 с</td>
+<td><code>SsvcConnector</code>, <code>SsvcCommandsQueue</code></td>
+<td>8</td>
+<td>готово (<code>bd26e9f</code>)</td>
+</tr>
+<tr>
+<td>P2</td>
+<td><code>TIMEOUT</code> уже ticks + повторный <code>pdMS_TO_TICKS</code></td>
+<td><code>SsvcCommandsQueue.h</code>, <code>pushCommandInQueue</code></td>
+<td>3</td>
+<td>готово (<code>4aa6517</code>)</td>
+</tr>
+<tr>
+<td>F1</td>
+<td>30 опросов, статус остаётся <code>receiving</code>, ошибка скрыта</td>
+<td><code>ssvcApi.ts</code>, <code>RectificationLogs.svelte</code></td>
+<td>2</td>
+<td>готово (<code>4a106f2</code>)</td>
+</tr>
+<tr>
+<td>F2</td>
+<td>Стартовый <code>200 text/csv</code> поглощается, backend делает <code>reset()</code></td>
+<td><code>HandlerRegistrator.cpp</code>, <code>ssvcApi.ts</code></td>
+<td>2</td>
+<td>частично: клиент готов (<code>4a106f2</code>), backend <code>reset()</code> — Фаза 7</td>
+</tr>
+<tr>
+<td>F3</td>
+<td>Список не ожидается, не восстанавливается после ERROR</td>
+<td><code>RectificationLogs.svelte</code>, <code>HandlerRegistrator.cpp</code></td>
+<td>6</td>
+<td>готово (<code>872724d</code>, <code>dea98e5</code>)</td>
+</tr>
+<tr>
+<td>F4</td>
+<td>HTTP-ошибки теряются, нет AbortSignal/таймаутов</td>
+<td><code>ssvcApi.ts</code></td>
+<td>2</td>
+<td>готово (<code>4a106f2</code>)</td>
+</tr>
+<tr>
+<td>B1</td>
+<td>Нет резервирования/сериализации транзакции</td>
+<td><code>HandlerRegistrator.cpp</code>, <code>SsvcCommandsQueue.cpp</code></td>
+<td>4</td>
+<td>готово (<code>2b4308d</code>)</td>
+</tr>
+<tr>
+<td>B2</td>
+<td><code>Transfer</code> не защищён между задачами</td>
+<td><code>SsvcLogProtocol.h</code>, <code>HandlerRegistrator.cpp</code></td>
+<td>4</td>
+<td>готово (<code>2b4308d</code>)</td>
+</tr>
+<tr>
+<td>B3</td>
+<td>Список навсегда <code>pending</code>, ошибки enqueue скрыты</td>
+<td><code>HandlerRegistrator.cpp</code>, <code>SsvcLogProtocol.h</code></td>
+<td>4</td>
+<td>готово (<code>2b4308d</code>)</td>
+</tr>
+<tr>
+<td>B4</td>
+<td>Отмена не изолирует старую сессию</td>
+<td><code>HandlerRegistrator.cpp</code>, <code>SsvcLogProtocol.h</code>, UI</td>
+<td>6</td>
+<td>готово (<code>2b4308d</code>, <code>872724d</code>)</td>
+</tr>
+<tr>
+<td>B5</td>
+<td>Signed accumulator в Base64 (UB)</td>
+<td><code>detail::decodeBase64</code></td>
+<td>7</td>
+<td>готово (<code>2059f21</code>)</td>
+</tr>
+<tr>
+<td>T1</td>
+<td>Устаревший <code>logTransferActive</code></td>
+<td><code>_telemetry</code></td>
+<td>5</td>
+<td>готово (<code>ec09d36</code>)</td>
+</tr>
+<tr>
+<td>T2</td>
+<td>Файловый кадр ждёт общий telemetry mutex</td>
+<td><code>_telemetry</code></td>
+<td>5</td>
+<td>готово (<code>ec09d36</code>)</td>
+</tr>
+<tr>
+<td>T3</td>
+<td>Заполненность RX = «переполнение»</td>
+<td><code>_telemetry</code></td>
+<td>5</td>
+<td>частично: <code>flush</code> убран, заполненность — только диагностика (<code>ec09d36</code>); события <code>UART_FIFO_OVF</code>/framing errors не подключены</td>
+</tr>
+<tr>
+<td>T4</td>
+<td>Framing/таймауты неполны</td>
+<td><code>_telemetry</code>, <code>Transfer</code></td>
+<td>5</td>
+<td>готово (<code>ec09d36</code>)</td>
+</tr>
+<tr>
+<td>H1</td>
+<td>Копия полного CSV до <code>reset()</code>, риск OOM</td>
+<td><code>Protocol</code>, <code>HandlerRegistrator.cpp</code></td>
+<td>7</td>
+<td>частично (<code>2059f21</code>, <code>dea98e5</code>): <code>reset()</code> до доставки убран, результат переживает обрыв и повторный GET и освобождается по сроку удержания (5 мин); дублирование сокращено до одной копии; потоковая выдача и замер heap <strong>не выполнены</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="0">Фаза 0. Подготовка и фиксация фактов</h3>
+<ul>
+<li>Зафиксировать baseline: <code>git rev-parse HEAD</code>, список незакоммиченных правок (<code>git status --short</code>), состояние <code>docs/develop/index.md</code>, <code>architecture-manifest.md</code>.</li>
+<li>Отдельная ветка под исправления; образцы ревью не редактировать.</li>
+<li>Проверить доступность <code>platformio.ini</code> (<code>.gitignore:26</code> — файл может быть скрыт от инструментов): от него зависит env и режим прошивки.</li>
+<li>Записать начальные числа без выводов: <code>uxTaskGetStackHighWaterMark</code> у <code>CmdProcessor</code>/<code>TelemetryTask</code>, <code>uxTaskGetSystemState</code>/heap после загрузки.</li>
+<li>Определить целевую платформу измерений (KC868-A6, RS485-трансивер без DE/RE) и способ снять лог UART-обмена при приёмке.</li>
+</ul>
+<p><strong>Критерий:</strong> зафиксированы HEAD, окружение сборки, способ доступа к <code>platformio.ini</code> и способ снятия UART-трассы; список аппаратных условий, которые агент проверить не может, выписан заранее.</p>
+<h3 id="1-p0">Фаза 1 (P0). Размер элемента очереди команд — блокер</h3>
+<p><strong>Места:</strong> <code>SsvcCommandsQueue.h</code> (<code>COMMAND_QUEUE_ITEM_SIZE</code>, <code>COMMAND_QUEUE_LENGTH</code>), <code>SsvcCommandsQueue.cpp</code> (<code>SsvcCommandsQueue()</code>, <code>pushCommandInQueue</code>, <code>commandProcessorTask</code>).</p>
+<p><strong>Проблема:</strong> очередь создана с <code>uxItemSize = sizeof(SsvcCommand)</code>, а <code>xQueueSend</code>/<code>xQueueReceive</code> получают <code>&amp;cmd</code>, где <code>cmd</code> — указатель. FreeRTOS копирует <code>uxItemSize</code> байт по этому адресу: чтение/запись за пределами переменной указателя, риск повреждения стека задачи.</p>
+<p><strong>Шаги</strong>
+1. <code>COMMAND_QUEUE_ITEM_SIZE</code> → <code>sizeof(SsvcCommand*)</code>.
+2. Проверить, что обе стороны обмена используют адрес указателя: <code>xQueueSend(command_queue, &amp;cmd, …)</code> и <code>xQueueReceive(self-&gt;command_queue, &amp;cmd, …)</code>; привести к единому виду.
+3. Не переводить очередь на передачу <code>SsvcCommand</code> по значению: внутри <code>std::string</code>, а байтовое копирование RTOS не вызывает конструктор копирования (владение — по указателю).
+4. Проверить жизненный цикл владения: <code>new SsvcCommand()</code> → <code>delete cmd</code> при отказе постановки и после обработки; ветка повторных попыток (<code>while (cmd-&gt;attempt_count != 0)</code>) не должна оставлять объект ни живым, ни удалённым дважды.
+5. Проверить, что при <code>command_queue == nullptr</code> воркер не работает с нулевым дескриптором (см. Фазу 8).</p>
+<p><strong>Критерий:</strong> при <code>uxQueueMessagesWaiting</code>/<code>uxQueueSpacesAvailable</code> и обмене командами нет обращений за границы объекта; инициализация очереди проверяется, а <code>sizeof(SsvcCommand)</code> в размере элемента не встречается.</p>
+<p><strong>Тесты:</strong> нативная сборка библиотеки + прицельный тест-обмен через очередь (если нативная инфраструктура позволяет FreeRTOS-шим); на ESP — лог обмена <code>CmdProcessor</code>/<code>TelemetryTask</code> без роста <code>Stack High Water Mark</code> в минус. До этого пункта нагрузочные испытания не запускать.</p>
+<h3 id="2-f1f2f4">Фаза 2 (F1/F2/F4). Клиентский жизненный цикл</h3>
+<p><strong>Места:</strong> <code>interface/src/lib/api/ssvcApi.ts</code> (<code>startLogDownload</code>, <code>downloadLog</code>, <code>fetchLogStatus</code>, <code>cancelLogDownload</code>, <code>apiFetch</code>), <code>interface/src/routes/oc/logs/RectificationLogs.svelte</code> (<code>loadLogs</code>, <code>requestLog</code>, <code>cancelLog</code>, <code>logRequestId</code>, <code>logStatus</code>, <code>logError</code>).</p>
+<p><strong>Шаги</strong>
+1. <code>startLogDownload</code> возвращает типизированный результат: <code>accepted</code> (202 + snapshot), <code>ready</code> (200 <code>text/csv</code> + Blob), <code>error</code> (HTTP status + backend <code>error</code>). Имена — внутренние для клиента.
+2. <code>ready</code> → Blob сохраняется сразу, polling не запускается. <code>accepted</code> → последовательный polling с интервалом 500 мс, лимит 30 попыток удалить.
+3. Timeout ожидания считать от последнего изменения состояния/роста <code>received</code>. Стартовые значения: idle timeout 15 с (backend 10 с), GET статуса ≤ 5 с, получение тела CSV ≤ 60 с.
+4. Каждый fetch — с <code>AbortSignal</code> и таймаутом. HTTP-статус и backend <code>error</code> сохранять, не превращать в <code>null</code>/<code>false</code>. Общий <code>apiFetch</code> не менять глобально — только GET_LOG-путь.
+5. Локальный UI-статус отделить от backend-снапшота: <code>starting / waiting / downloading / done / error / cancelled</code>. При timeout/ошибке явно завершить ожидание, ошибка показывается раньше устаревшего <code>receiving</code>.
+6. После каждого <code>await</code> проверять поколение операции и отмену, включая момент после получения Blob и перед сохранением ссылки. Новое действие очищает старую ошибку; уход со страницы отменяет локальные запросы.
+7. <code>URL.revokeObjectURL</code> вызывать не раньше фактического старта скачивания (отложенный revoke), чтобы не терять файл в браузере с отложенным кликом.</p>
+<p><strong>Критерий (из ревью):</strong> стартовый <code>200</code> сохраняется один раз; передача длиннее 30 опросов доходит до скачивания; зависший HTTP ограничен таймаутом; ошибка видна, а старая операция не сохраняет Blob.</p>
+<p><strong>Тесты:</strong> расширить <code>interface/tests/unit/api/ssvcApi.logs.test.ts</code> (200/202, error-ветки, отмена, отсутствие лимита 30); UI-сценарий «долгая передача» в существующей инфраструктуре тестов.</p>
+<h3 id="3-p1p2-matching-payload">Фаза 3 (P1/P2). Семантика ответа: ложный успех, matching, владение payload</h3>
+<p><strong>Места:</strong> <code>SsvcCommandsQueue.cpp</code> (<code>commandProcessorTask</code>, <code>registerCallbackCommands</code>), <code>SsvcCommandsQueue.h</code> (<code>commandToExpectedBit</code>, <code>TIMEOUT</code>, <code>pushCommandInQueue</code>), <code>SsvcConnector.cpp</code> (<code>_telemetry</code>, <code>getLastMessage</code>, <code>getLastResponse</code>).</p>
+<p><strong>Шаги</strong>
+1. В <code>commandProcessorTask</code> сбрасывать <code>command_success = false</code> непосредственно перед <code>xEventGroupWaitBits</code>: сейчас после успешного TX он остаётся <code>true</code>, и истёкший таймаут выглядит как успех.
+2. Успех определять только по callback ожидаемого бита; ветка «бит не пришёл» не должна приводить к подтверждению.
+3. Ввести точный matching: ответ сопоставлять с активным запросом (<code>request</code> + схема ответа), а не с подстрокой <code>"OK"</code>. Для <code>STATUS</code> задать ожидаемый бит/условие явно (сейчас в <code>commandToExpectedBit</code> его нет).
+4. BIT9/BIT10/BIT11 оставить только как «будильник»; результат и payload хранить отдельно, привязанными к активной команде.
+5. Убрать общий <code>lastMessage</code>/<code>lastResponse</code> как транспорт ответов: callback должен получать владеемый снимок кадра (копия под lock), а не читать общий <code>std::string</code> без синхронизации. <code>getLastMessage()</code>/<code>getLastResponse()</code> — под тем же lock.
+6. Таймаут/потеря ответа классифицировать как «исход неизвестен» (<code>OutcomeUnknown</code>), а не успех; не переиспользовать прежний успешный payload для новой команды.
+7. Исправить двойное преобразование времени: <code>TIMEOUT</code> уже задан в тиках, а <code>pushCommandInQueue</code> вновь применяет <code>pdMS_TO_TICKS</code>. Передавать миллисекунды и конвертировать один раз (или убрать повторную конверсию).
+8. Ввести явную политику повторов: для неидемпотентных команд (NEXT/START/RESUME) слепой повтор после неоднозначной отправки запрещён.</p>
+<p><strong>Критерий:</strong> нет пути «timeout → success»; ответ AT не подтверждает NEXT; ответ другой команды/старый бит не подтверждает новую; payload команды не затирается телеметрией; при tick ≠ 1 мс длительность ожидания соответствует заданной.</p>
+<h3 id="4-b2b1b3-deadlines">Фаза 4 (B2/B1/B3). Согласованная сессия: резервирование, синхронизация, deadlines</h3>
+<p><strong>Места:</strong> <code>SsvcLogProtocol.h</code> (<code>Transfer</code>, <code>Status</code>), <code>SsvcCommandsQueue.cpp</code> (<code>commandProcessorTask</code>), <code>HandlerRegistrator.cpp</code> (<code>/rest/logs</code>, <code>/rest/logs/*</code>).</p>
+<p><strong>Шаги</strong>
+1. Один mutex сессии на <code>Transfer</code> (промежуточный вариант — вместо широкого архитектурного рефакторинга). Защитить все чтения, переходы и контейнеры; HTTP получает snapshot по значению, не ссылки.
+2. Расширить <code>Status</code>: <code>IDLE</code>, <code>QUEUED_LIST</code>, <code>WAITING_LIST</code>, <code>LIST_RECEIVED</code>, <code>QUEUED_FILE</code>, <code>WAITING_START</code>, <code>RECEIVING</code>, <code>COMPLETED</code>, <code>ERROR</code>, <code>DRAINING</code>. JSON-схему менять согласованно с Client/UI.
+3. Резервирование до enqueue: атомарно записать <code>generation</code>, вид запроса и process id; повторный запрос того же файла возвращает текущий статус без новой команды, другого файла — <code>409</code>.
+4. <code>beginFile</code>/<code>reset</code> в очереди не вызывать безусловно для уже зарезервированного запроса; переход в <code>WAITING_*</code> выполнять до записи в UART и учитывать отказ записи.
+5. <code>enqueue=false</code> → <code>503</code> с <code>queue_full</code>, резерв снимается; отдельные deadline для очереди и ожиданий LIST/START (стартовое 10 с каждое), проверяемые независимо от HTTP-polling.
+6. Не держать mutex во время UART/HTTP/FS-ожиданий, callback и enqueue: короткая критическая секция → отпустить → команда → при отказе откатить тот же generation.
+7. Queue перед отправкой проверяет generation и допустимое состояние.
+8. После отправки GET_LOG обычные команды не отправлять до завершения или окончания <code>DRAINING</code>; ожидание не блокирующим циклом, а отложенной отправкой в воркере. Аварийные команды не блокировать молча (см. Фазу 8).</p>
+<p><strong>Критерий:</strong> два клиента создают одну команду; <code>enqueue=false</code> не оставляет busy; потерянные LIST/START заканчиваются ошибкой; snapshot/reset/consume не гоняются; обычные запросы не вклиниваются в файл.</p>
+<h3 id="5-t1t4-p1p2-rx-framer-overflow">Фаза 5 (T1–T4, P1/P2). RX: маршрутизация, framer, overflow, таймауты</h3>
+<p><strong>Места:</strong> <code>SsvcConnector.cpp</code> (<code>_telemetry</code>), <code>SsvcLogProtocol.h</code> (<code>Transfer::consume</code>, <code>checkTimeout</code>), <code>SsvcConnector.h</code> (<code>SSVC_OPEN_CONNECT_BUF_SIZE</code>, <code>kRxRingBytes</code>, <code>kQueueSize</code>).</p>
+<p><strong>Шаги</strong>
+1. Классифицировать кадр сразу после разбора JSON: GET_LOG/LIST/START/file → в <code>Transfer</code>; только обычная телеметрия → общий mailbox. Файловые кадры не должны ждать telemetry mutex, MQTT-публикации и подробного лога payload.
+2. Не запускать GET_SETTINGS/VERSION при восстановлении связи, если GET_LOG зарезервирован/активен/дренируется — отложить до освобождения транзакции.
+3. Не использовать <code>logTransferActive</code>, вычисленный до блокирующего чтения: брать актуальный статус после обработки кадра. При backlog продолжать чтение без фиксированной покадровой паузы (убрать 500 мс на кадр при потоке), короткие ограниченные проходы с уступкой планировщику вместо busy spin.
+4. Убрать <code>uart_flush()</code> по <code>data_len &gt; 4096</code>: это не проверка overflow ring 8192. Подключить <code>kQueueSize &gt; 0</code> и обработку реальных событий (<code>UART_FIFO_OVF</code>, <code>UART_BUFFER_FULL</code>, framing/parity). Overflow инвалидирует активную сессию и ведёт к восстановлению, а не к успешному завершению.
+5. Держать line accumulator между чтениями: читать блоками, компилировать строку до <code>\n</code> (учитывать <code>\r\n</code>), парсить только полную строку; <code>1024</code> оставить, последний байт под NUL.
+6. Отдельные deadline: кадра — от первого байта, не продлевается новыми байтами (стартовое 5 с); сессии RECEIVING — 10 с без валидного прогресса, посторонние/повреждённые байты его не продлевают. Проверять deadline внутри ожидания, а не только снаружи чтения.
+7. Oversize → дренировать до следующего <code>\n</code>, хвост не парсить отдельно. На invalid JSON ожидаемого файлового кадра — явная ошибка и перезапуск приёма; вне файловой сессии произвольный плохой JSON не превращать в GET_LOG-error.
+8. Результат <code>consume()</code> учитывать вместе с состоянием: <code>false</code> может означать посторонний кадр. Сохранить проверки порядка чанков и завершение по <code>received == total</code>.</p>
+<p><strong>Критерий:</strong> файл принимается при занятом telemetry mutex; backlog не выбрасывается; START не вызывает старую паузу 500 мс; oversize/нет <code>\n</code>/битый финальный JSON дают ограниченное восстановление и конкретный error code.</p>
+<h3 id="6-b4f3">Фаза 6 (B4/F3). Отмена и обновление списка</h3>
+<p><strong>Места:</strong> <code>HandlerRegistrator.cpp</code> (<code>HTTP_DELETE /rest/logs</code>, <code>/rest/logs</code> GET), <code>SsvcLogProtocol.h</code>, <code>SsvcCommandsQueue.cpp</code>, <code>ssvcApi.ts</code> (<code>cancelLogDownload</code>), <code>RectificationLogs.svelte</code> (<code>cancelLog</code>, <code>loadLogs</code>).</p>
+<p><strong>Шаги</strong>
+1. Пометить queue-команды generation; DELETE инвалидирует generation; воркер пропускает отменённую команду до отправки. Если отправка уже началась — считать запрос отправленным и перейти в <code>DRAINING</code>.
+2. До отправки отмена освобождает резерв; после отправки — <code>DRAINING</code> вместо <code>reset()</code> в <code>IDLE</code>. Поздний START не принимать как новый запрос; блокировать новый GET_LOG/LIST до восстановления границы старого потока.
+3. В <code>DRAINING</code> читать и отбрасывать только кадры старой передачи; признак завершения — известный финальный чанк, возобновившаяся телеметрия или проверенное условие. Одна пауза тишины не доказывает конец передачи: при отсутствии надёжного признака оставлять <code>RecoveryRequired</code>, а не «готов».
+4. REST: <code>statusOnly=1</code> (только snapshot) и <code>refresh=1</code> (явный запрос списка) — новые необязательные параметры, текущий GET без параметров остаётся совместимым. <code>refresh</code> в активной файловой сессии → <code>409</code> без reset; повторный refresh при активном списке возвращает его статус.
+5. UI: при отмене сначала инвалидировать локальное поколение и прервать запросы, затем учитывать ответ DELETE; отказ отмены показывать явно; не вызывать GET, который сам запускает LIST, сразу после отмены.
+6. <code>loadLogs()</code> очищает прежнюю ошибку; ошибку контроллера не маскировать под пустой список.</p>
+<p><strong>Критерий:</strong> отменённая queued-команда не отправляется; поздний START не возрождает операцию; старая HTTP-операция не сохраняет Blob; первый клик показывает поздно пришедший список, повторный действительно его обновляет; ERROR не блокирует восстановление.</p>
+<h3 id="7-b5h1-base64">Фаза 7 (B5/H1). Base64 и время жизни результата</h3>
+<p><strong>Места:</strong> <code>SsvcLogProtocol.h</code> (<code>detail::decodeBase64</code>, <code>Transfer::data</code>, <code>LOG_TOTAL_RAW_MAX</code>), <code>HandlerRegistrator.cpp</code> (ветка <code>COMPLETED</code>).</p>
+<p><strong>Шаги</strong>
+1. Заменить signed accumulator на ограниченный unsigned или декодирование группами по 4 символа; валидировать алфавит, позицию/количество padding и длину; повреждённый чанк не принимать как успешный.
+2. Сохранить побайтовый CSV, лимит итогового размера и проверку последовательности чанков; UART-контракт и CRC не менять.
+3. Убрать <code>reset()</code> результата до доставки CSV: повторный GET того же completed process id отдаёт те же байты без новой UART-команды; ресурс удерживается до завершения/обрыва отправки и освобождается после последнего читателя.
+4. Не возвращать ссылки на mutable <code>std::string</code> после освобождения lock и не дублировать весь CSV в нескольких строках; metadata snapshot отделить от ресурса результата.
+5. Снять измерения heap/free largest block перед выбором схемы хранения. Если RAM недостаточно — временное хранилище с bounded-буферами и потоковой выдачей, проверка каждой записи и общего лимита; отказ → <code>storage_error</code>, не <code>COMPLETED</code>.
+6. Не объявлять OOM/H1 доказанной причиной: до замеров решение по памяти помечать как неподтверждённое.</p>
+<p><strong>Критерий:</strong> 600 разнообразных байт восстанавливаются точно; padding для остатков 1/2 байта корректен; плохая Base64 → <code>invalid_data</code>; обрыв HTTP не уничтожает completed; повтор отдаёт идентичные байты; пиковая память не растёт из-за дублирования полного файла.</p>
+<h3 id="8-p2p1">Фаза 8 (P2/P1). Запуск, готовность и аварийные команды</h3>
+<p><strong>Места:</strong> <code>SsvcConnector.cpp</code> (<code>SsvcConnector()</code>, <code>InitUartDriver</code>, <code>initSsvcController</code>), <code>SsvcCommandsQueue.cpp</code> (<code>SsvcCommandsQueue()</code>, <code>commandProcessorTask</code>, <code>sendAT</code>, <code>scheduleUartRetryTimer</code>), <code>SsvcCommandsQueue.h</code> (<code>COMMAND_MAP</code>), <code>CommandHandler.cpp</code> (<code>handleCommand</code>).</p>
+<p><strong>Шаги</strong>
+1. Убрать <code>InitUartDriver()</code> из конструктора и запуск задач до готовности зависимостей: явная однократная инициализация (синхронизация/очереди → драйвер → задачи → handshake → <code>Ready</code>).
+2. Проверять результат <code>xTaskCreatePinnedToCore</code> (сейчас <code>nullptr</code>-handle без проверки, приоритет <code>tskIDLE_PRIORITY</code>); при отказе — <code>Failed/NotReady</code> и корректный cleanup.
+3. Не запускать воркер при <code>command_queue == nullptr</code>; заменить стартовую паузу 6 с (<code>vTaskDelay</code> в начале <code>commandProcessorTask</code>) на явную готовность/handshake.
+4. Хранить <code>Ready/Failed</code>, <code>LinkState</code> и причину отказа раздельно; никаких UART-команд через частично созданный singleton.
+5. <code>emergency_stop</code>: вывести из общего FIFO — отдельный admission для допустимых stop/safety запросов, приоритет перед неотправленными обычными командами; queued START/NEXT/RESUME, ставшие опасно устаревшими, инвалидировать по политике.
+6. Уже отправленную команду не «отменять» удалением локального дескриптора: при preemption результат становится неизвестным, старый ответ не подтверждает новую safety-команду.
+7. Пробросить результат постановки в REST: <code>CommandHandler::handleCommand</code> сейчас отвечает <code>200 Command accepted</code> независимо от <code>enqueue=false</code>. Для void-обёрток (<code>stop</code>, <code>next</code>, …) возвращать результат <code>pushCommandInQueue</code> и отдавать <code>503</code>/<code>409</code> с причиной (<code>lastRejectionReason</code>/<code>lastRejectedFeature</code>).
+8. Не блокировать safety новой политикой файла: при прерывании GET_LOG — дренирование, но STOP не ждёт файл.</p>
+<p><strong>Критерий:</strong> нет старта задач из конструктора и до готовности драйвера; отказ init/queue-create виден как <code>NotReady</code>; REST не отвечает <code>accepted</code> при отказе постановки; STOP не зависит от заполненного обычного FIFO.</p>
+<h3 id="9">Фаза 9. Проверки и приёмка</h3>
+<p><strong>Существующая инфраструктура:</strong> <code>test/native/test_ssvc_log_protocol/test_main.cpp</code> (парсер), <code>interface/tests/unit/api/ssvcApi.logs.test.ts</code> (клиент). Новую инфраструктуру не ставить; UI-сценарии добавить в существующую.</p>
+<p><strong>Целевые проверки по фазам</strong></p>
+<table>
+<thead>
+<tr>
+<th>Проверка</th>
+<th>Фаза</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Обмен через очередь без выхода за границы объекта</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Стартовые 200/202, обрыв HTTP, повтор GET, отсутствие лимита 30 опросов</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Timeout ≠ success; AT не подтверждает NEXT; late reply не подтверждает новую команду</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Два клиента/двойной клик → одна команда; <code>enqueue=false</code> → <code>503</code> без busy</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Занятый telemetry mutex, backlog, отсутствие <code>\n</code>, oversize, битый финальный JSON</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Cancelled generation, поздний START, drain, refresh/statusOnly, ERROR → повтор</td>
+<td>6</td>
+</tr>
+<tr>
+<td>1 / 599 / 600 / 601 байт, длинные ненулевые Base64, padding, размер около лимита</td>
+<td>7</td>
+</tr>
+<tr>
+<td>Init/task-create failure → NotReady; REST при отказе постановки; STOP при полном FIFO</td>
+<td>8</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Критерий:</strong> сравниваются байты CSV, а не только boolean/HTTP-статус; непроверенные аппаратные условия выписаны отдельно; формулировки «исправлено на устройстве»/«тесты прошли» не используются без фактического запуска.</p>
+<p><strong>Статус приёмки (по факту выполнения фаз 1–8).</strong></p>
+<ul>
+<li>Выполнено: <code>pio run</code> (env <code>esp32-s3-devkitc-1-16m</code>) — <code>SUCCESS</code> после каждой фазы; <code>npm --prefix interface run test:run</code> — 17/17; <code>npm --prefix interface run check</code> — 0 ошибок, 0 предупреждений; <code>pio test -e native</code> — наборы <strong>компилируются</strong>, прогон помечается <code>SKIPPED</code> (в PATH нет тулчейна MSYS2 UCRT64), поэтому результаты нативных проверок Protocol <strong>не подтверждены</strong>.</li>
+<li>Добавлено в нативный набор: Base64 (padding 1/2, padding не в хвосте, символ вне алфавита, длина не кратна 4), чанк ровно <code>FILE_CHUNK_RAW_MAX</code>, пустой чанк. До прогона на подходящем тулчейне считать их непроверенными.</li>
+<li>Требует железа и трассы (не выполнено): поведение контроллера при командах во время GET_LOG, реальные потери байтов, задержки, пиковый heap и free largest block, сценарии отмены/дренажа, повторный GET после обрыва HTTP, двукратный клик по одному файлу.</li>
+<li>Отдельно помечено как неподтверждённое: дублирование CSV при отдаче (одна копия на HTTP) и выбор схемы хранения результата (Фаза 7, шаг 5); сопоставление ответа по полю <code>request</code> и проверка имени из <code>START</code> (Фаза 3) — зависят от фактической трассы устройства.</li>
+</ul>
+<h3 id="10-dea98e5">Фаза 10. Ремонт по итогам кодревью (коммит <code>dea98e5</code>)</h3>
+<p>Кодревью собственных изменений против требований этого плана выявило дефекты, внесённые фазами 4–8; исправлены отдельным набором правок.</p>
+<table>
+<thead>
+<tr>
+<th>Находка</th>
+<th>Что сделано</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Отложенная обычная команда удерживалась в цикле <code>while (attempt_count)</code>: воркер не возвращался к <code>xQueueReceive</code>, поэтому зарезервированный <code>GET_LOG</code> не извлекался (сессия доходила до таймаута 10 с), а <code>safety_queue</code> не опрашивалась — приоритет STOP не работал</td>
+<td>Команда возвращается в хвост очереди (<code>xQueueSendToBack</code>) с короткой паузой; <code>continue</code> уводит воркер к опросу <code>safety_queue</code> и обычной очереди</td>
+</tr>
+<tr>
+<td><code>emergencyStop()</code> увеличивал <code>_safetyEpoch</code> до постановки: при отказе STOP не уходил, а неотправленные <code>START/NEXT/RESUME</code> уже инвалидировались</td>
+<td>Новое поколение вычисляется локально и применяется только после успешной постановки</td>
+</tr>
+<tr>
+<td><code>uart_read_bytes</code> ждал до 5000 мс — это не «короткое блочное чтение»</td>
+<td>Ожидание 200 мс; тишина учитывается отдельным шагом 1 с, порог потери связи не зависит от частоты опроса</td>
+</tr>
+<tr>
+<td><code>touchLocked()</code> в <code>consumeLocked</code> продлевал deadline сессии любым распарсенным кадром</td>
+<td>Deadline продлевают только кадры самой сессии (<code>type == "file"</code> или ответ <code>GET_LOG</code>)</td>
+</tr>
+<tr>
+<td>Подробный лог payload выполнялся до классификации, включая файловые кадры</td>
+<td>Классификация выполняется первой; подробный лог остаётся только для не-лог кадров</td>
+</tr>
+<tr>
+<td><code>GET_SETTINGS</code> выставлял BIT10 без проверки <code>result</code> — настройки могли загружаться из кадра ошибки</td>
+<td>BIT10 только при <code>result == "OK"</code>, иначе выставляется BIT1</td>
+</tr>
+<tr>
+<td>Готовый CSV удерживался бессрочно (до <code>LOG_TOTAL_RAW_MAX</code>)</td>
+<td><code>releaseExpiredResult(nowMs, holdMs)</code>: результат освобождается по сроку (5 мин) при обращении к лог-эндпоинтам; повторный GET до этого отдаёт те же байты</td>
+</tr>
+<tr>
+<td><code>MqttCommandHandler</code> игнорировал результат постановки и логировал «поставлена в очередь» даже при отказе</td>
+<td>Результат проверяется, отказ логируется и публикуется в <code>MQTT_RSP_TOPIC</code></td>
+</tr>
+<tr>
+<td>F3: <code>loadLogs()</code> делал один <code>refresh</code> и показывал «Нажмите Обновить», если backend ответил <code>receiving</code> — поздний список не отображался</td>
+<td>UI ждёт <code>LIST</code>/<code>ERROR</code> опросом <code>statusOnly</code> с deadline 15 с; разметка различает ожидание списка и передачу файла</td>
+</tr>
+</tbody>
+</table>
+<p>Отдельно вне выбранного набора исправлений (остаётся как есть):</p>
+<ul>
+<li>Внутренний путь <code>/rest/command</code> → <code>get_log</code> резервирует сессию в обход admission (<code>beginList</code>/<code>beginFile</code> с <code>resetLocked</code>): активная передача может быть вытеснена.</li>
+<li><code>lastRejectionReason()</code> пишется воркером без синхронизации и читается HTTP/MQTT-задачей — возможна гонка при параллельных командах.</li>
+<li>Готовность тракта остаётся в двух сущностях: <code>LinkState</code> (драйвер и задачи) и публичный <code>uartCommunicationError</code> (ответы устройства).</li>
+</ul>
+<p>Проверки Фазы 10: <code>pio run</code> — <code>SUCCESS</code>; <code>npm --prefix interface run test:run</code> — 17/17; <code>npm --prefix interface run check</code> — 0 ошибок и 0 предупреждений; <code>pio test -e native</code> — наборы компилируются (прогон <code>SKIPPED</code>, окружение).</p>
+<h3 id="_3">Порядок и зависимости</h3>
+<ol>
+<li>Фаза 0 — всегда первая.</li>
+<li>Фаза 1 (P0) — жёсткий блокер, до любых нагрузочных испытаний.</li>
+<li>Фазы 2 и 3 независимы друг от друга (frontend и C++-семантика) и могут идти параллельно.</li>
+<li>Фаза 4 — фундамент для 5–7: состояния, mutex, generation.</li>
+<li>Далее 5 (RX) → 6 (отмена/список) → 7 (Base64/хранение).</li>
+<li>Фаза 8 — запуск/готовность/аварийные команды; выполняется после 4, чтобы не менять модель владения дважды.</li>
+<li>Фаза 9 — приёмка каждой фазы плюс сквозные сценарии в конце.</li>
+</ol>
+<h3 id="_4">Риски</h3>
+<table>
+<thead>
+<tr>
+<th>Риск</th>
+<th>Митигация</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Смена модели владения дважды (mutex сессии → SessionTask)</td>
+<td>в этом плане целевое состояние — одна модель с mutex/generation; переход к отдельному SessionTask — только отдельным решением</td>
+</tr>
+<tr>
+<td>Правки <code>Status</code>/JSON ломают совместимость с UI и внешними клиентами</td>
+<td>новые состояния и параметры (<code>statusOnly</code>, <code>refresh</code>) вводить аддитивно, старый GET без параметров оставить совместимым</td>
+</tr>
+<tr>
+<td>Ужесточение таймаутов/повторов ухудшает работу при медленном контроллере</td>
+<td>значения 5/10/15/60 с — стартовые, подтверждать замером; не менять UART-контракт</td>
+</tr>
+<tr>
+<td>Поведение контроллера при командах во время GET_LOG неизвестно</td>
+<td>проверка по протоколу и стенду; при неизвестности — <code>RecoveryRequired</code>, а не «безопасно»</td>
+</tr>
+<tr>
+<td>Нет доказательства, что H1/OOM — причина жалобы</td>
+<td>измерения heap до выбора схемы хранения; решение по памяти — явно помечать как неподтверждённое</td>
+</tr>
+<tr>
+<td>Файлы-образцы ревью могут разойтись с кодом после правок</td>
+<td>номера строк в источниках — ориентиры; поиск по символам, не по строкам</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_5">Открытые вопросы</h3>
+<ol>
+<li><code>platformio.ini</code> скрыт от инструментов агента (<code>.gitignore:26</code>) — env, режим прошивки и версия ESP-IDF подтверждаются вручную в Фазе 0.</li>
+<li>Нужно ли заводить измерения heap/free largest block как обязательный gate Фазы 7 или достаточно пометить решение по памяти неподтверждённым.</li>
+<li>Нужно ли после согласования плана добавлять его ссылку в <code>docs/develop/index.md</code> и <code>CHANGELOG.md</code> (в этом плане эти файлы не меняются).</li>
+<li>Допустимо ли вводить новые REST-параметры <code>statusOnly</code>/<code>refresh</code> в текущем релизном контракте или ограничиться внутренними изменениями без расширения API.</li>
+</ol>
+<h3 id="todo-get_log">TODO: остаточные улучшения (GET_LOG)</h3>
+<ol>
+<li><code>/rest/command → get_log</code> проходит через <code>beginList/beginFile</code> и может вытеснить активную сессию — провести через тот же <code>reserve</code>/<code>abortReservation</code>.</li>
+<li>Нет CRC/контрольной суммы: порча данных внутри кадра обнаруживается только косвенно (порядок чанков, Base64).</li>
+<li>UART-события (<code>FIFO_OVF</code>, framing) не подключены: реальное переполнение RX-кольца не детектируется, только логируется backlog.</li>
+<li>Отдача CSV копией (<code>dataCopy</code> + <code>String</code>): при 512 КиБ две копии в момент ответа — возможна потоковая выдача из стабильного буфера.</li>
+<li><code>lastRejectionReason()</code> пишется воркером и читается HTTP/MQTT без синхронизации.</li>
+<li>Аппаратная проверка не проведена: реальные потери байтов, поведение контроллера при командах во время передачи и пиковый heap требуют стенда.</li>
+</ol></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 by <a href="https://github.com/thedemoncat"  target="_blank" rel="noopener">elims</a> -
+<a href="#__consent">Изменить настройки файлов cookie</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/thedemoncat" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+
+  
+
+<h4>Cookie consent</h4>
+<p>Сайт использует cookie-файлы, чтобы сделать ваше пребывание на нём максимально удобным.  Оставаясь на сайте, вы даёте своё согласие на использование cookie-файлов.</p>
+<input class="md-toggle" type="checkbox" id="__settings" checked>
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+    
+      
+    
+    
+      
+        
+  
+  
+    
+    
+  
+  <li class="task-list-item">
+    <label class="task-list-control">
+      <input type="checkbox" name="github" checked>
+      <span class="task-list-indicator"></span>
+      GitHub
+    </label>
+  </li>
+
+      
+    
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout((function(){document.querySelector("[data-md-component=consent]").hidden=!1}),250);var form=document.forms.consent;for(var action of["submit","reset"])form.addEventListener(action,(function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map((function(e){return[e,!0]})))),location.hash="",location.reload()}))</script>
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "toc.follow", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../calculator/rectification_calculator.js"></script>
+      
+        <script src="../../javascripts/docs-previews-list.js"></script>
+      
+    
+  </body>
+</html>
