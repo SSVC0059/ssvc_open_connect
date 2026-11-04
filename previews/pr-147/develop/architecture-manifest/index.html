@@ -15,6 +15,10 @@
         <link rel="canonical" href="https://SSVC0059.github.io/ssvc_open_connect/previews/pr-147/develop/architecture-manifest/">
       
       
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../build/">
       
       
         
@@ -373,9 +377,30 @@
   
   
   
+    <li class="md-tabs__item">
+      <a href="../../info/changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Список изменений
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../" class="md-tabs__link">
           
   
@@ -1480,26 +1505,56 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../info/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Список изменений
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
-        
-          
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
             
   
   
@@ -1517,8 +1572,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_9">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_10">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1551,6 +1606,479 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Манифест архитектуры: IoT-проект на базе ESP32SvelteKit
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Манифест архитектуры: IoT-проект на базе ESP32SvelteKit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Что это за система
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Карта репозитория
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Слои и правила зависимостей
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Паттерны фреймворка (ядро)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Паттерны фреймворка (ядро)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Сервис состояния + эндпоинты + персистентность
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Безопасность API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Фичи: компиляция + рантайм
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 События в браузер
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-mqtt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 MQTT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6 Файловая система и веб-статика
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#47" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.7 Жизненный цикл и задачи
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-core-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Паттерны приложения (core / components)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Паттерны приложения (core / components)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-subsystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Подсистемы (Subsystem)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Сенсоры и опрос
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Сервисы-состояния приложения
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-http-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 HTTP-слой приложения
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#55" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.5 Уведомления и алерты
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#56" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.6 Системные примитивы и соглашения
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-frontend-sveltekit-spa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Frontend (SvelteKit SPA)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Frontend (SvelteKit SPA)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Стек и устройство
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Слои
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Навигация, авторизация, фичи
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-realtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Realtime
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#65" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.5 Стиль
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Конвенции и инварианты
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Конвенции и инварианты">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Структура кода
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Жёсткие инварианты
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Память и производительность
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Документация и изменения
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Карта «задача → где менять»
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Антипаттерны
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-llm-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Рабочий процесс LLM-агента
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Референс-реализация (образцы паттернов)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Глоссарий
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1674,34 +2202,6 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../api-v1.10-support-plan.md" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    План поддержки UART API v1.10
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
     
     
     
@@ -1709,19 +2209,22 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10_7" >
         
           
-          <label class="md-nav__link" for="__nav_9_7" id="__nav_9_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_10_7" id="__nav_10_7_label" tabindex="">
             
   
   
@@ -1739,8 +2242,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_9_7">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2107,19 +2610,22 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_10" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10_10" >
         
           
-          <label class="md-nav__link" for="__nav_9_10" id="__nav_9_10_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_10_10" id="__nav_10_10_label" tabindex="">
             
   
   
@@ -2137,8 +2643,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_10_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_9_10">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_10">
             <span class="md-nav__icon md-icon"></span>
             
   

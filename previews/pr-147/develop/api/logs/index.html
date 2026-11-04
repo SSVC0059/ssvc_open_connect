@@ -376,6 +376,25 @@
   
   
   
+  
+    <li class="md-tabs__item">
+      <a href="../../../info/changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Список изменений
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
     
   
   
@@ -1484,6 +1503,33 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../info/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Список изменений
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -1505,10 +1551,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" checked>
         
           
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
             
   
   
@@ -1526,8 +1572,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_9">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_10">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1552,6 +1598,34 @@
     
   
     Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture-manifest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Манифест архитектуры: IoT-проект на базе ESP32SvelteKit
   
 
     
@@ -1681,34 +1755,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api-v1.10-support-plan.md" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    План поддержки UART API v1.10
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -1730,10 +1776,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_7" checked>
         
           
-          <label class="md-nav__link" for="__nav_9_7" id="__nav_9_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_10_7" id="__nav_10_7_label" tabindex="">
             
   
   
@@ -1751,8 +1797,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_7_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_9_7">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_10_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2328,10 +2374,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_10" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10_10" >
         
           
-          <label class="md-nav__link" for="__nav_9_10" id="__nav_9_10_label" tabindex="">
+          <label class="md-nav__link" for="__nav_10_10" id="__nav_10_10_label" tabindex="">
             
   
   
@@ -2349,8 +2395,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_10_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_9_10">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_10">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2629,6 +2675,9 @@
 
 <div><h1 id="api">API Журналов ректификаций</h1>
 <p>Журналы ректификаций — это CSV-файлы с историей процессов, которые хранятся на контроллере SSVC0059_V2. Скачивание журналов поддерживается начиная с <strong>UART API v1.10</strong> (<a href="../../../ssvc_uart_api_docs/">спецификация</a>). На время передачи контроллер приостанавливает регулярную телеметрию и передаёт файл блоками по 600 байт (Base64).</p>
+<blockquote>
+<p><strong>Безопасность.</strong> Примеры ниже используют <code>http://</code> для локальной сети: Bearer-токен и содержимое журналов передаются в открытом виде. Не применяйте их в недоверенных сетях — используйте изолированный сегмент или защищённый канал.</p>
+</blockquote>
 <hr>
 <h2 id="_1">Получение списка журналов</h2>
 <p>Запрашивает у контроллера список доступных CSV-файлов.</p>
@@ -2664,9 +2713,18 @@
 <li><code>processId</code> (int) — номер процесса; должен быть положительным целым числом.</li>
 </ul>
 <h3 id="curl_1">Пример запроса (curl)</h3>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span>http://DEVICE_IP/rest/logs/15<span class="w"> </span><span class="se">\</span>
-<span class="w">     </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer YOUR_AUTH_TOKEN"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">     </span>--output<span class="w"> </span><span class="m">15</span>.CSV
+<div class="highlight"><pre><span></span><code><span class="c1"># Контроллер отвечает 202, пока передача идёт. Сохранять файл можно только</span>
+<span class="c1"># после 200, иначе в 15.CSV попадёт JSON с прогрессом.</span>
+<span class="k">while</span><span class="w"> </span>:<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="nv">status</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-sS<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer YOUR_AUTH_TOKEN"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span><span class="m">15</span>.CSV<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--write-out<span class="w"> </span><span class="s1">'%{http_code}'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>http://DEVICE_IP/rest/logs/15<span class="k">)</span>
+<span class="w">  </span><span class="o">[</span><span class="w"> </span><span class="s2">"</span><span class="nv">$status</span><span class="s2">"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"200"</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="k">break</span>
+<span class="w">  </span><span class="o">[</span><span class="w"> </span><span class="s2">"</span><span class="nv">$status</span><span class="s2">"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"202"</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"Ошибка: HTTP </span><span class="nv">$status</span><span class="s2">"</span><span class="p">;</span><span class="w"> </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span><span class="p">;</span><span class="w"> </span><span class="o">}</span>
+<span class="w">  </span>sleep<span class="w"> </span><span class="m">1</span>
+<span class="k">done</span>
 </code></pre></div>
 <h3 id="_4">Ответы</h3>
 <ul>
