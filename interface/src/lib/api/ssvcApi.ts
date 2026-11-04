@@ -17,7 +17,8 @@ import type {
 	VkPeersResponse,
 	Xkc25CalibrationResponse,
 	Xkc25CalibrationStep,
-	Xkc25StatusResponse
+	Xkc25StatusResponse,
+	Xkc25VerifyStatusResponse
 } from '$lib/types/ssvc';
 
 
@@ -83,7 +84,6 @@ export function resetInfoCache(): void {
 export async function updateSetting(field: string, value: unknown): Promise<boolean> {
 	const url = `/rest/settings`;
 	const body = { [field]: value };
-	console.log(body)
 	const response = await apiFetch<unknown>(url, 'PUT', body);
 	return response.success;
 }
@@ -145,7 +145,7 @@ export async function updateSensorThresholds(
 export async function getTelegramSettings(): Promise< TelegramConfig| null> {
 	const url = `/rest/telegram/config`;
 	const response = await apiFetch<TelegramConfig>(url, 'GET');
-	if (!response.success || !response.success) {
+	if (!response.success) {
 		console.error('Ошибка загрузки настроек Telegram');
 		return null;
 	}
@@ -254,13 +254,18 @@ export async function putHardwareConfig(
 	partial: Partial<
 		Omit<OcHardwareConfigResponse, 'capabilities' | 'needsReboot' | 'schemaVersion'>
 	>
-): Promise<OcHardwareConfigResponse | null> {
+): Promise<OcHardwareConfigResponse> {
 	const response = await apiFetch<OcHardwareConfigResponse>(
 		'/rest/oc/hardware-config',
 		'PUT',
 		partial
 	);
-	return response.success ? response.data : null;
+	if (!response.success) {
+		// Контроллер объясняет отказ в теле 400: без этого UI показывал
+		// «сохранено» при фактически отклонённых настройках.
+		throw new Error(response.error || 'Контроллер отклонил настройки');
+	}
+	return response.data;
 }
 
 /**
@@ -269,6 +274,20 @@ export async function putHardwareConfig(
  */
 export async function fetchXkc25Status(): Promise<Xkc25StatusResponse | null> {
 	const response = await apiFetch<Xkc25StatusResponse>('/rest/oc/xkc25/status', 'GET');
+	return response.success ? response.data : null;
+}
+
+/**
+ * Результат асинхронной проверки возврата XKC-25.
+ *
+ * POST шага verify_return отвечает 202 и больше не ждёт датчик: ожидание
+ * выполняет задача опроса контроллера, а терминальное состояние забирается здесь.
+ */
+export async function fetchXkc25VerifyStatus(): Promise<Xkc25VerifyStatusResponse | null> {
+	const response = await apiFetch<Xkc25VerifyStatusResponse>(
+		'/rest/oc/xkc25/verify-status',
+		'GET'
+	);
 	return response.success ? response.data : null;
 }
 
@@ -341,9 +360,10 @@ export async function sendCommand(command: string): Promise<SendCommandResponse>
 
 	if (!response.success) {
 		console.error('Ошибка выполнения команды:', response.error);
+		return { success: false, message: response.error };
 	}
 
-	return response;
+	return { success: true, message: response.data?.message ?? 'Command accepted' };
 }
 
 // ======================== Телеметрия ======================== //
@@ -620,7 +640,11 @@ function getAuthHeaders(): HeadersInit {
 /**
  * Универсальный fetch-запрос с обработкой ошибок
  */
-export async function apiFetch<T>(url: string, method: string = 'GET', body?: unknown): Promise<any> {
+export async function apiFetch<T>(
+	url: string,
+	method: string = 'GET',
+	body?: unknown
+): Promise<ApiResponse<T>> {
 	try {
 		const response = await fetch(url, {
 			method,
@@ -635,7 +659,9 @@ export async function apiFetch<T>(url: string, method: string = 'GET', body?: un
 		}
 
 		const text = await response.text();
-		const data = text ? JSON.parse(text) : null;
+		// Пустое тело (204/устройство ушло в перезагрузку) — это не объект T,
+		// поэтому null приводится явно, а не объявляется «как есть».
+		const data = (text ? JSON.parse(text) : null) as T;
 
 		return { success: true, data };
 	} catch (error) {

@@ -1,14 +1,15 @@
 <svelte:options runes />
 
 <script lang="ts">
-	import { postXkc25Calibrate } from '$lib/api/ssvcApi';
+	import { fetchXkc25VerifyStatus, postXkc25Calibrate } from '$lib/api/ssvcApi';
 	import type {
 		Xkc25CalibrationStep,
 		Xkc25SensorConfig,
 		Xkc25SensorStatus,
 		Xkc25StartGuardMode,
 		Xkc25StatusResponse,
-		Xkc25TriggerAction
+		Xkc25TriggerAction,
+		Xkc25VerifyStatusResponse
 	} from '$lib/types/ssvc';
 	import { modals } from 'svelte-modals';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -379,6 +380,23 @@
 		wizardChecklist = [];
 	}
 
+	/**
+	 * Опрос результата verify_return: POST уже вернул 202, ожидание идёт в задаче
+	 * опроса контроллера. Предохранитель — 15 с, чтобы UI не висел на зависшем датчике.
+	 */
+	async function waitForVerifyReturn(index: number): Promise<Xkc25VerifyStatusResponse | null> {
+		const deadline = Date.now() + 15000;
+		while (Date.now() < deadline) {
+			await new Promise((resolve) => setTimeout(resolve, 300));
+			const status = await fetchXkc25VerifyStatus();
+			if (!status || status.status === 'none') return null;
+			if (status.status === 'done' && (status.index == null || status.index === index)) {
+				return status;
+			}
+		}
+		return null;
+	}
+
 	async function runCalibrationStep(step: Xkc25CalibrationStep) {
 		const index = wizardIndex;
 		if (index == null || busy) return;
@@ -399,6 +417,23 @@
 			step,
 			step === 'verify_return' ? 5000 : undefined
 		);
+
+		if (step === 'verify_return' && outcome.status === 202) {
+			// Контроллер принял задание: ожидание возврата идёт в его задаче опроса,
+			// поэтому результат забирается отдельным запросом, а не телом POST.
+			const final = await waitForVerifyReturn(index);
+			busy = false;
+			if (!final) {
+				wizardTone = 'error';
+				wizardMessage = 'Контроллер не сообщил результат проверки возврата.';
+				return;
+			}
+			wizardTone = final.code === 'verify_failed' ? 'warn' : 'ok';
+			wizardMessage = final.message ?? '';
+			wizardChecklist = [];
+			await onStatusRefresh?.();
+			return;
+		}
 
 		busy = false;
 		const body = outcome.body;

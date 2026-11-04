@@ -328,10 +328,10 @@
 				xkc25SharedTankIndex,
 				xkc25StartGuardMode
 			});
-			if (next) {
-				cfg = next;
-				syncXkc25State(next);
-			}
+			// putHardwareConfig бросает при отказе контроллера: успешное сохранение
+			// всегда возвращает конфиг, поэтому проверка на null больше не нужна.
+			cfg = next;
+			syncXkc25State(next);
 			await refreshXkc25Status();
 			await onSaved?.();
 		} catch (err) {

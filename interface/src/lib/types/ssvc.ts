@@ -420,6 +420,18 @@ export type Xkc25CalibrationResponse = {
 	sensor?: Xkc25SensorStatus;
 };
 
+/** Ответ GET /rest/oc/xkc25/verify-status (асинхронный шаг verify_return). */
+export type Xkc25VerifyStatusResponse = {
+	/** none — проверку не запускали, pending — идёт, done — результат готов. */
+	status: 'none' | 'pending' | 'done';
+	index?: number;
+	ok?: boolean;
+	completed?: boolean;
+	code?: string;
+	rawLevel?: number;
+	message?: string;
+};
+
 export type SendCommandResponse = {
 	success: boolean;
 	message: string;

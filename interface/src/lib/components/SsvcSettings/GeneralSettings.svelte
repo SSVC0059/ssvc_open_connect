@@ -12,7 +12,7 @@
 		isSupportRelease
 	} = $props<{
 		settings: SsvcSettings;
-		onSave: (field: string, value: any) => void;
+		onSave: (field: string, value: unknown) => void;
 		apiFeatures?: OcApiFeature[];
 		/**
 		 * Признак ветки прошивки: «Сброс и снижение» доступно только у прошивки
@@ -39,12 +39,6 @@
 	const formulaStartTempAvailable = $derived(
 		apiFeatures.find((feature: OcApiFeature) => feature.name === 'formula')?.available ?? true
 	);
-
-	// Состояния для управления модальными окнами
-	let showNumbersModal = false;
-	let showTimeModal = false;
-	let currentModalData: any = null;
-	let currentModalType: 'numbers' | 'time' | null = null;
 
 </script>
 
