@@ -106,8 +106,29 @@ struct OpenConnectHardwareConfig {
 
     static bool isValidI2c7Bit(unsigned int addr) { return addr >= 0x08 && addr <= 0x77; }
 
-    /** Valid range for a sensor GPIO on ESP32-S3 (0..39), excluding flash/PSRAM pins. */
-    static bool isValidGpio(unsigned int pin) { return pin <= 39; }
+    /**
+     * GPIO, допустимые для датчика XKC-25 на ESP32-S3.
+     *
+     * Исключены: strapping-пины 0/3/45/46 (их уровень при старте меняет режим
+     * загрузки), USB 19/20, линии SPI flash 26–32 и octal PSRAM 33–37 —
+     * переключение любой из них роняет устройство в цикл перезагрузки.
+     * Пины 22–25 на ESP32-S3 физически отсутствуют.
+     */
+    static bool isValidGpio(unsigned int pin) {
+        if (pin > 48) {
+            return false;
+        }
+        if (pin == 0 || pin == 3 || pin == 45 || pin == 46) {
+            return false;
+        }
+        if (pin == 19 || pin == 20) {
+            return false;
+        }
+        if (pin >= 22 && pin <= 37) {
+            return false;
+        }
+        return true;
+    }
 
     /** Zone index of an XKC-25 sensor maps to RECEIVER_TANK_1/2/3. */
     static bool isValidZoneIndex(unsigned int idx) { return idx <= 2; }

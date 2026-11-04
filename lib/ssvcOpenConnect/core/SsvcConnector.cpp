@@ -226,6 +226,9 @@ constexpr std::size_t kMaxDiscardedBytes = 4096;
   std::size_t lineLength = 0;
   bool discardingOversize = false;
   std::size_t discardedBytes = 0;
+  // Время первого байта незавершённого кадра: нужно, чтобы тишина на линии
+  // сбрасывала «зависшую» половину строки, а не отключала детекцию обрыва.
+  uint32_t partialSinceMs = 0;
   int errorCounter = 0;
   uint32_t lastSilenceMs = millis();
   // Буфер чтения переживает проходы внешнего цикла: байты, оставшиеся после
@@ -270,6 +273,13 @@ constexpr std::size_t kMaxDiscardedBytes = 4096;
           // Тишина на RX: сессия проверяется по таймауту, а связь — по числу секунд
           // тишины (шаг учёта отделён от частоты коротких чтений).
           SsvcLogProtocol::getTransfer().checkTimeout(millis());
+          // Незавершённый кадр не должен отключать детекцию обрыва: без сброса
+          // lineLength остаётся ненулевым, счётчик тишины не растёт и
+          // UART_LINK_LOST не поднимается.
+          if (lineLength != 0 && millis() - partialSinceMs >= kFrameTimeoutMs) {
+            ESP_LOGW("SsvcConnector", "Неполный кадр отброшен по тишине RX");
+            lineLength = 0;
+          }
           if (lineLength == 0 && millis() - lastSilenceMs >= kSilenceStepMs) {
             lastSilenceMs = millis();
             ++errorCounter;
@@ -321,6 +331,9 @@ constexpr std::size_t kMaxDiscardedBytes = 4096;
           discardingOversize = true;
           discardedBytes = 0;
           continue;
+        }
+        if (lineLength == 0) {
+          partialSinceMs = millis();
         }
         lineBuffer[lineLength++] = symbol;
       }

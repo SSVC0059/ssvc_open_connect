@@ -53,6 +53,8 @@ def read_header(path: str) -> tuple[int, int, int]:
                     try:
                         rate = int(float(number) * factor)
                     except ValueError:
+                        # Заголовок без разборчивого числа оставляем с прежним
+                        # значением: декодер продолжает по остальным полям.
                         pass
                 elif "Channels (" in line:
                     # ; Channels (2/16) — первое число: сколько каналов в захвате.

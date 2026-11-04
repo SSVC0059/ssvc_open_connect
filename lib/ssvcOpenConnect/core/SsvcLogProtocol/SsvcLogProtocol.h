@@ -668,8 +668,19 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
       (type == "response" && detail::extractString(json, "request", request) &&
        detail::requestVerb(request) == "GET_LOG");
 
+  // Deadline продлевают только кадры, которые действительно принимаются:
+  // поток невалидных ответов GET_LOG иначе держал бы сессию бесконечно.
+  std::string result;
   if (isLogFrame) {
-    touchLocked(nowMs);
+    bool accepted = type == "file";
+    if (!accepted) {
+      detail::extractString(json, "result", result);
+      accepted = result == "LIST" || result == "START" || result == "OK" ||
+                 result.rfind("err_", 0) == 0;
+    }
+    if (accepted) {
+      touchLocked(nowMs);
+    }
   }
 
   if (_status == Status::DRAINING) {
@@ -685,7 +696,6 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
     return false;
   }
 
-  std::string result;
   if (isLogFrame && type == "response") {
     detail::extractString(json, "result", result);
     if (result == "LIST") {

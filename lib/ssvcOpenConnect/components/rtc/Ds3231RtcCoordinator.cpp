@@ -209,7 +209,17 @@ void Ds3231RtcCoordinator::performBootstrapFromRtc() {
         return;
     }
 
-    performSyncFromSystemUtc();
+    // Время доверенное — пишем его в RTC на уже открытой шине. Вызывать
+    // performSyncFromSystemUtc() отсюда нельзя: она берёт блокировку настроек,
+    // а порядок «шина → настройки» даёт deadlock с путями «настройки → шина».
+    const time_t systemNow = time(nullptr);
+    struct tm systemUtc {};
+    gmtime_r(&systemNow, &systemUtc);
+    if (!rtc.writeUtcTm(systemUtc)) {
+        ESP_LOGW(TAG, "Failed to write DS3231 from system UTC");
+    } else {
+        ESP_LOGI(TAG, "DS3231 updated from system UTC");
+    }
 }
 
 void Ds3231RtcCoordinator::bootstrapAfterI2c() {

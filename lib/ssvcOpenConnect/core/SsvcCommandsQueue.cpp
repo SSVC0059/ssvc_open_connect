@@ -121,7 +121,36 @@ const std::map<std::string, std::function<bool(const std::string&)>> SsvcCommand
     {"emergency_stop", [](const std::string&){ return getQueue().emergencyStop(); }},
     {"status",       [](const std::string& params){ return getQueue().status(params); }},
     {"set",          [](const std::string& params){ return getQueue().set(params); }},
-    {"get_log",      [](const std::string& params){ return getQueue().getLog(params); }}
+    {"get_log",      [](const std::string& params) {
+      auto& transfer = SsvcLogProtocol::getTransfer();
+      SsvcLogProtocol::ReserveResult reserved = SsvcLogProtocol::ReserveResult::Unavailable;
+
+      if (params.empty()) {
+        reserved = transfer.reserveList(millis());
+      } else {
+        char* end = nullptr;
+        const long processNumber = std::strtol(params.c_str(), &end, 10);
+        if (end == params.c_str() || *end != '\0' || processNumber <= 0 ||
+            processNumber > std::numeric_limits<int>::max()) {
+          return false;
+        }
+        reserved = transfer.reserveFile(static_cast<int>(processNumber), millis());
+      }
+
+      // Резерв обязателен и здесь: без него воркер вызывает beginList()/beginFile()
+      // с generation 0 и затирает уже идущую передачу другого клиента.
+      if (reserved == SsvcLogProtocol::ReserveResult::SameRequest) {
+        return true;  // тот же запрос уже выполняется или готов
+      }
+      if (reserved != SsvcLogProtocol::ReserveResult::Accepted) {
+        return false;  // Busy/Unavailable — сессию не занимаем
+      }
+      if (!getQueue().getLog(params, transfer.generation())) {
+        transfer.releaseReservation();
+        return false;
+      }
+      return true;
+    }}
 };
 
 SsvcCommandsQueue::SsvcCommandsQueue() {

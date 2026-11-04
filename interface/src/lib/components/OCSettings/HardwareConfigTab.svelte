@@ -374,8 +374,10 @@
 				Number(sensor.gpio),
 				Number(sensor.pcfAddress ?? XKC25_PCF_INPUT_DEFAULT_ADDR),
 				Number(sensor.pcfBit ?? 0),
-				Number(sensor.zoneIndex),
-				sensor.activeLow
+				Number(sensor.zoneIndex)
+				// activeLow сюда не входит: это результат калибровки, а не правка
+				// подключения. Иначе после калибровки форма выглядела бы изменённой
+				// и следующий шаг мастера блокировался бы.
 			])
 		);
 	}

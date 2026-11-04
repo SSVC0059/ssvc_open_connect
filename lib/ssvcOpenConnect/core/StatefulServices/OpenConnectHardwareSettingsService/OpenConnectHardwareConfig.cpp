@@ -386,7 +386,9 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
                 return fail();
             }
 
-            sensor.activeLow = o["activeLow"] | true;
+            // activeLow — результат калибровки, а не поле конфигурации: значение
+            // берётся из текущего состояния ниже. Иначе устаревший снимок UI
+            // перезапишет полярность и сбросит калибровку.
             const unsigned int rawZone = o["zoneIndex"] | 0;
             if (!isValidZoneIndex(rawZone)) {
                 return fail();
@@ -403,11 +405,15 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
             sensor.levelWithoutLiquid = previous.levelWithoutLiquid;
             sensor.levelWithLiquid = previous.levelWithLiquid;
             sensor.calibratedAt = previous.calibratedAt;
+            // Полярность — измеренный калибровкой результат, а не входное поле PUT.
+            sensor.activeLow = previous.activeLow;
 
             // Rewiring invalidates a calibration measured on the old wiring.
             if (!Xkc25SensorConfig::structurallyEqual(sensor, previous)) {
                 sensor.calibrated = false;
                 sensor.calibratedAt = 0;
+                // Новая линия — новая полярность: вернуть дефолт и измерить заново.
+                sensor.activeLow = true;
             }
 
             next.push_back(sensor);
