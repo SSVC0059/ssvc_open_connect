@@ -13,7 +13,7 @@
 ## API и интеграция
 
 - [REST API](api/index.md) — эндпоинты OpenConnect.
-- [UART API SSVC (справка)](ssvc-api-v1.6/api_docs.md) — команды, поля JSON, версии API.
+- [UART API SSVC (справка)](../ssvc_uart_api_docs.md) — команды, поля JSON, версии API.
 - [Протокол UART — примеры (JSON/TXT)](../ssvc-serial-protocol/develop/Readme.md) — текстовые примеры и ссылки на файлы рядом с прошивочным протоколом (дополнение к справке).
 
 ## Фронтенд

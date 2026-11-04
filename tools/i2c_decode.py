@@ -271,8 +271,11 @@ def main() -> int:
         return 2
 
     print(f"Файл: {args.capture}")
+    # Без вложенного тернарника: приоритет `?:` и `+` читается неоднозначно,
+    # из-за чего заголовок терял хвост «заявлено N».
+    declared_note = f", заявлено {declared})" if declared else ")"
     print(f"Частота дискретизации: {rate} Гц, каналов {channel_count}, сэмплов {samples} "
-          f"({samples / rate:.3f} с" + (f", заявлено {declared})" if declared else ")"))
+          f"({samples / rate:.3f} с{declared_note}")
     print("Активность каналов:")
     for number in sorted(stats):
         entry = stats[number]
