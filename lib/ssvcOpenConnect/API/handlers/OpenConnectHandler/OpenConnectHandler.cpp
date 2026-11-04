@@ -353,41 +353,48 @@ void OpenConnectHandler::getHardwareConfig(AsyncWebServerRequest* request) {
     JsonObject root = response->getRoot();
 
     bool needs = false;
+    OpenConnectHardwareConfig cfg;
     svc.read([&](OpenConnectHardwareConfig& s) {
         OpenConnectHardwareConfig::read(s, root);
         needs = s.pendingReboot;
-        // Все проверки идут одной пачкой под блокировкой шины, иначе рабочий
-        // поток дисплея/RTC вклинится между beginTransmission() и endTransmission().
+        // Копия — чтобы пробы шли уже без блокировки настроек.
+        cfg = s;
+    });
+
+    // Порядок блокировок всегда «настройки → шина»: пробы выполняются после
+    // того, как read() отпустил свой мьютекс. Вложенный Guard держал бы обе
+    // блокировки сразу, и обратный порядок в другом месте дал бы deadlock.
+    {
         I2CBusSubsystem::Guard bus(I2CBusSubsystem::getInstance());
         TwoWire* w = I2CBusSubsystem::getInstance().getWire();
-        if (s.pressureSensorEnabled) {
+        if (cfg.pressureSensorEnabled) {
             bool bmpOk = false;
             if (w) {
-                w->beginTransmission(s.bmp581I2cAddress);
+                w->beginTransmission(cfg.bmp581I2cAddress);
                 bmpOk = (w->endTransmission() == 0);
             }
             root["bmp581ProbeOk"] = bmpOk;
         }
-        if (s.rtcEnabled) {
+        if (cfg.rtcEnabled) {
             bool rtcOk = false;
             if (w) {
-                w->beginTransmission(s.ds3231I2cAddress);
+                w->beginTransmission(cfg.ds3231I2cAddress);
                 rtcOk = (w->endTransmission() == 0);
             }
             root["ds3231ProbeOk"] = rtcOk;
         }
-        if (s.lcd1602Enabled) {
+        if (cfg.lcd1602Enabled) {
             bool lcdOk = false;
             if (w) {
-                w->beginTransmission(s.lcd1602I2cAddress);
+                w->beginTransmission(cfg.lcd1602I2cAddress);
                 lcdOk = (w->endTransmission() == 0);
             }
             root["lcd1602ProbeOk"] = lcdOk;
         }
 #if !PINOUT_USE_GPIO
-        appendRelayProbeStatus(root, w, s.relayPcf8574Addresses);
+        appendRelayProbeStatus(root, w, cfg.relayPcf8574Addresses);
 #endif
-    });
+    }
     appendHardwareConfigCapabilities(root);
     root["needsReboot"] = needs;
 
@@ -397,7 +404,11 @@ void OpenConnectHandler::getHardwareConfig(AsyncWebServerRequest* request) {
 
 void OpenConnectHandler::putHardwareConfig(AsyncWebServerRequest* request, JsonVariant& json) {
     if (!json.is<JsonObject>()) {
-        request->send(400);
+        // Пустой 400 UI показывал как «Ошибка сохранения» без подробностей:
+        // причина отказа обязана быть в теле.
+        request->send(400, "application/json",
+                      R"({"success":false,"error":"body_must_be_object",)"
+                      R"("message":"Тело запроса должно быть JSON-объектом"})");
         return;
     }
 
@@ -408,7 +419,9 @@ void OpenConnectHandler::putHardwareConfig(AsyncWebServerRequest* request, JsonV
         "rest");
 
     if (result == StateUpdateResult::ERROR) {
-        request->send(400);
+        request->send(400, "application/json",
+                      R"({"success":false,"error":"validation_failed",)"
+                      R"("message":"Настройки не прошли проверку: адреса, пины или привязка зон"})");
         return;
     }
 
@@ -416,39 +429,46 @@ void OpenConnectHandler::putHardwareConfig(AsyncWebServerRequest* request, JsonV
     JsonObject root = response->getRoot();
 
     bool needs = false;
+    OpenConnectHardwareConfig cfg;
     OpenConnectHardwareSettingsService::instance().read([&](OpenConnectHardwareConfig& s) {
         OpenConnectHardwareConfig::read(s, root);
         needs = s.pendingReboot;
+        cfg = s;
+    });
+
+    // См. getHardwareConfig: пробы идут после освобождения блокировки настроек,
+    // поэтому порядок захвата всегда «настройки → шина».
+    {
         I2CBusSubsystem::Guard bus(I2CBusSubsystem::getInstance());
         TwoWire* w = I2CBusSubsystem::getInstance().getWire();
-        if (s.pressureSensorEnabled) {
+        if (cfg.pressureSensorEnabled) {
             bool bmpOk = false;
             if (w) {
-                w->beginTransmission(s.bmp581I2cAddress);
+                w->beginTransmission(cfg.bmp581I2cAddress);
                 bmpOk = (w->endTransmission() == 0);
             }
             root["bmp581ProbeOk"] = bmpOk;
         }
-        if (s.rtcEnabled) {
+        if (cfg.rtcEnabled) {
             bool rtcOk = false;
             if (w) {
-                w->beginTransmission(s.ds3231I2cAddress);
+                w->beginTransmission(cfg.ds3231I2cAddress);
                 rtcOk = (w->endTransmission() == 0);
             }
             root["ds3231ProbeOk"] = rtcOk;
         }
-        if (s.lcd1602Enabled) {
+        if (cfg.lcd1602Enabled) {
             bool lcdOk = false;
             if (w) {
-                w->beginTransmission(s.lcd1602I2cAddress);
+                w->beginTransmission(cfg.lcd1602I2cAddress);
                 lcdOk = (w->endTransmission() == 0);
             }
             root["lcd1602ProbeOk"] = lcdOk;
         }
 #if !PINOUT_USE_GPIO
-        appendRelayProbeStatus(root, w, s.relayPcf8574Addresses);
+        appendRelayProbeStatus(root, w, cfg.relayPcf8574Addresses);
 #endif
-    });
+    }
     appendHardwareConfigCapabilities(root);
     root["needsReboot"] = needs;
 
@@ -458,8 +478,13 @@ void OpenConnectHandler::putHardwareConfig(AsyncWebServerRequest* request, JsonV
 
 namespace {
 
-/** Предел ожидания на шаге «проверка возврата»: шаг блокирующий, дольше держать HTTP-запрос нельзя. */
+/**
+ * Предел ожидания на шаге «проверка возврата». Шаг выполняется в задаче опроса
+ * подсистемы, HTTP-запрос не блокируется — лимит можно держать щедрым.
+ */
 constexpr uint32_t kMaxVerifyReturnTimeoutMs = 5000;
+/** Значение по умолчанию: столько UI готов ждать возврата датчика после опускания уровня. */
+constexpr uint32_t kDefaultVerifyReturnTimeoutMs = 5000;
 
 /**
  * Статус одного слота XKC-25: конфигурация из файла плюс живое состояние пина.
@@ -553,6 +578,19 @@ String buildXkc25CalibrationBody(size_t slot, const Xkc25CalibrationResult& resu
     return body;
 }
 
+/** Ответ на постановку асинхронной проверки возврата: 202 + слот, результат забирается опросом. */
+String buildXkc25VerifyPendingBody(size_t slot) {
+    JsonDocument doc;
+    doc["status"] = "pending";
+    doc["index"] = slot;
+    doc["code"] = Xkc25CalibrationCode::OK;
+    doc["message"] = "Проверка возврата запущена";
+
+    String body;
+    serializeJson(doc, body);
+    return body;
+}
+
 } // namespace
 
 void OpenConnectHandler::getXkc25Status(AsyncWebServerRequest* request) {
@@ -638,8 +676,22 @@ void OpenConnectHandler::postXkc25Calibrate(AsyncWebServerRequest* request, Json
         result = subsystem->recordLevelWithLiquid(slot);
     } else if (strcmp(step, "verify_return") == 0) {
         const uint32_t timeoutMs =
-            std::min<uint32_t>(body["timeoutMs"] | 5000u, kMaxVerifyReturnTimeoutMs);
-        result = subsystem->verifyReturn(slot, timeoutMs);
+            std::min<uint32_t>(body["timeoutMs"] | kDefaultVerifyReturnTimeoutMs,
+                               kMaxVerifyReturnTimeoutMs);
+        const Xkc25VerifyStart start = subsystem->startVerifyReturn(slot, timeoutMs);
+        if (!start.accepted) {
+            // busy — проверка уже идёт; иначе задание отклонено по состоянию датчика.
+            request->send(start.busy ? 409 : calibrationHttpStatus(start.result.code),
+                          "application/json",
+                          buildXkc25CalibrationBody(slot, start.result));
+            return;
+        }
+        // Ожидание выполняет задача опроса подсистемы: HTTP отвечает сразу, а
+        // результат забирается через GET /rest/oc/xkc25/verify-status.
+        AsyncWebServerResponse* response =
+            request->beginResponse(202, "application/json", buildXkc25VerifyPendingBody(slot));
+        request->send(response);
+        return;
     } else {
         request->send(400, "application/json", R"({"error":"Unknown step"})");
         return;
@@ -647,4 +699,35 @@ void OpenConnectHandler::postXkc25Calibrate(AsyncWebServerRequest* request, Json
 
     request->send(calibrationHttpStatus(result.code), "application/json",
                   buildXkc25CalibrationBody(slot, result));
+}
+
+void OpenConnectHandler::getXkc25VerifyStatus(AsyncWebServerRequest* request) {
+    JsonDocument doc;
+    Xkc25Subsystem* subsystem = Xkc25Subsystem::activeInstance();
+    if (subsystem == nullptr) {
+        doc["status"] = "none";
+        doc["code"] = Xkc25CalibrationCode::SENSOR_NOT_AVAILABLE;
+        doc["message"] = "XKC-25 subsystem is not active";
+    } else {
+        const Xkc25VerifySnapshot snapshot = subsystem->verifyReturnSnapshot();
+        if (snapshot.running) {
+            doc["status"] = "pending";
+            doc["index"] = snapshot.sensorIndex;
+        } else if (snapshot.hasResult) {
+            doc["status"] = "done";
+            doc["index"] = snapshot.sensorIndex;
+            doc["ok"] = snapshot.result.ok;
+            doc["completed"] = snapshot.result.completed;
+            doc["code"] = snapshot.result.code;
+            doc["rawLevel"] = snapshot.result.rawLevel;
+            doc["message"] = snapshot.result.message;
+        } else {
+            // Проверку ещё не запускали с момента старта подсистемы.
+            doc["status"] = "none";
+        }
+    }
+
+    String body;
+    serializeJson(doc, body);
+    request->send(200, "application/json", body);
 }

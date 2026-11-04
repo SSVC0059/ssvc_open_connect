@@ -51,8 +51,11 @@ void SettingsHandler::updateSettings(AsyncWebServerRequest* request, JsonVariant
 
             auto it = PARAM_HANDLERS.find(key);
             if (it == PARAM_HANDLERS.end()) {
+                // Клиент должен узнать, что настройка не применена: ответ 200
+                // «success» при отвергнутом поле скрывал расхождение с
+                // устройством.
                 errors[key] = "Unknown parameter";
-                // hasErrors = true;
+                hasErrors = true;
                 continue;
             }
 

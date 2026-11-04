@@ -6,6 +6,7 @@
 
 #include <array>
 #include <functional>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -26,6 +27,8 @@ constexpr const char* NOT_REACTED = "not_reacted";
 constexpr const char* NOT_CALIBRATED = "not_calibrated";
 constexpr const char* PERSIST_FAILED = "persist_failed";
 constexpr const char* VERIFY_FAILED = "verify_failed";
+/** Проверка возврата уже выполняется: второй запрос отклоняется, а не встаёт в очередь. */
+constexpr const char* VERIFY_IN_PROGRESS = "verify_in_progress";
 } // namespace Xkc25CalibrationCode
 
 /** Итог одного шага мастера калибровки XKC-25. */
@@ -36,6 +39,27 @@ struct Xkc25CalibrationResult {
     const char* code = Xkc25CalibrationCode::OK; // машинный код итога для API
     std::string message;                // пояснение для UI
     std::vector<std::string> checklist; // чек-лист подключения при отклонённой калибровке
+};
+
+/**
+ * Итог постановки асинхронной проверки возврата.
+ *
+ * Проверка выполняется в задаче быстрого опроса, поэтому HTTP-обработчик не ждёт
+ * датчик: accepted=true означает «задание принято», а результат забирается
+ * отдельным запросом статуса.
+ */
+struct Xkc25VerifyStart {
+    bool accepted = false;          // задание поставлено
+    bool busy = false;              // уже выполняется другая проверка
+    Xkc25CalibrationResult result;  // причина отказа, если accepted == false
+};
+
+/** Снимок асинхронной проверки возврата для API. */
+struct Xkc25VerifySnapshot {
+    bool running = false;           // проверка ещё выполняется
+    bool hasResult = false;         // есть готовый результат (с момента запуска)
+    uint8_t sensorIndex = 0;        // датчик, к которому относится результат
+    Xkc25CalibrationResult result;  // валиден при hasResult
 };
 
 /** Итог предстартовой проверки XKC-25 (режим xkc25StartGuardMode). */
@@ -85,8 +109,17 @@ public:
     /** Шаг «с жидкостью»: фиксирует уровень с жидкостью и завершает калибровку при различии уровней. */
     Xkc25CalibrationResult recordLevelWithLiquid(uint8_t sensorIndex);
 
-    /** Шаг «проверка возврата»: ждёт возврата пина к levelWithoutLiquid после опускания уровня. */
-    Xkc25CalibrationResult verifyReturn(uint8_t sensorIndex, uint32_t timeoutMs);
+    /**
+     * @brief Шаг «проверка возврата»: ставит задание ждать возврата пина к levelWithoutLiquid.
+     *
+     * Ожидание выполняет задача быстрого опроса, поэтому HTTP-обработчик не
+     * блокируется на время проверки. Валидация (датчик существует и калиброван)
+     * выполняется сразу и возвращается в Xkc25VerifyStart::result.
+     */
+    Xkc25VerifyStart startVerifyReturn(uint8_t sensorIndex, uint32_t timeoutMs);
+
+    /** Снимок асинхронной проверки возврата: идёт опрос или готов результат. */
+    Xkc25VerifySnapshot verifyReturnSnapshot() const;
 
     // --- Предстартовая проверка (6.4) ---
 
@@ -147,6 +180,14 @@ private:
     static void fastPollTaskEntry(void* arg);
     void fastPollLoop();
 
+    /**
+     * @brief Один шаг асинхронной проверки возврата.
+     *
+     * Вызывается из fastPollLoop: читает пин того же датчика в том же потоке, что
+     * и штатный опрос, поэтому гонки за линию между HTTP- и рабочей задачей нет.
+     */
+    void serviceVerifyReturn();
+
     /** Проверка целостности конфигурации после загрузки (6.3); пишет файл только при изменении. */
     void runBootAutocheck();
 
@@ -188,6 +229,17 @@ private:
      * состояниях даёт полярность, а вердикт объясняет неподвижный уровень пина.
      */
     std::array<Xkc25Sensor::LineProbe, OpenConnectHardwareConfig::kMaxXkc25Sensors> _withoutLiquid{};
+    /**
+     * Состояние асинхронной проверки возврата: пишется из задачи быстрого опроса,
+     * читается из HTTP-задачи — доступ только под _verifyMutex.
+     */
+    mutable std::mutex _verifyMutex;
+    bool _verifyRunning = false;
+    bool _verifyHasResult = false;
+    uint8_t _verifySensorIndex = 0;
+    uint8_t _verifyExpectedLevel = 0;
+    uint32_t _verifyDeadlineMs = 0;
+    Xkc25CalibrationResult _verifyResult;
     /** Сколько датчиков прямо сейчас сигнализирует о заполнении. */
     size_t _sensorsOnAlert = 0;
     /** Пауза выставлена этим счётчиком, значит снимаем её сами при спаде. */
@@ -203,7 +255,6 @@ private:
     static constexpr uint8_t kCalibrationSamples = 5;
     static constexpr uint16_t kCalibrationSampleIntervalMs = 20;
     static constexpr uint32_t kVerifyReturnDefaultTimeoutMs = 5000;
-    static constexpr uint16_t kVerifyReturnPollMs = 100;
     /** Период быстрого опроса входов: 100 мс × дебаунс 3 ≈ 300 мс до реакции. */
     static constexpr uint32_t kFastPollIntervalMs = 100;
     static constexpr uint32_t kFastPollStackWords = 4096;

@@ -72,9 +72,9 @@ public:
     // --- Методы Subsystem ---
     void initialize() override {
         if (!_initialized) {
-            if (_mutex == nullptr) {
-                _mutex = xSemaphoreCreateRecursiveMutex();
-            }
+            // Мьютекс создаётся не здесь: ранний вызов из другой задачи не должен
+            // увидеть nullptr и пройти мимо защиты шины.
+            (void)recursiveMutex();
             ESP_LOGI(TAG, "I2C Bus Subsystem initialized (Wait for enable)");
             _initialized = true;
         }
@@ -131,7 +131,7 @@ public:
      * @brief Сканирует шину I2C и возвращает количество найденных устройств.
      */
     int scan() const {
-        const std::vector<uint8_t> found = scanAddresses(true);
+        const std::vector<uint8_t> found = scanAddresses(true, true);
         return static_cast<int>(found.size());
     }
 
@@ -142,9 +142,14 @@ public:
      * видно, выпало конкретное устройство или вся шина (диагностика через
      * /rest/oc/hardware-faults, без анализатора).
      *
+     * Результат кэшируется на SCAN_CACHE_TTL_MS: 126 транзакций под мьютексом
+     * занимают до секунды (и больше, если устройство удерживает SDA), а запрос
+     * диагностики не должен каждый раз блокировать дисплей, RTC и датчики.
+     *
      * @param verbose логировать каждый найденный адрес (для HTTP-диагностики шумно).
+     * @param forceRefresh игнорировать кэш (нужно при включении подсистемы).
      */
-    std::vector<uint8_t> scanAddresses(const bool verbose) const {
+    std::vector<uint8_t> scanAddresses(const bool verbose, const bool forceRefresh = false) const {
         std::vector<uint8_t> found;
         if (!_enabled) {
             if (verbose) {
@@ -154,6 +159,17 @@ public:
         }
 
         Guard guard(I2CBusSubsystem::getInstance());
+
+        const uint32_t now = millis();
+        if (!forceRefresh && _scanCacheValid &&
+            (now - _scanCacheAt) < SCAN_CACHE_TTL_MS) {
+            if (verbose) {
+                ESP_LOGD(TAG, "I2C scan taken from cache (%u devices)",
+                         static_cast<unsigned>(_scanCache.size()));
+            }
+            return _scanCache;
+        }
+
         if (verbose) {
             ESP_LOGI(TAG, "Scanning I2C bus...");
         }
@@ -167,6 +183,10 @@ public:
                 }
             }
         }
+        _scanCache = found;
+        _scanCacheAt = millis();
+        _scanCacheValid = true;
+
         if (verbose) {
             ESP_LOGI(TAG, "Scan complete. Found %u devices.", static_cast<unsigned>(found.size()));
         }
@@ -176,25 +196,49 @@ public:
 private:
     I2CBusSubsystem() = default; // Приватный конструктор для Singleton
 
+    /**
+     * @brief Рекурсивный мьютекс шины, создаваемый при первом обращении.
+     *
+     * Статическая инициализация потокобезопасна (C++11), поэтому ни initialize(),
+     * ни lock() не могут увидеть nullptr: ленивое создание под блокировкой само
+     * требовало блокировки и оставляло окно, в котором защита шины отсутствовала.
+     */
+    static SemaphoreHandle_t recursiveMutex() {
+        static SemaphoreHandle_t mutex = xSemaphoreCreateRecursiveMutex();
+        return mutex;
+    }
+
     static constexpr auto TAG = "I2CBus";
+    /// Кэш сканирования: 126 транзакций под мьютексом не должны выполняться на
+    /// каждый запрос диагностики.
+    static constexpr uint32_t SCAN_CACHE_TTL_MS = 15000;
     bool _initialized = false;
     bool _enabled = false;
-    SemaphoreHandle_t _mutex = nullptr;
+    mutable std::vector<uint8_t> _scanCache;
+    mutable uint32_t _scanCacheAt = 0;
+    mutable bool _scanCacheValid = false;
 };
 
 inline I2CBusSubsystem::Guard::Guard(I2CBusSubsystem& bus) : _bus(bus) { _bus.lock(); }
 inline I2CBusSubsystem::Guard::~Guard() { _bus.unlock(); }
 
 inline void I2CBusSubsystem::lock() {
-    if (_mutex != nullptr) {
-        xSemaphoreTakeRecursive(_mutex, portMAX_DELAY);
+    const SemaphoreHandle_t busMutex = recursiveMutex();
+    if (busMutex == nullptr) {
+        // Без мьютекса шина не защищена: молчать об этом нельзя, но и работать
+        // с нулевым дескриптором нельзя — FreeRTOS уйдёт в assert.
+        ESP_LOGE(TAG, "I2C mutex create failed: bus access is unprotected");
+        return;
     }
+    xSemaphoreTakeRecursive(busMutex, portMAX_DELAY);
 }
 
 inline void I2CBusSubsystem::unlock() {
-    if (_mutex != nullptr) {
-        xSemaphoreGiveRecursive(_mutex);
+    const SemaphoreHandle_t busMutex = recursiveMutex();
+    if (busMutex == nullptr) {
+        return;
     }
+    xSemaphoreGiveRecursive(busMutex);
 }
 
 #endif // I2C_BUS_H

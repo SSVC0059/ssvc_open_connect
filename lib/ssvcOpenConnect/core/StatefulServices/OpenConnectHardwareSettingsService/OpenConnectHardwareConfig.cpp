@@ -250,6 +250,21 @@ StateUpdateResult OpenConnectHardwareConfig::update(JsonObject& root, OpenConnec
         if (!validateAddressList(next, listChanged, beforeRelay)) {
             return fail();
         }
+        // Обратная проверка к той, что ниже для xkc25Sensors: релейный расширитель
+        // не может занять адрес входного. Без неё PUT только с
+        // relayPcf8574Addresses проходил на занятый адрес, и два владельца
+        // (prepareInputs и RelayPortCoordinator) писали в один PCF8574.
+        for (const auto& sensorCfg : s.xkc25Sensors) {
+            if (!sensorCfg.enabled ||
+                sensorCfg.pinSource != Xkc25SensorConfig::kPinSourcePcf8574) {
+                continue;
+            }
+            for (const uint8_t relayAddr : next) {
+                if (relayAddr == sensorCfg.pcfAddress) {
+                    return fail();
+                }
+            }
+        }
         s.relayPcf8574Addresses = std::move(next);
         if (listChanged) {
             changed = true;

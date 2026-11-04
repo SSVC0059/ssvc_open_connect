@@ -191,6 +191,15 @@ void HandlerRegistrator::registerTelegramBotHandler() const
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
 
+    // Результат асинхронного шага verify_return: POST только ставит задание (202),
+    // терминальное состояние забирается этим запросом.
+    _server.on("/rest/oc/xkc25/verify-status", HTTP_GET,
+              _securityManager->wrapRequest(
+                  [](AsyncWebServerRequest* request) {
+                      OpenConnectHandler::getXkc25VerifyStatus(request);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
+
     _server.on("/rest/oc/xkc25/calibrate", HTTP_POST,
               _securityManager->wrapCallback(
                   [](AsyncWebServerRequest* request, JsonVariant& json) {
@@ -489,11 +498,19 @@ void HandlerRegistrator::registerLogHandlers() const
                            // Копия берётся под lock, а результат остаётся в Transfer:
                            // обрыв HTTP или повторный GET того же процесса отдаёт те же
                            // байты без новой UART-команды. Ресурс освобождается при новом
-                           // резерве или отмене. Пиковая память — исходный буфер плюс эта
-                           // копия; потоковая выдача требует замера heap (не подтверждено).
-                           const std::string data = transfer.dataCopy();
-                           String csv(data.c_str(), static_cast<unsigned int>(data.size()));
-                           String disposition =
+                           // резерве или отмене. Пиковая память — исходный буфер плюс две
+                           // копии (std::string и String ответа), поэтому куча проверяется
+                           // здесь: при сборке без исключений нехватка памяти — это abort.
+                           const std::size_t need =
+                               snap.dataBytes * 2 + SsvcLogProtocol::LOG_HEAP_SAFETY_MARGIN;
+                           if (SsvcLogProtocol::freeHeapBytes() < need) {
+                               request->send(503, "application/json",
+                                             R"({"error":"log_heap_low"})");
+                               return;
+                           }
+                           const std::string data = transfer.data();
+                           const String csv(data.c_str(), static_cast<unsigned int>(data.size()));
+                           const String disposition =
                                String("attachment; filename=\"") + expectedName.c_str() + "\"";
                            auto* response = request->beginResponse(200, "text/csv", csv);
                            response->addHeader("Content-Disposition", disposition);

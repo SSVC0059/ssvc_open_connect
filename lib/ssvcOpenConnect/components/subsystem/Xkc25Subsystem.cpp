@@ -191,6 +191,9 @@ void Xkc25Subsystem::fastPollLoop() {
                 sensor->poll();
             }
         }
+        // Проверка возврата живёт в этом же потоке: HTTP-обработчик только ставит
+        // задание, поэтому линия датчика не используется двумя задачами сразу.
+        serviceVerifyReturn();
         vTaskDelay(pdMS_TO_TICKS(kFastPollIntervalMs));
     }
 }
@@ -210,6 +213,13 @@ void Xkc25Subsystem::disable() {
     _sensorsOnAlert = 0;
     _pauseIssuedByXkc = false;
     _processWasRunning = false;
+    {
+        // Задача опроса остановлена: незавершённая проверка больше не обслуживается.
+        const std::lock_guard<std::mutex> lock(_verifyMutex);
+        _verifyRunning = false;
+        _verifyHasResult = false;
+        _verifyResult = Xkc25CalibrationResult{};
+    }
     _active = nullptr;
     ESP_LOGI(TAG, "XKC-25 subsystem disabled");
 }
@@ -512,13 +522,12 @@ Xkc25CalibrationResult Xkc25Subsystem::recordLevelWithLiquid(const uint8_t senso
     return result;
 }
 
-Xkc25CalibrationResult Xkc25Subsystem::verifyReturn(const uint8_t sensorIndex, const uint32_t timeoutMs) {
-    Xkc25CalibrationResult result;
-    Xkc25Sensor* sensor = findSensor(sensorIndex);
-    if (sensor == nullptr) {
-        result.code = Xkc25CalibrationCode::SENSOR_NOT_AVAILABLE;
-        result.message = "Датчик не найден или выключен";
-        return result;
+Xkc25VerifyStart Xkc25Subsystem::startVerifyReturn(const uint8_t sensorIndex, const uint32_t timeoutMs) {
+    Xkc25VerifyStart start;
+    if (findSensor(sensorIndex) == nullptr) {
+        start.result.code = Xkc25CalibrationCode::SENSOR_NOT_AVAILABLE;
+        start.result.message = "Датчик не найден или выключен";
+        return start;
     }
 
     uint8_t levelWithoutLiquid = 0;
@@ -533,28 +542,77 @@ Xkc25CalibrationResult Xkc25Subsystem::verifyReturn(const uint8_t sensorIndex, c
         }
     });
     if (!found || !calibrated) {
-        result.code = Xkc25CalibrationCode::NOT_CALIBRATED;
-        result.message = "Сначала выполните калибровку датчика";
-        return result;
+        start.result.code = Xkc25CalibrationCode::NOT_CALIBRATED;
+        start.result.message = "Сначала выполните калибровку датчика";
+        return start;
     }
 
-    const uint32_t effectiveTimeout = timeoutMs == 0 ? kVerifyReturnDefaultTimeoutMs : timeoutMs;
-    const uint32_t start = millis();
-    int raw = sensor->readRawPinLevel();
-    while (raw != static_cast<int>(levelWithoutLiquid) &&
-           static_cast<uint32_t>(millis() - start) < effectiveTimeout) {
-        delay(kVerifyReturnPollMs);
-        raw = sensor->readRawPinLevel();
+    const std::lock_guard<std::mutex> lock(_verifyMutex);
+    if (_verifyRunning) {
+        start.busy = true;
+        start.result.code = Xkc25CalibrationCode::VERIFY_IN_PROGRESS;
+        start.result.message = "Проверка возврата уже выполняется";
+        return start;
     }
 
+    _verifyRunning = true;
+    _verifyHasResult = false;
+    _verifySensorIndex = sensorIndex;
+    _verifyExpectedLevel = levelWithoutLiquid;
+    _verifyDeadlineMs = millis() + (timeoutMs == 0 ? kVerifyReturnDefaultTimeoutMs : timeoutMs);
+    _verifyResult = Xkc25CalibrationResult{};
+    start.accepted = true;
+    return start;
+}
+
+Xkc25VerifySnapshot Xkc25Subsystem::verifyReturnSnapshot() const {
+    const std::lock_guard<std::mutex> lock(_verifyMutex);
+    Xkc25VerifySnapshot snapshot;
+    snapshot.running = _verifyRunning;
+    snapshot.hasResult = _verifyHasResult;
+    snapshot.sensorIndex = _verifySensorIndex;
+    snapshot.result = _verifyResult;
+    return snapshot;
+}
+
+void Xkc25Subsystem::serviceVerifyReturn() {
+    uint8_t sensorIndex = 0;
+    uint8_t expectedLevel = 0;
+    uint32_t deadlineMs = 0;
+    {
+        const std::lock_guard<std::mutex> lock(_verifyMutex);
+        if (!_verifyRunning) {
+            return;
+        }
+        sensorIndex = _verifySensorIndex;
+        expectedLevel = _verifyExpectedLevel;
+        deadlineMs = _verifyDeadlineMs;
+    }
+
+    Xkc25Sensor* sensor = findSensor(sensorIndex);
+    const int raw = (sensor != nullptr) ? sensor->readRawPinLevel() : -1;
+    const bool matched = (raw == static_cast<int>(expectedLevel));
+    // Разница через int32_t корректна и при переполнении millis().
+    const bool expired = static_cast<int32_t>(millis() - deadlineMs) >= 0;
+    if (!matched && !expired) {
+        return;
+    }
+
+    Xkc25CalibrationResult result;
     result.rawLevel = raw;
-    result.ok = (raw == static_cast<int>(levelWithoutLiquid));
-    result.code = result.ok ? Xkc25CalibrationCode::OK : Xkc25CalibrationCode::VERIFY_FAILED;
+    result.ok = matched;
+    result.code = matched ? Xkc25CalibrationCode::OK : Xkc25CalibrationCode::VERIFY_FAILED;
     // Проверка не блокирующая: калибровка сохраняется, а результат — только предупреждение.
-    result.message = result.ok
+    result.message = matched
                          ? "Датчик вернулся в состояние без жидкости"
                          : "Датчик не вернулся в исходное состояние: залипание выхода или уровень не опустился";
-    return result;
+
+    const std::lock_guard<std::mutex> lock(_verifyMutex);
+    _verifyRunning = false;
+    _verifyHasResult = true;
+    _verifyResult = result;
+    ESP_LOGI(TAG, "[%u] verify_return %s (raw=%d)", static_cast<unsigned>(sensorIndex),
+             matched ? "ok" : "failed", raw);
 }
 
 bool Xkc25Subsystem::hasUncalibratedEnabledSensor() {

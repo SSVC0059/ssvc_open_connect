@@ -38,6 +38,8 @@ class OpenConnectHandler
         static void getHardwareFaults(AsyncWebServerRequest* request);
         static void getXkc25Status(AsyncWebServerRequest* request);
         static void postXkc25Calibrate(AsyncWebServerRequest* request, JsonVariant& json);
+        /** Результат асинхронной проверки возврата (шаг verify_return). */
+        static void getXkc25VerifyStatus(AsyncWebServerRequest* request);
 };
 
 

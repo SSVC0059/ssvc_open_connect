@@ -33,7 +33,27 @@ bool writeAtomic(FS* fs, const char* path, const String& json) {
         return false;
     }
     if (fs->exists(path)) {
-        fs->remove(path);
+        // Удалять прежний файл до успешного rename нельзя: сбой rename оставлял
+        // систему без конфига. Старый файл уводится в .bak и возвращается назад,
+        // если замена не удалась.
+        const String backup = String(path) + ".bak";
+        if (fs->exists(backup.c_str())) {
+            fs->remove(backup.c_str());
+        }
+        if (!fs->rename(path, backup.c_str())) {
+            ESP_LOGE(TAG, "backup rename failed for hardware config");
+            fs->remove(tmp.c_str());
+            return false;
+        }
+        if (!fs->rename(tmp.c_str(), path)) {
+            ESP_LOGE(TAG, "rename failed for hardware config, restoring backup");
+            if (!fs->rename(backup.c_str(), path)) {
+                ESP_LOGE(TAG, "backup restore failed for hardware config (%s.bak)", path);
+            }
+            fs->remove(tmp.c_str());
+            return false;
+        }
+        return true;
     }
     if (!fs->rename(tmp.c_str(), path)) {
         ESP_LOGE(TAG, "rename failed for hardware config");
