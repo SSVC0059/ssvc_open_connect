@@ -24,6 +24,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include <Arduino.h>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <map>
@@ -141,8 +142,6 @@ public:
   /** Запланировать повторный запрос getSettings при ошибке UART (SSVC выключен) */
   void scheduleUartRetryTimer() const;
 
-  bool _cmdSetResult{false};
-
   /**
    * @brief Описание последней отбраковки команды по версии API.
    *
@@ -150,15 +149,31 @@ public:
    * очередь, чтобы вызывающий мог отличить «команда ушла» от «команда
    * отброшена, потому что устройство старее».
    */
-  std::string lastRejectionReason() const { return _lastRejectionReason; }
+  std::string lastRejectionReason() const
+  {
+    const std::lock_guard<std::mutex> lock(_rejectionMutex);
+    return _lastRejectionReason;
+  }
 
   /// Возможность, которой не хватило ("get_log", "extended_heads", "predec", ...).
-  std::string lastRejectedFeature() const { return _lastRejectedFeature; }
+  std::string lastRejectedFeature() const
+  {
+    const std::lock_guard<std::mutex> lock(_rejectionMutex);
+    return _lastRejectedFeature;
+  }
 
   /// Фактическая и требуемая версия API из последней отбраковки ("1.7" / "1.10").
-  std::string lastRejectedDeviceApi() const { return _lastRejectedDeviceApi; }
+  std::string lastRejectedDeviceApi() const
+  {
+    const std::lock_guard<std::mutex> lock(_rejectionMutex);
+    return _lastRejectedDeviceApi;
+  }
 
-  std::string lastRejectedRequiredApi() const { return _lastRejectedRequiredApi; }
+  std::string lastRejectedRequiredApi() const
+  {
+    const std::lock_guard<std::mutex> lock(_rejectionMutex);
+    return _lastRejectedRequiredApi;
+  }
 
   ~SsvcCommandsQueue()
   {
@@ -182,6 +197,9 @@ private:
   /// Поколение safety: инкремент при emergencyStop инвалидирует неотправленные
   /// START/NEXT/RESUME, устаревшие после аварийной остановки.
   unsigned long _safetyEpoch{0};
+  /// Таймеры создаются и сбрасываются из разных задач (воркер, RX, callback
+  /// таймера), поэтому check-then-set защищён общим мьютексом.
+  mutable std::mutex _timerMutex;
   TimerHandle_t _settingsTimer = nullptr;
   mutable TimerHandle_t _uartRetryTimer = nullptr;
   static constexpr UBaseType_t COMMAND_QUEUE_LENGTH = 50;
@@ -270,6 +288,7 @@ private:
   void rememberRejection(const std::string& reason, const std::string& feature,
                          const std::string& requiredApi, const std::string& deviceApi) const;
 
+  mutable std::mutex _rejectionMutex;
   mutable std::string _lastRejectionReason;
   mutable std::string _lastRejectedFeature;
   mutable std::string _lastRejectedDeviceApi;

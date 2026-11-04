@@ -1,6 +1,6 @@
 /**
  * SSVC0059_V2 UART API Specification (v1.10)
- * https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.9/README.md
+ * https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.10/README.md
  *
  * Константы и валидация по спецификации API.
  * Используется для тестов и проверки соответствия форматов.
@@ -209,7 +209,9 @@ inline bool parseApiVersion(const char* text, ApiVersion& out) {
         return false;
     }
 
-    if (*cursor != '.' && *cursor != ',') {
+    // Разделитель только точка: запятая — это разделитель списка параметров
+    // SET ("1,7" должно читаться как ошибка, а не как версия 1.7).
+    if (*cursor != '.') {
         return false;
     }
     ++cursor;

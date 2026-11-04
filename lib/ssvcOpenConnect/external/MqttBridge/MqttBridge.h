@@ -24,6 +24,7 @@
 #include <MqttSettingsService.h>
 #include <functional>
 #include <deque>
+#include <mutex>
 
 /**
  * @brief Ленивый синглтон-обертка для взаимодействия с MQTT-клиентом из MqttSettingsService.
@@ -60,7 +61,20 @@ private:
     MqttMessageHandler _userHandler;
 
     std::vector<Subscription> _subscriptions;
+
+    /// Предел сообщений, ожидающих восстановления связи с брокером.
+    /// Без лимита очередь растёт всё время, пока брокер недоступен (сутки без
+    /// сети = OOM и перезагрузка), поэтому при переполнении вытесняется самое
+    /// старое сообщение: для телеметрии актуально последнее состояние.
+    static constexpr size_t MAX_PENDING_PUBLISHES = 32;
+
+    /// Очередь отложенных публикаций. Пишется из задач телеметрии/HTTP/MQTT,
+    /// вычитывается из задачи MQTT — доступ только под _queueMutex.
     std::deque<QueuedMessage> _publishQueue;
+    mutable std::mutex _queueMutex;
+
+    /// Сколько сообщений выброшено из-за переполнения — для диагностики.
+    uint32_t _droppedPublishes = 0;
 
     void processPublishQueue();
 

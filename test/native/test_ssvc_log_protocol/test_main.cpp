@@ -59,11 +59,76 @@ TEST_CASE("GET_LOG errors are retained") {
   CHECK(transfer.error() == "err_nf");
 }
 
+TEST_CASE("GET_LOG treats total:0 as an empty journal") {
+  // Пустой журнал: чанков не будет, поэтому передача завершается сразу.
+  // Раньше такой файл считался повреждённым кадром (invalid_start), и скачать
+  // его было нельзя — тест требовал именно отказа и разошёлся с прошивкой.
+  SsvcLogProtocol::Transfer transfer;
+  transfer.beginFile(15);
+  CHECK(transfer.consume(
+      R"({"type":"response","request":"GET_LOG","result":"START","file":"15.CSV","total":0})"));
+  CHECK(transfer.status() == SsvcLogProtocol::Status::COMPLETED);
+  CHECK(transfer.data().empty());
+}
+
+TEST_CASE("cancel stops the file session and drains") {
+  // Отмена (STOP, смена файла) переводит передачу в дренирование: слот ещё занят
+  // кадрами старого потока, новые запросы не пускаются. Потерянный хвост не должен
+  // держать её вечно — deadline обязан снять блокировку.
+  SsvcLogProtocol::Transfer transfer;
+  CHECK(transfer.beginFile(15, 1000));
+  CHECK(transfer.isBlocked());
+
+  transfer.cancel();
+
+  CHECK(transfer.isBlocked());
+  CHECK(transfer.checkTimeout(2000, 1000));
+  CHECK_FALSE(transfer.isBlocked());
+}
+
+TEST_CASE("WAITING_LIST expires by timeout") {
+  // LIST/START могли потеряться: без deadline сессия оставалась бы занятой
+  // навсегда и блокировала лог-эндпоинты.
+  SsvcLogProtocol::Transfer transfer;
+  CHECK(transfer.beginList(1000));
+  CHECK(transfer.isBlocked());
+  CHECK_FALSE(transfer.checkTimeout(1500, 1000));
+  CHECK(transfer.checkTimeout(2500, 1000));
+  CHECK_FALSE(transfer.isBlocked());
+  CHECK(transfer.status() == SsvcLogProtocol::Status::ERROR);
+  CHECK(transfer.error() == "timeout");
+}
+
+TEST_CASE("GET_LOG stops at the total size limit") {
+  // Журнал ограничен LOG_TOTAL_RAW_MAX: превышение отвергается, а не растит
+  // std::string до OOM.
+  SsvcLogProtocol::Transfer transfer;
+  CHECK(transfer.beginFile(15, 1000));
+
+  // Чанк 600 байт (FILE_CHUNK_RAW_MAX): 109 чанков ещё в лимите 64 КБ, 110-й — нет.
+  constexpr int kChunks = 110;
+  CHECK(transfer.consume(R"({"type":"response","request":"GET_LOG",)"
+                         R"("result":"START","file":"15.CSV","total":110})"));
+
+  const std::string chunk(800, 'A');
+  for (int i = 1; i < kChunks; ++i) {
+    const std::string frame = R"({"type":"file","chunk":)" + std::to_string(i) +
+                              R"(,"data":")" + chunk + R"("})";
+    CHECK(transfer.consume(frame.c_str()));
+  }
+
+  const std::string overflow = R"({"type":"file","chunk":)" + std::to_string(kChunks) +
+                               R"(,"data":")" + chunk + R"("})";
+  CHECK_FALSE(transfer.consume(overflow.c_str()));
+  CHECK(transfer.error() == "log_too_large");
+}
+
 TEST_CASE("GET_LOG rejects malformed transfer packets") {
   SsvcLogProtocol::Transfer transfer;
   transfer.beginFile(15);
+  // Отрицательное число чанков — повреждённый кадр.
   CHECK_FALSE(transfer.consume(
-      R"({"type":"response","request":"GET_LOG","result":"START","file":"15.CSV","total":0})"));
+      R"({"type":"response","request":"GET_LOG","result":"START","file":"15.CSV","total":-1})"));
   CHECK(transfer.error() == "invalid_start");
 
   transfer.beginFile(15);
@@ -207,4 +272,60 @@ TEST_CASE("GET_LOG accepts chunk of exactly FILE_CHUNK_RAW_MAX bytes") {
   CHECK(transfer.consume(payload.c_str()));
   CHECK(transfer.status() == SsvcLogProtocol::Status::COMPLETED);
   CHECK(transfer.data().size() == 600u);
+}
+
+TEST_CASE("Переход в ERROR освобождает собранный буфер") {
+  SsvcLogProtocol::Transfer transfer;
+  REQUIRE(transfer.beginFile(15));
+  REQUIRE(transfer.consume(
+      R"({"type":"response","request":"GET_LOG","result":"START","file":"15.CSV","total":2})"));
+  REQUIRE(transfer.consume(R"({"type":"file","chunk":1,"data":"QUJD"})"));
+  REQUIRE(transfer.data() == "ABC");
+
+  // Нарушение нумерации переводит сессию в ошибку: удерживать десятки КБ
+  // недоступного результата до следующего резерва нельзя.
+  CHECK_FALSE(transfer.consume(R"({"type":"file","chunk":5,"data":"QUJD"})"));
+  CHECK(transfer.status() == SsvcLogProtocol::Status::ERROR);
+  CHECK(transfer.error() == "invalid_chunk");
+  CHECK(transfer.data().empty());
+}
+
+TEST_CASE("base64 сверх лимита чанка отвергается до выделения памяти") {
+  SsvcLogProtocol::Transfer transfer;
+  REQUIRE(transfer.beginFile(15));
+  REQUIRE(transfer.consume(
+      R"({"type":"response","request":"GET_LOG","result":"START","file":"15.CSV","total":1})"));
+
+  // 804 символа base64 — верхняя оценка 603 байта, больше FILE_CHUNK_RAW_MAX.
+  const std::string frame =
+      std::string(R"({"type":"file","chunk":1,"data":")") + std::string(804, 'A') + "\"}";
+  CHECK_FALSE(transfer.consume(frame.c_str()));
+  CHECK(transfer.error() == "invalid_data");
+}
+
+TEST_CASE("Список файлов сверх предела отвергается") {
+  SsvcLogProtocol::Transfer transfer;
+  REQUIRE(transfer.beginList());
+
+  std::string files;
+  for (std::size_t index = 0; index <= SsvcLogProtocol::LIST_FILES_MAX; ++index) {
+    if (index != 0) {
+      files += ',';
+    }
+    files += "\"" + std::to_string(index) + ".CSV\"";
+  }
+  const std::string frame =
+      std::string(R"({"type":"response","request":"GET_LOG","result":"LIST","files":[)") +
+      files + "]}";
+
+  CHECK_FALSE(transfer.consume(frame.c_str()));
+  CHECK(transfer.error() == "invalid_list");
+}
+
+TEST_CASE("requestVerb отделяет глагол от эха параметров") {
+  // Контроллер повторяет в request всю команду: сравнение с "GET_LOG" целиком
+  // не сработало бы на "GET_LOG 15", и кадр не продлил бы сессию передачи.
+  CHECK(SsvcLogProtocol::detail::requestVerb("GET_LOG") == "GET_LOG");
+  CHECK(SsvcLogProtocol::detail::requestVerb("GET_LOG 15") == "GET_LOG");
+  CHECK(SsvcLogProtocol::detail::requestVerb("SET heads=[1,2]") == "SET");
 }

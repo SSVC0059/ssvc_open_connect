@@ -207,6 +207,12 @@ bool SsvcConnector::initSsvcController() {
 // отдельным шагом — иначе частота опроса напрямую задавала бы порог потери связи.
 constexpr uint32_t UART_READ_TIMEOUT_MS = 200;
 constexpr uint32_t kSilenceStepMs = 1000;
+// Дренаж TX короткий: кадр уходит за единицы миллисекунд, а полное ожидание
+// блокировало единственный воркер очереди команд.
+constexpr uint32_t kTxDrainTimeoutMs = 50;
+// Сколько байт без '\n' допустимо отбросить, прежде чем признать, что поток
+// потерял границу кадра, и возобновить приём.
+constexpr std::size_t kMaxDiscardedBytes = 4096;
 
 [[noreturn]] void SsvcConnector::_telemetry(void *pvParameters) {
   auto *self = static_cast<SsvcConnector *>(pvParameters);
@@ -219,6 +225,7 @@ constexpr uint32_t kSilenceStepMs = 1000;
   static char lineBuffer[kMaxLineBytes];
   std::size_t lineLength = 0;
   bool discardingOversize = false;
+  std::size_t discardedBytes = 0;
   int errorCounter = 0;
   uint32_t lastSilenceMs = millis();
   // Буфер чтения переживает проходы внешнего цикла: байты, оставшиеся после
@@ -252,7 +259,14 @@ constexpr uint32_t kSilenceStepMs = 1000;
         rxLen = uart_read_bytes(SSVC_OPEN_CONNECT_UART_NUM, rxChunk, sizeof(rxChunk),
                                 pdMS_TO_TICKS(UART_READ_TIMEOUT_MS));
         rxPos = 0;
-        if (rxLen <= 0) {
+        if (rxLen < 0) {
+          // Ошибка драйвера — не тишина: считать её «нет данных» значит подменять
+          // причину потери связи и растить счётчик по неверному основанию.
+          ESP_LOGE("SsvcConnector", "uart_read_bytes: ошибка драйвера (%d)",
+                   static_cast<int>(rxLen));
+          break;
+        }
+        if (rxLen == 0) {
           // Тишина на RX: сессия проверяется по таймауту, а связь — по числу секунд
           // тишины (шаг учёта отделён от частоты коротких чтений).
           SsvcLogProtocol::getTransfer().checkTimeout(millis());
@@ -277,10 +291,18 @@ constexpr uint32_t kSilenceStepMs = 1000;
         const char symbol = static_cast<char>(rxChunk[rxPos++]);
 
         if (discardingOversize) {
-          // Хвост слишком длинного кадра отбрасывается до перевода строки.
+          // Хвост слишком длинного/зависшего кадра отбрасывается до перевода
+          // строки, но не бесконечно: поток без '\n' не должен глушить приём.
           if (symbol == '\n') {
             discardingOversize = false;
+            discardedBytes = 0;
             lineLength = 0;
+          } else if (++discardedBytes > kMaxDiscardedBytes) {
+            ESP_LOGW("SsvcConnector",
+                     "Отброшено %u байт без перевода строки: приём возобновлён",
+                     static_cast<unsigned>(discardedBytes));
+            discardingOversize = false;
+            discardedBytes = 0;
           }
           continue;
         }
@@ -297,6 +319,7 @@ constexpr uint32_t kSilenceStepMs = 1000;
                    static_cast<unsigned>(sizeof(lineBuffer)));
           lineLength = 0;
           discardingOversize = true;
+          discardedBytes = 0;
           continue;
         }
         lineBuffer[lineLength++] = symbol;
@@ -308,6 +331,7 @@ constexpr uint32_t kSilenceStepMs = 1000;
         ESP_LOGW("SsvcConnector", "Кадр не завершён за %d мс", kFrameTimeoutMs);
         lineLength = 0;
         discardingOversize = true;
+        discardedBytes = 0;
         break;
       }
     }
@@ -465,19 +489,21 @@ bool SsvcConnector::sendCommand(const char *command) {
     ESP_LOGE("SsvcConnector", "sendCommand: UART не готов, команда отклонена");
     return false;
   }
-  char *commandCopy = strdup(command);
-  if (!commandCopy) {
-    ESP_LOGE("SsvcConnector", "Ошибка копирования команды");
-    return false;
-  }
-  ESP_LOGD("SsvcConnector", "Отправка команды SSVC: %s", commandCopy);
-  ESP_LOGD("SsvcConnector", "strlen: %d", strlen(commandCopy));
-  const ssize_t bytes_written = uart_write_bytes(
-      SSVC_OPEN_CONNECT_UART_NUM, (const char *)commandCopy, strlen(commandCopy));
-  const bool result = (bytes_written == strlen(commandCopy));
+  // Копия через strdup не нужна: uart_write_bytes копирует данные в буфер
+  // драйвера до возврата, а malloc/free на каждую команду фрагментировал кучу.
+  const std::size_t length = std::strlen(command);
+  ESP_LOGD("SsvcConnector", "Отправка команды SSVC: %s", command);
+  const ssize_t bytes_written =
+      uart_write_bytes(SSVC_OPEN_CONNECT_UART_NUM, command, length);
+  const bool result = (bytes_written == static_cast<ssize_t>(length));
   ESP_LOGD("sendCommand", "result: %s", result ? "true" : "false");
-  uart_wait_tx_done(SSVC_OPEN_CONNECT_UART_NUM, pdMS_TO_TICKS(1000));
-  free(commandCopy);
+  // Полное ожидание отправки блокировало единственный воркер очереди: ответ
+  // всё равно принимается по собственному таймауту команды.
+  if (uart_wait_tx_done(SSVC_OPEN_CONNECT_UART_NUM,
+                        pdMS_TO_TICKS(kTxDrainTimeoutMs)) != ESP_OK) {
+    ESP_LOGW("SsvcConnector", "sendCommand: TX не завершён за %u мс",
+             static_cast<unsigned>(kTxDrainTimeoutMs));
+  }
   return result;
 }
 

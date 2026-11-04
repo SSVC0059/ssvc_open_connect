@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "core/SsvcUartApiSpec/SsvcUartApiSpec.h"
+#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
 
 // Целевая версия API, которую реализует прошивка, и минимальная версия
 // устройства, с которой она сохраняет работоспособность. Обе — строки вида
@@ -79,6 +80,14 @@ constexpr FeatureInfo FEATURE_INFO[FEATURE_COUNT] = {
     {"hearts_preempt_cnt", {1, 8}}, // preempt_cnt, late_heads_finished в телах
     {"get_log", {1, 10}}            // команда GET_LOG
 };
+
+// Версия GET_LOG задана дважды: в таблице возможностей и числовым кодом в
+// лог-протоколе (он не должен зависеть от этого файла). Рассинхронизация
+// означала бы запрос журнала у устройства, которое его не отдаёт, либо отказ
+// уже совместимому устройству — расхождение ловится на этапе компиляции.
+static_assert(FEATURE_INFO[static_cast<int>(SsvcFeature::GetLog)].minVersion.code() ==
+                  SsvcLogProtocol::GET_LOG_MIN_API_VERSION_CODE,
+              "GET_LOG_MIN_API_VERSION_CODE рассинхронизирован с FEATURE_INFO");
 
 // Именованные коды возможностей: позволяют проверять возможность из модулей,
 // заголовки которых не тянут зависимость на этот файл.

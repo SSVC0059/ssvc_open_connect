@@ -10,6 +10,7 @@
 #include <doctest.h>
 #include <cstdio>
 #include "core/SsvcUartApiSpec/SsvcUartApiSpec.h"
+#include "core/SsvcApiCapabilities/SsvcApiCapabilities.h"
 
 TEST_CASE("SsvcUartApiSpec - SpeedLimits") {
     CHECK(SsvcUartApiSpec::SPEED_TIME_MAX == doctest::Approx(99.9f));
@@ -77,4 +78,22 @@ TEST_CASE("SsvcUartApiSpec - SetCommandFormat") {
     char buf[64];
     std::snprintf(buf, sizeof(buf), "heads=[%.1f,%d]", 30.0f, 180);
     CHECK(std::string(buf) == "heads=[30.0,180]");
+}
+
+TEST_CASE("SsvcUartApiSpec - ParseApiVersion rejects comma separator") {
+    SsvcUartApiSpec::ApiVersion version;
+    CHECK_FALSE(SsvcUartApiSpec::parseApiVersion("1,7", version));
+    CHECK(SsvcUartApiSpec::parseApiVersion("1.10", version));
+    CHECK(version.code() == 110);
+}
+
+TEST_CASE("SsvcUartApiSpec - target API version is consistent with GET_LOG") {
+    SsvcUartApiSpec::ApiVersion parsed;
+    REQUIRE(SsvcUartApiSpec::parseApiVersion(SSVC_API_VERSION_TARGET, parsed));
+    // Строка SSVC_API_VERSION_TARGET и fallback targetApiVersion() не должны
+    // разъезжаться: версия участвует в гейтах возможностей.
+    CHECK(parsed == SsvcApiCapabilities::targetApiVersion());
+    // GET_LOG запрашивается только у устройства не старее своей минимальной
+    // версии: при подъёме целевой версии константа обязана остаться ниже.
+    CHECK(parsed.code() >= SsvcLogProtocol::GET_LOG_MIN_API_VERSION_CODE);
 }

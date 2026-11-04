@@ -10,11 +10,50 @@
 #include <string>
 #include <vector>
 
+#if defined(ESP_PLATFORM) || defined(ARDUINO)
+#include <esp_system.h>
+#endif
+
+// Нативные тесты подключают doctest, а он на Windows тянет windows.h, где IDLE
+// и ERROR — числовые макросы. Без снятия макросов `enum class Status { IDLE }`
+// не компилируется, а `Status::ERROR` превращается в `Status::0`.
+#ifdef IDLE
+#undef IDLE
+#endif
+#ifdef ERROR
+#undef ERROR
+#endif
+
 namespace SsvcLogProtocol {
 
 constexpr std::size_t GET_LOG_CMD_MAX_LEN = 30;
 constexpr std::size_t FILE_CHUNK_RAW_MAX = 600;
-constexpr std::size_t LOG_TOTAL_RAW_MAX = 512 * 1024;
+
+// Пределы разбора `files`: ответ устройства не должен заставлять выделять
+// память под произвольное число элементов и произвольную длину строки.
+constexpr std::size_t LIST_FILES_MAX = 64;
+constexpr std::size_t LIST_ENTRY_LEN_MAX = 64;
+
+// Предел объёма одного журнала. 512 КБ во внутреннюю RAM ESP32-S3 не влезают:
+// журнал собирается в std::string, поверх него создаётся копия для HTTP-ответа,
+// плюс нужен запас на перевыделение. При сборке без обработки исключений
+// bad_alloc превращается в abort, то есть в перезагрузку устройства. 64 КБ —
+// это порядка тысячи строк CSV, типичный журнал процесса SSVC-0059.
+constexpr std::size_t LOG_TOTAL_RAW_MAX = 64 * 1024;
+
+// Минимум свободной кучи, который обязан остаться после выделения буфера:
+// иначе приём журнала сам отнимает память у WiFi и HTTP-стека.
+constexpr std::size_t LOG_HEAP_SAFETY_MARGIN = 32 * 1024;
+
+/// Свободная внутренняя куча. На нативной платформе ограничения нет: там
+/// заголовок используется тестами, а не реальным устройством.
+inline std::size_t freeHeapBytes() {
+#if defined(ESP_PLATFORM) || defined(ARDUINO)
+  return static_cast<std::size_t>(esp_get_free_heap_size());
+#else
+  return std::numeric_limits<std::size_t>::max();
+#endif
+}
 
 // Если во время передачи файла новые пакеты не приходят дольше этого интервала,
 // передача считается зависшей и переводится в ошибку "timeout".
@@ -50,7 +89,6 @@ enum class ReserveResult {
 // ссылок на контейнеры, которые меняются в задачах RX и Queue.
 struct Snapshot {
   Status status{Status::IDLE};
-  bool pending{false};
   std::vector<std::string> files;
   std::string fileName;
   std::string error;
@@ -58,6 +96,8 @@ struct Snapshot {
   int receivedChunks{0};
   unsigned long generation{0};
   int processNumber{0};
+  /// Объём уже принятых данных: по нему HTTP-слой проверяет кучу до копирования.
+  std::size_t dataBytes{0};
 };
 
 class Transfer {
@@ -65,15 +105,14 @@ public:
   bool beginList(unsigned long nowMs = 0);
   bool beginFile(int processNumber, unsigned long nowMs = 0);
   bool consume(const char* message, unsigned long nowMs = 0);
-  bool isPending() const;
-  void markPending();
-  void clearPending();
 
   Status status() const;
-  const std::vector<std::string>& files() const;
-  const std::string& fileName() const;
-  const std::string& data() const;
-  const std::string& error() const;
+  /// Геттеры возвращают значения, а не ссылки: контейнеры меняются в RX-задаче,
+  /// а читаются из HTTP-задачи. Ссылка на std::string в этот момент — гонка.
+  std::vector<std::string> files() const;
+  std::string fileName() const;
+  std::string data() const;
+  std::string error() const;
   int totalChunks() const;
   int receivedChunks() const;
   unsigned long lastActivityMs() const;
@@ -108,8 +147,6 @@ public:
   unsigned long generation() const;
 
   Snapshot snapshot() const;
-  // Копия собранного CSV под lock — без ссылок на внутренний буфер.
-  std::string dataCopy() const;
 
   // Переводит зависшую передачу (RECEIVING без активности дольше timeoutMs) в ERROR.
   // Возвращает true, если таймаут сработал. nowMs передаётся снаружи (millis()),
@@ -125,12 +162,19 @@ private:
   void touchLocked(unsigned long nowMs);
   bool blockedLocked() const;
   void abortLocked(const char* reason, bool asError);
+  /// Переход в ERROR: ошибка, снятие признака занятости и освобождение буфера
+  /// одной операцией, чтобы ни одно место не забыло освободить _data.
+  void failLocked(const char* reason);
+  void releaseDataLocked();
   bool consumeLocked(const char* message, unsigned long nowMs);
+
+  /// Резервирует буфер под журнал известного объёма (total чанков по
+  /// FILE_CHUNK_RAW_MAX). false — памяти не хватает, приём начинать нельзя.
+  bool reserveForTotalLocked(int totalChunks);
 
   // mutable: снимки читаются из HTTP-задач, состояние меняется в RX/Queue.
   mutable std::mutex _mutex;
   Status _status{Status::IDLE};
-  bool _pending{false};
   RequestKind _request{RequestKind::None};
   unsigned long _generation{0};
   int _processNumber{0};
@@ -161,7 +205,8 @@ inline int base64Value(const char c) {
   return value == nullptr ? -1 : static_cast<int>(value - base64Alphabet());
 }
 
-inline bool decodeBase64(const char* encoded, std::string& decoded) {
+inline bool decodeBase64(const char* encoded, std::string& decoded,
+                         const std::size_t maxDecodedBytes = FILE_CHUNK_RAW_MAX) {
   if (encoded == nullptr) {
     return false;
   }
@@ -175,6 +220,12 @@ inline bool decodeBase64(const char* encoded, std::string& decoded) {
     return true;
   }
   if (length % 4 != 0) {
+    return false;
+  }
+  // Верхняя оценка объёма известна до разбора: без этой проверки reserve()
+  // выделял память под любой присланный размер, и лимит чанка применялся уже
+  // после того, как куча была занята.
+  if ((length / 4) * 3 > maxDecodedBytes) {
     return false;
   }
 
@@ -221,6 +272,16 @@ inline bool decodeBase64(const char* encoded, std::string& decoded) {
 
 inline bool validRequestLength(const std::string& request) {
   return request.size() + 1 <= GET_LOG_CMD_MAX_LEN;
+}
+
+/// Глагол команды из поля `request` ответа.
+///
+/// Контроллер повторяет в `request` всю команду вместе с параметрами
+/// ("SET heads=[1,2]"), поэтому строгое сравнение с "GET_LOG" дало бы ложно
+/// отрицательный результат, и кадр перестал бы продлевать сессию передачи.
+inline std::string requestVerb(const std::string& request) {
+  const std::size_t space = request.find_first_of(" \t");
+  return space == std::string::npos ? request : request.substr(0, space);
 }
 
 inline bool extractString(const std::string& json, const char* key, std::string& value) {
@@ -336,6 +397,12 @@ inline bool parseStringArray(const std::string& json, const std::string& key,
     if (!closed) {
       return false;
     }
+    if (value.size() > LIST_ENTRY_LEN_MAX) {
+      return false;  // имя файла не может быть такой длины
+    }
+    if (out.size() >= LIST_FILES_MAX) {
+      return false;  // список больше, чем устройство способно отдать
+    }
     out.push_back(std::move(value));
 
     while (cursor < json.size() && std::isspace(static_cast<unsigned char>(json[cursor]))) {
@@ -369,7 +436,6 @@ inline bool Transfer::beginList(const unsigned long nowMs) {
   _status = Status::WAITING_LIST;
   _request = RequestKind::List;
   ++_generation;
-  _pending = true;
   return true;
 }
 
@@ -385,23 +451,7 @@ inline bool Transfer::beginFile(const int processNumber, const unsigned long now
   _request = RequestKind::File;
   _processNumber = processNumber;
   ++_generation;
-  _pending = true;
   return true;
-}
-
-inline bool Transfer::isPending() const {
-  std::lock_guard<std::mutex> lock(_mutex);
-  return _pending;
-}
-
-inline void Transfer::markPending() {
-  std::lock_guard<std::mutex> lock(_mutex);
-  _pending = true;
-}
-
-inline void Transfer::clearPending() {
-  std::lock_guard<std::mutex> lock(_mutex);
-  _pending = false;
 }
 
 // Состояния, в которых сессия занята: обычные команды ждут освобождения.
@@ -432,7 +482,6 @@ inline ReserveResult Transfer::reserveList(const unsigned long nowMs) {
   ++_generation;
   _request = RequestKind::List;
   _status = Status::QUEUED_LIST;
-  _pending = true;
   touchLocked(nowMs);
   return ReserveResult::Accepted;
 }
@@ -459,7 +508,6 @@ inline ReserveResult Transfer::reserveFile(const int processNumber, const unsign
   _processNumber = processNumber;
   _fileName = std::to_string(processNumber) + ".CSV";
   _status = Status::QUEUED_FILE;
-  _pending = true;
   touchLocked(nowMs);
   return ReserveResult::Accepted;
 }
@@ -473,11 +521,22 @@ inline void Transfer::markSent() {
   }
 }
 
+inline void Transfer::releaseDataLocked() {
+  // clear() оставляет ёмкость: без shrink_to_fit десятки килобайт остаются
+  // занятыми до следующего резерва и отнимают память у WiFi/HTTP.
+  _data.clear();
+  _data.shrink_to_fit();
+}
+
+inline void Transfer::failLocked(const char* reason) {
+  _status = Status::ERROR;
+  _error = reason == nullptr ? "aborted" : reason;
+  releaseDataLocked();
+}
+
 inline void Transfer::abortLocked(const char* reason, const bool asError) {
-  _pending = false;
   if (asError) {
-    _status = Status::ERROR;
-    _error = reason == nullptr ? "aborted" : reason;
+    failLocked(reason);
     return;
   }
   resetLocked();
@@ -527,9 +586,7 @@ inline bool Transfer::completeDrain(const char* reason, const bool asError) {
     return false;
   }
   if (asError) {
-    _status = Status::ERROR;
-    _error = reason == nullptr ? "drained" : reason;
-    _pending = false;
+    failLocked(reason == nullptr ? "drained" : reason);
     return true;
   }
   resetLocked();
@@ -560,7 +617,6 @@ inline Snapshot Transfer::snapshot() const {
   std::lock_guard<std::mutex> lock(_mutex);
   Snapshot snap;
   snap.status = _status;
-  snap.pending = _pending;
   snap.files = _files;
   snap.fileName = _fileName;
   snap.error = _error;
@@ -568,12 +624,8 @@ inline Snapshot Transfer::snapshot() const {
   snap.receivedChunks = _receivedChunks;
   snap.generation = _generation;
   snap.processNumber = _processNumber;
+  snap.dataBytes = _data.size();
   return snap;
-}
-
-inline std::string Transfer::dataCopy() const {
-  std::lock_guard<std::mutex> lock(_mutex);
-  return _data;
 }
 
 inline bool Transfer::releaseExpiredResult(const unsigned long nowMs,
@@ -614,7 +666,7 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
   const bool isLogFrame =
       type == "file" ||
       (type == "response" && detail::extractString(json, "request", request) &&
-       request == "GET_LOG");
+       detail::requestVerb(request) == "GET_LOG");
 
   if (isLogFrame) {
     touchLocked(nowMs);
@@ -627,9 +679,7 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
       int chunk = 0;
       if (detail::extractInt(json, "chunk", chunk) && _totalChunks > 0 &&
           chunk >= _totalChunks) {
-        _status = Status::ERROR;
-        _error = "cancelled";
-        _pending = false;
+        failLocked("cancelled");
       }
     }
     return false;
@@ -645,8 +695,7 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
       // Строгий разбор: повреждённый массив — это явная ошибка, а не «пустой
       // список» (раньше ручной обход скобок молча возвращал неполный результат).
       if (!detail::parseStringArray(json, "files", _files)) {
-        _status = Status::ERROR;
-        _error = "invalid_list";
+        failLocked("invalid_list");
         return false;
       }
       _status = Status::LIST_RECEIVED;
@@ -664,22 +713,27 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
       // было невозможно скачать (передача падала с invalid_start).
       if (!detail::extractInt(json, "total", total) ||
           !detail::extractString(json, "file", file) || total < 0) {
-        _status = Status::ERROR;
-        _error = "invalid_start";
+        failLocked("invalid_start");
         return false;
       }
       // Имя из START не заменяет зарезервированный process id: расхождение
       // означает ответ на чужой запрос, а не начало нашей передачи.
       const std::string expectedName = std::to_string(_processNumber) + ".CSV";
       if (file != expectedName) {
-        _status = Status::ERROR;
-        _error = "unexpected_file";
+        failLocked("unexpected_file");
         return false;
       }
       _fileName = file;
       _totalChunks = total;
       _receivedChunks = 0;
       _data.clear();
+      // Память резервируется по объявленному total до приёма первого чанка:
+      // иначе рост std::string даёт пик 1.5× от объёма и bad_alloc посреди
+      // передачи. Не хватило кучи — честная ошибка вместо abort.
+      if (!reserveForTotalLocked(total)) {
+        failLocked("log_heap_low");
+        return false;
+      }
       if (total == 0) {
         // Пустой журнал: чанков не будет, поэтому передача завершается сразу.
         _status = Status::COMPLETED;
@@ -691,8 +745,7 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
     }
 
     if (result.rfind("err_", 0) == 0) {
-      _status = Status::ERROR;
-      _error = result;
+      failLocked(result.c_str());
       return true;
     }
     return false;
@@ -707,22 +760,19 @@ inline bool Transfer::consumeLocked(const char* message, const unsigned long now
   if (!detail::extractInt(json, "chunk", chunk) ||
       !detail::extractString(json, "data", encoded) ||
       chunk != _receivedChunks + 1) {
-    _status = Status::ERROR;
-    _error = "invalid_chunk";
+    failLocked("invalid_chunk");
     return false;
   }
 
   std::string decoded;
-  if (!detail::decodeBase64(encoded.c_str(), decoded) ||
+  if (!detail::decodeBase64(encoded.c_str(), decoded, FILE_CHUNK_RAW_MAX) ||
       decoded.size() > FILE_CHUNK_RAW_MAX) {
-    _status = Status::ERROR;
-    _error = "invalid_data";
+    failLocked("invalid_data");
     return false;
   }
 
   if (_data.size() + decoded.size() > LOG_TOTAL_RAW_MAX) {
-    _status = Status::ERROR;
-    _error = "log_too_large";
+    failLocked("log_too_large");
     return false;
   }
 
@@ -741,22 +791,25 @@ inline Status Transfer::status() const {
   return _status;
 }
 
-// Ссылочные геттеры читает только владелец сессии (RX-задача) и нативные тесты.
-// HTTP-слой обязан использовать snapshot()/dataCopy(), а не ссылки: контейнеры
-// меняются в другой задаче.
-inline const std::vector<std::string>& Transfer::files() const {
+// Геттеры возвращают копии под lock: HTTP-задача читает их одновременно с
+// приёмом в RX-задаче, а ссылка на std::string в этот момент — гонка и UB.
+inline std::vector<std::string> Transfer::files() const {
+  std::lock_guard<std::mutex> lock(_mutex);
   return _files;
 }
 
-inline const std::string& Transfer::fileName() const {
+inline std::string Transfer::fileName() const {
+  std::lock_guard<std::mutex> lock(_mutex);
   return _fileName;
 }
 
-inline const std::string& Transfer::data() const {
+inline std::string Transfer::data() const {
+  std::lock_guard<std::mutex> lock(_mutex);
   return _data;
 }
 
-inline const std::string& Transfer::error() const {
+inline std::string Transfer::error() const {
+  std::lock_guard<std::mutex> lock(_mutex);
   return _error;
 }
 
@@ -773,6 +826,30 @@ inline int Transfer::receivedChunks() const {
 inline unsigned long Transfer::lastActivityMs() const {
   std::lock_guard<std::mutex> lock(_mutex);
   return _lastActivityMs;
+}
+
+inline bool Transfer::reserveForTotalLocked(const int totalChunks) {
+  const std::size_t declared =
+      static_cast<std::size_t>(totalChunks) * FILE_CHUNK_RAW_MAX;
+  const std::size_t wanted = declared < LOG_TOTAL_RAW_MAX ? declared : LOG_TOTAL_RAW_MAX;
+
+  // Пик памяти — не только сам буфер, но и его копия для HTTP-ответа, поэтому
+  // свободной кучи требуется вдвое больше объявленного объёма плюс запас.
+  const std::size_t peak = wanted * 2;
+
+  const std::size_t heap = freeHeapBytes();
+  if (heap != std::numeric_limits<std::size_t>::max()) {
+    const std::size_t usable =
+        heap > LOG_HEAP_SAFETY_MARGIN ? heap - LOG_HEAP_SAFETY_MARGIN : 0;
+    if (peak > usable) {
+      return false;
+    }
+  }
+
+  // Ёмкость выделяется один раз: последующее дописывание чанков не должно
+  // приводить к перевыделению (и к bad_alloc/abort) в середине передачи.
+  _data.reserve(wanted);
+  return true;
 }
 
 inline void Transfer::touchLocked(const unsigned long nowMs) {
@@ -793,11 +870,9 @@ inline bool Transfer::checkTimeout(const unsigned long nowMs, const unsigned lon
   if (nowMs - _lastActivityMs < timeoutMs) {
     return false;
   }
-  _status = Status::ERROR;
-  _error = "timeout";
-  // Снимаем признак занятости: иначе после молчания контролера лог-эндпоинты
-  // останутся заблокированными навсегда.
-  _pending = false;
+  // Буфер недоступного результата освобождается здесь же: иначе после молчания
+  // контролера память висела бы до следующего резерва.
+  failLocked("timeout");
   return true;
 }
 
@@ -808,7 +883,6 @@ inline void Transfer::reset() {
 
 inline void Transfer::resetLocked() {
   _status = Status::IDLE;
-  _pending = false;
   _request = RequestKind::None;
   _processNumber = 0;
   _files.clear();

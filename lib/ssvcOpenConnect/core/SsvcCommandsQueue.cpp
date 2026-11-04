@@ -226,11 +226,13 @@ void SsvcCommandsQueue::uartRetryTimerCallback(TimerHandle_t xTimer) {
     self->getSettings();
     self->version();
     xTimerDelete(xTimer, 0);
+    const std::lock_guard<std::mutex> lock(self->_timerMutex);
     self->_uartRetryTimer = nullptr;
   }
 }
 
 void SsvcCommandsQueue::scheduleUartRetryTimer() const {
+  const std::lock_guard<std::mutex> lock(_timerMutex);
   if (_uartRetryTimer != nullptr) {
     return;  // Таймер уже запланирован
   }
@@ -245,6 +247,8 @@ void SsvcCommandsQueue::scheduleUartRetryTimer() const {
     ESP_LOGI(TAG, "Scheduled UART retry in %d seconds",
              GET_SETTINGS_REQUEST_TIMER / 1000);
   } else {
+    // Молча проглоченный отказ оставлял связь без повторного запроса настроек.
+    ESP_LOGW(TAG, "Не удалось запланировать UART retry");
     if (_uartRetryTimer != nullptr) {
       xTimerDelete(_uartRetryTimer, 0);
       _uartRetryTimer = nullptr;
@@ -269,6 +273,9 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
   // Пауза при откладывании обычной команды: за это время воркер успевает
   // опросить safety-очередь и извлечь зарезервированный GET_LOG.
   constexpr uint32_t kDeferRetryMs = 100;
+  // Квант ожидания ответа: аварийный STOP не должен ждать полного таймаута
+  // текущей команды, поэтому ожидание разбито на такие интервалы.
+  constexpr TickType_t kSafetyPollTicks = pdMS_TO_TICKS(100);
 
   while (true) {
     // Приоритет аварийных команд: safety-очередь забирается без ожидания, до
@@ -321,6 +328,17 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
 
     while (cmd->attempt_count != 0) {
       cmd->attempt_count--;
+
+      // Поздний ответ уже отброшенной по таймауту команды не должен
+      // засчитываться этой: биты ожидания и отказа сбрасываются до записи в
+      // UART, иначе чужой BIT9 читается как успех, а BIT1 — как отказ
+      // устройства. GET_LOG ответа через eventGroup не ждёт.
+      if (cmd->type != SsvcCommandType::GET_LOG) {
+        const auto expectedBitIt = self->commandToExpectedBit.find(cmd->type);
+        if (expectedBitIt != self->commandToExpectedBit.end()) {
+          xEventGroupClearBits(eventGroup, expectedBitIt->second | BIT1);
+        }
+      }
 
       // Отправка команды в зависимости от типа
       switch (cmd->type) {
@@ -433,8 +451,28 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
         // сбрасывается перед ожиданием, а BIT1 (отказ устройства) не
         // маршрутизируется в callback ожидаемого бита.
         command_success = false;
-        const EventBits_t bits = xEventGroupWaitBits(eventGroup, responseMask, pdTRUE,
-                                                     pdFALSE, cmd->timeout);
+        EventBits_t bits = 0;
+        bool preemptedBySafety = false;
+        const TickType_t responseDeadline = xTaskGetTickCount() + cmd->timeout;
+        while (bits == 0) {
+          const TickType_t left = responseDeadline - xTaskGetTickCount();
+          if (left <= 0) {
+            break;
+          }
+          const TickType_t slice = left < kSafetyPollTicks ? left : kSafetyPollTicks;
+          bits = xEventGroupWaitBits(eventGroup, responseMask, pdTRUE, pdFALSE, slice);
+          if (bits != 0) {
+            break;
+          }
+          // STOP ждёт в safety-очереди, а не в этом ожидании: «мёртвая» команда
+          // не должна держать воркер полный таймаут (до 13–16 с) до отправки
+          // аварийной остановки. Ответ на прерванную попытку уже не нужен.
+          if (cmd->type != SsvcCommandType::STOP &&
+              uxQueueMessagesWaiting(self->safety_queue) > 0) {
+            preemptedBySafety = true;
+            break;
+          }
+        }
 
         if ((bits & expectedBit) != 0) {
           // Callback'и читают lastMessage/lastResponse сами: getLast* берут
@@ -457,6 +495,14 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
         } else {
           ESP_LOGW(TAG, "Command %d: no response, outcome unknown",
                    static_cast<int>(cmd->type));
+        }
+
+        if (preemptedBySafety) {
+          // Повтор бессмысленен: STOP уже в очереди и должен уйти первым.
+          // Исход прерванной команды неизвестен, поэтому она не повторяется.
+          ESP_LOGW(TAG, "Command %d прервана аварийной командой",
+                   static_cast<int>(cmd->type));
+          break;
         }
 
         if (command_success) {
@@ -567,6 +613,7 @@ void SsvcCommandsQueue::registerCallbackCommands() {
     //      настроек, а значит их нужно будет перечитать заново
     const std::string responseRequestField = response["request"] | "";
     if (requestVerb(responseRequestField) == "SET") {
+      const std::lock_guard<std::mutex> lock(_timerMutex);
       if (_settingsTimer == nullptr) {
         // Создание одноразового таймера
         _settingsTimer =
@@ -581,31 +628,35 @@ void SsvcCommandsQueue::registerCallbackCommands() {
                            self->getSettings();
                            // После выполнения очищаем и удаляем таймер
                            xTimerDelete(xTimer, 0);
+                           const std::lock_guard<std::mutex> guard(self->_timerMutex);
                            self->_settingsTimer = nullptr;
                          }
                        });
 
         if (_settingsTimer != nullptr) {
           if (xTimerStart(_settingsTimer, 0) != pdPASS) {
+            ESP_LOGW(TAG, "get_settings_timer: не удалось запустить");
             xTimerDelete(_settingsTimer, 0);
             _settingsTimer = nullptr;
           }
         } else {
+          ESP_LOGW(TAG, "get_settings_timer: не удалось создать");
         }
       } else {
         // Если таймер уже существует — просто сбросить отсчёт
         if (xTimerReset(_settingsTimer, 0) != pdPASS) {
+          ESP_LOGW(TAG, "get_settings_timer: не удалось перезапустить");
         }
       }
     }
-    const bool result = std::string(response["result"] | "") == "OK";
-    _cmdSetResult = result;
-    return result;
+    return std::string(response["result"] | "") == "OK";
   });
 
-  // Обработка ошибок выполнения команд
-  registerBitHandler(BIT1, [this](SsvcCommand *cmd) {
-    _cmdSetResult = true;
+  // Отказ устройства (BIT1) не считается успехом: обработчик возвращает false,
+  // чтобы ожидающий код увидел неуспех. Флаг результата здесь не нужен —
+  // результат каждой команды возвращается из обработчика ожидаемого бита.
+  registerBitHandler(BIT1, [](SsvcCommand *cmd) {
+    (void)cmd;
     return false;
   });
 }
@@ -640,6 +691,16 @@ bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
   const std::string deviceApi = settings.getSsvcApiVersion();
 
   std::string effectiveParameters = parameters;
+
+  // Параметры уходят в UART-кадр как есть, поэтому перевод строки превратил бы
+  // одну команду в две ("SET x\nSTART" -> SET + START) и обошёл предстартовые
+  // проверки (XKC-25 start-guard). Такой ввод отвергается в единственной точке
+  // постановки, а не в отдельных транспортах.
+  if (parameters.find_first_of("\r\n") != std::string::npos) {
+    ESP_LOGW(TAG, "Команда отклонена: параметры содержат перевод строки");
+    rememberRejection("invalid_parameters", "", "", deviceApi);
+    return false;
+  }
 
   if (type == SsvcCommandType::SET) {
     std::vector<std::string> skipped;
@@ -726,14 +787,15 @@ bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
 /**
  * @brief Запоминает причину последней отбраковки для REST-слоя.
  *
- * Запись ведёт только продюсер команд, чтение носит информационный характер,
- * поэтому блокировка здесь не берётся.
+ * Пишут HTTP- и MQTT-задачи, читает REST-слой, поэтому поля защищены
+ * мьютексом: без него одновременная запись и чтение std::string — UB.
  */
 void SsvcCommandsQueue::rememberRejection(const std::string& reason,
                                           const std::string& feature,
                                           const std::string& requiredApi,
                                           const std::string& deviceApi) const
 {
+  const std::lock_guard<std::mutex> lock(_rejectionMutex);
   _lastRejectionReason = reason;
   _lastRejectedFeature = feature;
   _lastRejectedRequiredApi = requiredApi;
