@@ -36,9 +36,11 @@ function defaultSsvcSettingsForProfile() {
     parallel: [0, 0],
     hearts_temp_shift: false,
     hearts_pause: false,
-    formula: false,
+    formula: 0,
     formula_start_temp: 0,
     tank_mmhg: 0,
+    predec: 0,
+    extended_heads: 0,
     tp2_shift: 0,
     tp_filter: false,
     signal_tp1_control: 0,
@@ -287,7 +289,7 @@ class DistillationCycleModel {
     }
     const startTemp = this.calculateBoilingTemp(currentStrengthVol);
     const endTemp = profile.ssvcSettings.hearts_finish_temp || 90;
-    const isFormulaEnabled = profile.ssvcSettings.formula;
+    const isFormulaEnabled = profile.ssvcSettings.formula > 0;
     const hyst = profile.ssvcSettings.hyst || 0.25;
     const decFactor = (profile.ssvcSettings.decrement || 0) / 100;
     let heartsInitialSpeed = profile.hearts.targetFlowMlh || physicsHearts.volVaporPerHour * 1e3;
