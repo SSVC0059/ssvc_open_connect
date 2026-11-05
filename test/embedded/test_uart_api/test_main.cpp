@@ -1,10 +1,11 @@
 /**
- * Тесты по спецификации SSVC0059_V2 UART API v1.9
- * https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.9/README.md
+ * Тесты по спецификации SSVC0059_V2 UART API v1.10
+ * https://github.com/SmartModule-ru/ssvc0059_v2_uart_api_docs/blob/v1.10/README.md
  */
 #include <unity.h>
 #include <Arduino.h>
 #include "core/SsvcUartApiSpec/SsvcUartApiSpec.h"
+#include "core/SsvcLogProtocol/SsvcLogProtocol.h"
 #include <ArduinoJson.h>
 #include <string>
 
@@ -199,6 +200,36 @@ void test_set_command_format_hyst(void) {
     TEST_ASSERT_EQUAL_STRING("hyst=0.25", buf);
 }
 
+// === Тесты GET_LOG (v1.10) ===
+
+void test_get_log_min_api_version(void) {
+    // Версия сравнивается целым кодом: "1.10" как float равно 1.1, то есть меньше "1.7".
+    TEST_ASSERT_EQUAL_INT(110, SsvcLogProtocol::GET_LOG_MIN_API_VERSION_CODE);
+    TEST_ASSERT_TRUE(SsvcLogProtocol::GET_LOG_MIN_API_VERSION_CODE > 107);
+}
+
+void test_get_log_format_requests(void) {
+    std::string req;
+    TEST_ASSERT_TRUE(SsvcLogProtocol::formatListRequest(req));
+    TEST_ASSERT_EQUAL_STRING("GET_LOG\n", req.c_str());
+
+    TEST_ASSERT_TRUE(SsvcLogProtocol::formatFileRequest(15, req));
+    TEST_ASSERT_EQUAL_STRING("GET_LOG 15\n", req.c_str());
+
+    TEST_ASSERT_FALSE(SsvcLogProtocol::formatFileRequest(0, req));
+}
+
+void test_get_log_list_response(void) {
+    SsvcLogProtocol::Transfer transfer;
+    transfer.beginList();
+    TEST_ASSERT_TRUE(transfer.consume(
+        R"({"type":"response","request":"GET_LOG","result":"LIST","files":["15.CSV","16.CSV"]})"));
+    TEST_ASSERT_TRUE(transfer.status() == SsvcLogProtocol::Status::LIST_RECEIVED);
+    TEST_ASSERT_EQUAL(2, transfer.files().size());
+    TEST_ASSERT_EQUAL_STRING("15.CSV", transfer.files()[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("16.CSV", transfer.files()[1].c_str());
+}
+
 void setup() {
     delay(2000);
     UNITY_BEGIN();
@@ -224,6 +255,9 @@ void setup() {
     RUN_TEST(test_set_command_format_heads);
     RUN_TEST(test_set_command_format_hearts);
     RUN_TEST(test_set_command_format_hyst);
+    RUN_TEST(test_get_log_min_api_version);
+    RUN_TEST(test_get_log_format_requests);
+    RUN_TEST(test_get_log_list_response);
     UNITY_END();
 }
 

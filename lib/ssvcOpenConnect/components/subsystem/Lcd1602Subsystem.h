@@ -20,7 +20,8 @@ public:
 private:
     static void workerTaskEntry(void* arg);
     void workerLoop();
-    void writeStatusPage(uint32_t pageIndex);
+    /** @return false — обмен с модулем сорвался, кадр не записан целиком. */
+    bool writeStatusPage(uint32_t pageIndex);
     void clearDisplay();
 
     bool _initialized = false;

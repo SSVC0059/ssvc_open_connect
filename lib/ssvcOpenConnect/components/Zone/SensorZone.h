@@ -22,16 +22,21 @@
 #include <string>
 #include <unordered_map>
 
-// Тип для зоны ответственности датчика
+// Тип для зоны ответственности датчика.
+// Значения зафиксированы явно: DELETED исторически имеет код 6, и вставка
+// новых зон перед ним сдвинула бы его. Добавлять только в конец.
 enum class SensorZone
 {
-    UNKNOWN,      // Не назначено
-    INLET_WATER,  // Входящая вода
-    OUTLET_WATER, // Исходящая вода
-    ACT,          // ТСА (Трубка связи с атмосферой)
-    TANK,         // Куб
-    OUTDOOR,      // Атмосфера
-    DELETED,      // Удаленные датчики
+    UNKNOWN = 0,         // Не назначено
+    INLET_WATER = 1,     // Входящая вода
+    OUTLET_WATER = 2,    // Исходящая вода
+    ACT = 3,             // ТСА (Трубка связи с атмосферой)
+    TANK = 4,            // Куб
+    OUTDOOR = 5,         // Атмосфера
+    DELETED = 6,         // Удаленные датчики
+    RECEIVER_TANK_1 = 7, // Приёмная ёмкость 1
+    RECEIVER_TANK_2 = 8, // Приёмная ёмкость 2
+    RECEIVER_TANK_3 = 9, // Приёмная ёмкость 3
 };
 
 // Класс-хелпер для работы с ThermalSensorZone
@@ -50,6 +55,9 @@ public:
             case SensorZone::ACT: return "act";
             case SensorZone::TANK: return "tank";          // Добавлено
             case SensorZone::OUTDOOR: return "outdoor";    // Добавлено
+            case SensorZone::RECEIVER_TANK_1: return "receiver_tank_1";
+            case SensorZone::RECEIVER_TANK_2: return "receiver_tank_2";
+            case SensorZone::RECEIVER_TANK_3: return "receiver_tank_3";
             case SensorZone::DELETED: return "deleted";    // Добавлено
             default: return "unknown"; // Безопасный возврат вместо throw
         }
@@ -64,6 +72,9 @@ public:
             {"act", SensorZone::ACT},
             {"tank", SensorZone::TANK},       // Добавлено
             {"outdoor", SensorZone::OUTDOOR}, // Добавлено
+            {"receiver_tank_1", SensorZone::RECEIVER_TANK_1},
+            {"receiver_tank_2", SensorZone::RECEIVER_TANK_2},
+            {"receiver_tank_3", SensorZone::RECEIVER_TANK_3},
             {"deleted", SensorZone::DELETED}  // Добавлено
         };
 
@@ -83,6 +94,9 @@ public:
         if (zone == "act")          return "ТСА";
         if (zone == "tank")         return "Куб";
         if (zone == "outdoor")      return "Атмосфера";
+        if (zone == "receiver_tank_1") return "Приёмная ёмкость 1";
+        if (zone == "receiver_tank_2") return "Приёмная ёмкость 2";
+        if (zone == "receiver_tank_3") return "Приёмная ёмкость 3";
         if (zone == "deleted")      return "Удален";
 
         return "Неизвестно";

@@ -79,8 +79,10 @@ nav:
           - ready_made/inside_version.md
   - "FAQ": faq/faq.md
   - "Глоссарий": glossary.md
+  - "Список изменений": info/changelog.md
   - "Для разработчиков":
       - develop/index.md
+      - develop/architecture-manifest.md
       - develop/build.md
       - develop/testing.md
       - develop/docs-previews.md
@@ -95,6 +97,7 @@ nav:
           - develop/api/openconnect.md
           - develop/api/profiles.md
           - develop/api/files.md
+          - develop/api/logs.md
       - "UART API SSVC (справка)": ssvc_uart_api_docs.md
       - "Протокол UART — примеры (JSON/TXT)": ssvc-serial-protocol/develop/Readme.md
       - "Фронтенд":

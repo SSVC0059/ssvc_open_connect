@@ -33,10 +33,13 @@
 		};
 	});
 
-	const compatibility = $derived(info?.oc.api_compatibility ?? 'unknown');
-	const deviceApi = $derived(info?.ssvc.api ?? '');
-	const requiredApi = $derived(info?.oc.api_min ?? '1.9');
-	const targetApi = $derived(info?.oc.api_target ?? '');
+	// Ответ может прийти без блоков oc/ssvc (старая прошивка, частичный ответ):
+	// опциональная цепочка нужна на каждом уровне. Без `oc?.` статусбар падал
+	// с TypeError и ронял лэйаут вместо предупреждения.
+	const compatibility = $derived(info?.oc?.api_compatibility ?? 'unknown');
+	const deviceApi = $derived(info?.ssvc?.api ?? '');
+	const requiredApi = $derived(info?.oc?.api_min ?? '1.10');
+	const targetApi = $derived(info?.oc?.api_target ?? '');
 
 	// unknown — контроллер не ответил или прошивка настолько старая, что не отдаёт
 	// поле api: это тоже повод показать предупреждение, а не молчать.

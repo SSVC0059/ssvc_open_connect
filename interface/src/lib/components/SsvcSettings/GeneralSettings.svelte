@@ -12,7 +12,7 @@
 		isSupportRelease
 	} = $props<{
 		settings: SsvcSettings;
-		onSave: (field: string, value: any) => void;
+		onSave: (field: string, value: unknown) => void;
 		apiFeatures?: OcApiFeature[];
 		/**
 		 * Признак ветки прошивки: «Сброс и снижение» доступно только у прошивки
@@ -29,9 +29,6 @@
 	);
 	const releaseSectionEnabled = $derived(isSupportRelease !== false);
 
-	// Возможности, появившиеся в API 1.9. На устройстве старее 1.9 поля
-	// показываются неактивными с пояснением, а не скрываются: пользователь
-	// должен видеть, что настройка существует и чего не хватает.
 	//
 	// Отсутствие метаданных трактуется как «возможности нет»: включать режим 1.9
 	// по умолчанию нельзя, иначе на контроллере 1.7/1.8 поле молча отбросит
@@ -42,12 +39,6 @@
 	const formulaStartTempAvailable = $derived(
 		apiFeatures.find((feature: OcApiFeature) => feature.name === 'formula')?.available ?? true
 	);
-
-	// Состояния для управления модальными окнами
-	let showNumbersModal = false;
-	let showTimeModal = false;
-	let currentModalData: any = null;
-	let currentModalType: 'numbers' | 'time' | null = null;
 
 </script>
 

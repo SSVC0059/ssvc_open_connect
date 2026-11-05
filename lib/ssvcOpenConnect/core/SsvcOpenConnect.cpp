@@ -21,6 +21,7 @@
 #include "components/sensors/OneWireThermalSubsystem/OneWireThermalSubsystem.h"
 #include "components/subsystem/AtmosphericSubsystem.h"
 #include "components/subsystem/Lcd1602Subsystem.h"
+#include "components/subsystem/Xkc25Subsystem.h"
 #include "core/StatefulServices/OpenConnectHardwareSettingsService/OpenConnectHardwareConfig.h"
 #include "core/StatefulServices/OpenConnectHardwareSettingsService/OpenConnectHardwareSettingsService.h"
 #include "core/RelayRuleEngine/RelayRuleEngine.h"
@@ -49,6 +50,17 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     _socket = socket;
     _securityManager = securityManager;
     _mqttClient = _esp32sveltekit->getMqttClient();
+
+    // Явная инициализация UART-тракта и очереди команд: раньше драйвер поднимался
+    // из конструктора Connector, то есть до готовности зависимостей. Теперь
+    // неудачная инициализация видна как Failed, а команды не идут через
+    // частично созданный singleton.
+    if (!_ssvcConnector.begin()) {
+        ESP_LOGE(TAG, "begin: UART-тракт не готов (Failed)");
+    }
+    if (!SsvcCommandsQueue::getQueue().begin()) {
+        ESP_LOGE(TAG, "begin: очередь команд не готова (Failed)");
+    }
 
     ESP_LOGD(TAG, "begin: StatusLed");
     _statusLed = std::make_unique<StatusLed>(&esp32sveltekit);
@@ -194,9 +206,16 @@ void SsvcOpenConnect::subsystemManager()
 
     bool pressureHardwareOn = true;
     bool lcd1602HardwareOn = false;
+    bool xkc25HardwareOn = false;
     OpenConnectHardwareSettingsService::instance().read([&](OpenConnectHardwareConfig& cfg) {
         pressureHardwareOn = cfg.pressureSensorEnabled;
         lcd1602HardwareOn = cfg.lcd1602Enabled;
+        for (const auto& sensor : cfg.xkc25Sensors) {
+            if (sensor.enabled) {
+                xkc25HardwareOn = true;
+                break;
+            }
+        }
     });
 
     if (pressureHardwareOn) {
@@ -204,6 +223,9 @@ void SsvcOpenConnect::subsystemManager()
     }
     if (lcd1602HardwareOn) {
         subsystemManager.registerSubsystem<Lcd1602Subsystem>();
+    }
+    if (xkc25HardwareOn) {
+        subsystemManager.registerSubsystem<Xkc25Subsystem>();
     }
 
     #if FT_ENABLED(FT_TELEGRAM_BOT)
@@ -222,6 +244,9 @@ void SsvcOpenConnect::subsystemManager()
     }
     if (lcd1602HardwareOn) {
         subsystemManager.setInitialState("lcd1602_display", true);
+    }
+    if (xkc25HardwareOn) {
+        subsystemManager.setInitialState("xkc25_sensor", true);
     }
 
     // Messengers (telegram_bot, vk_bot): state only from NVS via UI toggle — no setInitialState.

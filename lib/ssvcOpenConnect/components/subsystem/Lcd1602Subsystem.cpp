@@ -15,6 +15,22 @@ namespace {
 constexpr uint8_t kLcdCols = 16;
 constexpr uint8_t kLcdRows = 2;
 constexpr TickType_t kRefreshInterval = pdMS_TO_TICKS(1500);
+/**
+ * Пауза перед первой повторной попыткой поднять дисплей. Модуль может выйти на режим
+ * позже контроллера (медленный подъём питания, позднее подключение разъёма).
+ */
+constexpr TickType_t kInitRetryDelay = pdMS_TO_TICKS(2000);
+/** Предел нарастания паузы между попытками: подключить дисплей могут и через минуты. */
+constexpr TickType_t kInitRetryDelayMax = pdMS_TO_TICKS(30000);
+/**
+ * Профилактическая инициализация рабочего дисплея.
+ *
+ * Потеря настроек HD44780 (просадка питания, сброс контроллера) по шине не видна:
+ * PCF8574 в том же модуле продолжает отвечать ACK, обмен проходит без ошибок, а экран
+ * остаётся выключенным — пустым. Отличить это состояние от рабочего пробой невозможно,
+ * поэтому настройки периодически переписываются заново.
+ */
+constexpr TickType_t kReinitInterval = pdMS_TO_TICKS(60000);
 
 class Lcd1602Pcf8574 {
 public:
@@ -36,35 +52,49 @@ public:
             return false;
         }
 
+        // Первичное состояние экспандера (все выходы на нём после подачи питания — единицы,
+        // то есть EN=1) и пауза на выход самого контроллера дисплея на режим. Без этого
+        // серия 0x30 уходит в ещё не готовый HD44780: он остаётся в 8-битном режиме и с
+        // выключенным экраном, а обмен по шине при этом выглядит полностью исправным.
+        const bool powered = expanderWrite(0x00);
+        vTaskDelay(pdMS_TO_TICKS(50));
+        if (!powered) {
+            return false;
+        }
+
         // HD44780 4-bit mode init sequence via PCF8574 backpack.
-        write4bits(0x03 << 4);
+        bool ok = write4bits(0x03 << 4);
         vTaskDelay(pdMS_TO_TICKS(5));
-        write4bits(0x03 << 4);
+        ok = write4bits(0x03 << 4) && ok;
         vTaskDelay(pdMS_TO_TICKS(5));
-        write4bits(0x03 << 4);
+        ok = write4bits(0x03 << 4) && ok;
         vTaskDelay(pdMS_TO_TICKS(2));
-        write4bits(0x02 << 4);
+        ok = write4bits(0x02 << 4) && ok;
 
-        command(0x28); // 4-bit, 2 lines, 5x8 font
-        command(0x08); // display off
-        command(0x01); // clear
+        ok = command(0x28) && ok; // 4-bit, 2 lines, 5x8 font
+        ok = command(0x08) && ok; // display off
+        ok = command(0x01) && ok; // clear
         vTaskDelay(pdMS_TO_TICKS(2));
-        command(0x06); // entry mode
-        command(0x0C); // display on, cursor off
-        return true;
+        ok = command(0x06) && ok; // entry mode
+        ok = command(0x0C) && ok; // display on, cursor off
+        return ok;
     }
 
-    void clear() {
-        command(0x01);
+    bool clear() {
+        const bool cleared = command(0x01);
         vTaskDelay(pdMS_TO_TICKS(2));
+        return cleared;
     }
 
-    void setCursor(uint8_t col, uint8_t row) {
+    bool setCursor(uint8_t col, uint8_t row) {
         static const uint8_t rowOffsets[] = {0x00, 0x40, 0x14, 0x54};
-        command(static_cast<uint8_t>(0x80 | (col + rowOffsets[row])));
+        if (row > 3) {
+            return false;
+        }
+        return command(static_cast<uint8_t>(0x80 | (col + rowOffsets[row])));
     }
 
-    void printPadded(const String& value) {
+    bool printPadded(const String& value) {
         String text = value;
         if (text.length() > kLcdCols) {
             text = text.substring(0, kLcdCols);
@@ -72,41 +102,46 @@ public:
         while (text.length() < kLcdCols) {
             text += ' ';
         }
+        bool ok = true;
         for (size_t i = 0; i < text.length(); ++i) {
-            write(static_cast<uint8_t>(text[i]));
+            ok = write(static_cast<uint8_t>(text[i])) && ok;
         }
+        return ok;
     }
 
 private:
-    void command(uint8_t value) { send(value, 0x00); }
-    void write(uint8_t value) { send(value, 0x01); }
+    bool command(uint8_t value) { return send(value, 0x00); }
+    bool write(uint8_t value) { return send(value, 0x01); }
 
-    void send(uint8_t value, uint8_t mode) {
+    bool send(uint8_t value, uint8_t mode) {
         const uint8_t highNibble = value & 0xF0;
         const uint8_t lowNibble = static_cast<uint8_t>((value << 4) & 0xF0);
-        write4bits(static_cast<uint8_t>(highNibble | mode));
-        write4bits(static_cast<uint8_t>(lowNibble | mode));
+        const bool high = write4bits(static_cast<uint8_t>(highNibble | mode));
+        const bool low = write4bits(static_cast<uint8_t>(lowNibble | mode));
+        return high && low;
     }
 
-    void write4bits(uint8_t value) {
-        expanderWrite(value);
-        pulseEnable(value);
+    bool write4bits(uint8_t value) {
+        const bool wrote = expanderWrite(value);
+        const bool pulsed = pulseEnable(value);
+        return wrote && pulsed;
     }
 
-    void pulseEnable(uint8_t value) {
-        expanderWrite(static_cast<uint8_t>(value | 0x04));
+    bool pulseEnable(uint8_t value) {
+        const bool up = expanderWrite(static_cast<uint8_t>(value | 0x04));
         delayMicroseconds(1);
-        expanderWrite(static_cast<uint8_t>(value & ~0x04));
+        const bool down = expanderWrite(static_cast<uint8_t>(value & ~0x04));
         delayMicroseconds(50);
+        return up && down;
     }
 
-    void expanderWrite(uint8_t value) {
+    bool expanderWrite(uint8_t value) {
         if (_wire == nullptr) {
-            return;
+            return false;
         }
         _wire->beginTransmission(_address);
         _wire->write(static_cast<uint8_t>(value | _backlightMask));
-        _wire->endTransmission();
+        return _wire->endTransmission() == 0;
     }
 
     TwoWire* _wire = nullptr;
@@ -203,34 +238,86 @@ void Lcd1602Subsystem::workerTaskEntry(void* arg) {
 
 void Lcd1602Subsystem::workerLoop() {
     TwoWire* wire = (_bus != nullptr) ? _bus->getWire() : nullptr;
-    Lcd1602Pcf8574 lcd;
-    lcd.attach(wire, _addr);
-    if (!lcd.begin()) {
-        ESP_LOGE(TAG, "LCD1602 not responding at 0x%02X", static_cast<unsigned>(_addr));
-        AlarmMonitor::getInstance().raiseHardwareFault(HardwareFaultCode::DEVICE_NOT_PRESENT, _addr, "lcd1602");
-        SubsystemManager::instance().disableSubsystem(getName());
+    if (wire == nullptr) {
+        ESP_LOGE(TAG, "LCD1602: I2C bus is not available");
+        AlarmMonitor::getInstance().raiseHardwareFault(HardwareFaultCode::I2C_BUS_DOWN, _addr, "lcd1602");
         return;
     }
 
-    AlarmMonitor::getInstance().clearHardwareFault("lcd1602", _addr);
+    Lcd1602Pcf8574 lcd;
+    lcd.attach(wire, _addr);
+
+    bool ready = false;
+    TickType_t retryDelay = kInitRetryDelay;
+    TickType_t uptime = 0;
     uint32_t page = 0;
+
     while (_enabled) {
-        writeStatusPage(page);
-        page = (page + 1) % 2;
+        if (!ready) {
+            bool inited = false;
+            {
+                // Шину делят дисплей, RTC, PCF8574 и HTTP-проверки: без блокировки
+                // чужая транзакция вклинится между командами инициализации.
+                I2CBusSubsystem::Guard bus(*_bus);
+                inited = lcd.begin();
+            }
+            if (!inited) {
+                // Один NACK — не приговор: модуль мог быть ещё не готов или подключён позже.
+                // Не выключаем подсистему, а повторяем с нарастающей паузой, держа ошибку.
+                AlarmMonitor::getInstance().raiseHardwareFault(
+                    HardwareFaultCode::DEVICE_NOT_PRESENT, _addr, "lcd1602");
+                ESP_LOGW(TAG, "LCD1602 not responding at 0x%02X; next attempt in %u ms",
+                         static_cast<unsigned>(_addr),
+                         static_cast<unsigned>(retryDelay * portTICK_PERIOD_MS));
+                vTaskDelay(retryDelay);
+                if (retryDelay < kInitRetryDelayMax) {
+                    const TickType_t next = retryDelay * 2;
+                    retryDelay = (next > kInitRetryDelayMax) ? kInitRetryDelayMax : next;
+                }
+                continue;
+            }
+            AlarmMonitor::getInstance().clearHardwareFault("lcd1602", _addr);
+            ESP_LOGI(TAG, "LCD1602 initialized (addr=0x%02X)", static_cast<unsigned>(_addr));
+            ready = true;
+            retryDelay = kInitRetryDelay;
+            uptime = 0;
+        }
+
+        if (!writeStatusPage(page)) {
+            // Обмен сорвался (модуль потерял питание, контроллер дисплея сбросился):
+            // возвращаемся к инициализации, экран без неё остаётся пустым.
+            ESP_LOGW(TAG, "LCD1602 frame write failed; reinitializing");
+            ready = false;
+            retryDelay = kInitRetryDelay;
+            vTaskDelay(kInitRetryDelay);
+            continue;
+        }
+
+        page = (page + 1) % kLcdRows;
         vTaskDelay(kRefreshInterval);
+        uptime += kRefreshInterval;
+
+        if (uptime >= kReinitInterval) {
+            ready = false;
+            uptime = 0;
+        }
     }
     clearDisplay();
     ESP_LOGI(TAG, "LCD1602 worker stopped");
 }
 
-void Lcd1602Subsystem::writeStatusPage(const uint32_t pageIndex) {
-    TwoWire* wire = (_bus != nullptr) ? _bus->getWire() : nullptr;
+bool Lcd1602Subsystem::writeStatusPage(const uint32_t pageIndex) {
+    if (_bus == nullptr) {
+        return false;
+    }
+    I2CBusSubsystem::Guard bus(*_bus);
+    TwoWire* wire = _bus->getWire();
     Lcd1602Pcf8574 lcd;
     lcd.attach(wire, _addr);
 
     if (!lcd.probe()) {
         AlarmMonitor::getInstance().raiseHardwareFault(HardwareFaultCode::I2C_NACK, _addr, "lcd1602");
-        return;
+        return false;
     }
 
     AlarmMonitor::getInstance().clearHardwareFault("lcd1602", _addr);
@@ -253,16 +340,18 @@ void Lcd1602Subsystem::writeStatusPage(const uint32_t pageIndex) {
         }
     }
 
-    lcd.setCursor(0, 0);
-    lcd.printPadded(line0);
-    lcd.setCursor(0, 1);
-    lcd.printPadded(line1);
+    bool ok = lcd.setCursor(0, 0);
+    ok = lcd.printPadded(line0) && ok;
+    ok = lcd.setCursor(0, 1) && ok;
+    ok = lcd.printPadded(line1) && ok;
+    return ok;
 }
 
 void Lcd1602Subsystem::clearDisplay() {
     if (_bus == nullptr || !_bus->isActive()) {
         return;
     }
+    I2CBusSubsystem::Guard bus(*_bus);
     TwoWire* wire = _bus->getWire();
     if (!wire) {
         return;

@@ -28,7 +28,10 @@
 #include "core/rectification/RectificationParseUtils.h"
 #include "components/sensors/SensorManager/SensorManager.h"
 #include <vector>
+#include <algorithm>
+#include <cstring>
 #include "components/subsystem/I2CBusSubsystem.h"
+#include "components/subsystem/Xkc25Subsystem.h"
 
 namespace {
 std::vector<uint8_t> normalizedRelayAddresses(const std::vector<uint8_t>& configured);
@@ -57,6 +60,42 @@ const char* hardwareFaultCodeLabel(const HardwareFaultCode code) {
 }
 
 OpenConnectHandler::OpenConnectHandler() = default;
+
+/**
+ * Активные аппаратные сбои.
+ *
+ * До этого список читали только сам модуль дисплея (чтобы показать первую ошибку на
+ * экране) и RelayRuleEngine — в интерфейсе причина отказа оборудования не отображалась,
+ * и приходилось смотреть serial-лог.
+ */
+void OpenConnectHandler::getHardwareFaults(AsyncWebServerRequest* request)
+{
+    AsyncJsonResponse* response = new AsyncJsonResponse();
+    JsonObject root = response->getRoot();
+
+    JsonArray faults = root["faults"].to<JsonArray>();
+    for (const auto& fault : AlarmMonitor::getInstance().getActiveHardwareFaults()) {
+        JsonObject item = faults.add<JsonObject>();
+        item["code"] = hardwareFaultCodeKey(fault.code);
+        item["codeLabel"] = hardwareFaultCodeLabel(fault.code);
+        item["address"] = fault.i2c_addr;
+        item["role"] = fault.role.c_str();
+    }
+    root["count"] = faults.size();
+    // Шина отдельным полем: при выключенной подсистеме i2c_bus отказы устройств
+    // не поднимаются, и пустой список сбоев читается иначе.
+    I2CBusSubsystem& bus = I2CBusSubsystem::getInstance();
+    root["i2cBusActive"] = bus.isActive();
+
+    // Список ответивших адресов: по нему видно, выпало одно устройство или вся шина.
+    JsonArray scan = root["i2cScan"].to<JsonArray>();
+    for (const uint8_t address : bus.scanAddresses(false)) {
+        scan.add(address);
+    }
+
+    response->setLength();
+    request->send(response);
+}
 
 void OpenConnectHandler::getInfo(AsyncWebServerRequest* request)
 {
@@ -314,38 +353,48 @@ void OpenConnectHandler::getHardwareConfig(AsyncWebServerRequest* request) {
     JsonObject root = response->getRoot();
 
     bool needs = false;
+    OpenConnectHardwareConfig cfg;
     svc.read([&](OpenConnectHardwareConfig& s) {
         OpenConnectHardwareConfig::read(s, root);
         needs = s.pendingReboot;
+        // Копия — чтобы пробы шли уже без блокировки настроек.
+        cfg = s;
+    });
+
+    // Порядок блокировок всегда «настройки → шина»: пробы выполняются после
+    // того, как read() отпустил свой мьютекс. Вложенный Guard держал бы обе
+    // блокировки сразу, и обратный порядок в другом месте дал бы deadlock.
+    {
+        I2CBusSubsystem::Guard bus(I2CBusSubsystem::getInstance());
         TwoWire* w = I2CBusSubsystem::getInstance().getWire();
-        if (s.pressureSensorEnabled) {
+        if (cfg.pressureSensorEnabled) {
             bool bmpOk = false;
             if (w) {
-                w->beginTransmission(s.bmp581I2cAddress);
+                w->beginTransmission(cfg.bmp581I2cAddress);
                 bmpOk = (w->endTransmission() == 0);
             }
             root["bmp581ProbeOk"] = bmpOk;
         }
-        if (s.rtcEnabled) {
+        if (cfg.rtcEnabled) {
             bool rtcOk = false;
             if (w) {
-                w->beginTransmission(s.ds3231I2cAddress);
+                w->beginTransmission(cfg.ds3231I2cAddress);
                 rtcOk = (w->endTransmission() == 0);
             }
             root["ds3231ProbeOk"] = rtcOk;
         }
-        if (s.lcd1602Enabled) {
+        if (cfg.lcd1602Enabled) {
             bool lcdOk = false;
             if (w) {
-                w->beginTransmission(s.lcd1602I2cAddress);
+                w->beginTransmission(cfg.lcd1602I2cAddress);
                 lcdOk = (w->endTransmission() == 0);
             }
             root["lcd1602ProbeOk"] = lcdOk;
         }
 #if !PINOUT_USE_GPIO
-        appendRelayProbeStatus(root, w, s.relayPcf8574Addresses);
+        appendRelayProbeStatus(root, w, cfg.relayPcf8574Addresses);
 #endif
-    });
+    }
     appendHardwareConfigCapabilities(root);
     root["needsReboot"] = needs;
 
@@ -355,7 +404,11 @@ void OpenConnectHandler::getHardwareConfig(AsyncWebServerRequest* request) {
 
 void OpenConnectHandler::putHardwareConfig(AsyncWebServerRequest* request, JsonVariant& json) {
     if (!json.is<JsonObject>()) {
-        request->send(400);
+        // Пустой 400 UI показывал как «Ошибка сохранения» без подробностей:
+        // причина отказа обязана быть в теле.
+        request->send(400, "application/json",
+                      R"({"success":false,"error":"body_must_be_object",)"
+                      R"("message":"Тело запроса должно быть JSON-объектом"})");
         return;
     }
 
@@ -366,7 +419,9 @@ void OpenConnectHandler::putHardwareConfig(AsyncWebServerRequest* request, JsonV
         "rest");
 
     if (result == StateUpdateResult::ERROR) {
-        request->send(400);
+        request->send(400, "application/json",
+                      R"({"success":false,"error":"validation_failed",)"
+                      R"("message":"Настройки не прошли проверку: адреса, пины или привязка зон"})");
         return;
     }
 
@@ -374,41 +429,305 @@ void OpenConnectHandler::putHardwareConfig(AsyncWebServerRequest* request, JsonV
     JsonObject root = response->getRoot();
 
     bool needs = false;
+    OpenConnectHardwareConfig cfg;
     OpenConnectHardwareSettingsService::instance().read([&](OpenConnectHardwareConfig& s) {
         OpenConnectHardwareConfig::read(s, root);
         needs = s.pendingReboot;
+        cfg = s;
+    });
+
+    // См. getHardwareConfig: пробы идут после освобождения блокировки настроек,
+    // поэтому порядок захвата всегда «настройки → шина».
+    {
+        I2CBusSubsystem::Guard bus(I2CBusSubsystem::getInstance());
         TwoWire* w = I2CBusSubsystem::getInstance().getWire();
-        if (s.pressureSensorEnabled) {
+        if (cfg.pressureSensorEnabled) {
             bool bmpOk = false;
             if (w) {
-                w->beginTransmission(s.bmp581I2cAddress);
+                w->beginTransmission(cfg.bmp581I2cAddress);
                 bmpOk = (w->endTransmission() == 0);
             }
             root["bmp581ProbeOk"] = bmpOk;
         }
-        if (s.rtcEnabled) {
+        if (cfg.rtcEnabled) {
             bool rtcOk = false;
             if (w) {
-                w->beginTransmission(s.ds3231I2cAddress);
+                w->beginTransmission(cfg.ds3231I2cAddress);
                 rtcOk = (w->endTransmission() == 0);
             }
             root["ds3231ProbeOk"] = rtcOk;
         }
-        if (s.lcd1602Enabled) {
+        if (cfg.lcd1602Enabled) {
             bool lcdOk = false;
             if (w) {
-                w->beginTransmission(s.lcd1602I2cAddress);
+                w->beginTransmission(cfg.lcd1602I2cAddress);
                 lcdOk = (w->endTransmission() == 0);
             }
             root["lcd1602ProbeOk"] = lcdOk;
         }
 #if !PINOUT_USE_GPIO
-        appendRelayProbeStatus(root, w, s.relayPcf8574Addresses);
+        appendRelayProbeStatus(root, w, cfg.relayPcf8574Addresses);
 #endif
-    });
+    }
     appendHardwareConfigCapabilities(root);
     root["needsReboot"] = needs;
 
     response->setLength();
     request->send(response);
+}
+
+namespace {
+
+/**
+ * Предел ожидания на шаге «проверка возврата». Шаг выполняется в задаче опроса
+ * подсистемы, HTTP-запрос не блокируется — лимит можно держать щедрым.
+ */
+constexpr uint32_t kMaxVerifyReturnTimeoutMs = 5000;
+/** Значение по умолчанию: столько UI готов ждать возврата датчика после опускания уровня. */
+constexpr uint32_t kDefaultVerifyReturnTimeoutMs = 5000;
+
+/**
+ * Статус одного слота XKC-25: конфигурация из файла плюс живое состояние пина.
+ *
+ * rawLevel — это текущее чтение пина, а не подтверждение наличия датчика: у GPIO нет
+ * подтверждения устройства, поэтому вместо пробинга отдаётся пара rawLevel + calibrated.
+ * live = false и rawLevel = -1 означают, что датчик выключен или подсистема его не подняла.
+ */
+void appendXkc25SensorStatus(JsonObject o, size_t slot, const Xkc25SensorConfig& cfg,
+                             uint8_t sharedTankIndex, Xkc25Sensor* live) {
+    // У переносного датчика фактическая зона — та ёмкость, на которой он стоит сейчас.
+    const uint8_t zoneIndex = cfg.sharedAcrossTanks ? sharedTankIndex : cfg.zoneIndex;
+    DigitalInputSource src;
+    src.source = cfg.pinSource;
+    src.gpio = cfg.gpio;
+    src.pcfAddress = cfg.pcfAddress;
+    src.pcfBit = cfg.pcfBit;
+    const std::string pinLabel = src.label();
+
+    o["index"] = static_cast<unsigned>(slot);
+    o["enabled"] = cfg.enabled;
+    o["pinSource"] = cfg.pinSource;
+    o["gpio"] = cfg.gpio;
+    o["pcfAddress"] = cfg.pcfAddress;
+    o["pcfBit"] = cfg.pcfBit;
+    o["pinLabel"] = pinLabel.c_str();
+    o["zoneIndex"] = zoneIndex;
+    o["zone"] = Xkc25Subsystem::zoneKey(zoneIndex).c_str();
+    o["zoneLabel"] = Xkc25Subsystem::zoneLabel(zoneIndex).c_str();
+    o["sharedAcrossTanks"] = cfg.sharedAcrossTanks;
+    o["activeLow"] = cfg.activeLow;
+    o["calibrated"] = cfg.calibrated;
+    o["calibratedAt"] = cfg.calibratedAt;
+    o["levelWithoutLiquid"] = cfg.levelWithoutLiquid;
+    o["levelWithLiquid"] = cfg.levelWithLiquid;
+    o["live"] = (live != nullptr);
+    o["rawLevel"] = (live != nullptr) ? live->readRawPinLevel() : -1;
+    o["filled"] = (live != nullptr) && live->isFilled();
+}
+
+/** HTTP-статус ответа на шаг калибровки по машинному коду итога. */
+int calibrationHttpStatus(const char* code) {
+    if (code == nullptr) {
+        return 500;
+    }
+    if (strcmp(code, Xkc25CalibrationCode::OK) == 0 ||
+        strcmp(code, Xkc25CalibrationCode::VERIFY_FAILED) == 0) {
+        // Обратная проверка не блокирующая: шаг выполнен, результат — предупреждение в теле.
+        return 200;
+    }
+    if (strcmp(code, Xkc25CalibrationCode::SENSOR_NOT_AVAILABLE) == 0 ||
+        strcmp(code, Xkc25CalibrationCode::SENSOR_NOT_CONFIGURED) == 0) {
+        return 404;
+    }
+    if (strcmp(code, Xkc25CalibrationCode::PERSIST_FAILED) == 0) {
+        return 500;
+    }
+    // unstable_signal / no_external_pull / not_reacted / not_calibrated —
+    // состояние мешает шагу, файл не изменён.
+    return 409;
+}
+
+/** JSON шага калибровки: итог плюс актуальное состояние датчика после шага. */
+String buildXkc25CalibrationBody(size_t slot, const Xkc25CalibrationResult& result) {
+    JsonDocument doc;
+    doc["ok"] = result.ok;
+    doc["completed"] = result.completed;
+    doc["code"] = result.code;
+    doc["rawLevel"] = result.rawLevel;
+    doc["message"] = result.message;
+
+    JsonArray checklist = doc["checklist"].to<JsonArray>();
+    for (const auto& item : result.checklist) {
+        checklist.add(item);
+    }
+
+    JsonObject sensor = doc["sensor"].to<JsonObject>();
+    Xkc25Subsystem* subsystem = Xkc25Subsystem::activeInstance();
+    OpenConnectHardwareSettingsService::instance().read([&](OpenConnectHardwareConfig& cfg) {
+        if (slot < cfg.xkc25Sensors.size()) {
+            Xkc25Sensor* live = (subsystem != nullptr)
+                                    ? subsystem->sensorByIndex(static_cast<uint8_t>(slot))
+                                    : nullptr;
+            appendXkc25SensorStatus(sensor, slot, cfg.xkc25Sensors[slot],
+                                    cfg.xkc25SharedTankIndex, live);
+        }
+    });
+
+    String body;
+    serializeJson(doc, body);
+    return body;
+}
+
+/** Ответ на постановку асинхронной проверки возврата: 202 + слот, результат забирается опросом. */
+String buildXkc25VerifyPendingBody(size_t slot) {
+    JsonDocument doc;
+    doc["status"] = "pending";
+    doc["index"] = slot;
+    doc["code"] = Xkc25CalibrationCode::OK;
+    doc["message"] = "Проверка возврата запущена";
+
+    String body;
+    serializeJson(doc, body);
+    return body;
+}
+
+} // namespace
+
+void OpenConnectHandler::getXkc25Status(AsyncWebServerRequest* request) {
+    AsyncJsonResponse* response = new AsyncJsonResponse();
+    JsonObject root = response->getRoot();
+
+    Xkc25Subsystem* subsystem = Xkc25Subsystem::activeInstance();
+
+    JsonArray sensors = root["sensors"].to<JsonArray>();
+    OpenConnectHardwareSettingsService::instance().read([&](OpenConnectHardwareConfig& cfg) {
+        for (size_t slot = 0; slot < cfg.xkc25Sensors.size(); ++slot) {
+            Xkc25Sensor* live = (subsystem != nullptr)
+                                    ? subsystem->sensorByIndex(static_cast<uint8_t>(slot))
+                                    : nullptr;
+            appendXkc25SensorStatus(sensors.add<JsonObject>(), slot, cfg.xkc25Sensors[slot],
+                                    cfg.xkc25SharedTankIndex, live);
+        }
+    });
+
+    // Общие опции: UI показывает выбранный режим реакции и текущую ёмкость переносного датчика.
+    uint8_t triggerAction = OpenConnectHardwareConfig::kXkc25ActionPause;
+    uint8_t sharedTankIndex = 0;
+    OpenConnectHardwareSettingsService::instance().read([&](OpenConnectHardwareConfig& cfg) {
+        triggerAction = cfg.xkc25TriggerAction;
+        sharedTankIndex = cfg.xkc25SharedTankIndex;
+    });
+    root["triggerAction"] = triggerAction;
+    root["sharedTankIndex"] = sharedTankIndex;
+
+    // Предстартовая проверка: UI показывает, будет ли старт отклонён в режиме block (6.4).
+    const Xkc25StartCheck check = Xkc25Subsystem::checkStart();
+    root["startGuardMode"] = check.mode;
+    root["blockStart"] = !check.allow;
+    JsonArray blockReasons = root["blockReasons"].to<JsonArray>();
+    for (const auto& reason : check.blockReasons) {
+        blockReasons.add(reason);
+    }
+    JsonArray warnings = root["warnings"].to<JsonArray>();
+    for (const auto& warning : check.warnings) {
+        warnings.add(warning);
+    }
+
+    response->setLength();
+    request->send(response);
+}
+
+void OpenConnectHandler::postXkc25Calibrate(AsyncWebServerRequest* request, JsonVariant& json) {
+    if (!json.is<JsonObject>()) {
+        request->send(400, "application/json", R"({"error":"Invalid JSON"})");
+        return;
+    }
+    JsonObject body = json.as<JsonObject>();
+
+    if (!body["index"].is<int>()) {
+        request->send(400, "application/json", R"({"error":"Missing index"})");
+        return;
+    }
+    const int index = body["index"].as<int>();
+    if (index < 0 || static_cast<size_t>(index) >= OpenConnectHardwareConfig::kMaxXkc25Sensors) {
+        request->send(400, "application/json", R"({"error":"index out of range"})");
+        return;
+    }
+
+    const char* step = body["step"] | "";
+    if (step[0] == '\0') {
+        request->send(400, "application/json", R"({"error":"Missing step"})");
+        return;
+    }
+
+    Xkc25Subsystem* subsystem = Xkc25Subsystem::activeInstance();
+    if (subsystem == nullptr) {
+        // Датчики создаются при включении подсистемы: без перезагрузки калибровать нечего.
+        request->send(404, "application/json",
+                      R"({"error":"XKC-25 subsystem is not active","code":"sensor_not_available"})");
+        return;
+    }
+
+    const auto slot = static_cast<uint8_t>(index);
+    Xkc25CalibrationResult result;
+    if (strcmp(step, "without_liquid") == 0) {
+        result = subsystem->recordLevelWithoutLiquid(slot);
+    } else if (strcmp(step, "with_liquid") == 0) {
+        result = subsystem->recordLevelWithLiquid(slot);
+    } else if (strcmp(step, "verify_return") == 0) {
+        const uint32_t timeoutMs =
+            std::min<uint32_t>(body["timeoutMs"] | kDefaultVerifyReturnTimeoutMs,
+                               kMaxVerifyReturnTimeoutMs);
+        const Xkc25VerifyStart start = subsystem->startVerifyReturn(slot, timeoutMs);
+        if (!start.accepted) {
+            // busy — проверка уже идёт; иначе задание отклонено по состоянию датчика.
+            request->send(start.busy ? 409 : calibrationHttpStatus(start.result.code),
+                          "application/json",
+                          buildXkc25CalibrationBody(slot, start.result));
+            return;
+        }
+        // Ожидание выполняет задача опроса подсистемы: HTTP отвечает сразу, а
+        // результат забирается через GET /rest/oc/xkc25/verify-status.
+        AsyncWebServerResponse* response =
+            request->beginResponse(202, "application/json", buildXkc25VerifyPendingBody(slot));
+        request->send(response);
+        return;
+    } else {
+        request->send(400, "application/json", R"({"error":"Unknown step"})");
+        return;
+    }
+
+    request->send(calibrationHttpStatus(result.code), "application/json",
+                  buildXkc25CalibrationBody(slot, result));
+}
+
+void OpenConnectHandler::getXkc25VerifyStatus(AsyncWebServerRequest* request) {
+    JsonDocument doc;
+    Xkc25Subsystem* subsystem = Xkc25Subsystem::activeInstance();
+    if (subsystem == nullptr) {
+        doc["status"] = "none";
+        doc["code"] = Xkc25CalibrationCode::SENSOR_NOT_AVAILABLE;
+        doc["message"] = "XKC-25 subsystem is not active";
+    } else {
+        const Xkc25VerifySnapshot snapshot = subsystem->verifyReturnSnapshot();
+        if (snapshot.running) {
+            doc["status"] = "pending";
+            doc["index"] = snapshot.sensorIndex;
+        } else if (snapshot.hasResult) {
+            doc["status"] = "done";
+            doc["index"] = snapshot.sensorIndex;
+            doc["ok"] = snapshot.result.ok;
+            doc["completed"] = snapshot.result.completed;
+            doc["code"] = snapshot.result.code;
+            doc["rawLevel"] = snapshot.result.rawLevel;
+            doc["message"] = snapshot.result.message;
+        } else {
+            // Проверку ещё не запускали с момента старта подсистемы.
+            doc["status"] = "none";
+        }
+    }
+
+    String body;
+    serializeJson(doc, body);
+    request->send(200, "application/json", body);
 }

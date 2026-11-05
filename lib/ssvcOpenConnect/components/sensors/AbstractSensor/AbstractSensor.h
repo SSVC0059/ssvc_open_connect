@@ -27,6 +27,7 @@ enum class MeasuredValueType {
     TEMPERATURE,
     PRESSURE,
     HUMIDITY,
+    LEVEL,
 };
 
 

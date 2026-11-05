@@ -21,14 +21,24 @@ void Pcf8574RelayPort::setOutputEnergized(const unsigned bitIndex, const bool en
 void Pcf8574RelayPort::setShadowAllReleased() { _shadow = 0xFF; }
 
 bool Pcf8574RelayPort::flush() {
-  TwoWire* w = I2CBusSubsystem::getInstance().getWire();
-  if (w == nullptr) {
+  bool busActive = false;
+  bool ok = false;
+  {
+    // Порт расширителя пишется двумя байтами (адрес + данные) подряд: чужая
+    // транзакция между ними исказит состояние выходов реле.
+    I2CBusSubsystem::Guard bus(I2CBusSubsystem::getInstance());
+    if (TwoWire* w = bus.wire()) {
+      busActive = true;
+      _pcf.setBus(w);
+      ok = _pcf.writePort(_shadow);
+    }
+  }
+
+  if (!busActive) {
     AlarmMonitor::getInstance().raiseHardwareFault(
         HardwareFaultCode::I2C_BUS_DOWN, 0, "i2c_bus");
     return false;
   }
-  _pcf.setBus(w);
-  const bool ok = _pcf.writePort(_shadow);
   if (!ok) {
     AlarmMonitor::getInstance().raiseHardwareFault(
         HardwareFaultCode::I2C_NACK, _i2cAddr, _deviceRole);

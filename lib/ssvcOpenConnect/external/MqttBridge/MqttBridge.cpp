@@ -1,21 +1,45 @@
 #include "MqttBridge.h"
 
+#include <utility>
+
 // Глобальная статическая переменная для синглтона
 static MqttBridge *s_instance = nullptr;
 
 /**
  * @brief Приватный конструктор для синглтона.
  */
-MqttBridge::MqttBridge(MqttSettingsService *settingsService) : _settingsService(settingsService)
+MqttBridge::MqttBridge(MqttSettingsService *settingsService) : _settingsService(nullptr)
 {
-    if (_settingsService == nullptr)
+    attachSettingsService(settingsService);
+}
+
+/**
+ * @brief Привязывает MqttSettingsService и обработчики клиента.
+ *
+ * Идемпотентна: повторный вызов с тем же сервисом ничего не делает. Именно через
+ * неё «догоняет» инициализация, если синглтон был создан вызовом getInstance()
+ * без сервиса (телеметрия стартует раньше, чем готов MqttSettingsService).
+ */
+void MqttBridge::attachSettingsService(MqttSettingsService *settingsService)
+{
+    if (settingsService == nullptr)
     {
         ESP_LOGE(TAG, "MqttSettingsService must be provided on first instantiation.");
         return;
     }
+    if (_settingsService == settingsService)
+    {
+        return;
+    }
 
-    PsychicMqttClient *client = _settingsService->getMqttClient();
+    PsychicMqttClient *client = settingsService->getMqttClient();
+    if (client == nullptr)
+    {
+        ESP_LOGE(TAG, "MqttSettingsService has no MQTT client; publish stays disabled.");
+        return;
+    }
 
+    _settingsService = settingsService;
 
     client->onMessage(
         [](char *topic, char *payload, int retain, int qos, bool dup) {
@@ -30,14 +54,25 @@ MqttBridge::MqttBridge(MqttSettingsService *settingsService) : _settingsService(
         }
     );
 
-    ESP_LOGD(TAG, "MqttBridge initialized.");
+    ESP_LOGD(TAG, "MqttBridge attached to MqttSettingsService.");
 }
 
 MqttBridge &MqttBridge::getInstance(MqttSettingsService *settingsService)
 {
+    // Ленивый синглтон на сыром new без синхронизации создавал гонку:
+    // TelemetryTask и SsvcOpenConnect::begin() могли одновременно увидеть
+    // nullptr и породить второй экземпляр, один из которых оставался без
+    // _settingsService.
+    static std::mutex singletonMutex;
+    const std::lock_guard<std::mutex> lock(singletonMutex);
+
     if (s_instance == nullptr)
     {
         s_instance = new MqttBridge(settingsService);
+    }
+    else if (settingsService != nullptr)
+    {
+        s_instance->attachSettingsService(settingsService);
     }
     return *s_instance;
 }
@@ -65,7 +100,9 @@ uint16_t MqttBridge::publish(const char *topic, const char *payload, uint8_t qos
     // Проверка наличия подключения к сервису, но НЕ к MQTT-брокеру.
     if (!_settingsService)
     {
-        ESP_LOGE(TAG, "Cannot publish to %s: MqttSettingsService is not initialized.", topic);
+        // MQTT ещё не инициализирован (телеметрия публикует кадры до создания
+        // MqttSettingsService) — штатное состояние загрузки, а не ошибка.
+        ESP_LOGV(TAG, "MQTT not configured yet, skip publish to %s", topic);
         return 0;
     }
 
@@ -79,14 +116,30 @@ uint16_t MqttBridge::publish(const char *topic, const char *payload, uint8_t qos
 
         ESP_LOGW(TAG, "MQTT client is not connected. Queuing message for topic: %s", topic);
 
-        // Добавляем сообщение в очередь
-        _publishQueue.push_back({
-            topic,
-            payload, // String/char* конструкторы справятся
-            qos,
-            retained
-        });
-        // Возвращаем фиктивный ID или 1, чтобы показать, что операция принята
+        // Добавляем сообщение в очередь под блокировкой и с жёстким лимитом:
+        // publish() вызывается из задач телеметрии и HTTP, а разбирает очередь
+        // задача MQTT, поэтому без мьютекса контейнер повреждается, а без
+        // лимита очередь растёт всё время, пока брокер недоступен.
+        {
+            std::lock_guard<std::mutex> lock(_queueMutex);
+            if (_publishQueue.size() >= MAX_PENDING_PUBLISHES) {
+                // Вытесняем самое старое: свежее состояние важнее устаревшего.
+                _publishQueue.pop_front();
+                ++_droppedPublishes;
+                if ((_droppedPublishes % 10) == 1) {
+                    ESP_LOGW(TAG, "Publish queue full (%u), dropped %lu oldest message(s)",
+                             static_cast<unsigned>(MAX_PENDING_PUBLISHES),
+                             static_cast<unsigned long>(_droppedPublishes));
+                }
+            }
+            _publishQueue.push_back({
+                topic,
+                payload, // String/char* конструкторы справятся
+                qos,
+                retained
+            });
+        }
+        // Возвращаем фиктивный ID, чтобы показать, что операция принята
         return 1;
     }
 
@@ -100,13 +153,27 @@ void MqttBridge::processPublishQueue()
         return;
     }
 
-    ESP_LOGI(TAG, "Processing publish queue (%zu messages).", _publishQueue.size());
+    {
+        std::lock_guard<std::mutex> lock(_queueMutex);
+        if (_publishQueue.empty()) {
+            return;
+        }
+        ESP_LOGI(TAG, "Processing publish queue (%zu messages).", _publishQueue.size());
+    }
 
-    while (!_publishQueue.empty()) {
-        // Берем сообщение из начала очереди
-        const QueuedMessage& msg = _publishQueue.front();
+    while (true) {
+        // Забираем сообщение под блокировкой, а отправляем без неё: publish()
+        // зовут другие задачи, и держать мьютекс на время сетевой операции нельзя.
+        QueuedMessage msg{};
+        {
+            std::lock_guard<std::mutex> lock(_queueMutex);
+            if (_publishQueue.empty()) {
+                return;
+            }
+            msg = std::move(_publishQueue.front());
+            _publishQueue.pop_front();
+        }
 
-        // Отправляем сообщение
         const uint16_t msgId = _settingsService->getMqttClient()->publish(
             msg.topic.c_str(),
             msg.qos,
@@ -114,16 +181,19 @@ void MqttBridge::processPublishQueue()
             msg.payload.c_str()
         );
 
-        if (msgId != 0) {
-            // Успешно отправлено. Удаляем из очереди и переходим к следующему
-            ESP_LOGD(TAG, "Queued message sent to %s (ID: %d)", msg.topic.c_str(), msgId);
-            _publishQueue.pop_front();
-        } else {
+        if (msgId == 0) {
             // НЕ УСПЕШНО: это очень маловероятно сразу после onConnect.
-            // Это может указывать на потерю соединения прямо сейчас. Прекращаем.
+            // Это может указывать на потерю соединения прямо сейчас. Прекращаем,
+            // но сообщение не теряем — возвращаем в голову очереди в пределах лимита.
             ESP_LOGE(TAG, "Failed to send queued message to %s. Stopping queue processing.", msg.topic.c_str());
-            break;
+            std::lock_guard<std::mutex> lock(_queueMutex);
+            if (_publishQueue.size() < MAX_PENDING_PUBLISHES) {
+                _publishQueue.push_front(std::move(msg));
+            }
+            return;
         }
+
+        ESP_LOGD(TAG, "Queued message sent to %s (ID: %d)", msg.topic.c_str(), msgId);
     }
 }
 

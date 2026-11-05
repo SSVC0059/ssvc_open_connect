@@ -167,7 +167,7 @@
 				<span class="sensor-span">Давление.:</span>
 			{/if}
 
-				<span class="sensor-value"> {sensor.data?.v ?? '--'} {sensor.data?.u ?? ''} </span>
+				<span class="sensor-value"> {sensor.data?.v?.toFixed(2) ?? '--'} {sensor.data?.u ?? ''} </span>
 			</div>
 		</div>
 

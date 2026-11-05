@@ -16,6 +16,8 @@
 
 #include "MqttCommandHandler.h"
 
+#include "components/subsystem/Xkc25Subsystem.h"
+
 MqttCommandHandler::MqttCommandHandler() = default;
 
 void MqttCommandHandler::begin() const
@@ -63,10 +65,41 @@ void MqttCommandHandler::handleCommand(const String& commandString)
             params = commandInput.substr(spacePos + 1);
         }
 
+        // Предстартовая проверка XKC-25 (6.4): MQTT — вторая точка вызова COMMAND_MAP,
+        // без неё блокировку старта можно было бы обойти мимо веб-UI.
+        if (commandName == "start") {
+            const Xkc25StartCheck check = Xkc25Subsystem::checkStart();
+            if (!check.allow) {
+                std::string reason = "start - отклонен: ";
+                for (size_t i = 0; i < check.blockReasons.size(); ++i) {
+                    if (i > 0) {
+                        reason += "; ";
+                    }
+                    reason += check.blockReasons[i];
+                }
+                ESP_LOGW(TAG, "%s", reason.c_str());
+                (void)MqttBridge::getInstance().publish(MQTT_RSP_TOPIC, reason.c_str(), 1, false);
+                return;
+            }
+            for (const auto& warning : check.warnings) {
+                ESP_LOGW(TAG, "%s", warning.c_str());
+                (void)MqttBridge::getInstance().publish(MQTT_RSP_TOPIC, warning.c_str(), 1, false);
+            }
+        }
+
         ESP_LOGI(TAG, "-> Найдена команда '%s'. Вызываем с параметрами: '%s'", commandName.c_str(), params.c_str());
 
-        // Вызываем лямбда-функцию из COMMAND_MAP, передавая параметры
-        it->second(params);
+        // Лямбда возвращает результат постановки: отказ должен быть виден и в
+        // логе, и в MQTT, а не только по отсутствию эффекта на устройстве.
+        const bool accepted = it->second(params);
+        if (!accepted) {
+            const std::string reason = SsvcCommandsQueue::getQueue().lastRejectionReason();
+            ESP_LOGW(TAG, "<- Команда '%s' не принята (reason: %s).", commandName.c_str(),
+                     reason.c_str());
+            const std::string errorMessage = commandName + " - команда не принята: " + reason;
+            (void)MqttBridge::getInstance().publish(MQTT_RSP_TOPIC, errorMessage.c_str(), 1, false);
+            return;
+        }
 
         ESP_LOGI(TAG, "<- Команда '%s' поставлена в очередь.", commandName.c_str());
     } else {

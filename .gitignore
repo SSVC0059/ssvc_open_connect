@@ -20,14 +20,13 @@ lib/framework/WWWData.h
 *WWWData.h
 ssl_certs/cacert.pem
 /logs
+# Рабочие дампы I2C-анализатора: не часть репозитория
+/dslogick/
 interface/.idea/
 build
 .idea
-platformio.ini
 site
 scripts/**/__pycache__
-package.json
-package-lock.json
 !e2e/package.json
 !e2e/package-lock.json
 rectification_calculator.js
@@ -37,3 +36,8 @@ interface/coverage/
 **/coverage/
 __pycache__
 .workai/
+# Служебные артефакты разработки
+compile_commands.json
+CODE_REVIEW.md
+.devin/
+.gigacode_vsc/
