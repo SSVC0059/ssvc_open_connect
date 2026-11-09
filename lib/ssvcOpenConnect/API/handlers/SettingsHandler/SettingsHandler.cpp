@@ -35,35 +35,49 @@ void SettingsHandler::updateSettings(AsyncWebServerRequest* request, JsonVariant
     bool hasErrors = false;
     auto errors = jsonBuffer.to<JsonObject>();
 
+    if (!json.is<JsonObject>()) {
+        request->send(400, "application/json", "{\"error\":\"Body must be a JSON object\"}");
+        return;
+    }
+
     // Builder живёт в рамках одного запроса и сам ведёт список полей, которые
     // очередь отбросила по версии API устройства: общего накопителя нет, поэтому
     // параллельные MQTT/профильные операции не подмешиваются в отчёт.
     SsvcSettings::Builder builder;
+    // Пакетный режим: SET копятся локально и уходят на контроллер только после
+    // проверки всех полей. Иначе ошибка в середине тела возвращала клиенту 400,
+    // хотя часть настроек уже была применена.
+    builder.beginBatch();
 
-    if (json.is<JsonObject>()) {
-        ESP_LOGD(TAG, "Request has JSON body.");
-        JsonObject bodyObj = json.as<JsonObject>();
-        for (JsonPair kv : bodyObj) {
-            const String& key = kv.key().c_str();
-            JsonVariant value = kv.value();
-            ESP_LOGV("HTTP", "Processing body parameter: %s", key.c_str());
-            ESP_LOGV(TAG, "Processing parameter: '%s'", key.c_str());
+    JsonDocument ignoredBuffer;
+    JsonArray ignored = ignoredBuffer.to<JsonArray>();
+    size_t accepted = 0;
 
-            auto it = PARAM_HANDLERS.find(key);
-            if (it == PARAM_HANDLERS.end()) {
-                // Клиент должен узнать, что настройка не применена: ответ 200
-                // «success» при отвергнутом поле скрывал расхождение с
-                // устройством.
-                errors[key] = "Unknown parameter";
-                hasErrors = true;
-                continue;
-            }
+    ESP_LOGD(TAG, "Request has JSON body.");
+    JsonObject bodyObj = json.as<JsonObject>();
+    for (JsonPair kv : bodyObj) {
+        const String& key = kv.key().c_str();
+        JsonVariant value = kv.value();
+        ESP_LOGV("HTTP", "Processing body parameter: %s", key.c_str());
+        ESP_LOGV(TAG, "Processing parameter: '%s'", key.c_str());
 
-            if (!it->second->handle(builder, value)) {
-                ESP_LOGE(TAG, "Invalid value for parameter: '%s'", key.c_str());
-                hasErrors = true;
-            }
+        auto it = PARAM_HANDLERS.find(key);
+        if (it == PARAM_HANDLERS.end()) {
+            // Ключи, которых прошивка не знает (локальные настройки
+            // OpenConnect в полном объекте настроек), не отменяют весь запрос:
+            // остальные поля валидны. Клиент получает их список в "ignored" и
+            // видит расхождение с контроллером, но не теряет всю запись.
+            ignored.add(key);
+            continue;
         }
+
+        if (!it->second->handle(builder, value)) {
+            ESP_LOGE(TAG, "Invalid value for parameter: '%s'", key.c_str());
+            errors[key] = "Invalid value";
+            hasErrors = true;
+            continue;
+        }
+        accepted++;
     }
 
     if (hasErrors) {
@@ -73,6 +87,9 @@ void SettingsHandler::updateSettings(AsyncWebServerRequest* request, JsonVariant
         return;
     }
 
+    // Только теперь, когда все поля прошли проверку, отправляем накопленные
+    // SET на контроллер и запрашиваем актуальное состояние.
+    builder.applySettings();
     SsvcCommandsQueue::getQueue().getSettings();
 
     // Поля, которых нет на устройстве этой версии API: клиент должен знать, что
@@ -83,6 +100,13 @@ void SettingsHandler::updateSettings(AsyncWebServerRequest* request, JsonVariant
     JsonDocument successResponse;
     successResponse["success"] = true;
     successResponse["message"] = "Settings updated successfully";
+    successResponse["accepted"] = accepted;
+    if (!ignored.isNull() && ignored.size() > 0) {
+        JsonArray ignoredOut = successResponse["ignored"].to<JsonArray>();
+        for (JsonVariant item : ignored) {
+            ignoredOut.add(item.as<const char*>());
+        }
+    }
     if (!skipped.empty()) {
         JsonArray skippedArray = successResponse["skipped"].to<JsonArray>();
         for (const auto& item : skipped) {

@@ -89,9 +89,15 @@ export async function updateSetting(field: string, value: unknown): Promise<bool
 }
 
 /**
- * Сохранение всех настроек SSVC на сервере
+ * Сохранение настроек SSVC на сервере.
+ *
+ * Принимает как полный объект, так и частичное обновление: мастер запуска и
+ * другие формы отправляют только изменённые поля, чтобы не перезаписывать
+ * настройки, выставленные непосредственно на контроллере.
  */
-export async function saveSettings(settings: SsvcSettings | undefined): Promise<boolean> {
+export async function saveSettings(
+	settings: Partial<SsvcSettings> | undefined
+): Promise<boolean> {
 	console.log('Attempting to save settings:', settings);
 	const url = '/rest/settings';
 	console.log(`Sending PUT request to ${url}`);
@@ -655,7 +661,19 @@ export async function apiFetch<T>(
 		});
 
 		if (!response.ok) {
-			return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
+			// Тело отказа несёт причину (какие параметры отвергнуты), без него
+			// пользователю остаётся только «HTTP 400».
+			let details = '';
+			try {
+				const body = await response.text();
+				if (body) details = ` — ${body}`;
+			} catch {
+				// Тело недоступно — статуса достаточно.
+			}
+			return {
+				success: false,
+				error: `HTTP ${response.status}: ${response.statusText}${details}`
+			};
 		}
 
 		const text = await response.text();
