@@ -301,6 +301,8 @@ public:
         bool _isBatchMode = false;            // Флаг: копим или шлем сразу
         // Поля SET, не ушедшие на устройство из-за его версии API.
         std::vector<std::string> _skippedCommands;
+        // SET-пакеты, которые не удалось поставить в очередь команд.
+        std::vector<std::string> _failedCommands;
     public:
         bool hasChanges = false;
         explicit Builder() : settings(SsvcSettings::init())
@@ -401,11 +403,17 @@ public:
         /// Поля, отброшенные при последней отправке SET из-за версии API устройства.
         const std::vector<std::string>& skippedCommands() const { return _skippedCommands; }
 
+        /// SET-пакеты, которые не попали в очередь команд при последней отправке.
+        const std::vector<std::string>& failedCommands() const { return _failedCommands; }
+
         static void validateAndSetValues(float& timeTurnOn, int& period,
                                          float* targetTimeTurnOn,
                                          int* targetPeriod);
 
-        void applySettings();
+        /// Отправляет накопленные SET на контроллер.
+        /// @return false, если хотя бы один пакет не удалось поставить в очередь:
+        ///         часть настроек могла уйти, но запись нельзя считать применённой.
+        bool applySettings();
     };
 };
 

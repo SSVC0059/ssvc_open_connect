@@ -88,31 +88,61 @@ void SettingsHandler::updateSettings(AsyncWebServerRequest* request, JsonVariant
     }
 
     // Только теперь, когда все поля прошли проверку, отправляем накопленные
-    // SET на контроллер и запрашиваем актуальное состояние.
-    builder.applySettings();
-    SsvcCommandsQueue::getQueue().getSettings();
+    // SET на контроллер. applySettings() возвращает false, если хотя бы один
+    // пакет не встал в очередь: часть настроек могла уйти, и запись нельзя
+    // считать применённой — клиент должен получить отказ и не запускать процесс.
+    const bool queued = builder.applySettings();
 
-    // Поля, которых нет на устройстве этой версии API: клиент должен знать, что
-    // часть настроек не отправлена (см. SsvcApiCapabilities). Копия — чтобы
-    // сериализация не зависела от дальнейших изменений Builder.
+    // Поля, которых нет на устройстве этой версии API, и пакеты, не попавшие в
+    // очередь: копии, чтобы сериализация не зависела от состояния Builder.
     const std::vector<std::string> skipped = builder.skippedCommands();
+    const std::vector<std::string> failed = builder.failedCommands();
+
+    auto fillReport = [&ignored, &skipped](JsonDocument& doc) {
+        if (!ignored.isNull() && ignored.size() > 0) {
+            JsonArray ignoredOut = doc["ignored"].to<JsonArray>();
+            for (JsonVariant item : ignored) {
+                ignoredOut.add(item.as<const char*>());
+            }
+        }
+        if (!skipped.empty()) {
+            JsonArray skippedArray = doc["skipped"].to<JsonArray>();
+            for (const auto& item : skipped) {
+                skippedArray.add(item);
+            }
+        }
+    };
+
+    if (!queued) {
+        JsonDocument errorResponse;
+        errorResponse["success"] = false;
+        errorResponse["error"] = "Settings queue is unavailable";
+        errorResponse["message"] = "Часть настроек не попала в очередь контроллера";
+        // Часть SET уже в очереди — запись частичная, повторять её целиком нельзя.
+        errorResponse["partial"] = true;
+        errorResponse["accepted"] = accepted;
+        errorResponse["failedChunks"] = static_cast<uint32_t>(failed.size());
+        fillReport(errorResponse);
+        JsonArray failedArray = errorResponse["failed"].to<JsonArray>();
+        for (const auto& item : failed) {
+            failedArray.add(item);
+        }
+        String errorMsg;
+        serializeJson(errorResponse, errorMsg);
+        ESP_LOGE(TAG, "Failed to queue %u SET chunk(s) for the controller",
+                 static_cast<unsigned>(failed.size()));
+        request->send(503, "application/json", errorMsg.c_str());
+        return;
+    }
+
+    // Настройки ушли в контроллер — запрашиваем актуальное состояние.
+    SsvcCommandsQueue::getQueue().getSettings();
 
     JsonDocument successResponse;
     successResponse["success"] = true;
     successResponse["message"] = "Settings updated successfully";
     successResponse["accepted"] = accepted;
-    if (!ignored.isNull() && ignored.size() > 0) {
-        JsonArray ignoredOut = successResponse["ignored"].to<JsonArray>();
-        for (JsonVariant item : ignored) {
-            ignoredOut.add(item.as<const char*>());
-        }
-    }
-    if (!skipped.empty()) {
-        JsonArray skippedArray = successResponse["skipped"].to<JsonArray>();
-        for (const auto& item : skipped) {
-            skippedArray.add(item);
-        }
-    }
+    fillReport(successResponse);
     String successMsg;
     serializeJson(successResponse, successMsg);
     request->send(200, "application/json", successMsg.c_str());

@@ -173,4 +173,29 @@ describe('StartWizard', () => {
 		});
 		expect(modals.close).not.toHaveBeenCalled();
 	});
+
+	it('не запускает ректификацию, если настройки не приняты контроллером', async () => {
+		const user = userEvent.setup();
+		// 503 от PUT /rest/settings: часть SET не попала в очередь.
+		vi.mocked(saveSettings).mockResolvedValue(false);
+
+		render(StartWizard, { props: { isOpen: true } });
+
+		const changeButton = await screen.findByTestId('mock-change', {}, { timeout: 3000 });
+		await user.click(changeButton);
+
+		const nextButton = await screen.findByRole('button', { name: /Дальше/i }, { timeout: 3000 });
+		for (let i = 0; i < 6; i++) {
+			await user.click(nextButton);
+		}
+
+		const submitButton = await screen.findByRole('button', { name: /Запустить/i }, { timeout: 2000 });
+		await user.click(submitButton);
+
+		await waitFor(() => {
+			expect(saveSettings).toHaveBeenCalledWith({ hyst: 1 });
+		});
+		expect(sendCommand).not.toHaveBeenCalled();
+		expect(modals.close).not.toHaveBeenCalled();
+	});
 });

@@ -171,7 +171,9 @@
 			if (Object.keys(payload).length > 0) {
 				const saved = await saveSettings(payload);
 				if (!saved) {
-					notifications.error('Контроллер отклонил настройки. Проверьте значения шагов.', 7000);
+					// Контроллер мог не поставить SET в очередь: часть настроек
+					// не применена, поэтому процесс не запускаем.
+					notifications.error('Контроллер не применил настройки. Ректификация не запущена.', 7000);
 					return;
 				}
 			}
