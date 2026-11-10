@@ -13,9 +13,10 @@
 - **P0-3 — контраст.** В `[data-theme="business"]` заданы светлые значения `--primary-*`, `--glass-*`, тень и границы; текст/границы переводятся на `--color-base-content` и `color-mix`.
 - **P0-4 — `color-scheme`.** `light` по умолчанию и `dark` для `[data-theme="business"]`; фон — `var(--color-base-100)`.
 - **P0-6 — доступность.** `lang="ru"`, `theme-color` для обеих схем, `viewport-fit=cover`, глобальный `:focus-visible`, `cursor: not-allowed` для disabled, `scroll-behavior: smooth` только при `prefers-reduced-motion: no-preference`.
+- **P0-5 — мобильные стили без `!important`.** Убраны все 29 `!important` из `_settings-stack-card.scss` (22), `_system-tabs-mobile.scss` (7) и `_profile-manager.scss` (10). Селекторы начинаются с класса-обёртки, поэтому специфичнее базовых правил; в `_profile-manager.scss` тёмная тема переведена с `@media (prefers-color-scheme: dark)` на `:global([data-theme='business'])`, чтобы следовать переключателю, а не только системе. Там же исправлен порядок `border` / `border-left` (shorthand сбрасывал 4px-полосу) и добавлен `color: var(--color-primary-content)` на активном элементе.
 - **P1 (часть).** `--transition` вместо `all`; `--z-modal-backdrop` отделён от `--z-sticky`; убран дубль `--gray-500`; `border-color` базового слоя — через `color-mix`; из `normalize.css` удалены дубли Tailwind preflight; стилизованы скроллбары.
 
-Не входит в этот шаг (следующие PR): P0-5 (`!important` и breakpoints), ленивый `chart.js`, замена FontAwesome на `unplugin-icons`, токены отступов/радиусов и дизайн-полировка.
+Не входит в этот шаг (следующие PR): ленивый `chart.js`, замена FontAwesome на `unplugin-icons`, токены отступов/радиусов и дизайн-полировка.
 
 ## 1. Карта стилей
 
@@ -164,8 +165,8 @@ background: var(--color-base-200);
 - [ ] P0-6: `lang="ru"`, `theme-color`, `focus-visible`, `cursor` для disabled.
 
 ### Этап 2 — мобильные и поддерживаемость (2 дня)
-- [ ] P0-5: убрать `!important` из `_settings-stack-card.scss`, `_system-tabs-mobile.scss`, `_profile-manager.scss`.
-- [ ] Свести breakpoints к `sm/md/lg`, объединить мобильные SCSS.
+- [x] P0-5: убрать `!important` из `_settings-stack-card.scss`, `_system-tabs-mobile.scss`, `_profile-manager.scss` (29 штук).
+- [ ] Свести breakpoints к `sm/md/lg`: SCSS уже считает `$max-md: v.$breakpoint-md - 1px`, остались JS-медиазапросы `(max-width: 767px)` в `oc/settings/Settings.svelte`, `oc/ssvc/Settings.svelte`, `system/+page.svelte` и `(max-width: 1023px)` в `+layout.svelte`, `menu.svelte`, `SsvcApiWarning.svelte` — вынести в общий модуль.
 - [ ] Проверить таблицы, модалки, safe-area, hover на тач-устройствах.
 
 ### Этап 3 — производительность (1–2 дня)

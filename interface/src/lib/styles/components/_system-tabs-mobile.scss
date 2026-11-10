@@ -3,12 +3,14 @@
 
 $max-md: v.$breakpoint-md - 1px;
 
+// `!important` не нужен: составные селекторы (.system-tab-mobile-flatten + класс)
+// специфичнее базовых правил одного класса и идут в каскаде позже.
 @media (max-width: $max-md) {
 	.system-tab-mobile-flatten .settings-container {
-		background: transparent !important;
-		border: none !important;
-		box-shadow: none !important;
-		padding: 0 !important;
+		background: transparent;
+		border: none;
+		box-shadow: none;
+		padding: 0;
 	}
 
 	.system-tab-mobile-flatten .settings-grid,
@@ -17,8 +19,8 @@ $max-md: v.$breakpoint-md - 1px;
 	}
 
 	.system-tab-mobile-flatten .settings-section {
-		border: none !important;
-		margin: 0 !important;
-		padding: 0 !important;
+		border: none;
+		margin: 0;
+		padding: 0;
 	}
 }
