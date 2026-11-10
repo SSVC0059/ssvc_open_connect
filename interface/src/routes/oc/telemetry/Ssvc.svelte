@@ -292,7 +292,7 @@
       font-size: 1.25rem;
     }
 
-    @media (prefers-color-scheme: dark) {
+    :global([data-theme='business']) & {
       background: linear-gradient(135deg, #5c4a00 0%, #7a5f00 100%);
       border-color: #b38600;
       color: #ffecb3;

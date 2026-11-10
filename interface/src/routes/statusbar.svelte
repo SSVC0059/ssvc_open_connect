@@ -13,6 +13,7 @@
 	import RssiIndicator from '$lib/components/RSSIIndicator.svelte';
 	import BatteryIndicator from '$lib/components/BatteryIndicator.svelte';
 	import UpdateIndicator from '$lib/components/UpdateIndicator.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 
 	async function postSleep() {
 		const response = await fetch('/rest/sleep', {
@@ -46,6 +47,7 @@
 			><Hamburger class="h-6 w-auto" /></label
 		>
 		<span class="inline-block px-2 text-xl font-bold lg:text-2xl">{page.data.title}</span>
+		<ThemeToggle />
 	</div>
 	<div class="indicator flex-none">
 		<UpdateIndicator />

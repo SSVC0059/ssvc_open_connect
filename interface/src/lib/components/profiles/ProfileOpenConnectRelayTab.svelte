@@ -834,7 +834,7 @@
 	}
 
 	.system-lines-collapsible {
-		border: 1px dashed oklch(var(--bc) / 0.2);
+		border: 1px dashed color-mix(in oklab, var(--color-base-content) 20%, transparent);
 		border-radius: var(--rounded-box, 0.5rem);
 		padding: 0.5rem 0.7rem;
 		font-size: 0.86rem;
@@ -860,7 +860,7 @@
 	}
 
 	.system-relay-chip {
-		border: 1px solid oklch(var(--bc) / 0.2);
+		border: 1px solid color-mix(in oklab, var(--color-base-content) 20%, transparent);
 		border-radius: 0.4rem;
 		padding: 0.22rem 0.5rem;
 		font-size: 0.82rem;
@@ -893,9 +893,9 @@
 		justify-content: space-between;
 		gap: 0.4rem;
 		padding: 0.45rem 0.55rem;
-		border: 1px solid oklch(var(--bc) / 0.16);
+		border: 1px solid color-mix(in oklab, var(--color-base-content) 16%, transparent);
 		border-radius: 0.5rem;
-		background: oklch(var(--b1) / 0.72);
+		background: color-mix(in oklab, var(--color-base-100) 72%, transparent);
 		position: sticky;
 		top: 0;
 		z-index: 4;
@@ -920,7 +920,7 @@
 	}
 
 	.rule-list-item {
-		border: 1px solid oklch(var(--bc) / 0.15);
+		border: 1px solid color-mix(in oklab, var(--color-base-content) 15%, transparent);
 		border-radius: var(--rounded-box, 0.5rem);
 		padding: 0.62rem 0.7rem;
 		background: transparent;
@@ -933,12 +933,12 @@
 	}
 
 	.rule-list-item:hover {
-		border-color: oklch(var(--bc) / 0.3);
+		border-color: color-mix(in oklab, var(--color-base-content) 30%, transparent);
 	}
 
 	.rule-list-item.active {
-		border-color: oklch(var(--p) / 0.6);
-		background: oklch(var(--p) / 0.07);
+		border-color: color-mix(in oklab, var(--color-primary) 60%, transparent);
+		background: color-mix(in oklab, var(--color-primary) 7%, transparent);
 	}
 
 	.rule-list-item.rule-disabled {
@@ -1000,7 +1000,7 @@
 		text-align: center;
 		padding: 1.6rem 0.9rem;
 		gap: 0.5rem;
-		border: 1px dashed oklch(var(--bc) / 0.18);
+		border: 1px dashed color-mix(in oklab, var(--color-base-content) 18%, transparent);
 		border-radius: var(--rounded-box, 0.5rem);
 	}
 
@@ -1011,10 +1011,10 @@
 	}
 
 	.rule-editor {
-		border: 1px solid oklch(var(--bc) / 0.15);
+		border: 1px solid color-mix(in oklab, var(--color-base-content) 15%, transparent);
 		border-radius: var(--rounded-box, 0.5rem);
 		padding: 0.9rem;
-		background: oklch(var(--b1) / 0.7);
+		background: color-mix(in oklab, var(--color-base-100) 70%, transparent);
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
@@ -1059,7 +1059,7 @@
 
 	.editor-step {
 		padding: 0.7rem 0;
-		border-top: 1px solid oklch(var(--bc) / 0.1);
+		border-top: 1px solid color-mix(in oklab, var(--color-base-content) 10%, transparent);
 	}
 
 	.editor-step:first-of-type {
@@ -1117,7 +1117,7 @@
 	}
 
 	.tech-details {
-		border: 1px dashed oklch(var(--bc) / 0.15);
+		border: 1px dashed color-mix(in oklab, var(--color-base-content) 15%, transparent);
 		border-radius: 0.5rem;
 		padding: 0.6rem 0.7rem;
 	}
@@ -1141,7 +1141,7 @@
 	}
 
 	.tech-info {
-		border: 1px solid oklch(var(--bc) / 0.12);
+		border: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
 		border-radius: 0.35rem;
 		padding: 0.45rem 0.6rem;
 		display: grid;

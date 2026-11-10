@@ -46,14 +46,14 @@
   .settings-panel {
 
     .settings-section {
-      padding: 1rem;
+      padding: var(--space-4);
       @include m.compact-points;
 
       .settings-section-title {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: oklch(var(--bc));
-        margin-bottom: 1rem;
+        font-size: var(--text-lg);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-base-content);
+        margin-bottom: var(--space-4);
       }
 
     }
@@ -64,21 +64,19 @@
 .settings-container,
 .settings-panel,
 .settings-grid {
-  border-radius: 1rem;
+  border-radius: var(--radius-lg);
 }
 
-/* Контур панелей — семантика DaisyUI (тема corporate/business переключается по prefers-color-scheme) */
+/* Контур панелей — семантика DaisyUI (тема corporate/business переключается атрибутом data-theme) */
 
 .settings-grid .settings-panel .settings-section {
-  border-radius: 1rem;
-  margin: 0.5rem;
+  border-radius: var(--radius-lg);
+  margin: var(--space-2);
 }
 
 /* Тёмная тема: фон контейнера настроек как у карточек */
-@media (prefers-color-scheme: dark) {
-  .settings-container {
-    background-color: var(--dark-surface-color);
-  }
+[data-theme='business'] .settings-container {
+  background-color: var(--dark-surface-color);
 }
 
 /* ===== ЗАГОЛОВКИ И ОПИСАНИЯ НАСТРОЕК ===== */
@@ -87,12 +85,12 @@
   font-size: calc(1rem + 0.3vw);
   font-weight: 600;
   text-align: center;
-  color: oklch(var(--bc));
+  color: var(--color-base-content);
   margin-bottom: 0.75rem;
 }
 
 .settings-description {
   font-size: 0.875rem;
-  color: oklch(var(--bc) / 0.8);
+  color: color-mix(in oklab, var(--color-base-content) 80%, transparent);
   margin: 0.25rem 0 0 0;
 }

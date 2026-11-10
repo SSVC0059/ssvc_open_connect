@@ -9,8 +9,7 @@
 	import SystemCoredumpTab from './SystemCoredumpTab.svelte';
 	import SystemUpdateTab from './SystemUpdateTab.svelte';
 	import SettingsMobileScroll from '$lib/components/settings-layout/SettingsMobileScroll.svelte';
-
-	const MOBILE_MQ = '(max-width: 767px)';
+	import { MOBILE_MQ } from '$lib/breakpoints';
 
 	type TabId = 'status' | 'metrics' | 'coredump' | 'update';
 
@@ -145,7 +144,7 @@
 
 	/* Цвет нижней границы и шрифт вкладок */
 	:global(.tabs.tabs-lift .tab) {
-		border-bottom-color: oklch(var(--bc, 0.25 0 260) / 0.25);
+		border-bottom-color: color-mix(in oklab, var(--color-base-content) 25%, transparent);
 		font-size: 1.125rem;
 		font-weight: 600;
 	}

@@ -134,7 +134,7 @@
 		border-radius: 1rem;
 		overflow: hidden;
 
-		@media (prefers-color-scheme: dark) {
+		:global([data-theme='business']) & {
 			background-color: var(--dark-surface-color);
 		}
 	}
@@ -150,10 +150,8 @@
 		@include m.dark-theme-color;
 	}
 
-	@media (prefers-color-scheme: dark) {
-		.zone-title {
-			color: oklch(var(--bc));
-		}
+	:global([data-theme='business']) .zone-title {
+		color: var(--color-base-content);
 	}
 
 	/* ===== СЕТКА ДЛЯ КАРТОЧЕК СЕНСОРОВ (.sensors-grid) ===== */

@@ -403,10 +403,10 @@
 		}
 	}
 
-	@media (prefers-color-scheme: dark) {
+	:global([data-theme='business']) {
 		.sensor-temperature,
 		.sensor-value {
-			color: oklch(var(--bc));
+			color: var(--color-base-content);
 		}
 	}
 

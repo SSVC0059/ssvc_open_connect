@@ -12,8 +12,7 @@
 	import Reload from '~icons/tabler/reload';
 	import { goto } from '$app/navigation';
 	import SettingsMobileScroll from '$lib/components/settings-layout/SettingsMobileScroll.svelte';
-
-	const MOBILE_MQ = '(max-width: 767px)';
+	import { MOBILE_MQ } from '$lib/breakpoints';
 
 	let ssvcSettings = $state<SsvcSettings | null>();
 	// Возможности API подключённого контроллера: по ним поля, появившиеся в
