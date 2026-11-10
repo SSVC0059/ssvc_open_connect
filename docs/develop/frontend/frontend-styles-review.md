@@ -9,14 +9,20 @@
 Выполнено в этой ветке (проверка `npm run check` — 0 ошибок, 0 предупреждений):
 
 - **P0-1 — миграция DaisyUI 4 → 5.** 110 замен в 15 файлах: `--b1/--b2/--b3/--bc/--p` → `--color-base-*` / `--color-primary`, альфа-варианты → `color-mix(in oklab, …)`. В коде не осталось `oklch(var(--b…)` и `oklch(var(--p…)`.
-- **P0-2 — управляемая тема.** `data-theme="corporate|business"` на `<html>`, инлайн-скрипт в `app.html` до отрисовки (без FOUC), переключатель `ThemeToggle.svelte` в статусбаре, сохранение в `localStorage`. `--prefersdark` отключён, чтобы тема не расходилась с `data-theme`.
+- **P0-2 — управляемая тема (закрыт полностью).** `data-theme="corporate|business"` на `<html>`, инлайн-скрипт в `app.html` до отрисовки (без FOUC), переключатель `ThemeToggle.svelte` в статусбаре, сохранение в `localStorage`. `--prefersdark` отключён, чтобы тема не расходилась с `data-theme`. Все 12 оставшихся блоков `@media (prefers-color-scheme: dark)` переведены на `[data-theme='business']` / `:global([data-theme='business'])` в `SensorCard`, `SensorsSettings`, `AnalyticsValue`, `ProfileEditor`, `ProfileViewer`, `Ssvc.svelte`, `+layout.svelte`, `_mixins.scss`, `_setting-containers.scss`, `_valve-table.scss`, `_settings-grid.scss`, `_wizard.scss`; пустой медиазапрос в `_dark-theme.scss` удалён. Миксин `dark-theme-color` оставлен пустым — цвета теперь приходят из переменных темы. Проверка: `prefers-color-scheme` в `interface/src` больше не встречается.
 - **P0-3 — контраст.** В `[data-theme="business"]` заданы светлые значения `--primary-*`, `--glass-*`, тень и границы; текст/границы переводятся на `--color-base-content` и `color-mix`.
 - **P0-4 — `color-scheme`.** `light` по умолчанию и `dark` для `[data-theme="business"]`; фон — `var(--color-base-100)`.
 - **P0-6 — доступность.** `lang="ru"`, `theme-color` для обеих схем, `viewport-fit=cover`, глобальный `:focus-visible`, `cursor: not-allowed` для disabled, `scroll-behavior: smooth` только при `prefers-reduced-motion: no-preference`.
 - **P0-5 — мобильные стили без `!important`.** Убраны все 39 `!important` из `_settings-stack-card.scss` (22), `_system-tabs-mobile.scss` (7) и `_profile-manager.scss` (10). Селекторы начинаются с класса-обёртки, поэтому специфичнее базовых правил; в `_profile-manager.scss` тёмная тема переведена с `@media (prefers-color-scheme: dark)` на `:global([data-theme='business'])`, чтобы следовать переключателю, а не только системе. Там же исправлен порядок `border` / `border-left` (shorthand сбрасывал 4px-полосу) и добавлен `color: var(--color-primary-content)` на активном элементе.
 - **P1 (часть).** `--transition` вместо `all`; `--z-modal-backdrop` отделён от `--z-sticky`; убран дубль `--gray-500`; `border-color` базового слоя — через `color-mix`; из `normalize.css` удалены дубли Tailwind preflight; стилизованы скроллбары.
 
-Не входит в этот шаг (следующие PR): ленивый `chart.js`, замена FontAwesome на `unplugin-icons`, токены отступов/радиусов и дизайн-полировка.
+Сделано дополнительно в этой же ветке: ленивый `chart.js` в трёх файлах (`$lib/charts.ts`), замена FontAwesome на Tabler через `unplugin-icons`, модуль брейкпоинтов `$lib/breakpoints.ts`, токены радиусов/отступов/типографики.
+
+Осталось (следующие PR):
+- `@fortawesome/*` и `svelte-fa` в `package.json` — импортов нет, но удаление меняет lockfile (нужен `npm install`);
+- `(max-width: 1023px)` в `+layout.svelte` и `SsvcApiWarning.svelte` — файлы не импортируют Sass-переменные, нужен аккуратный перевод на общий модуль;
+- приёмка: Lighthouse, контраст ≥ 4.5:1, 360 px, ручная проверка тем и мобильных;
+- скелетоны загрузки и пустые состояния.
 
 ## 1. Карта стилей
 

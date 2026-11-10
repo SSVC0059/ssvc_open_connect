@@ -17,14 +17,13 @@
   transition: var(--transition);
 }
 
-%dark-theme-base {
-  @media (prefers-color-scheme: dark) {
-    color: var(--primary-200);
-  }
-}
-
+/*
+ * Тёмная тема теперь задаётся атрибутом [data-theme='business'] в app.css:
+ * --glass-primary-* и --primary-* получают там светлые значения, поэтому
+ * отдельное переопределение цвета внутри медиазапроса больше не нужно.
+ * Миксин сохранён, чтобы не менять вызовы в компонентах.
+ */
 @mixin dark-theme-color {
-  @extend %dark-theme-base;
 }
 
 @mixin parameter-container {

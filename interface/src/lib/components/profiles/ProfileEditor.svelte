@@ -952,7 +952,7 @@
 	}
 
 	/* Тёмная тема: карточки и панели редактора (DaisyUI --b2/--b3 в dark слишком тёмные — задаём контрастные фоны) */
-	@media (prefers-color-scheme: dark) {
+	:global([data-theme='business']) {
 		.card {
 			background-color: var(--dark-surface-color);
 			border-color: var(--dark-border-color);

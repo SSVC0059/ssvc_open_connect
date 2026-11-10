@@ -329,7 +329,7 @@
 		background-color: var(--color-base-300);
 		color: var(--color-base-content);
 	}
-	@media (prefers-color-scheme: dark) {
+	:global([data-theme='business']) {
 		:global(.input-field),
 		:global(.input-cell),
 		:global(.time-input) {

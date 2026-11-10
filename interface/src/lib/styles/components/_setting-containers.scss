@@ -9,7 +9,7 @@
   padding: 1rem 1.25rem;
   border-radius: 1rem;
 
-  @media (prefers-color-scheme: dark) {
+  [data-theme='business'] & {
     background-color: var(--dark-surface-color);
   }
 }

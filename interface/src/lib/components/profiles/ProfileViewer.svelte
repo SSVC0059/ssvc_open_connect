@@ -321,7 +321,7 @@
 	}
 
 	/* Тёмная тема: DaisyUI --b1/--b2/--b3 слишком близки по яркости, секции сливаются с фоном — единый фон всех секций */
-	@media (prefers-color-scheme: dark) {
+	:global([data-theme='business']) {
 		.profile-card {
 			background-color: var(--dark-surface-color);
 			border-color: var(--dark-border-color);

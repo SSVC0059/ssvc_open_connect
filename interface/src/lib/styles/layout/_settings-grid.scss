@@ -67,7 +67,7 @@
   border-radius: var(--radius-lg);
 }
 
-/* Контур панелей — семантика DaisyUI (тема corporate/business переключается по prefers-color-scheme) */
+/* Контур панелей — семантика DaisyUI (тема corporate/business переключается атрибутом data-theme) */
 
 .settings-grid .settings-panel .settings-section {
   border-radius: var(--radius-lg);
@@ -75,10 +75,8 @@
 }
 
 /* Тёмная тема: фон контейнера настроек как у карточек */
-@media (prefers-color-scheme: dark) {
-  .settings-container {
-    background-color: var(--dark-surface-color);
-  }
+[data-theme='business'] .settings-container {
+  background-color: var(--dark-surface-color);
 }
 
 /* ===== ЗАГОЛОВКИ И ОПИСАНИЯ НАСТРОЕК ===== */

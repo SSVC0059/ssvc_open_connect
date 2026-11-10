@@ -87,7 +87,7 @@
 }
 
 /* Тёмная тема: усиленные границы таблицы (контраст с фоном) */
-@media (prefers-color-scheme: dark) {
+[data-theme='business'] {
   .valve-table {
     th,
     td {
