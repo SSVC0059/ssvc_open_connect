@@ -115,7 +115,7 @@ background: var(--color-base-200);
 3. `--z-modal-backdrop: 40` и `--z-sticky: 40` — одинаковый слой, риск перекрытия модалки и залипшей шапки.
 4. `normalize.css` дублирует preflight Tailwind: `box-sizing`, `margin`, `img { display:block }`, `font: inherit`. Оставить только реально нужное (фон, `height`, `scrollbar-gutter`).
 5. `body { min-height: 100%; min-height: 100svh; min-height: 100dvh }` — `100%` без высоты у `html` не работает; оставить `100dvh` с fallback `100svh`.
-6. Статический `import { Chart } from 'chart.js'` в трёх файлах (`routes/system/SystemMetricsTab.svelte`, `routes/system/metrics/BatteryMetrics.svelte`, `routes/system/metrics/SystemMetrics.svelte`) — библиотека попадает в основной бандл.
+6. Статический `import { Chart } from 'chart.js'` в трёх файлах (`routes/system/SystemMetricsTab.svelte`, `routes/system/metrics/BatteryMetrics.svelte`, `routes/system/metrics/SystemMetrics.svelte`) — библиотека попадает в основной бандл. **Частично исправлено:** добавлен `$lib/charts.ts` с ленивой загрузкой, `BatteryMetrics.svelte` переведён на него; в двух оставшихся файлах по несколько графиков и `$effect` — нужен отдельный проход.
 7. `svelte-fa` + `@fortawesome/free-solid-svg-icons` при уже подключённом `unplugin-icons` — два набора иконок и лишний вес.
 8. `open-connect-main.scss` импортируется в корневом `+layout.svelte` — весь SCSS грузится на каждом маршруте.
 
