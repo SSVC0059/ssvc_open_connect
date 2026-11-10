@@ -9,8 +9,7 @@
 	import SystemCoredumpTab from './SystemCoredumpTab.svelte';
 	import SystemUpdateTab from './SystemUpdateTab.svelte';
 	import SettingsMobileScroll from '$lib/components/settings-layout/SettingsMobileScroll.svelte';
-
-	const MOBILE_MQ = '(max-width: 767px)';
+	import { MOBILE_MQ } from '$lib/breakpoints';
 
 	type TabId = 'status' | 'metrics' | 'coredump' | 'update';
 

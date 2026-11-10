@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { COMPACT_MQ } from '$lib/breakpoints';
     import logo from '$lib/assets/logo.png';
     import Github from '~icons/tabler/brand-github';
     import Discord from '~icons/tabler/brand-discord';
@@ -42,7 +43,7 @@ import { goto } from '$app/navigation';
     const discord = { href: '.', active: false };
 
     onMount(() => {
-        const mediaQuery = window.matchMedia('(max-width: 1023px)');
+        const mediaQuery = window.matchMedia(COMPACT_MQ);
         const updateMobileState = () => {
             isMobile = mediaQuery.matches;
         };
