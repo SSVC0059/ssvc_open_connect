@@ -2545,6 +2545,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Аудит бандла (фактические цифры)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2815,8 +2826,44 @@
 <li>Заменить <code>--transition: all</code> на список конкретных свойств.</li>
 <li>Убрать дубль <code>--gray-500</code> и <code>--red-700</code>.</li>
 <li><code>border-color</code> базового слоя — через <code>color-mix</code>.</li>
-<li>Ленивый импорт <code>chart.js</code> в трёх файлах.</li>
-</ol></div>
+<li>Ленивый импорт <code>chart.js</code> в трёх файлах. — выполнено.</li>
+</ol>
+<h2 id="11">11. Аудит бандла (фактические цифры)</h2>
+<p>Сборка <code>npm run build</code> (adapter-static) прошла за 22,65 с. Результат в <code>interface/build</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Файл</th>
+<th>Размер</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bundle.js</code></td>
+<td>953,2 КБ</td>
+</tr>
+<tr>
+<td><code>env.js</code></td>
+<td>~0 КБ</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Вывод: разделения на чанки нет.</strong> Все динамические импорты — включая <code>import('chart.js')</code> — попадают в единственный <code>bundle.js</code>.</p>
+<p>Причина — не Vite и не настройки <code>manualChunks</code> (их нет в <code>vite.config.ts</code>), а плагин <code>vite-plugin-littlefs</code>: он готовит имена файлов под LittleFS с лимитом 32 символа на имя. Плагин склеивает вывод в один файл, поэтому code splitting на диске не сохраняется.</p>
+<p>Что это значит для сделанной работы:</p>
+<ul>
+<li>ленивая загрузка <code>chart.js</code> <strong>не уменьшает первую загрузку</strong> — браузер всё равно скачивает <code>bundle.js</code> целиком;</li>
+<li>но она сохраняет второй эффект: графики создаются после первого рендера, а не блокируют его. На ESP32 с медленным HTTP это заметно;</li>
+<li>цель из раздела 8 «chart.js — в отдельном чанке» при текущей схеме сборки <strong>недостижима</strong> и требует отдельного решения.</li>
+</ul>
+<p>Варианты (по возрастанию сложности):</p>
+<ol>
+<li>Принять как есть: измерять бюджет по размеру <code>bundle.js</code>, а не по initial JS.</li>
+<li>Настроить <code>vite-plugin-littlefs</code> на короткие хэши имён (<code>base36</code>) вместо склейки — тогда чанки станут отдельными файлами, но нужно проверить лимит LittleFS и число файлов.</li>
+<li>Вынести графики на отдельный маршрут (<code>/system/metrics</code>) — тогда страница метрик грузится по требованию целиком.</li>
+</ol>
+<p>Рекомендация: вариант 2 как отдельная задача, с проверкой на реальном LittleFS. Пока его нет, ориентир бюджета — <code>bundle.js</code> ≤ 1 МБ.</p>
+<p>Отдельно: пакеты <code>@fortawesome/free-brands-svg-icons</code>, <code>@fortawesome/free-solid-svg-icons</code> и <code>svelte-fa</code> больше не импортируются в исходниках. Из <code>package.json</code> их нужно удалить вместе с обновлением lockfile (<code>npm install</code>) — это меняет дерево зависимостей, поэтому отдельным коммитом.</p></div>
 
 
 
