@@ -46,14 +46,14 @@
   .settings-panel {
 
     .settings-section {
-      padding: 1rem;
+      padding: var(--space-4);
       @include m.compact-points;
 
       .settings-section-title {
-        font-size: 1.125rem;
-        font-weight: 600;
+        font-size: var(--text-lg);
+        font-weight: var(--font-weight-semibold);
         color: var(--color-base-content);
-        margin-bottom: 1rem;
+        margin-bottom: var(--space-4);
       }
 
     }
@@ -64,14 +64,14 @@
 .settings-container,
 .settings-panel,
 .settings-grid {
-  border-radius: 1rem;
+  border-radius: var(--radius-lg);
 }
 
 /* Контур панелей — семантика DaisyUI (тема corporate/business переключается по prefers-color-scheme) */
 
 .settings-grid .settings-panel .settings-section {
-  border-radius: 1rem;
-  margin: 0.5rem;
+  border-radius: var(--radius-lg);
+  margin: var(--space-2);
 }
 
 /* Тёмная тема: фон контейнера настроек как у карточек */

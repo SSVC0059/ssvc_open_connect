@@ -29,11 +29,11 @@
 
 @mixin parameter-container {
   .settings-section-title {
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-semibold);
     text-align: center;
     color: var(--glass-primary-800);
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--space-3);
     @include dark-theme-color;
   }
 
