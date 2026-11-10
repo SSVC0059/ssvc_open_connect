@@ -4,19 +4,19 @@
 	import SettingsCard from '$lib/components/SettingsCard.svelte';
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
-	import { Chart, registerables } from 'chart.js';
-	import * as LuxonAdapter from 'chartjs-adapter-luxon';
+	import type { Chart } from 'chart.js';
 	import Battery from '~icons/tabler/battery-automotive';
 	import { daisyColor } from '$lib/DaisyUiHelper';
 	import { batteryHistory } from '$lib/stores/battery';
-
-	Chart.register(...registerables);
-	Chart.register(LuxonAdapter);
+	import { loadChartJs, loadLuxonAdapter } from '$lib/charts';
 
 	let heapChartElement: HTMLCanvasElement | undefined = $state();
 	let heapChart: Chart;
 
-	onMount(() => {
+	onMount(async () => {
+		const { Chart } = await loadChartJs();
+		await loadLuxonAdapter();
+
 		heapChart = new Chart(heapChartElement!, {
 			type: 'line',
 			data: {
