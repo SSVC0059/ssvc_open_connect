@@ -1,0 +1,2967 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Модуль расширения функционала автоматики отбора для ректификации  SSVC0059V2,">
+      
+      
+        <meta name="author" content="thedemoncat">
+      
+      
+        <link rel="canonical" href="https://SSVC0059.github.io/ssvc_open_connect/previews/pr-152/develop/frontend/frontend-styles-review/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../media/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Ревью стилей фронтенда SSVC Open Connect - SSVC Open Connect</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ssvc-open-connect" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="SSVC Open Connect" class="md-header__button md-logo" aria-label="SSVC Open Connect" data-md-component="logo">
+      
+  <img src="../../../media/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SSVC Open Connect
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Ревью стилей фронтенда SSVC Open Connect
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/SSVC0059/ssvc_open_connect" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SSVC0059/ssvc_open_connect
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Главная
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../preparation/driver/" class="md-tabs__link">
+          
+  
+  
+  Подготовка
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../usage/get_started/" class="md-tabs__link">
+          
+  
+  
+  Первый запуск
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../usage/interfaces/uart/" class="md-tabs__link">
+          
+  
+  
+  Периферия
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../calculator/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Калькулятор ректификации
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../preparation/controller/" class="md-tabs__link">
+          
+  
+  
+  Платы и готовые модули
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../faq/faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../glossary/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Глоссарий
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../info/changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Список изменений
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  
+  Для разработчиков
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="SSVC Open Connect" class="md-nav__button md-logo" aria-label="SSVC Open Connect" data-md-component="logo">
+      
+  <img src="../../../media/logo.png" alt="logo">
+
+    </a>
+    SSVC Open Connect
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/SSVC0059/ssvc_open_connect" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SSVC0059/ssvc_open_connect
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Главная
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подготовка
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Подготовка
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../preparation/driver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Прошивка контроллера под OS Windows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../preparation/firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Скачивание релиза SSVC Open Connect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../preparation/flasher/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Автоматическая установка актуальной версии
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../preparation/flasher_manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Автоматическая установка актуальной версии
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../preparation/adafruit_webserial_esptool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Прошивка через Adafruit WebSerial ESPTool
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Первый запуск
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Первый запуск
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usage/get_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Начало работы с контроллером
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usage/messengers/vk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Уведомления VK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Периферия
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Периферия
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usage/interfaces/uart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение к SSVC по UART
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usage/interfaces/power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Питание контроллера
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usage/interfaces/ds18b20/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Датчик температуры DS18B20
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usage/interfaces/bmp581/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Датчик давления BMP581 (I²C)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usage/interfaces/rgb_led/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение адресного светодиода
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../hardware/ds3231-rtc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Часы реального времени DS3231 (I2C)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../calculator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Калькулятор ректификации
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Платы и готовые модули
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Платы и готовые модули
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../preparation/controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модули ESP32-S3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    KC868-A6v3
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    KC868-A6v3
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../boards/kc868-a6/KC868-A6v3-KinCony.ru/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Описание (KinCony)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../boards/kc868-a6/GPIO_Pinout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Распиновка GPIO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../boards/kc868-a6/I2C_devices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    I2C устройства
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Готовые модули
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Готовые модули
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ready_made/connect/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение модуля
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ready_made/din_version/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модуль для установки на DIN рейку
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ready_made/inside_version/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модуль для установки внутри ящика
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../faq/faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Глоссарий
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../info/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Список изменений
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Для разработчиков
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture-manifest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Манифест архитектуры: IoT-проект на базе ESP32SvelteKit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Сборка прошивки
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Тестирование
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs-previews/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Превью документации из pull request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../i2c_monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Мониторинг I2C и алертинг (прошивка)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_10_7" id="__nav_10_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    REST API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Документация по REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Настроек
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Команд
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/sensors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Датчики
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/telegram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Telegram Бота
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/subsystem/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Подсистемы
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/openconnect/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API OpenConnect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Профили
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Файлов
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/logs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Журналов ректификаций
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ssvc_uart_api_docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UART API SSVC (справка)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ssvc-serial-protocol/develop/Readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Протокол UART — примеры (JSON/TXT)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10_10" id="__nav_10_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Фронтенд
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Фронтенд
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frontend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    📑 SCSS Классы и Компоненты Пользовательского Интерфейса
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../styling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Стратегия стилей (Tailwind + DaisyUI)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0. Статус выполнения
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Карта стилей
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-p0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Критические проблемы (P0)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Критические проблемы (P0)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p0-1-daisyui-4-daisyui-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P0-1. Переменные DaisyUI 4 в проекте на DaisyUI 5
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p0-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P0-2. Нет управляемой темы — только системная
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p0-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P0-3. Нечитаемый текст и границы в тёмной теме
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p0-4-color-scheme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P0-4. color-scheme зашит в светлый
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p0-5-important" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P0-5. Мобильная вёрстка держится на !important
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p0-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P0-6. Доступность и метаданные
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-p1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Высокий приоритет (P1)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Оптимизация загрузки и времени работы
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Мобильная версия: что проверить и исправить
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Дизайн: устранение визуальных проблем
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. План работ
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. План работ">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#0-05" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Этап 0 — подготовка (0.5 дня)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Этап 1 — критично (2–3 дня)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Этап 2 — мобильные и поддерживаемость (2 дня)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Этап 3 — производительность (1–2 дня)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Этап 4 — дизайн-полировка (1–2 дня)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Критерии приёмки
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Риски
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Быстрые победы (можно сделать сразу)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<div><h1 id="ssvc-open-connect">Ревью стилей фронтенда SSVC Open Connect</h1>
+<p>Дата: 2026-11-10
+Ветка: <code>review/frontend-styles</code>
+Область: <code>interface/src</code> — глобальные стили, SCSS-слои, локальные стили Svelte-компонентов, сборка.</p>
+<h2 id="0">0. Статус выполнения</h2>
+<p>Выполнено в этой ветке (проверка <code>npm run check</code> — 0 ошибок, 0 предупреждений):</p>
+<ul>
+<li><strong>P0-1 — миграция DaisyUI 4 → 5.</strong> 110 замен в 15 файлах: <code>--b1/--b2/--b3/--bc/--p</code> → <code>--color-base-*</code> / <code>--color-primary</code>, альфа-варианты → <code>color-mix(in oklab, …)</code>. В коде не осталось <code>oklch(var(--b…)</code> и <code>oklch(var(--p…)</code>.</li>
+<li><strong>P0-2 — управляемая тема.</strong> <code>data-theme="corporate|business"</code> на <code>&lt;html&gt;</code>, инлайн-скрипт в <code>app.html</code> до отрисовки (без FOUC), переключатель <code>ThemeToggle.svelte</code> в статусбаре, сохранение в <code>localStorage</code>. <code>--prefersdark</code> отключён, чтобы тема не расходилась с <code>data-theme</code>.</li>
+<li><strong>P0-3 — контраст.</strong> В <code>[data-theme="business"]</code> заданы светлые значения <code>--primary-*</code>, <code>--glass-*</code>, тень и границы; текст/границы переводятся на <code>--color-base-content</code> и <code>color-mix</code>.</li>
+<li><strong>P0-4 — <code>color-scheme</code>.</strong> <code>light</code> по умолчанию и <code>dark</code> для <code>[data-theme="business"]</code>; фон — <code>var(--color-base-100)</code>.</li>
+<li><strong>P0-6 — доступность.</strong> <code>lang="ru"</code>, <code>theme-color</code> для обеих схем, <code>viewport-fit=cover</code>, глобальный <code>:focus-visible</code>, <code>cursor: not-allowed</code> для disabled, <code>scroll-behavior: smooth</code> только при <code>prefers-reduced-motion: no-preference</code>.</li>
+<li><strong>P1 (часть).</strong> <code>--transition</code> вместо <code>all</code>; <code>--z-modal-backdrop</code> отделён от <code>--z-sticky</code>; убран дубль <code>--gray-500</code>; <code>border-color</code> базового слоя — через <code>color-mix</code>; из <code>normalize.css</code> удалены дубли Tailwind preflight; стилизованы скроллбары.</li>
+</ul>
+<p>Не входит в этот шаг (следующие PR): P0-5 (<code>!important</code> и breakpoints), ленивый <code>chart.js</code>, замена FontAwesome на <code>unplugin-icons</code>, токены отступов/радиусов и дизайн-полировка.</p>
+<h2 id="1">1. Карта стилей</h2>
+<table>
+<thead>
+<tr>
+<th>Слой</th>
+<th>Где</th>
+<th>Комментарий</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tailwind 4 + DaisyUI 5</td>
+<td><code>app.css</code></td>
+<td><code>@plugin "daisyui"</code> с темами <code>corporate</code> (по умолчанию) и <code>business</code> (<code>--prefersdark</code>)</td>
+</tr>
+<tr>
+<td>Глобальные переменные</td>
+<td><code>app.css</code> <code>:root</code> + <code>@media (prefers-color-scheme: dark)</code></td>
+<td>Два независимых набора: DaisyUI-темы и собственные <code>--primary-*</code>, <code>--glass-*</code>, <code>--dark-*</code></td>
+</tr>
+<tr>
+<td>Нормализация</td>
+<td><code>normalize.css</code></td>
+<td>Дублирует Tailwind preflight, задаёт <code>color-scheme</code> и фон</td>
+</tr>
+<tr>
+<td>SCSS-слои</td>
+<td><code>lib/styles/**</code></td>
+<td><code>base</code>, <code>layout</code>, <code>components</code>, <code>themes</code>, <code>views</code></td>
+</tr>
+<tr>
+<td>Локальные стили</td>
+<td><code>&lt;style&gt;</code> в Svelte-компонентах</td>
+<td>~15 файлов с собственными <code>@media (prefers-color-scheme: dark)</code></td>
+</tr>
+<tr>
+<td>Сборка</td>
+<td><code>vite.config.ts</code></td>
+<td>Tailwind-плагин, unplugin-icons, адаптер static</td>
+</tr>
+</tbody>
+</table>
+<p>Главная архитектурная проблема: <strong>три источника истины для цвета</strong> — темы DaisyUI, переменные в <code>app.css</code> и локальные переопределения в компонентах. Они расходятся, отсюда большинство визуальных дефектов.</p>
+<h2 id="2-p0">2. Критические проблемы (P0)</h2>
+<h3 id="p0-1-daisyui-4-daisyui-5">P0-1. Переменные DaisyUI 4 в проекте на DaisyUI 5</h3>
+<p>В DaisyUI 5 нет переменных <code>--b1</code>, <code>--b2</code>, <code>--b3</code>, <code>--bc</code>, <code>--p</code>: вместо них <code>--color-base-100</code>, <code>--color-base-200</code>, <code>--color-base-300</code>, <code>--color-base-content</code>, <code>--color-primary</code>, и они уже содержат полный <code>oklch(...)</code>. Выражения вида <code>oklch(var(--b1, fallback))</code> поэтому <strong>всегда используют fallback</strong> и не следуют теме.</p>
+<p>Затронуто:
+- <code>interface/src/app.css:97-102</code>
+- <code>interface/src/normalize.css:107,130,135</code>
+- <code>interface/src/lib/styles/components/_settings-page-mobile.scss:13,44,60</code>
+- <code>interface/src/lib/styles/components/_settings-stack-card.scss:31</code>
+- <code>interface/src/lib/styles/components/_profile-manager.scss</code> (много мест)
+- <code>interface/src/lib/components/profiles/ProfileEditor.svelte:628+</code>
+- <code>interface/src/lib/components/profiles/ProfileViewer.svelte:262+</code>
+- <code>interface/src/lib/components/profiles/ProfileOpenConnectRelayTab.svelte:837+</code></p>
+<p>Последствия: фон страницы, границы, поверхности карточек и текст не совпадают с активной темой; в <code>business</code> возможны светлые «пятна» и низкий контраст.</p>
+<p>Исправление:
+</p><div class="highlight"><pre><span></span><code><span class="c">/* было */</span>
+<span class="nt">color</span><span class="o">:</span><span class="w"> </span><span class="nt">oklch</span><span class="o">(</span><span class="nt">var</span><span class="o">(</span><span class="nt">--bc</span><span class="o">));</span>
+<span class="nt">border</span><span class="o">:</span><span class="w"> </span><span class="nt">1px</span><span class="w"> </span><span class="nt">solid</span><span class="w"> </span><span class="nt">oklch</span><span class="o">(</span><span class="nt">var</span><span class="o">(</span><span class="nt">--bc</span><span class="o">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nt">0</span><span class="p">.</span><span class="nc">2</span><span class="o">);</span>
+<span class="nt">background</span><span class="o">:</span><span class="w"> </span><span class="nt">oklch</span><span class="o">(</span><span class="nt">var</span><span class="o">(</span><span class="nt">--b2</span><span class="o">));</span>
+
+<span class="c">/* стало */</span>
+<span class="nt">color</span><span class="o">:</span><span class="w"> </span><span class="nt">var</span><span class="o">(</span><span class="nt">--color-base-content</span><span class="o">);</span>
+<span class="nt">border</span><span class="o">:</span><span class="w"> </span><span class="nt">1px</span><span class="w"> </span><span class="nt">solid</span><span class="w"> </span><span class="nt">color-mix</span><span class="o">(</span><span class="nt">in</span><span class="w"> </span><span class="nt">oklab</span><span class="o">,</span><span class="w"> </span><span class="nt">var</span><span class="o">(</span><span class="nt">--color-base-content</span><span class="o">)</span><span class="w"> </span><span class="nt">20</span><span class="o">%,</span><span class="w"> </span><span class="nt">transparent</span><span class="o">);</span>
+<span class="nt">background</span><span class="o">:</span><span class="w"> </span><span class="nt">var</span><span class="o">(</span><span class="nt">--color-base-200</span><span class="o">);</span>
+</code></pre></div>
+Добавить в CI проверку <code>grep -R "oklch(var(--b" interface/src</code> — она не должна находить совпадений.
+<h3 id="p0-2">P0-2. Нет управляемой темы — только системная</h3>
+<p>Тема выбирается исключительно через <code>prefers-color-scheme</code>: <code>--prefersdark</code> в <code>app.css</code> плюс 11+ локальных медиазапросов. Пользователь не может переключить тему, а если добавить <code>data-theme</code>, локальные блоки <code>@media</code> останутся в прежнем состоянии и разойдутся с темой DaisyUI.</p>
+<p>Исправление:
+1. <code>data-theme="corporate|business"</code> на <code>&lt;html&gt;</code>.
+2. Инлайн-скрипт в <code>app.html</code> до отрисовки (устраняет FOUC).
+3. Переключатель в статусбаре/настройках, сохранение в <code>localStorage</code>.
+4. Замена <code>@media (prefers-color-scheme: dark)</code> на <code>[data-theme="business"]</code> (или на семантические переменные, чтобы медиазапросы вообще не понадобились).</p>
+<h3 id="p0-3">P0-3. Нечитаемый текст и границы в тёмной теме</h3>
+<p><code>--glass-primary-800</code> (<code>#243b53</code>) и <code>--primary-200</code> (<code>#d9e2ec</code>) заданы один раз и в тёмной теме не переопределяются, но используются как цвет текста и границ:
+- <code>lib/styles/base/_mixins.scss</code> — <code>parameter-container</code>, <code>.reading-label</code>, <code>.reading-value</code>, <code>.point-label</code>, <code>.point-value</code>;
+- часть компонентов переопределяет цвет вручную через <code>dark-theme-color</code>, часть — нет.</p>
+<p>Результат: тёмно-синий текст на тёмно-серой карточке и светлые линии там, где их не ждут.</p>
+<p>Исправление: перевести текст на <code>--color-base-content</code>, границы — на <code>color-mix(...)</code>, либо задать полный набор <code>--primary-*</code>/<code>--glass-*</code> для тёмной темы.</p>
+<h3 id="p0-4-color-scheme">P0-4. <code>color-scheme</code> зашит в светлый</h3>
+<p><code>normalize.css:112</code> задаёт <code>color-scheme: light</code>, а <code>:147-155</code> переключает на <code>dark</code> только по системной схеме. При ручном переключении темы нативные <code>select</code>, <code>input[type=date]</code>, чекбоксы и скроллбары останутся светлыми.</p>
+<p>Исправление: <code>color-scheme: light dark</code> на <code>:root</code> и привязка к <code>[data-theme="business"]</code>.</p>
+<h3 id="p0-5-important">P0-5. Мобильная вёрстка держится на <code>!important</code></h3>
+<table>
+<thead>
+<tr>
+<th>Файл</th>
+<th><code>!important</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_settings-stack-card.scss</code></td>
+<td>26</td>
+</tr>
+<tr>
+<td><code>_profile-manager.scss</code></td>
+<td>10</td>
+</tr>
+<tr>
+<td><code>_system-tabs-mobile.scss</code></td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+<p>Это признак борьбы со специфичностью: любое изменение DaisyUI-классов или порядка подключения стилей ломает экран. Отдельно: <code>:global(...)</code> в <code>_settings-page-mobile.scss:73,80,84,89,95</code> работает только потому, что файл импортируется в <code>&lt;style lang="scss"&gt;</code> Svelte-компонента. При выносе в глобальный CSS селекторы перестанут совпадать.</p>
+<p>План: снизить специфичность (один класс-обёртка вместо каскада <code>.settings-grid .settings-panel .settings-section</code>), заменить <code>!important</code> на CSS-переменные, зафиксировать мобильные стили в одном слое.</p>
+<h3 id="p0-6">P0-6. Доступность и метаданные</h3>
+<ul>
+<li><code>app.html</code>: <code>lang="en"</code> при русскоязычном интерфейсе; нет <code>theme-color</code>; нет <code>viewport-fit=cover</code>.</li>
+<li>Нет глобального <code>:focus-visible</code> — клавиатурная навигация не видна (единственный focus-ring в <code>_mixins.scss</code>).</li>
+<li><code>button { cursor: pointer }</code> применяется и к <code>disabled</code>.</li>
+<li><code>scroll-behavior: smooth</code> глобально — рывки при смене маршрута и конфликт с <code>prefers-reduced-motion</code> (частично закрыт).</li>
+</ul>
+<h2 id="3-p1">3. Высокий приоритет (P1)</h2>
+<ol>
+<li><code>--transition: all 0.3s ease</code> (<code>app.css</code>) — анимация всех свойств. Заменить на <code>background-color .2s, border-color .2s, color .2s, box-shadow .2s</code>.</li>
+<li>Дубли и мёртвые переменные: <code>--gray-500</code> объявлена дважды (hex и <code>oklch</code>), <code>--red-700</code> совпадает с <code>--red-600-dark</code>, <code>--border-radius</code> почти не используется.</li>
+<li><code>--z-modal-backdrop: 40</code> и <code>--z-sticky: 40</code> — одинаковый слой, риск перекрытия модалки и залипшей шапки.</li>
+<li><code>normalize.css</code> дублирует preflight Tailwind: <code>box-sizing</code>, <code>margin</code>, <code>img { display:block }</code>, <code>font: inherit</code>. Оставить только реально нужное (фон, <code>height</code>, <code>scrollbar-gutter</code>).</li>
+<li><code>body { min-height: 100%; min-height: 100svh; min-height: 100dvh }</code> — <code>100%</code> без высоты у <code>html</code> не работает; оставить <code>100dvh</code> с fallback <code>100svh</code>.</li>
+<li>Статический <code>import { Chart } from 'chart.js'</code> в трёх файлах (<code>routes/system/SystemMetricsTab.svelte</code>, <code>routes/system/metrics/BatteryMetrics.svelte</code>, <code>routes/system/metrics/SystemMetrics.svelte</code>) — библиотека попадает в основной бандл.</li>
+<li><code>svelte-fa</code> + <code>@fortawesome/free-solid-svg-icons</code> при уже подключённом <code>unplugin-icons</code> — два набора иконок и лишний вес.</li>
+<li><code>open-connect-main.scss</code> импортируется в корневом <code>+layout.svelte</code> — весь SCSS грузится на каждом маршруте.</li>
+</ol>
+<h2 id="4">4. Оптимизация загрузки и времени работы</h2>
+<ol>
+<li><strong>chart.js — лениво.</strong> <code>const { Chart, registerables } = await import('chart.js')</code> внутри <code>onMount</code>; регистрация один раз на модуль. Ожидаемый эффект — минус сотни КБ из initial bundle.</li>
+<li><strong>Иконки.</strong> Перевести оставшиеся FA-иконки на <code>~icons/mdi/...</code> (unplugin-icons уже настроен) и удалить <code>svelte-fa</code>, <code>@fortawesome/*</code>.</li>
+<li><strong>Аудит бандла.</strong> <code>npm run build</code> + <code>vite-bundle-visualizer</code>; цель — зафиксировать бюджет initial JS (например, ≤ 250 КБ gzip) и проверять его в CI.</li>
+<li><strong>Разделение CSS.</strong> Критичные стили — инлайн/в layout, остальное (<code>views/_wizard.scss</code>, <code>components/_profile-manager.scss</code>) — на соответствующих маршрутах.</li>
+<li><strong>Длинные списки.</strong> <code>content-visibility: auto</code> + <code>contain-intrinsic-size</code> для секций настроек и карточек датчиков; при &gt; 100 строк — виртуализация таблиц.</li>
+<li><strong>Анимации.</strong> Анимировать <code>transform</code>/<code>opacity</code>, а не <code>all</code>; убрать <code>will-change</code> из статических правил.</li>
+<li><strong>Раздача.</strong> Проверить, что LittleFS отдаёт хэшированные ассеты с <code>Cache-Control: immutable</code>, а HTML — с <code>no-cache</code>.</li>
+</ol>
+<h2 id="5">5. Мобильная версия: что проверить и исправить</h2>
+<ul>
+<li>Рассинхрон breakpoints: <code>_responsive.scss</code> — <code>max-width: 640px</code>, <code>_settings-page-mobile.scss</code>/<code>_settings-stack-card.scss</code> — <code>767px</code>, часть компонентов — <code>768px</code>. Свести к Tailwind-шкале (<code>sm 640</code>, <code>md 768</code>).</li>
+<li>Дублирование логики: <code>_settings-page-mobile.scss</code> и <code>_settings-stack-card.scss</code> решают одну задачу (одна карточка на узком экране) разными способами.</li>
+<li>iOS Safari: <code>100dvh</code> + фиксированные header/footer — проверить при скрытой адресной строке; <code>padding-bottom: env(safe-area-inset-bottom)</code>.</li>
+<li><code>_valve-table.scss</code> — горизонтальный скролл на 360 px, закреплённая первая колонка.</li>
+<li>Тач: обернуть hover-эффекты в <code>@media (hover: hover)</code>, минимальная цель 44×44 px для иконок статусбара.</li>
+<li>Модалки: <code>max-height: calc(100dvh - 2rem)</code> и внутренний скролл, иначе кнопки уезжают за экран.</li>
+</ul>
+<p>Чек-лист ручной проверки: 360×640, 390×844, 768×1024, landscape; системная тёмная тема; увеличение шрифта 150%.</p>
+<h2 id="6">6. Дизайн: устранение визуальных проблем</h2>
+<ol>
+<li><strong>Границы в базовом слое.</strong> <code>app.css</code> задаёт <code>border-color: var(--color-gray-200)</code> для всех элементов (совместимость с Tailwind 3) — в тёмной теме это светлая рамка у всего, что не переопределено. Заменить на <code>color-mix(in oklab, var(--color-base-content) 12%, transparent)</code>.</li>
+<li><strong>Тени.</strong> <code>--glass-shadow</code> — жёсткая синяя тень, в тёмной теме не меняется; задать отдельное значение для <code>business</code>.</li>
+<li><strong>Радио-табы.</strong> <code>border-bottom-color: oklch(0.86 0 0)</code> — фиксированный светлый цвет, в тёмной теме яркая полоса. Перевести на <code>--color-base-300</code>.</li>
+<li><strong>Единая шкала.</strong> Сейчас одновременно <code>0.5rem</code>, <code>0.625rem</code>, <code>0.75rem</code>, <code>calc(var(--border-radius) / 2)</code>. Ввести токены <code>--radius-sm/md/lg</code> и <code>--space-1..5</code>.</li>
+<li><strong>Типографика.</strong> <code>.settings-section-title</code> — <code>1.25rem</code> в миксине и <code>1.125rem</code> в мобильном SCSS; свести к одной шкале.</li>
+<li><strong>Иконки.</strong> Три набора (FA, MDI, Tabler) с разной толщиной штриха — выбрать один.</li>
+<li><strong>Скроллбары.</strong> Стилизовать через <code>scrollbar-color</code>/<code>scrollbar-width</code>, иначе в тёмной теме светлая полоса.</li>
+<li><strong>Пустые состояния и загрузка.</strong> Проверить скелетоны для карточек датчиков и таблиц — сейчас пустой экран до прихода данных.</li>
+</ol>
+<h2 id="7">7. План работ</h2>
+<h3 id="0-05">Этап 0 — подготовка (0.5 дня)</h3>
+<ul>
+<li>[ ] Зафиксировать baseline: скриншоты светлой/тёмной темы, 360/768/1280.</li>
+<li>[ ] Прогнать <code>npm run check</code> и <code>npm run build</code>, сохранить размеры чанков.</li>
+</ul>
+<h3 id="1-23">Этап 1 — критично (2–3 дня)</h3>
+<ul>
+<li>[ ] P0-1: миграция <code>--b*</code>/<code>--bc</code>/<code>--p</code> на переменные DaisyUI 5 (механически + выборочная проверка).</li>
+<li>[ ] P0-2: <code>data-theme</code>, инлайн-скрипт, переключатель, удаление дублирующих медиазапросов.</li>
+<li>[ ] P0-4: <code>color-scheme</code>, фон, нативные контролы.</li>
+<li>[ ] P0-3: контраст текста и границ в <code>business</code> (проверка ≥ 4.5:1).</li>
+<li>[ ] P0-6: <code>lang="ru"</code>, <code>theme-color</code>, <code>focus-visible</code>, <code>cursor</code> для disabled.</li>
+</ul>
+<h3 id="2-2">Этап 2 — мобильные и поддерживаемость (2 дня)</h3>
+<ul>
+<li>[ ] P0-5: убрать <code>!important</code> из <code>_settings-stack-card.scss</code>, <code>_system-tabs-mobile.scss</code>, <code>_profile-manager.scss</code>.</li>
+<li>[ ] Свести breakpoints к <code>sm/md/lg</code>, объединить мобильные SCSS.</li>
+<li>[ ] Проверить таблицы, модалки, safe-area, hover на тач-устройствах.</li>
+</ul>
+<h3 id="3-12">Этап 3 — производительность (1–2 дня)</h3>
+<ul>
+<li>[ ] Ленивый <code>chart.js</code>.</li>
+<li>[ ] Замена FA на <code>unplugin-icons</code>, удаление зависимостей.</li>
+<li>[ ] Бюджет бандла в CI, разделение CSS по маршрутам.</li>
+<li>[ ] <code>content-visibility</code> для длинных секций.</li>
+</ul>
+<h3 id="4-12">Этап 4 — дизайн-полировка (1–2 дня)</h3>
+<ul>
+<li>[ ] Токены отступов/радиусов, единая типографика.</li>
+<li>[ ] Тени, скроллбары, радио-табы, иконки.</li>
+<li>[ ] Скелетоны и пустые состояния.</li>
+</ul>
+<h2 id="8">8. Критерии приёмки</h2>
+<ul>
+<li><code>grep -R "oklch(var(--b" interface/src</code> — 0 совпадений.</li>
+<li>Переключение темы без вспышки (FOUC) и без светлых артефактов.</li>
+<li>Контраст текста ≥ 4.5:1 в обеих темах (Lighthouse/axe).</li>
+<li>360 px — нет горизонтального скролла ни на одной странице.</li>
+<li>Lighthouse Accessibility ≥ 95, Performance ≥ 90 на локальной сборке.</li>
+<li>Initial JS ≤ согласованного бюджета; chart.js — в отдельном чанке.</li>
+<li>Нет <code>!important</code> в мобильных SCSS (кроме документированных исключений).</li>
+</ul>
+<h2 id="9">9. Риски</h2>
+<table>
+<thead>
+<tr>
+<th>Риск</th>
+<th>Митигация</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Массовая замена переменных затронет все экраны</td>
+<td>Этап 1 отдельным PR, скриншот-регрессия по ключевым страницам</td>
+</tr>
+<tr>
+<td><code>data-theme</code> конфликтует с <code>--prefersdark</code></td>
+<td>Явно отключить <code>--prefersdark</code> после внедрения переключателя</td>
+</tr>
+<tr>
+<td>Удаление <code>!important</code> меняет вид на мобильных</td>
+<td>Пошагово, по одному файлу, с проверкой на 360 px</td>
+</tr>
+<tr>
+<td>Ленивый chart.js ломает SSR/тесты</td>
+<td>Динамический импорт внутри <code>onMount</code>, мок в тестах</td>
+</tr>
+</tbody>
+</table>
+<h2 id="10">10. Быстрые победы (можно сделать сразу)</h2>
+<ol>
+<li><code>app.html</code>: <code>lang="ru"</code>, <code>meta name="theme-color"</code> для обеих схем.</li>
+<li>Заменить <code>--transition: all</code> на список конкретных свойств.</li>
+<li>Убрать дубль <code>--gray-500</code> и <code>--red-700</code>.</li>
+<li><code>border-color</code> базового слоя — через <code>color-mix</code>.</li>
+<li>Ленивый импорт <code>chart.js</code> в трёх файлах.</li>
+</ol></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 by <a href="https://github.com/thedemoncat"  target="_blank" rel="noopener">elims</a> -
+<a href="#__consent">Изменить настройки файлов cookie</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/thedemoncat" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+
+  
+
+<h4>Cookie consent</h4>
+<p>Сайт использует cookie-файлы, чтобы сделать ваше пребывание на нём максимально удобным.  Оставаясь на сайте, вы даёте своё согласие на использование cookie-файлов.</p>
+<input class="md-toggle" type="checkbox" id="__settings" checked>
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+    
+      
+    
+    
+      
+        
+  
+  
+    
+    
+  
+  <li class="task-list-item">
+    <label class="task-list-control">
+      <input type="checkbox" name="github" checked>
+      <span class="task-list-indicator"></span>
+      GitHub
+    </label>
+  </li>
+
+      
+    
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout((function(){document.querySelector("[data-md-component=consent]").hidden=!1}),250);var form=document.forms.consent;for(var action of["submit","reset"])form.addEventListener(action,(function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map((function(e){return[e,!0]})))),location.hash="",location.reload()}))</script>
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "toc.follow", "content.code.copy"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../../../calculator/rectification_calculator.js"></script>
+      
+        <script src="../../../javascripts/docs-previews-list.js"></script>
+      
+    
+  </body>
+</html>
