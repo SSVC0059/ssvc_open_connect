@@ -942,21 +942,35 @@ void SsvcSettings::Builder::validateAndSetValues(float &timeTurnOn, int &period,
   *targetPeriod = period;
 }
 
-void SsvcSettings::Builder::applySettings() {
+bool SsvcSettings::Builder::applySettings() {
+  _failedCommands.clear();
+
   if (_pendingCommands.empty()) {
     _isBatchMode = false;
-    return;
+    return true;
   }
 
   // Фильтрацию по версии API выполняет очередь (единая точка gate), поэтому она
   // пополняет наш собственный приёмник пропущенных полей за время этой отправки.
   _skippedCommands.clear();
 
+  // set() сообщает только о постановке в очередь, а не о приёме контроллером.
+  // Пакет, который не встал (переполнение очереди, нет связи), нельзя выдавать
+  // за применённую настройку — его нужно вернуть вызывающему.
+  auto flush = [this](const String& chunk) {
+    if (chunk.length() == 0) {
+      return;
+    }
+    if (!SsvcCommandsQueue::getQueue().set(chunk.c_str(), ATTEMPT_COUNT, TIMEOUT, &_skippedCommands)) {
+      _failedCommands.emplace_back(chunk.c_str());
+    }
+  };
+
   String payload = "";
   for (const auto& cmd : _pendingCommands) {
     // Проверка лимита в 250-280 символов (с запасом до 300)
     if (payload.length() > 0 && (payload.length() + cmd.length() + 1 > 250)) {
-      SsvcCommandsQueue::getQueue().set(payload.c_str(), ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
+      flush(payload);
       payload = "";
     }
 
@@ -964,9 +978,7 @@ void SsvcSettings::Builder::applySettings() {
     payload += cmd;
   }
 
-  if (payload.length() > 0) {
-    SsvcCommandsQueue::getQueue().set(payload.c_str(), ATTEMPT_COUNT, TIMEOUT, &_skippedCommands);
-  }
+  flush(payload);
 
   if (!_skippedCommands.empty()) {
     std::string skippedList;
@@ -980,8 +992,14 @@ void SsvcSettings::Builder::applySettings() {
              settings.getSsvcApiVersion().c_str(), skippedList.c_str());
   }
 
+  if (!_failedCommands.empty()) {
+    ESP_LOGE("SsvcSettings", "applySettings: %u SET-пакет(ов) не попало в очередь команд",
+             static_cast<unsigned>(_failedCommands.size()));
+  }
+
   _pendingCommands.clear();
   _isBatchMode = false; // Возвращаемся в обычный режим
+  return _failedCommands.empty();
 }
 
 // --- Реализация контракта IProfileObserver ---

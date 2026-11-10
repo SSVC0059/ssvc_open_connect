@@ -51,9 +51,11 @@ vi.mock('$lib/components/StartWizard/steps/WizardStep7.svelte', async () => {
 });
 
 import { fetchSettings, saveSettings, sendCommand } from '$lib/api/ssvcApi';
+import { modals } from 'svelte-modals';
 
 describe('StartWizard', () => {
 	beforeEach(() => {
+		vi.clearAllMocks();
 		vi.mocked(fetchSettings).mockResolvedValue(createMockSsvcSettings());
 		vi.mocked(saveSettings).mockResolvedValue(true);
 		vi.mocked(sendCommand).mockResolvedValue({ success: true, message: 'ok' });
@@ -102,7 +104,7 @@ describe('StartWizard', () => {
 		);
 	});
 
-	it('при нажатии «Запустить» вызывает saveSettings и sendCommand с корректными данными', async () => {
+	it('без изменений не сохраняет настройки, но запускает ректификацию', async () => {
 		const user = userEvent.setup();
 		vi.mocked(fetchSettings).mockResolvedValue(createMockSsvcSettings({ release_timer: -1 }));
 
@@ -117,16 +119,83 @@ describe('StartWizard', () => {
 		const submitButton = await screen.findByRole('button', { name: /Запустить/i }, { timeout: 2000 });
 		await user.click(submitButton);
 
-		await waitFor(() => {
-			expect(saveSettings).toHaveBeenCalledTimes(1);
-		});
-		// Issue #75: в запрос уходят уже нормализованные настройки (release_timer >= 0)
-		const savedSettings = vi.mocked(saveSettings).mock.calls[0][0];
-		expect(savedSettings).toBeDefined();
-		expect(savedSettings!.release_timer).toBe(0);
+		// Частичное обновление: нечего отправлять — PUT не нужен, контроллер
+		// сохраняет собственные настройки.
+		expect(saveSettings).not.toHaveBeenCalled();
 
 		await waitFor(() => {
 			expect(sendCommand).toHaveBeenCalledWith('start');
 		});
+		await waitFor(() => {
+			expect(modals.close).toHaveBeenCalled();
+		});
+	});
+
+	it('отправляет только изменённые поля', async () => {
+		const user = userEvent.setup();
+		render(StartWizard, { props: { isOpen: true } });
+
+		const changeButton = await screen.findByTestId('mock-change', {}, { timeout: 3000 });
+		await user.click(changeButton);
+
+		const nextButton = await screen.findByRole('button', { name: /Дальше/i }, { timeout: 3000 });
+		for (let i = 0; i < 6; i++) {
+			await user.click(nextButton);
+		}
+
+		const submitButton = await screen.findByRole('button', { name: /Запустить/i }, { timeout: 2000 });
+		await user.click(submitButton);
+
+		await waitFor(() => {
+			expect(saveSettings).toHaveBeenCalledWith({ hyst: 1 });
+		});
+		await waitFor(() => {
+			expect(sendCommand).toHaveBeenCalledWith('start');
+		});
+	});
+
+	it('не закрывает мастер, если контроллер отклонил запуск', async () => {
+		const user = userEvent.setup();
+		vi.mocked(sendCommand).mockResolvedValue({ success: false, message: 'busy' });
+
+		render(StartWizard, { props: { isOpen: true } });
+
+		const nextButton = await screen.findByRole('button', { name: /Дальше/i }, { timeout: 3000 });
+		for (let i = 0; i < 6; i++) {
+			await user.click(nextButton);
+		}
+
+		const submitButton = await screen.findByRole('button', { name: /Запустить/i }, { timeout: 2000 });
+		await user.click(submitButton);
+
+		await waitFor(() => {
+			expect(sendCommand).toHaveBeenCalledWith('start');
+		});
+		expect(modals.close).not.toHaveBeenCalled();
+	});
+
+	it('не запускает ректификацию, если настройки не приняты контроллером', async () => {
+		const user = userEvent.setup();
+		// 503 от PUT /rest/settings: часть SET не попала в очередь.
+		vi.mocked(saveSettings).mockResolvedValue(false);
+
+		render(StartWizard, { props: { isOpen: true } });
+
+		const changeButton = await screen.findByTestId('mock-change', {}, { timeout: 3000 });
+		await user.click(changeButton);
+
+		const nextButton = await screen.findByRole('button', { name: /Дальше/i }, { timeout: 3000 });
+		for (let i = 0; i < 6; i++) {
+			await user.click(nextButton);
+		}
+
+		const submitButton = await screen.findByRole('button', { name: /Запустить/i }, { timeout: 2000 });
+		await user.click(submitButton);
+
+		await waitFor(() => {
+			expect(saveSettings).toHaveBeenCalledWith({ hyst: 1 });
+		});
+		expect(sendCommand).not.toHaveBeenCalled();
+		expect(modals.close).not.toHaveBeenCalled();
 	});
 });

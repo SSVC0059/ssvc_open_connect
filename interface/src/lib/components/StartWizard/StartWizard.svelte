@@ -15,6 +15,8 @@
 	import type { SsvcSettings } from '$lib/types/ssvc';
 	import { fetchSettings, saveSettings, sendCommand } from '$lib/api/ssvcApi';
 	import { normalizeSettingsForWizard } from '$lib/components/StartWizard/wizardDefaults';
+	import { deepDiff } from '$lib/utils/deepDiff';
+	import { notifications } from '$lib/components/toasts/notifications';
 
 	interface Props {
 		isOpen: boolean;
@@ -32,6 +34,9 @@
 	let { isOpen }: Props = $props();
 	let isLoading = $state(false);
 	let settings = $state<SsvcSettings | undefined>(undefined);
+	// Снимок настроек на момент открытия мастера: база для частичного
+	// обновления. Всё, что пользователь не менял, на контроллер не уходит.
+	let originalSettings = $state<SsvcSettings | undefined>(undefined);
 	let stepData = $state<Record<number, any>>({}); // Новое состояние для данных шагов
 	let cachedVisibleSteps = $state<Step[]>([]); // Кэшированные видимые шаги
 	let currentIndex = $state(0);
@@ -46,7 +51,9 @@
 
 		try {
 			const loaded = await fetchSettings();
-			settings = normalizeSettingsForWizard(loaded);
+			const normalized = normalizeSettingsForWizard(loaded);
+			settings = normalized;
+			originalSettings = normalized ? structuredClone(normalized) : undefined;
 			hasFetchedInitialData = true;
 
 			// Инициализируем stepData только один раз при первой загрузке
@@ -154,18 +161,36 @@
 	const submitSettings = async () => {
 		isLoading = true;
 		try {
-			const success = await saveSettings(settings);
-			console.log("success:" + success);
+			// На контроллер уходят только поля, изменённые пользователем
+			// относительно прочитанного состояния. Полный объект затирал
+			// настройки, выставленные непосредственно на контроллере, а поля,
+			// которых нет в PARAM_HANDLERS, отклоняли весь запрос.
+			const payload =
+				settings && originalSettings ? deepDiff(settings, originalSettings) : {};
 
-			if (success) {
-				await sendCommand("start")
-				console.log('Настройки успешно сохранены');
-				closeModal();
-			} else {
-				console.error('Не удалось сохранить настройки');
+			if (Object.keys(payload).length > 0) {
+				const saved = await saveSettings(payload);
+				if (!saved) {
+					// Контроллер мог не поставить SET в очередь: часть настроек
+					// не применена, поэтому процесс не запускаем.
+					notifications.error('Контроллер не применил настройки. Ректификация не запущена.', 7000);
+					return;
+				}
 			}
+
+			const started = await sendCommand('start');
+			if (!started.success) {
+				notifications.error(
+					`Не удалось запустить ректификацию: ${started.message ?? 'неизвестная ошибка'}`,
+					7000
+				);
+				return;
+			}
+
+			closeModal();
 		} catch (error) {
 			console.error('Ошибка при сохранении настроек:', error);
+			notifications.error('Ошибка при сохранении настроек', 7000);
 		} finally {
 			isLoading = false;
 		}
