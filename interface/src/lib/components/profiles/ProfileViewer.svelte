@@ -259,19 +259,19 @@
 
 	/* Светлая тема: отчётливо отделяем карточки от панели */
 	.profile-card {
-		background-color: oklch(var(--b2, 0.96 0.01 260));
+		background-color: var(--color-base-200);
 		border-radius: var(--border-radius);
 		padding: 1.25rem 1.5rem;
-		border: 1px solid oklch(var(--bc, 0.25 0 260) / 0.25);
-		box-shadow: 0 4px 24px oklch(var(--bc, 0.25 0 260) / 0.12);
+		border: 1px solid color-mix(in oklab, var(--color-base-content) 25%, transparent);
+		box-shadow: 0 4px 24px color-mix(in oklab, var(--color-base-content) 12%, transparent);
 	}
 
 	.card-title {
 		font-size: 1.125rem;
-		color: oklch(var(--bc));
+		color: var(--color-base-content);
 		margin: 0 0 1rem 0;
 		padding-bottom: 0.75rem;
-		border-bottom: 1px solid oklch(var(--bc) / 0.25);
+		border-bottom: 1px solid color-mix(in oklab, var(--color-base-content) 25%, transparent);
 	}
 
 	.summary-grid,
@@ -288,8 +288,8 @@
 	}
 
 	.fraction-card {
-		background-color: oklch(var(--b3));
-		border: 1px solid oklch(var(--bc, 0.25 0 260) / 0.3);
+		background-color: var(--color-base-300);
+		border: 1px solid color-mix(in oklab, var(--color-base-content) 30%, transparent);
 		padding: 1rem;
 		border-radius: var(--border-radius);
 		display: flex;
@@ -300,7 +300,7 @@
 	.fraction-title {
 		font-size: 1rem;
 		font-weight: 600;
-		color: oklch(var(--bc));
+		color: var(--color-base-content);
 		margin: 0;
 		text-align: center;
 	}
@@ -308,10 +308,10 @@
 	.message-box {
 		padding: 2rem;
 		text-align: center;
-		background-color: oklch(var(--b2));
-		border: 1px solid oklch(var(--bc) / 0.25);
+		background-color: var(--color-base-200);
+		border: 1px solid color-mix(in oklab, var(--color-base-content) 25%, transparent);
 		border-radius: var(--border-radius);
-		color: oklch(var(--bc) / 0.8);
+		color: color-mix(in oklab, var(--color-base-content) 80%, transparent);
 	}
 
 	.error-box {

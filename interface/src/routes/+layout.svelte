@@ -198,7 +198,7 @@
 	/* Мобильный drawer-overlay: без backdrop-blur — меньше артефактов при смене маршрута */
 	:global(.oc-drawer-overlay) {
 		@media (max-width: 1023px) {
-			background-color: oklch(var(--bc) / 0.28) !important;
+			background-color: color-mix(in oklab, var(--color-base-content) 28%, transparent) !important;
 			backdrop-filter: none !important;
 			-webkit-backdrop-filter: none !important;
 		}
@@ -310,7 +310,7 @@
 
 	/* ===== Поля ввода и лейблы (shared) — семантика DaisyUI ===== */
 	:global(.input-label) {
-		color: oklch(var(--bc));
+		color: var(--color-base-content);
 		font-size: 0.95rem;
 		cursor: pointer;
 	}
@@ -322,12 +322,12 @@
 		padding: 0.5rem 0.75rem;
 		font-size: 0.875rem;
 		/* Светлая тема: делаем поля явно темнее фона карточек и с более контрастной рамкой */
-		border: 1px solid oklch(var(--bc, 0.25 0 260) / 0.25);
+		border: 1px solid color-mix(in oklab, var(--color-base-content) 25%, transparent);
 		border-radius: var(--border-radius);
 		outline: none;
 		transition: var(--transition);
-		background-color: oklch(var(--b3));
-		color: oklch(var(--bc));
+		background-color: var(--color-base-300);
+		color: var(--color-base-content);
 	}
 	@media (prefers-color-scheme: dark) {
 		:global(.input-field),
@@ -340,8 +340,8 @@
 	:global(.input-field:focus),
 	:global(.input-cell:focus),
 	:global(.time-input:focus) {
-		border-color: oklch(var(--p));
-		box-shadow: 0 0 0 3px oklch(var(--p) / 0.2);
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 20%, transparent);
 	}
 
 	:global(.input-wrapper) {

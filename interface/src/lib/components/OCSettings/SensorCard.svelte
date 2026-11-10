@@ -406,7 +406,7 @@
 	@media (prefers-color-scheme: dark) {
 		.sensor-temperature,
 		.sensor-value {
-			color: oklch(var(--bc));
+			color: var(--color-base-content);
 		}
 	}
 

@@ -625,10 +625,10 @@
 	}
 
 	.card {
-		background-color: oklch(var(--b2));
+		background-color: var(--color-base-200);
 		border-radius: var(--border-radius);
 		padding: 1rem;
-		border: 1px solid oklch(var(--bc) / 0.25);
+		border: 1px solid color-mix(in oklab, var(--color-base-content) 25%, transparent);
 	}
 
 	.card-header {
@@ -654,7 +654,7 @@
 
 	.card-title {
 		font-size: 1.125rem;
-		color: oklch(var(--bc));
+		color: var(--color-base-content);
 		margin: 0;
 	}
 
@@ -942,12 +942,12 @@
 	}
 
 	.btn-secondary {
-		background-color: oklch(var(--b2));
-		color: oklch(var(--bc));
-		border-color: oklch(var(--bc) / 0.3);
+		background-color: var(--color-base-200);
+		color: var(--color-base-content);
+		border-color: color-mix(in oklab, var(--color-base-content) 30%, transparent);
 
 		&:hover {
-			background-color: oklch(var(--b3));
+			background-color: var(--color-base-300);
 		}
 	}
 

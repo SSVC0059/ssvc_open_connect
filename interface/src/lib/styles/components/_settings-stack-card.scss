@@ -25,7 +25,7 @@ $max-md: v.$breakpoint-md - 1px;
 		}
 
 		.settings-grid .settings-panel .settings-section:not(:last-child) {
-			border-bottom: 1px solid oklch(var(--bc, 0.25 0 260) / 0.12) !important;
+			border-bottom: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent) !important;
 			padding-bottom: 0.75rem !important;
 			margin-bottom: 0.5rem;
 		}

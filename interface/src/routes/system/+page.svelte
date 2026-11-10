@@ -145,7 +145,7 @@
 
 	/* Цвет нижней границы и шрифт вкладок */
 	:global(.tabs.tabs-lift .tab) {
-		border-bottom-color: oklch(var(--bc, 0.25 0 260) / 0.25);
+		border-bottom-color: color-mix(in oklab, var(--color-base-content) 25%, transparent);
 		font-size: 1.125rem;
 		font-weight: 600;
 	}

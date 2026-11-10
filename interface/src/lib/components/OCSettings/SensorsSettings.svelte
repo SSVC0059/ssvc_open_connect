@@ -152,7 +152,7 @@
 
 	@media (prefers-color-scheme: dark) {
 		.zone-title {
-			color: oklch(var(--bc));
+			color: var(--color-base-content);
 		}
 	}
 

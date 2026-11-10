@@ -9,7 +9,7 @@
 	&__header {
 		flex-shrink: 0;
 		padding-bottom: 0.5rem;
-		border-bottom: 1px solid oklch(var(--bc) / 0.12);
+		border-bottom: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
 	}
 
 	/* Прокрутка страницы — у родителя (.drawer-content > … overflow-y-auto), без вложенного scrollport */
@@ -21,7 +21,7 @@
 	&__section {
 		padding-bottom: 1.5rem;
 		margin-bottom: 1.5rem;
-		border-bottom: 1px solid oklch(var(--bc) / 0.1);
+		border-bottom: 1px solid color-mix(in oklab, var(--color-base-content) 10%, transparent);
 		scroll-margin-top: 0.75rem;
 
 		&:last-child {
@@ -43,7 +43,7 @@
 	&__section--target {
 		@media (max-width: v.$breakpoint-md - 1px) {
 			border-radius: 0.5rem;
-			outline: 2px solid oklch(var(--p) / 0.45);
+			outline: 2px solid color-mix(in oklab, var(--color-primary) 45%, transparent);
 			outline-offset: 0.25rem;
 		}
 	}
@@ -52,7 +52,7 @@
 		margin: 0 0 0.75rem;
 		font-size: 1.125rem;
 		font-weight: 600;
-		color: oklch(var(--bc));
+		color: var(--color-base-content);
 		text-align: center;
 		width: 100%;
 
@@ -67,7 +67,7 @@
 
 	&__footer {
 		flex-shrink: 0;
-		border-top: 1px solid oklch(var(--bc) / 0.1);
+		border-top: 1px solid color-mix(in oklab, var(--color-base-content) 10%, transparent);
 		padding-top: 1rem;
 	}
 

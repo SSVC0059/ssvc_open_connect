@@ -1,11 +1,8 @@
 /**
-  Нормализация блочной модели
+  Нормализация поверх Tailwind preflight.
+  box-sizing, margin у body/заголовков, display:block для img/video и
+  font:inherit для полей ввода уже задаёт preflight, поэтому здесь их нет.
  */
-*,
-::before,
-::after {
-    box-sizing: border-box;
-}
 
 /**
   Убираем внутренние отступы слева тегам списков,
@@ -13,34 +10,6 @@
  */
 :where(ul, ol):where([class]) {
     padding-left: 0;
-}
-
-/**
-  Убираем внешние отступы body и двум другим тегам,
-  у которых есть атрибут class
- */
-body,
-:where(blockquote, figure, fieldset):where([class]) {
-    margin: 0;
-}
-
-/**
-  Убираем внешние отступы вертикали нужным тегам,
-  у которых есть атрибут class
- */
-:where(
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6,
-  p,
-  ul,
-  ol,
-  dl
-):where([class]) {
-    margin-block: 0;
 }
 
 :where(dd[class]) {
@@ -83,32 +52,12 @@ p:where(:not([class]):not(:last-child)) {
     margin-bottom: var(--paragraphMarginBottom);
 }
 
-
-/**
-  Упрощаем работу с изображениями и видео
- */
-img,
-video {
-    display: block;
-    max-width: 100%;
-    height: auto;
-}
-
-/**
-  Наследуем свойства шрифт для полей ввода
- */
-input,
-textarea,
-select,
-button {
-    font: inherit;
-}
-
 html {
     /**
       Гарантированный фон темы — избегаем кадра с системным чёрным при repaint (mobile / route change).
+      Переменная DaisyUI 5 уже содержит полный oklch(...), обёртка не нужна.
      */
-    background-color: oklch(var(--b1, 0.97 0.01 260));
+    background-color: var(--color-base-100);
     color-scheme: light;
     /**
       Пригодится в большинстве ситуаций
@@ -120,19 +69,22 @@ html {
       при появлении / исчезновении скроллбара
      */
     scrollbar-gutter: stable;
-    /**
-      Плавный скролл
-     */
-    scroll-behavior: smooth;
+}
+
+/* Явно выбранная тёмная тема переключает и нативные контролы */
+html[data-theme="business"] {
+    color-scheme: dark;
+}
+
+/* Плавный скролл только тем, кто не просил его отключить */
+@media (prefers-reduced-motion: no-preference) {
+    html {
+        scroll-behavior: smooth;
+    }
 }
 
 body {
-    background-color: oklch(var(--b1, 0.97 0.01 260));
-    /**
-      Пригодится в большинстве ситуаций
-      (когда, например, нужно будет "прижать" футер к низу сайта)
-     */
-    min-height: 100%;
+    background-color: var(--color-base-100);
     /**
       Fallback высоты viewport: стабильнее dvh при появлении/скрытии панелей браузера на мобильном
      */
@@ -144,17 +96,6 @@ body {
     line-height: 1.5;
 }
 
-@media (prefers-color-scheme: dark) {
-    html {
-        color-scheme: dark;
-        background-color: oklch(var(--b1, 0.22 0.02 260));
-    }
-
-    body {
-        background-color: oklch(var(--b1, 0.22 0.02 260));
-    }
-}
-
 /**
   Нормализация высоты элемента ссылки при его инспектировании в DevTools
  */
@@ -163,11 +104,16 @@ a:where([class]) {
 }
 
 /**
-  Курсор-рука при наведении на элемент
+  Курсор-рука при наведении на элемент (но не на заблокированный)
  */
-button,
+button:not(:disabled),
 label {
     cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+    cursor: not-allowed;
 }
 
 /**

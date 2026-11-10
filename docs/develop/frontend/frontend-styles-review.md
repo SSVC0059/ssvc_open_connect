@@ -4,6 +4,19 @@
 Ветка: `review/frontend-styles`
 Область: `interface/src` — глобальные стили, SCSS-слои, локальные стили Svelte-компонентов, сборка.
 
+## 0. Статус выполнения
+
+Выполнено в этой ветке (проверка `npm run check` — 0 ошибок, 0 предупреждений):
+
+- **P0-1 — миграция DaisyUI 4 → 5.** 110 замен в 15 файлах: `--b1/--b2/--b3/--bc/--p` → `--color-base-*` / `--color-primary`, альфа-варианты → `color-mix(in oklab, …)`. В коде не осталось `oklch(var(--b…)` и `oklch(var(--p…)`.
+- **P0-2 — управляемая тема.** `data-theme="corporate|business"` на `<html>`, инлайн-скрипт в `app.html` до отрисовки (без FOUC), переключатель `ThemeToggle.svelte` в статусбаре, сохранение в `localStorage`. `--prefersdark` отключён, чтобы тема не расходилась с `data-theme`.
+- **P0-3 — контраст.** В `[data-theme="business"]` заданы светлые значения `--primary-*`, `--glass-*`, тень и границы; текст/границы переводятся на `--color-base-content` и `color-mix`.
+- **P0-4 — `color-scheme`.** `light` по умолчанию и `dark` для `[data-theme="business"]`; фон — `var(--color-base-100)`.
+- **P0-6 — доступность.** `lang="ru"`, `theme-color` для обеих схем, `viewport-fit=cover`, глобальный `:focus-visible`, `cursor: not-allowed` для disabled, `scroll-behavior: smooth` только при `prefers-reduced-motion: no-preference`.
+- **P1 (часть).** `--transition` вместо `all`; `--z-modal-backdrop` отделён от `--z-sticky`; убран дубль `--gray-500`; `border-color` базового слоя — через `color-mix`; из `normalize.css` удалены дубли Tailwind preflight; стилизованы скроллбары.
+
+Не входит в этот шаг (следующие PR): P0-5 (`!important` и breakpoints), ленивый `chart.js`, замена FontAwesome на `unplugin-icons`, токены отступов/радиусов и дизайн-полировка.
+
 ## 1. Карта стилей
 
 | Слой | Где | Комментарий |

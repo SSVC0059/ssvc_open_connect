@@ -52,7 +52,7 @@
       .settings-section-title {
         font-size: 1.125rem;
         font-weight: 600;
-        color: oklch(var(--bc));
+        color: var(--color-base-content);
         margin-bottom: 1rem;
       }
 
@@ -87,12 +87,12 @@
   font-size: calc(1rem + 0.3vw);
   font-weight: 600;
   text-align: center;
-  color: oklch(var(--bc));
+  color: var(--color-base-content);
   margin-bottom: 0.75rem;
 }
 
 .settings-description {
   font-size: 0.875rem;
-  color: oklch(var(--bc) / 0.8);
+  color: color-mix(in oklab, var(--color-base-content) 80%, transparent);
   margin: 0.25rem 0 0 0;
 }
