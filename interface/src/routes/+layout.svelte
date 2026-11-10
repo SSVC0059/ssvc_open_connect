@@ -194,10 +194,11 @@
 
 <style lang="scss">
 	@use "$lib/styles/base/mixins" as m;
+	@use "$lib/styles/base/variables" as v;
 
 	/* Мобильный drawer-overlay: без backdrop-blur — меньше артефактов при смене маршрута */
 	:global(.oc-drawer-overlay) {
-		@media (max-width: 1023px) {
+		@media (max-width: #{v.$breakpoint-lg - 1px}) {
 			background-color: color-mix(in oklab, var(--color-base-content) 28%, transparent) !important;
 			backdrop-filter: none !important;
 			-webkit-backdrop-filter: none !important;

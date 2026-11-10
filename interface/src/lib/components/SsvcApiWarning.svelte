@@ -104,6 +104,8 @@
 {/if}
 
 <style lang="scss">
+	@use "$lib/styles/base/variables" as v;
+
 	.ssvc-api-warning {
 		display: inline-flex;
 		align-items: center;
@@ -156,7 +158,7 @@
 		}
 
 		// На узких экранах оставляем только иконку — статусбар и без того плотный.
-		@media (max-width: 1023px) {
+		@media (max-width: #{v.$breakpoint-lg - 1px}) {
 			&__text {
 				display: none;
 			}
