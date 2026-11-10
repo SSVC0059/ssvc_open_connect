@@ -38,11 +38,22 @@ private:
         return a;
     }
 
+    uint8_t readRegister(uint8_t reg);
+    uint32_t readRaw24(uint8_t reg);
+    void logDiagnostics(uint32_t rawPressure, uint32_t rawTemperature, float pressureMmHg);
+
     I2CBusSubsystem* _bus;
     const char* _alarmDeviceRole;
     Adafruit_BMP5xx _bmp;
     float _lastPressure = 0.0f;
     float _filteredPressure = 0.0f;
+
+    // Счётчики диагностики: номер чтения и число подряд идущих одинаковых
+    // сырых значений (детектор «датчик не выдаёт новые конверсии»).
+    uint32_t _readCount = 0;
+    uint32_t _stuckCount = 0;
+    uint32_t _lastRawPressure = 0;
+    bool _hasLastRawPressure = false;
 
     static constexpr auto TAG = "BMP581Sensor";
 };
