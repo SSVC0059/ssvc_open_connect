@@ -3,29 +3,34 @@
 	import SettingsCard from '$lib/components/SettingsCard.svelte';
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
-	import { Chart, registerables } from 'chart.js';
+	import type { Chart as ChartInstance } from 'chart.js';
 	import Metrics from '~icons/tabler/report-analytics';
 	import { daisyColor } from '$lib/DaisyUiHelper';
 	import { analytics } from '$lib/stores/analytics';
+	import { loadChartJs } from '$lib/charts';
 
-	Chart.register(...registerables);
+	// chart.js грузится лениво: конструктор присваивается в onMount,
+	// chartReady перезапускает эффекты, которые ждали библиотеку.
+	let Chart: typeof ChartInstance;
+	let chartReady = $state(false);
 
 	let heapChartElement: HTMLCanvasElement | undefined = $state();
-	let heapChart: Chart;
+	let heapChart: ChartInstance;
 
 	let psramChartElement: HTMLCanvasElement | undefined = $state();
-	let psramChart: Chart | undefined;
+	let psramChart: ChartInstance | undefined;
 
 	let filesystemChartElement: HTMLCanvasElement | undefined = $state();
-	let filesystemChart: Chart;
+	let filesystemChart: ChartInstance;
 
 	let temperatureChartElement: HTMLCanvasElement | undefined = $state();
-	let temperatureChart: Chart;
+	let temperatureChart: ChartInstance;
 
 	// Check if PSRAM data is available
 	let hasPsramData = $derived(Math.max(...$analytics.psram_size) > 0);
 
 	$effect(() => {
+		if (!chartReady) return;
 		if (hasPsramData && psramChartElement) {
 			initPsramChart();
 		} else if (!hasPsramData && psramChart) {
@@ -107,6 +112,22 @@
 	}
 
 	onMount(() => {
+		void initCharts();
+
+		const interval = setInterval(updateData, 2000);
+		return () => {
+			clearInterval(interval);
+			heapChart?.destroy();
+			psramChart?.destroy();
+			filesystemChart?.destroy();
+			temperatureChart?.destroy();
+		};
+	});
+
+	async function initCharts() {
+		Chart = (await loadChartJs()).Chart;
+		chartReady = true;
+
 		heapChart = new Chart(heapChartElement!, {
 			type: 'line',
 			data: {
@@ -313,15 +334,8 @@
 				}
 			}
 		});
-		const interval = setInterval(updateData, 2000);
-		return () => {
-			clearInterval(interval);
-			heapChart.destroy();
-			psramChart?.destroy();
-			filesystemChart.destroy();
-			temperatureChart.destroy();
-		};
-	});
+	}
+
 
 	function updateData() {
 		heapChart.data.labels = $analytics.uptime;
