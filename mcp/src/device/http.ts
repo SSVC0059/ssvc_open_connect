@@ -8,7 +8,7 @@
  *  - тело ответа всегда строка (прошивка отвечает и JSON, и text/plain).
  */
 
-import { request as httpRequest } from 'node:http';
+import { request as httpRequest, type IncomingHttpHeaders } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import { OcError } from '../errors.js';
 import type { Logger } from '../logging.js';
@@ -62,11 +62,14 @@ export function isNetworkError(error: unknown): boolean {
   return typeof code === 'string' && NETWORK_ERROR_CODES.has(code);
 }
 
-function normalizeHeaders(raw: NodeJS.IncomingHttpHeaders): Record<string, string> {
+function normalizeHeaders(raw: IncomingHttpHeaders): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(raw)) {
     if (value === undefined) continue;
-    out[key.toLowerCase()] = Array.isArray(value) ? value.join(', ') : value;
+    // Node отдаёт `string | string[]`; повторяющиеся заголовки склеиваем, как это делает undici.
+    const text = Array.isArray(value) ? value.join(', ') : String(value);
+    if (text === '') continue;
+    out[key.toLowerCase()] = text;
   }
   return out;
 }
