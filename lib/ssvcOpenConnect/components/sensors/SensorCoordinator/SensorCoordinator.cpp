@@ -68,11 +68,21 @@ void SensorCoordinator::startPolling(const uint32_t periodMs) {
     }
 }
 
-void SensorCoordinator::registerPollingSubsystem(PollingSubsystem* subsystem) {
-    if (subsystem) {
-        subsystem->initialize();
-        _pollingSubsystems.push_back(subsystem);
+bool SensorCoordinator::registerPollingSubsystem(PollingSubsystem* subsystem) {
+    if (!subsystem) {
+        return false;
     }
+
+    // initialize() вызывается здесь ровно один раз: подсистема не должна делать
+    // это сама, иначе датчик инициализируется дважды (для BMP581 это означало
+    // лишний soft reset уже настроенного сенсора).
+    if (!subsystem->initialize()) {
+        ESP_LOGE(TAG, "Polling subsystem '%s' failed to initialize", subsystem->getName().c_str());
+        return false;
+    }
+
+    _pollingSubsystems.push_back(subsystem);
+    return true;
 }
 
 void SensorCoordinator::executePollCycle() const
