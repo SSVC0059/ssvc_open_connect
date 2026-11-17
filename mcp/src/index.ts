@@ -30,6 +30,7 @@ import { sensorsTools } from './tools/sensors.tools.js';
 import { relayTools } from './tools/relay.tools.js';
 import { hardwareTools } from './tools/hardware.tools.js';
 import { xkc25Tools } from './tools/xkc25.tools.js';
+import { logsTools } from './tools/logs.tools.js';
 
 export interface StartServiceOptions {
   /** Окружение; по умолчанию `process.env`. */
@@ -109,8 +110,9 @@ async function main(): Promise<void> {
   let service: StartedService;
   try {
     // Домены WP1 (информация, состояние/телеметрия), WP2 (команды и ожидание), WP3 (настройки),
-    // WP4 (датчики, зоны, пороги тревог), WP5 (реле PCF8574, аппаратная конфигурация) и
-    // WP6 (датчики уровня XKC-25: статус, калибровка, проверка возврата).
+    // WP4 (датчики, зоны, пороги тревог), WP5 (реле PCF8574, аппаратная конфигурация),
+    // WP6 (датчики уровня XKC-25: статус, калибровка, проверка возврата) и
+    // WP7 (журналы ректификации: список, скачивание в файл, отмена).
     const tools: ToolDef[] = [
       ...infoTools(),
       ...telemetryTools(),
@@ -120,6 +122,7 @@ async function main(): Promise<void> {
       ...relayTools(),
       ...hardwareTools(),
       ...xkc25Tools(),
+      ...logsTools(),
     ];
     service = await startService({ tools });
   } catch (error) {
