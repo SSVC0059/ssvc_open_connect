@@ -63,9 +63,8 @@ private:
     float _lastPressure = 0.0f;
     float _filteredPressure = 0.0f;
 
-    // Счётчики диагностики: номер чтения и число подряд идущих одинаковых
-    // сырых значений (детектор «датчик не выдаёт новые конверсии»).
-    uint32_t _readCount = 0;
+    // Число подряд идущих одинаковых сырых значений (детектор «датчик не
+    // выдаёт новые конверсии»).
     uint32_t _stuckCount = 0;
     uint32_t _lastRawPressure = 0;
     bool _hasLastRawPressure = false;

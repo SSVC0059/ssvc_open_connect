@@ -12,10 +12,6 @@ static const char* TAG = "BMP581_SENSOR";
 #define BMP581_USE_EMA 1
 #endif
 
-// Подробная диагностика (сырые значения каждого чтения).
-#ifndef BMP581_DIAGNOSTICS
-#define BMP581_DIAGNOSTICS 0
-#endif
 
 namespace {
 
@@ -204,7 +200,6 @@ void BMP581Sensor::readValue() {
     }
     _lastRawPressure = rawPressure;
     _hasLastRawPressure = true;
-    _readCount++;
 
     if (pressureHpa < PRESSURE_MIN_HPA || pressureHpa > PRESSURE_MAX_HPA) {
         ESP_LOGD(TAG, "[%s] [DIAG] pressure %.1f hPa outside BMP581 range %.0f..%.0f hPa",
@@ -244,12 +239,6 @@ void BMP581Sensor::readValue() {
              getName().c_str(), _lastPressure, static_cast<unsigned long>(rawPressure),
              pressureHpa, bmp581::pressureFromRaw(rawPressure), temperatureC, elapsedUs / 1000.0f);
 
-#if BMP581_DIAGNOSTICS
-    ESP_LOGD(TAG, "[%s] [DIAG] #%lu raw_t=0x%06lX T=%.3f C, reconfigures=%lu",
-             getName().c_str(), static_cast<unsigned long>(_readCount),
-             static_cast<unsigned long>(rawTemperature), temperatureC,
-             static_cast<unsigned long>(_driver->reconfigures()));
-#endif
 }
 
 float BMP581Sensor::getData() const {
