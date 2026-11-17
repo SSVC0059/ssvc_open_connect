@@ -98,6 +98,7 @@ nav:
           - develop/api/profiles.md
           - develop/api/files.md
           - develop/api/logs.md
+          - develop/api/events.md
       - "MCP-сервер (архитектура и план)": develop/mcp-server.md
       - "MCP-сервер: пакеты работ для агентов": develop/mcp-server-agents.md
       - "MCP-сервер: пользовательские сценарии": develop/mcp-scenarios.md

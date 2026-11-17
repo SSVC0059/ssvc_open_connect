@@ -30,6 +30,10 @@
 #include "commons/JsonSpiRamAllocator.h"
 #include <Ticker.h> // Для периодического обновления
 
+// Сокет объявлен, а не включён: EventSocket.h тянет ESPAsyncWebServer, а этот
+// заголовок подключается в том числе там, где кадр события не нужен.
+class EventSocket;
+
 // Максимальный размер JSON-документа для телеметрии (подберите размер под свои данные)
 #define TELEMETRY_STATE_DOC_SIZE 2048
 
@@ -64,7 +68,9 @@ public:
         );
 
     ~TelemetryService();
-    void begin() const; // Метод для запуска Ticker
+    // Не const: в begin() регистрируется событие `telemetry` и подписка на него
+    // (нужен неконстантный this для колбэка догоняющей отправки).
+    void begin();
 
     /**
      * @brief Экземпляр сервиса для читателей состояния.
@@ -84,6 +90,11 @@ private:
     JsonSpiRamAllocator _jsonAllocator;
     TimerHandle_t _updateTimer = nullptr;
 
+    // Сокет /ws/events. Владелец — ESP32SvelteKit, поэтому указатель не
+    // освобождаем; nullptr допустим (например, сервис собрали без сокета) —
+    // тогда событие просто не отправляется.
+    EventSocket* _eventSocket = nullptr;
+
     // Ссылка на единственный созданный экземпляр. Хранится ради читателей
     // состояния (snapshot); nullptr означает «сервис ещё не создан».
     static TelemetryService* _instance;
@@ -93,6 +104,15 @@ private:
 
     // Внутренний метод для получения и обновления состояния
     void updateTelemetryState();
+
+    /**
+     * @brief Отправляет в /ws/events снимок ровно в форме REST /rest/telemetry.
+     *
+     * Вызывается из update-handler'а (только при реальном изменении состояния,
+     * то есть не чаще ~1 раза в 2 с) и из onSubscribe (догоняющая отправка
+     * одному новому подписчику).
+     */
+    void publishTelemetryState(const char* originId = "", bool onlyToSameOrigin = false);
 
     static constexpr auto TAG = "TelemetryService";
 };

@@ -35,6 +35,10 @@
 
 extern portMUX_TYPE ssvcMux;
 
+// Сокет объявлен, а не включён: EventSocket.h тянет ESPAsyncWebServer и нужен
+// только в .cpp, а этот заголовок используется и там, где сокета нет вовсе.
+class EventSocket;
+
 class RectificationProcess
 {
 public:
@@ -93,6 +97,17 @@ public:
 
   void begin(SsvcConnector& connector, SsvcSettings& settings,
                  SsvcMqttSettingsService& ssvcMqttSettingsService);
+
+  /**
+   * @brief Куда отправлять событие `stage` (канал /ws/events).
+   *
+   * nullptr — штатное состояние (юнит-тест, сборка без веб-сокета): событие
+   * просто не отправляется, разбор UART и REST продолжают работать как раньше.
+   * Регистрация имени события делается в begin(): сокет к этому моменту уже
+   * запущен (ESP32SvelteKit::begin() стартует _socket раньше сервисов), а
+   * SsvcOpenConnect::begin() вызывает сеттер до begin().
+   */
+  void setEventSocket(EventSocket* socket);
 
 
   void writeTelemetryTo(JsonVariant telemetry);
@@ -168,6 +183,26 @@ private:
   void startEventHandler(const std::string&);
 
   void endEventHandler(const std::string& currentEvent);
+
+  // --- Событие `stage` для /ws/events ---------------------------------------
+  // Эмиссия привязана к смене значений, а не к таймеру: кадр уходит ровно
+  // тогда, когда stage/status/event/pid отличаются от отправленных в прошлый
+  // раз. Сравниваем enum'ы и pid, а не строки: так нет ни динамических буферов,
+  // живущих дольше кадра, ни лишних аллокаций на каждом кадре UART.
+  void emitStageIfChanged();
+  // Формирует и отправляет кадр из текущих полей. Вызывающий держит `mutex`.
+  void publishStageState(const char* originId, bool onlyToSameOrigin);
+
+  EventSocket* _eventSocket = nullptr;
+
+  RectificationStage _lastEmittedStage = RectificationStage::EMPTY;
+  ProcessState _lastEmittedStatus = ProcessState::IDLE;
+  RectificationEvent _lastEmittedEvent = RectificationEvent::EMPTY;
+  int _lastEmittedPid = 0;
+  // false до begin(): базовое состояние (EMPTY/IDLE) считается уже известным
+  // клиентам (его отдаёт догоняющая отправка при подписке), поэтому первый
+  // разобранный кадр не порождает «переход из ничего».
+  bool _stageBaselineReady = false;
 
   bool isHeatingOn() const;
 

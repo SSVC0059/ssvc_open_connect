@@ -2,6 +2,10 @@
 
 #include "components/sensors/SensorManager/SensorManager.h"
 
+// Только ради события `stage`: заголовок сокета тянет ESPAsyncWebServer, поэтому
+// в RectificationProcess.h он не включён (см. forward declaration там).
+#include <EventSocket.h>
+
 
 /**
  *   SSVC Open Connect
@@ -38,6 +42,13 @@ RectificationProcess::RectificationProcess()
   memset(endTime, 0, sizeof(endTime));
 }
 
+void RectificationProcess::setEventSocket(EventSocket* socket)
+{
+  // Сеттер только запоминает указатель. Регистрация имени события — в begin(),
+  // чтобы не требовать от владельца строгого порядка «set → register».
+  _eventSocket = socket;
+}
+
 void RectificationProcess::begin(SsvcConnector& connector,
                                  SsvcSettings& settings,
                                  SsvcMqttSettingsService& ssvcMqttSettingsService) {
@@ -45,6 +56,29 @@ void RectificationProcess::begin(SsvcConnector& connector,
   _ssvcSettings = &settings;
   _ssvcMqttSettingsService = &ssvcMqttSettingsService;
   _spiRamAllocator.setTag(TAG);
+
+  // Событие регистрируется до старта задачи разбора: клиент, подключившийся
+  // сразу после запуска сервера, не должен получить «unregistered event».
+  if (_eventSocket != nullptr)
+  {
+    _eventSocket->registerEvent("stage");
+    // Догоняющая отправка при подписке. Без неё поздний клиент не узнал бы
+    // текущую стадию до следующего перехода, а переход может случиться через
+    // часы. Отправляем только этому клиенту: подписка не должна рассылать
+    // снимок всем. Кадр собирается под `mutex`, потому что update-задача
+    // пишет те же поля из другого контекста.
+    _eventSocket->onSubscribe("stage", [this](const String& originId) {
+      if (xSemaphoreTake(mutex, pdMS_TO_TICKS(200)) == pdTRUE)
+      {
+        publishStageState(originId.c_str(), true);
+        xSemaphoreGive(mutex);
+      }
+    });
+  }
+
+  // Базовое состояние (EMPTY/IDLE/pid=0) объявляем известным: догоняющая
+  // отправка отдаёт его подписчику, а первый реальный переход будет отличаться.
+  _stageBaselineReady = true;
 
   xTaskCreatePinnedToCore(
       update,
@@ -456,6 +490,10 @@ void RectificationProcess::update(void* pvParameters)
         if (_currentStage == RectificationStage::PARSE_ERROR)
         {
           ESP_LOGE(TAG, "Ошибка получения типа этапа");
+          // Выше стадия уже могла стать PARSE_ERROR (stageToString → "error").
+          // REST это покажет, значит и поток событий должен увидеть переход,
+          // хотя разбор кадра дальше не идёт.
+          self->emitStageIfChanged();
           xSemaphoreGive(mutex);
           continue;
         }
@@ -484,6 +522,12 @@ void RectificationProcess::update(void* pvParameters)
           self->endEventHandler(currentEvent);
           currentEvent = "";
         }
+
+        // Все изменения stage/status/event/pid этого кадра уже применены (блок
+        // выше и ветки PID/стадии), поэтому эмиссия здесь видит итоговое
+        // состояние ровно как его увидит /rest/telemetry. Событие уходит только
+        // при фактической смене — повторных кадров «раз в 2 с» нет.
+        self->emitStageIfChanged();
 
         ESP_LOGV(TAG, "startTime: %s", self->startTime);
         ESP_LOGV(TAG, "EndTime: %s", self->endTime);
@@ -733,6 +777,59 @@ void RectificationProcess::endEventHandler(const std::string& currentEvent)
   {
     currentProcessStatus = ProcessState::RUNNING;
   }
+}
+
+void RectificationProcess::emitStageIfChanged()
+{
+  // nullptr — штатно (тесты, сборка без сокета): молча выходим, ничего не
+  // меняя в разборе и в REST.
+  if (_eventSocket == nullptr || !_stageBaselineReady)
+  {
+    return;
+  }
+
+  if (currentStage == _lastEmittedStage &&
+      currentProcessStatus == _lastEmittedStatus &&
+      metric.event == _lastEmittedEvent &&
+      pid == _lastEmittedPid)
+  {
+    return;
+  }
+
+  _lastEmittedStage = currentStage;
+  _lastEmittedStatus = currentProcessStatus;
+  _lastEmittedEvent = metric.event;
+  _lastEmittedPid = pid;
+
+  // Вызывается из задачи разбора под `mutex`; сеттер/подписка туда не пишут.
+  publishStageState("", false);
+}
+
+void RectificationProcess::publishStageState(const char* originId,
+                                             const bool onlyToSameOrigin)
+{
+  if (_eventSocket == nullptr)
+  {
+    return;
+  }
+
+  // Кадр ~100 Б, поэтому строим его на внутренней куче: PSRAM-аллокатор для
+  // такого размера дороже, чем сам кадр. Буфер живёт до конца emitEvent.
+  JsonDocument document;
+  JsonObject data = document.to<JsonObject>();
+  data["stage"] = stageToString(currentStage);
+  data["status"] = stateToString(currentProcessStatus);
+  // Пустая строка при отсутствии события — как пустые startTime/endTime в
+  // /rest/telemetry; новых имён значений не вводим.
+  data["event"] = metric.event == RectificationEvent::EMPTY
+                    ? std::string()
+                    : rectificationEventToString(metric.event);
+  data["pid"] = pid;
+  data["observed_at"] = millis();
+
+  // emitEvent потокобезопасен по списку подписок, но AsyncWebSocket::binary()
+  // здесь вызывается не из loop-задачи: это известное ограничение, см. docs.
+  _eventSocket->emitEvent("stage", data, originId, onlyToSameOrigin);
 }
 
 bool RectificationProcess::getSnapshot(Snapshot& out)
