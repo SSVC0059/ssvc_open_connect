@@ -21,6 +21,7 @@
 #include "SsvcOpenConnect.h"
 
 #include <cstdlib>
+#include <cstring>
 #include <limits>
 
 #define TAG "SsvcCommandsQueue"
@@ -105,23 +106,78 @@ std::string requestVerb(const std::string& request) {
   return space == std::string::npos ? request : request.substr(0, space);
 }
 
+/// Каноническое имя команды для журнала попыток и GET /rest/commands/{id}.
+const char *commandNameFor(const SsvcCommandType type) {
+  switch (type) {
+  case SsvcCommandType::GET_SETTINGS:
+    return "get_settings";
+  case SsvcCommandType::VERSION:
+    return "version";
+  case SsvcCommandType::STOP:
+    return "stop";
+  case SsvcCommandType::START:
+    return "start";
+  case SsvcCommandType::PAUSE:
+    return "pause";
+  case SsvcCommandType::RESUME:
+    return "resume";
+  case SsvcCommandType::NEXT:
+    return "next";
+  case SsvcCommandType::AT:
+    return "at";
+  case SsvcCommandType::SET:
+    return "set";
+  case SsvcCommandType::STATUS:
+    return "status";
+  case SsvcCommandType::GET_LOG:
+    return "get_log";
+  }
+  return "unknown";
+}
+
+/// Команды, на которые контроллер может не ответить вовсе (§ J.2). Их судьба
+/// остаётся "sent" — честное «отправлено, ответа не ждём», а не "timeout".
+bool mayStayUnanswered(const SsvcCommandType type) {
+  switch (type) {
+  case SsvcCommandType::START:
+  case SsvcCommandType::NEXT:
+  case SsvcCommandType::RESUME:
+  case SsvcCommandType::STOP:
+  case SsvcCommandType::GET_LOG:
+    return true;
+  default:
+    return false;
+  }
+}
+
+/// Копия параметров в запись журнала: без std::string, без аллокаций и без
+/// выхода за фиксированный буфер (усечение).
+void copyTruncated(char *dst, const std::size_t capacity, const std::string &src) {
+  if (capacity == 0) {
+    return;
+  }
+  const std::size_t length = src.size() < capacity - 1 ? src.size() : capacity - 1;
+  std::memcpy(dst, src.data(), length);
+  dst[length] = '\0';
+}
+
 } // namespace
 
 // Инициализация статической карты команд
-const std::map<std::string, std::function<bool(const std::string&)>> SsvcCommandsQueue::COMMAND_MAP = {
-    {"at",           [](const std::string&){ return getQueue().at(); }},
-    {"next",         [](const std::string&){ return getQueue().next(); }},
-    {"pause",        [](const std::string&){ return getQueue().pause(); }},
-    {"stop",         [](const std::string&){ return getQueue().stop(); }},
-    {"start",        [](const std::string&){ return getQueue().start(); }},
-    {"resume",       [](const std::string&){ return getQueue().resume(); }},
-    {"version",      [](const std::string&){ return getQueue().version(); }},
-    {"get_settings", [](const std::string&){ return getQueue().getSettings(); }},
-    {"settings",     [](const std::string&){ return getQueue().getSettings(); }},
-    {"emergency_stop", [](const std::string&){ return getQueue().emergencyStop(); }},
-    {"status",       [](const std::string& params){ return getQueue().status(params); }},
-    {"set",          [](const std::string& params){ return getQueue().set(params); }},
-    {"get_log",      [](const std::string& params) {
+const std::map<std::string, SsvcCommandsQueue::CommandEntry> SsvcCommandsQueue::COMMAND_MAP = {
+    {"at",           [](const std::string&, uint32_t* id){ return getQueue().at(ATTEMPT_COUNT, TIMEOUT, id); }},
+    {"next",         [](const std::string&, uint32_t* id){ return getQueue().next(ATTEMPT_COUNT, TIMEOUT, id); }},
+    {"pause",        [](const std::string&, uint32_t* id){ return getQueue().pause(ATTEMPT_COUNT, TIMEOUT, id); }},
+    {"stop",         [](const std::string&, uint32_t* id){ return getQueue().stop(ATTEMPT_COUNT, TIMEOUT, id); }},
+    {"start",        [](const std::string&, uint32_t* id){ return getQueue().start(ATTEMPT_COUNT, TIMEOUT, id); }},
+    {"resume",       [](const std::string&, uint32_t* id){ return getQueue().resume(ATTEMPT_COUNT, TIMEOUT, id); }},
+    {"version",      [](const std::string&, uint32_t* id){ return getQueue().version(ATTEMPT_COUNT, TIMEOUT, id); }},
+    {"get_settings", [](const std::string&, uint32_t* id){ return getQueue().getSettings(ATTEMPT_COUNT, TIMEOUT, id); }},
+    {"settings",     [](const std::string&, uint32_t* id){ return getQueue().getSettings(ATTEMPT_COUNT, TIMEOUT, id); }},
+    {"emergency_stop", [](const std::string&, uint32_t* id){ return getQueue().emergencyStop(id); }},
+    {"status",       [](const std::string& params, uint32_t* id){ return getQueue().status(params, ATTEMPT_COUNT, TIMEOUT, id); }},
+    {"set",          [](const std::string& params, uint32_t* id){ return getQueue().set(params, ATTEMPT_COUNT, TIMEOUT, nullptr, id); }},
+    {"get_log",      [](const std::string& params, uint32_t* id) {
       auto& transfer = SsvcLogProtocol::getTransfer();
       SsvcLogProtocol::ReserveResult reserved = SsvcLogProtocol::ReserveResult::Unavailable;
 
@@ -140,12 +196,14 @@ const std::map<std::string, std::function<bool(const std::string&)>> SsvcCommand
       // Резерв обязателен и здесь: без него воркер вызывает beginList()/beginFile()
       // с generation 0 и затирает уже идущую передачу другого клиента.
       if (reserved == SsvcLogProtocol::ReserveResult::SameRequest) {
-        return true;  // тот же запрос уже выполняется или готов
+        // Тот же запрос уже выполняется: новой UART-команды нет, поэтому и
+        // записи в журнале нет — REST вернёт commandId 0 (см. docs).
+        return true;
       }
       if (reserved != SsvcLogProtocol::ReserveResult::Accepted) {
         return false;  // Busy/Unavailable — сессию не занимаем
       }
-      if (!getQueue().getLog(params, transfer.generation())) {
+      if (!getQueue().getLog(params, transfer.generation(), 1, TIMEOUT, id)) {
         transfer.releaseReservation();
         return false;
       }
@@ -204,7 +262,7 @@ bool SsvcCommandsQueue::begin() {
   return true;
 }
 
-bool SsvcCommandsQueue::emergencyStop() {
+bool SsvcCommandsQueue::emergencyStop(uint32_t *commandIdOut) {
   // Аварийная команда идёт приоритетным путём: отдельная очередь (воркер берёт
   // её первой) и новое поколение safety, чтобы неотправленные START/NEXT/RESUME
   // не «догнали» остановку. Поколение применяется только после успешной
@@ -218,8 +276,23 @@ bool SsvcCommandsQueue::emergencyStop() {
   cmd->timeout = TIMEOUT;
   cmd->safetyEpoch = safetyEpoch;
 
-  if (safety_queue == nullptr ||
-      xQueueSend(safety_queue, &cmd, pdMS_TO_TICKS(1000)) != pdPASS) {
+  // id и запись журнала выдаются до постановки: вызывающий получает id именно этой
+  // команды, а не «последний принятый». Мьютекс журнала держим только на время
+  // выдачи id: xQueueSend при полной очереди ждёт до 1 с, и держать блокировку всё
+  // это время нельзя — воркер не смог бы отметить running/sent, а GET
+  // /rest/commands/{id} не ответил бы. Для аварийного STOP это ещё важнее: его
+  // задержка не должна зависеть от чужой блокировки.
+  uint32_t commandId = 0;
+  {
+    const std::lock_guard<std::mutex> lock(_journalMutex);
+    commandId = beginRecordLocked("emergency_stop", std::string(), millis()).id;
+  }
+  cmd->journalId = commandId;
+
+  const bool queued = safety_queue != nullptr &&
+                      xQueueSend(safety_queue, &cmd, pdMS_TO_TICKS(1000)) == pdPASS;
+  if (!queued) {
+    journalFinish(commandId, SsvcCommandState::Rejected, 0, "safety_rejected");
     ESP_LOGE(TAG, "emergencyStop: не удалось поставить STOP в safety-очередь");
     delete cmd;
     rememberRejection("safety_rejected", "emergency_stop", "", "");
@@ -227,7 +300,11 @@ bool SsvcCommandsQueue::emergencyStop() {
   }
 
   _safetyEpoch = safetyEpoch;
-  ESP_LOGW(TAG, "emergencyStop: STOP поставлен вне общего FIFO");
+  if (commandIdOut != nullptr) {
+    *commandIdOut = commandId;
+  }
+  ESP_LOGW(TAG, "emergencyStop: STOP поставлен вне общего FIFO (id=%u)",
+           static_cast<unsigned>(commandId));
   return true;
 }
 
@@ -320,12 +397,29 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
 
     ESP_LOGD(TAG, "Processing command of type: %d", cmd->type);
     bool command_success = false;
+    /// Исход последней попытки: нужен, чтобы отличить «нет ответа» от отказа
+    /// устройства, когда попытки уже исчерпаны.
+    enum class AttemptOutcome : uint8_t {
+      None,
+      NoResponse,
+      DeviceRejected,
+      CallbackFailed
+    };
+    AttemptOutcome outcome = AttemptOutcome::None;
+    /// Была ли хотя бы одна успешная запись в UART (для итогового состояния).
+    bool sent = false;
+    /// Ожидание прервано аварийной командой (STOP в safety-очереди).
+    bool preemptedBySafety = false;
+    /// Запись журнала уже переведена в терминальное состояние в этой итерации.
+    bool journalFinalized = false;
 
     // Команда отменённой или устаревшей лог-сессии до отправки не доходит.
     if (cmd->generation != 0 &&
         cmd->generation != SsvcLogProtocol::getTransfer().generation()) {
       ESP_LOGW(TAG, "Command %d из отменённой сессии пропущена",
                static_cast<int>(cmd->type));
+      self->journalFinish(cmd->journalId, SsvcCommandState::Rejected, 0,
+                          "cancelled_before_send");
       delete cmd;
       continue;
     }
@@ -335,6 +429,8 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
     if (!isIdempotentRetry(cmd->type) && cmd->safetyEpoch != self->_safetyEpoch) {
       ESP_LOGW(TAG, "Command %d устарела после emergency_stop и отброшена",
                static_cast<int>(cmd->type));
+      self->journalFinish(cmd->journalId, SsvcCommandState::Rejected, 0,
+                          "stale_after_emergency_stop");
       delete cmd;
       continue;
     }
@@ -354,6 +450,9 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
       }
       continue;
     }
+
+    // Воркер забрал команду: до первой записи в UART она в журнале "running".
+    self->journalMarkRunning(cmd->journalId);
 
     while (cmd->attempt_count != 0) {
       cmd->attempt_count--;
@@ -466,7 +565,16 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
           continue;
         }
 
+        // Байты ушли в UART: с этого момента запись честно "sent", даже если
+        // ответа не будет вовсе.
+        self->journalMarkSent(cmd->journalId);
+        sent = true;
+
         if (cmd->type == SsvcCommandType::GET_LOG) {
+          // GET_LOG не ждёт бита: сессию завершает SsvcLogProtocol. Ответа,
+          // который можно привязать к команде, нет — остаётся "sent".
+          self->journalFinish(cmd->journalId, SsvcCommandState::Sent, -1, nullptr);
+          journalFinalized = true;
           break;
         }
 
@@ -481,7 +589,6 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
         // маршрутизируется в callback ожидаемого бита.
         command_success = false;
         EventBits_t bits = 0;
-        bool preemptedBySafety = false;
         const TickType_t responseDeadline = xTaskGetTickCount() + cmd->timeout;
         while (bits == 0) {
           const TickType_t left = responseDeadline - xTaskGetTickCount();
@@ -512,16 +619,22 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
                    it != self->bitCallbacks.end());
           if (it != self->bitCallbacks.end()) {
             command_success = it->second(cmd);
+            outcome = command_success ? AttemptOutcome::None
+                                      : AttemptOutcome::CallbackFailed;
             ESP_LOGV(TAG, "Command %d processed with result: %d",
                      cmd->type, command_success);
           } else {
+            // Бит пришёл, но обработать его некому: ответ unusable.
+            outcome = AttemptOutcome::CallbackFailed;
             ESP_LOGW(TAG, "No callback handler for bit %d",
                      expectedBit);
           }
         } else if ((bits & BIT1) != 0) {
+          outcome = AttemptOutcome::DeviceRejected;
           ESP_LOGW(TAG, "Command %d rejected by device (BIT1)",
                    static_cast<int>(cmd->type));
         } else {
+          outcome = AttemptOutcome::NoResponse;
           ESP_LOGW(TAG, "Command %d: no response, outcome unknown",
                    static_cast<int>(cmd->type));
         }
@@ -550,6 +663,34 @@ void SsvcCommandsQueue::commandProcessorTask(void *pvParameters) {
 
         if (cmd->attempt_count != 0) {
           vTaskDelay(pdMS_TO_TICKS(2000));
+        }
+      }
+
+      if (!journalFinalized) {
+        // Итог записывается ровно один раз. "sent" без ответа — это не таймаут:
+        // для START/NEXT/RESUME/STOP/GET_LOG ответа может не быть вовсе, и такая
+        // запись честно означает «отправлено, ответа не ждём».
+        if (preemptedBySafety) {
+          self->journalFinish(cmd->journalId, SsvcCommandState::Sent, -1,
+                              "preempted_by_safety");
+        } else if (command_success) {
+          self->journalFinish(cmd->journalId, SsvcCommandState::Done, 1, nullptr);
+        } else if (!sent) {
+          self->journalFinish(cmd->journalId, SsvcCommandState::Rejected, 0,
+                              "uart_write_failed");
+        } else if (outcome == AttemptOutcome::DeviceRejected) {
+          // BIT1: устройство ответило отказом (result != OK).
+          self->journalFinish(cmd->journalId, SsvcCommandState::Rejected, 0,
+                              "device_rejected");
+        } else if (outcome == AttemptOutcome::CallbackFailed) {
+          // Бит успеха пришёл, но ответ не разобран/не принят обработчиком.
+          self->journalFinish(cmd->journalId, SsvcCommandState::Rejected, 0,
+                              "invalid_response");
+        } else if (mayStayUnanswered(cmd->type)) {
+          self->journalFinish(cmd->journalId, SsvcCommandState::Sent, -1, nullptr);
+        } else {
+          self->journalFinish(cmd->journalId, SsvcCommandState::Timeout, 0,
+                              "no_response");
         }
       }
 
@@ -713,7 +854,8 @@ bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
                                            const int attempt_count,
                                            const TickType_t timeout,
                                            const unsigned long generation,
-                                           std::vector<std::string>* skippedOut) const
+                                           std::vector<std::string>* skippedOut,
+                                           uint32_t* commandIdOut) const
 {
   const SsvcSettings& settings = SsvcSettings::init();
   const int deviceCode = settings.getSsvcApiVersionCode();
@@ -727,6 +869,7 @@ bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
   // постановки, а не в отдельных транспортах.
   if (parameters.find_first_of("\r\n") != std::string::npos) {
     ESP_LOGW(TAG, "Команда отклонена: параметры содержат перевод строки");
+    journalRejected(commandNameFor(type), parameters, "invalid_parameters");
     rememberRejection("invalid_parameters", "", "", deviceApi);
     return false;
   }
@@ -749,6 +892,7 @@ bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
       if (skippedOut != nullptr) {
         skippedOut->insert(skippedOut->end(), skipped.begin(), skipped.end());
       }
+      journalRejected(commandNameFor(type), parameters, "no_supported_params");
       rememberRejection("no_supported_params", SsvcApiCapabilities::featureName(feature),
                         SsvcUartApiSpec::formatApiVersion(required), deviceApi);
       return false;
@@ -777,6 +921,7 @@ bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
           SsvcApiCapabilities::featureMinVersion(SsvcApiCapabilities::FEATURE_GET_LOG));
       ESP_LOGW(TAG, "GET_LOG недоступен: устройство на API %s, требуется %s", deviceApi.c_str(),
                requiredApi.c_str());
+      journalRejected(commandNameFor(type), parameters, "feature_unsupported");
       rememberRejection("feature_unsupported", "get_log", requiredApi, deviceApi);
       return false;
     }
@@ -785,6 +930,7 @@ bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
   // Тракт должен быть явно готов: до begin() команды не ставятся, а отказ виден
   // вызывающему (REST отвечает ошибкой, а не «accepted»).
   if (!_ready || command_queue == nullptr) {
+    journalRejected(commandNameFor(type), parameters, "not_ready");
     rememberRejection("not_ready", "", "", "");
     ESP_LOGW(TAG, "Команда %d отклонена: очередь не готова", static_cast<int>(type));
     return false;
@@ -801,7 +947,22 @@ bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
   cmd->generation = generation;
   cmd->safetyEpoch = _safetyEpoch;
 
-  if (xQueueSend(command_queue, &cmd, pdMS_TO_TICKS(1000)) != pdPASS) {
+  // id назначается до постановки в очередь и принадлежит именно этой команде:
+  // id возвращается только ей, а не «последнему принятому», который перезаписали
+  // бы MQTT или бот. Мьютекс журнала держим только на время выдачи id:
+  // xQueueSend при полной очереди ждёт до 1 с, и блокировка на это время
+  // задержала бы и воркер (он не отметил бы running/sent), и GET
+  // /rest/commands/{id}.
+  uint32_t commandId = 0;
+  {
+    const std::lock_guard<std::mutex> lock(_journalMutex);
+    commandId = beginRecordLocked(commandNameFor(type), effectiveParameters, millis()).id;
+  }
+  cmd->journalId = commandId;
+
+  const bool queued = xQueueSend(command_queue, &cmd, pdMS_TO_TICKS(1000)) == pdPASS;
+  if (!queued) {
+    journalFinish(commandId, SsvcCommandState::Rejected, 0, "queue_full");
     ESP_LOGE(TAG, "Failed to send command to queue! Queue might be full.");
     delete cmd;
     // Причина видна REST-слою: 503 с queue_full вместо «accepted».
@@ -809,7 +970,11 @@ bool SsvcCommandsQueue::pushCommandInQueue(const SsvcCommandType type,
     return false;
   }
 
-  ESP_LOGD(TAG, "Command type %d enqueued successfully.", static_cast<int>(type));
+  if (commandIdOut != nullptr) {
+    *commandIdOut = commandId;
+  }
+  ESP_LOGD(TAG, "Command type %d enqueued successfully (id=%u).", static_cast<int>(type),
+           static_cast<unsigned>(commandId));
   return true;
 }
 
@@ -832,14 +997,187 @@ void SsvcCommandsQueue::rememberRejection(const std::string& reason,
 }
 
 /**
+ * @brief Имя состояния для REST-контракта GET /rest/commands/{id}.
+ */
+const char* SsvcCommandsQueue::commandStateName(const SsvcCommandState state)
+{
+  switch (state) {
+  case SsvcCommandState::Queued:
+    return "queued";
+  case SsvcCommandState::Running:
+    return "running";
+  case SsvcCommandState::Sent:
+    return "sent";
+  case SsvcCommandState::Done:
+    return "done";
+  case SsvcCommandState::Rejected:
+    return "rejected";
+  case SsvcCommandState::Timeout:
+    return "timeout";
+  }
+  return "unknown";
+}
+
+/// Вызывается только под _journalMutex. 0 зарезервирован под «записи нет».
+uint32_t SsvcCommandsQueue::nextJournalIdLocked() const
+{
+  ++_journalLastId;
+  if (_journalLastId == 0) {
+    _journalLastId = 1;
+  }
+  return _journalLastId;
+}
+
+/// Вызывается только под _journalMutex. Слот берётся по кругу: самая старая
+/// запись перезаписывается, поэтому GET по её id после переполнения даёт 404, а
+/// не чужую команду.
+SsvcCommandsQueue::CommandRecord& SsvcCommandsQueue::beginRecordLocked(
+    const char* command, const std::string& parameters, const uint32_t now) const
+{
+  CommandRecord& record = _journal[_journalNext];
+  _journalNext = static_cast<uint8_t>((_journalNext + 1) % JOURNAL_SIZE);
+  record.id = nextJournalIdLocked();
+  record.command = command;
+  record.state = SsvcCommandState::Queued;
+  record.ok = -1;
+  record.reason = nullptr;
+  record.queuedAt = now;
+  record.startedAt = 0;
+  record.finishedAt = 0;
+  copyTruncated(record.parameters, sizeof(record.parameters), parameters);
+  return record;
+}
+
+/// Вызывается только под _journalMutex.
+SsvcCommandsQueue::CommandRecord* SsvcCommandsQueue::findRecordLocked(
+    const uint32_t id) const
+{
+  if (id == 0) {
+    return nullptr;
+  }
+  for (auto& record : _journal) {
+    if (record.id == id) {
+      return &record;
+    }
+  }
+  return nullptr;
+}
+
+/**
+ * @brief Отказ на постановке: терминальная запись с причиной.
+ *
+ * id такой записи клиенту не выдаётся (тела 400/409/501/503 не менялись),
+ * запись остаётся в журнале для диагностики.
+ */
+void SsvcCommandsQueue::journalRejected(const char* command,
+                                        const std::string& parameters,
+                                        const char* reason) const
+{
+  const uint32_t now = millis();
+  const std::lock_guard<std::mutex> lock(_journalMutex);
+  CommandRecord& record = beginRecordLocked(command, parameters, now);
+  record.state = SsvcCommandState::Rejected;
+  record.ok = 0;
+  record.reason = reason;
+  record.finishedAt = now;
+}
+
+/// Воркер забрал команду (переход queued -> running).
+void SsvcCommandsQueue::journalMarkRunning(const uint32_t id) const
+{
+  if (id == 0) {
+    return;
+  }
+  const std::lock_guard<std::mutex> lock(_journalMutex);
+  CommandRecord* record = findRecordLocked(id);
+  if (record == nullptr || record->state != SsvcCommandState::Queued) {
+    return;  // запись уже перезаписана кольцом
+  }
+  record->state = SsvcCommandState::Running;
+  record->startedAt = millis();
+}
+
+/// Байты ушли в UART (running -> sent); finishedAt ставит journalFinish.
+void SsvcCommandsQueue::journalMarkSent(const uint32_t id) const
+{
+  if (id == 0) {
+    return;
+  }
+  const std::lock_guard<std::mutex> lock(_journalMutex);
+  CommandRecord* record = findRecordLocked(id);
+  if (record == nullptr) {
+    return;
+  }
+  record->state = SsvcCommandState::Sent;
+  if (record->startedAt == 0) {
+    record->startedAt = millis();
+  }
+}
+
+/// Терминальное состояние записи: done/rejected/timeout или sent-как-итог.
+void SsvcCommandsQueue::journalFinish(const uint32_t id, const SsvcCommandState state,
+                                      const int8_t ok, const char* reason) const
+{
+  if (id == 0) {
+    return;
+  }
+  const uint32_t now = millis();
+  const std::lock_guard<std::mutex> lock(_journalMutex);
+  CommandRecord* record = findRecordLocked(id);
+  if (record == nullptr) {
+    return;
+  }
+  record->state = state;
+  record->ok = ok;
+  record->reason = reason;
+  record->finishedAt = now;
+}
+
+/**
+ * @brief Судьба команды по id: копия записи под мьютексом журнала.
+ *
+ * Копирование под блокировкой (а не сериализация) нужно, чтобы воркер не ждал
+ * HTTP-задачу: JSON собирается уже по снимку.
+ */
+bool SsvcCommandsQueue::getCommandStatus(const uint32_t commandId,
+                                         SsvcCommandStatus& out) const
+{
+  if (commandId == 0) {
+    return false;
+  }
+  const uint32_t now = millis();
+  const std::lock_guard<std::mutex> lock(_journalMutex);
+  const CommandRecord* record = findRecordLocked(commandId);
+  if (record == nullptr) {
+    return false;
+  }
+  // TTL: кольцо перезаписывается по кругу, поэтому старая запись должна
+  // «исчезнуть» и по времени, а не только по факту перезаписи.
+  if (now - record->queuedAt > JOURNAL_TTL_MS) {
+    return false;
+  }
+  out.id = record->id;
+  out.command = record->command;
+  out.state = record->state;
+  out.queuedAt = record->queuedAt;
+  out.startedAt = record->startedAt;
+  out.finishedAt = record->finishedAt;
+  out.ok = record->ok;
+  out.reason = record->reason;
+  return true;
+}
+
+/**
  * @brief Добавляет в очередь команду получения настроек SSVC.
  *
  * @param attempt_count Количество попыток.
  * @param timeout Тайм-аут ожидания (в тиках).
  */
-bool SsvcCommandsQueue::getSettings(const int attempt_count, const TickType_t timeout) const
+bool SsvcCommandsQueue::getSettings(const int attempt_count, const TickType_t timeout,
+                                    uint32_t* commandIdOut) const
 {
-  return pushCommandInQueue(SsvcCommandType::GET_SETTINGS, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::GET_SETTINGS, "", attempt_count, timeout, 0,
+                            nullptr, commandIdOut);
 }
 
 /**
@@ -849,9 +1187,11 @@ bool SsvcCommandsQueue::getSettings(const int attempt_count, const TickType_t ti
  * @param timeout Тайм-аут ожидания (в тиках).
  * @return true, если команда поставлена в очередь.
  */
-bool SsvcCommandsQueue::next(const int attempt_count, const TickType_t timeout) const
+bool SsvcCommandsQueue::next(const int attempt_count, const TickType_t timeout,
+                              uint32_t* commandIdOut) const
 {
-  return pushCommandInQueue(SsvcCommandType::NEXT, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::NEXT, "", attempt_count, timeout, 0,
+                            nullptr, commandIdOut);
 }
 
 /**
@@ -861,9 +1201,11 @@ bool SsvcCommandsQueue::next(const int attempt_count, const TickType_t timeout) 
  * @param timeout Тайм-аут ожидания (в тиках).
  * @return true, если команда поставлена в очередь.
  */
-bool SsvcCommandsQueue::pause(const int attempt_count, const TickType_t timeout) const
+bool SsvcCommandsQueue::pause(const int attempt_count, const TickType_t timeout,
+                               uint32_t* commandIdOut) const
 {
-  return pushCommandInQueue(SsvcCommandType::PAUSE, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::PAUSE, "", attempt_count, timeout, 0,
+                            nullptr, commandIdOut);
 }
 
 /**
@@ -873,9 +1215,11 @@ bool SsvcCommandsQueue::pause(const int attempt_count, const TickType_t timeout)
  * @param timeout Тайм-аут ожидания (в тиках).
  * @return true, если команда поставлена в очередь.
  */
-bool SsvcCommandsQueue::stop(const int attempt_count, const TickType_t timeout) const
+bool SsvcCommandsQueue::stop(const int attempt_count, const TickType_t timeout,
+                              uint32_t* commandIdOut) const
 {
-  return pushCommandInQueue(SsvcCommandType::STOP, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::STOP, "", attempt_count, timeout, 0,
+                            nullptr, commandIdOut);
 }
 
 /**
@@ -884,9 +1228,11 @@ bool SsvcCommandsQueue::stop(const int attempt_count, const TickType_t timeout) 
  * @param attempt_count Количество попыток.
  * @param timeout Тайм-аут ожидания (в тиках).
  */
-bool SsvcCommandsQueue::start(const int attempt_count, const TickType_t timeout) const
+bool SsvcCommandsQueue::start(const int attempt_count, const TickType_t timeout,
+                               uint32_t* commandIdOut) const
 {
-  return pushCommandInQueue(SsvcCommandType::START, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::START, "", attempt_count, timeout, 0,
+                            nullptr, commandIdOut);
 }
 
 /**
@@ -896,9 +1242,11 @@ bool SsvcCommandsQueue::start(const int attempt_count, const TickType_t timeout)
  * @param timeout Тайм-аут ожидания (в тиках).
  * @return true, если команда поставлена в очередь.
  */
-bool SsvcCommandsQueue::resume(const int attempt_count,const TickType_t timeout) const
+bool SsvcCommandsQueue::resume(const int attempt_count, const TickType_t timeout,
+                                uint32_t* commandIdOut) const
 {
-  return pushCommandInQueue(SsvcCommandType::RESUME, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::RESUME, "", attempt_count, timeout, 0,
+                            nullptr, commandIdOut);
 }
 
 /**
@@ -908,9 +1256,11 @@ bool SsvcCommandsQueue::resume(const int attempt_count,const TickType_t timeout)
  * @param timeout Тайм-аут ожидания (в тиках).
  * @return true, если команда поставлена в очередь.
  */
-bool SsvcCommandsQueue::version(const int attempt_count, const TickType_t timeout) const
+bool SsvcCommandsQueue::version(const int attempt_count, const TickType_t timeout,
+                                 uint32_t* commandIdOut) const
 {
-  return pushCommandInQueue(SsvcCommandType::VERSION, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::VERSION, "", attempt_count, timeout, 0,
+                            nullptr, commandIdOut);
 }
 
 /**
@@ -919,9 +1269,11 @@ bool SsvcCommandsQueue::version(const int attempt_count, const TickType_t timeou
  * @param attempt_count Количество попыток.
  * @param timeout Тайм-аут ожидания (в тиках).
  */
-bool SsvcCommandsQueue::at(const int attempt_count, const TickType_t timeout) const
+bool SsvcCommandsQueue::at(const int attempt_count, const TickType_t timeout,
+                            uint32_t* commandIdOut) const
 {
-  return pushCommandInQueue(SsvcCommandType::AT, "", attempt_count, timeout);
+  return pushCommandInQueue(SsvcCommandType::AT, "", attempt_count, timeout, 0,
+                            nullptr, commandIdOut);
 }
 
 /**
@@ -938,11 +1290,12 @@ bool SsvcCommandsQueue::at(const int attempt_count, const TickType_t timeout) co
  */
 bool SsvcCommandsQueue::set(const std::string& parameters, const int attempt_count,
                             const TickType_t timeout,
-                            std::vector<std::string>* skippedOut) const
+                            std::vector<std::string>* skippedOut,
+                            uint32_t* commandIdOut) const
 {
   ESP_LOGD(TAG, "Set command called with parameters: %s", parameters.c_str());
   return pushCommandInQueue(SsvcCommandType::SET, parameters, attempt_count, timeout, 0,
-                            skippedOut);
+                            skippedOut, commandIdOut);
 }
 
 /**
@@ -953,8 +1306,9 @@ bool SsvcCommandsQueue::set(const std::string& parameters, const int attempt_cou
  * @param timeout Тайм-аут ожидания (в тиках).
  */
 bool SsvcCommandsQueue::status(const std::string& parameters, const int attempt_count,
-                               const TickType_t timeout) const {
-  return pushCommandInQueue(SsvcCommandType::STATUS, utf8_to_win1251(parameters), attempt_count, timeout);
+                               const TickType_t timeout, uint32_t* commandIdOut) const {
+  return pushCommandInQueue(SsvcCommandType::STATUS, utf8_to_win1251(parameters), attempt_count,
+                            timeout, 0, nullptr, commandIdOut);
 }
 
 /**
@@ -969,9 +1323,10 @@ bool SsvcCommandsQueue::status(const std::string& parameters, const int attempt_
  * @return true, если команда поставлена в очередь.
  */
 bool SsvcCommandsQueue::getLog(const std::string& parameters, const unsigned long generation,
-                               const int attempt_count, const TickType_t timeout) const {
+                               const int attempt_count, const TickType_t timeout,
+                               uint32_t* commandIdOut) const {
   return pushCommandInQueue(SsvcCommandType::GET_LOG, parameters, attempt_count, timeout,
-                            generation);
+                            generation, nullptr, commandIdOut);
 }
 
 /**

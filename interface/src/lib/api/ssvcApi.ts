@@ -3,6 +3,7 @@ import { user } from '$lib/stores/user';
 import { get, writable } from 'svelte/store';
 import type { AlarmThresholdsState, TemperatureResponse } from '$lib/types/Sensors';
 import type {
+	CommandAcceptedResponse,
 	OcHardwareConfigResponse,
 	OcHardwareFaultsResponse,
 	SendCommandResponse,
@@ -128,19 +129,6 @@ export async function fetchSensorsTemperatureByZone(): Promise<TemperatureRespon
  */
 export async function updateSensorZone(address: string, zone: string): Promise<boolean> {
 	const url = `/rest/sensors/zone?address=${encodeURIComponent(address)}&zone=${encodeURIComponent(zone)}`;
-	const response = await apiFetch<unknown>(url, 'PUT');
-	return response.success;
-}
-
-/**
- * Обновление порогов датчика
- */
-export async function updateSensorThresholds(
-	address: string,
-	warning: number,
-	critical: number,
-): Promise<boolean> {
-	const url = `/rest/sensors/thresholds?address=${encodeURIComponent(address)}&warning=${warning}&critical=${critical}`;
 	const response = await apiFetch<unknown>(url, 'PUT');
 	return response.success;
 }
@@ -358,7 +346,7 @@ export async function postXkc25Calibrate(
  * Отправка команды на сервер
  */
 export async function sendCommand(command: string): Promise<SendCommandResponse> {
-	const response = await apiFetch<SendCommandResponse>(
+	const response = await apiFetch<CommandAcceptedResponse>(
 		'/rest/commands',
 		'POST',
 		{ commands: command }
@@ -369,7 +357,8 @@ export async function sendCommand(command: string): Promise<SendCommandResponse>
 		return { success: false, message: response.error };
 	}
 
-	return { success: true, message: response.data?.message ?? 'Command accepted' };
+	// 200 — это «принято в очередь» (тело всегда JSON, без поля message).
+	return { success: true, message: 'Command accepted' };
 }
 
 // ======================== Телеметрия ======================== //

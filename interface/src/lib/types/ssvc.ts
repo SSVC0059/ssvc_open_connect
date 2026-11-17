@@ -432,6 +432,16 @@ export type Xkc25VerifyStatusResponse = {
 	message?: string;
 };
 
+/** Ответ POST /rest/commands (200): команда принята в очередь. */
+export type CommandAcceptedResponse = {
+	status: 'accepted';
+	command: string;
+	/** id записи журнала попыток для GET /rest/commands/{id}; 0 — новой записи нет. */
+	commandId: number;
+	/** Неблокирующие предупреждения XKC-25 (только для start). */
+	warnings?: string[];
+};
+
 export type SendCommandResponse = {
 	success: boolean;
 	message: string;
