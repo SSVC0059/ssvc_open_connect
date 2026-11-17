@@ -5,11 +5,11 @@ HTTP-сервис, который открывает контроллер OpenCo
 управление сессиями, клиент устройства с авторизацией/ретраями и тестовый двойник
 контроллера.
 
-**Статус: WP0.** Здесь есть транспорт, доступ, конфиг, `DeviceClient`, политика риска,
-тест-двойник и схемы `info`/`telemetry`. Доменных инструментов `oc_*` пока нет:
-каталог собирает WP11 (`src/tools/index.ts` → массив `ToolDef` → `startService`).
-Пакет уже принимает инструменты через `registerTools`, поэтому домены подключаются
-без правок каркаса.
+**Статус: WP0 + WP1.** Каркас (транспорт, доступ, конфиг, `DeviceClient`, политика риска,
+тест-двойник, схемы `info`/`telemetry`) и домен WP1 — информация, возможности,
+состояние/телеметрия и диагностика (см. §14). Каталог остальных доменов собирает WP11
+(`src/tools/index.ts` → массив `ToolDef` → `startService`). Пакет принимает инструменты
+через `registerTools`, поэтому домены подключаются без правок каркаса.
 
 Требования задания: `docs/develop/mcp-server-agents.md` §4, архитектура и REST-контракт —
 `docs/develop/mcp-server.md`, проверенный контракт прошивки — `docs/develop/mcp-contract-notes.md`.
@@ -31,7 +31,7 @@ npm install --ignore-scripts --cache .npm-cache
 
 ```bash
 npm run typecheck   # tsc по src и test, 0 ошибок
-npm test            # node:test, 26 тестов
+npm test            # node:test, 47 тестов
 npm run build       # dist/
 npm start           # node dist/index.js
 ```
@@ -319,7 +319,7 @@ mcp/
 
 ## 11. Тесты: что и как проверяется
 
-`npm test` — **26 тестов**, все на `node:test` + `node:assert/strict`, без сети и без диска
+`npm test` — **47 тестов**, все на `node:test` + `node:assert/strict`, без сети и без диска
 вне временного каталога:
 
 - `http.test.ts` (11): `initialize` создаёт сессию и возвращает `Mcp-Session-Id`; повтор
@@ -336,6 +336,18 @@ mcp/
   ретраи только GET (503 на GET повторяется, на PUT — нет); `409 blockReasons` →
   `guard_blocked`; `503 queue_full` → `queue_full` без повтора; `withWrite` сериализует
   записи и не рвёт очередь после ошибки.
+- `info.test.ts` (8): маппинг `/rest/oc/info` → плоская модель `device`; `api_code` из
+  строки `api` и `null` для отсутствующих полей; `available:false` → `unavailable`;
+  bool-флаги `/rest/features` отделены от строковых метаданных; `include_runtime:false`
+  не читает флаги; `oc_diagnostics` без сетевых вызовов и без секретов, видит кэш/аудит;
+  ресурс `openconnect://info`; функции `registerInfoTools` и `registerTelemetryTools`
+  регистрируют все шесть инструментов.
+- `telemetry.test.ts` (13): `oc_get_state` — один запрос snapshot, нормализация чисел-строк,
+  `partial[]`, `include`; `stale` при неизменном `lastUpdate` >10 с и сброс при обновлении
+  (инъекция часов); порог строго >10 с; отсутствие `telemetry` → `device_error`;
+  SPA-заглушка вместо snapshot → `feature_unsupported`; `oc_get_telemetry` читает
+  `/rest/telemetry` (и `/rest/sensor`), snapshot не трогает; `oc_get_process_status` —
+  только статус; нормализация не теряет точность; ресурс `openconnect://telemetry`.
 
 Тестовый двойник (`test/fakeHttp.ts`) полностью в памяти: `fakeHttp(routes)` подменяет
 `HttpLike`, `makeTestContext(routes, overrides)` собирает готовый `ToolContext` с фейковым
@@ -383,3 +395,42 @@ Desktop, IDE-плагины, MCP Inspector):
 | `404` «Сессия MCP не найдена» | Сессия истекла по idle, сервис перезапускался или клиент потерял `Mcp-Session-Id`. Пересоздайте через `initialize` |
 | `/readyz` → `503 device_unreachable`/`auth_failed` | Контроллер недоступен или неверны `SSVC_USER`/`SSVC_PASSWORD`. Проверьте сеть и учётку admin |
 | В ответах `device_error` «не соответствует ожидаемой схеме» | Расхождение контракта с прошивкой. Включите `SSVC_RAW_LOG=all` и посмотрите `logs/raw/`; в `details.issues` — какие поля не сошлись |
+
+---
+
+## 14. Инструменты WP1: информация, состояние и телеметрия
+
+Домен WP1 подключён в `src/index.ts` (`infoTools()` + `telemetryTools()`), поэтому
+`tools/list` и `tools/call` работают уже сейчас. Все инструменты — риск 0 (чтение),
+`confirm` не требуют и ничего на контроллере не меняют.
+
+| Инструмент | Что читает | Риск | Особенности |
+|---|---|---|---|
+| `oc_get_info` | `GET /rest/oc/info` (кэш 60 с) | 0 | Плоская модель `device` + `api_features[]` с `available` + `unavailable[]` |
+| `oc_get_capabilities` | `/rest/oc/info`; при `include_runtime:true` — `/rest/features` | 0 | `features` — только bool, строковые метаданные — в `features_meta` |
+| `oc_get_state` | **один** `GET /rest/oc/snapshot` | 0 | info + telemetry + status (+ sensor/faults по `include`), `partial[]`, `stale` |
+| `oc_get_telemetry` | `GET /rest/telemetry`; при `include_sensors:true` — ещё `GET /rest/sensor` | 0 | Совместимость со старой прошивкой; snapshot не читает |
+| `oc_get_process_status` | `GET /rest/telemetry` | 0 | Только `stage/status/uart_error/started_at/ended_at/stages` |
+| `oc_diagnostics` | ничего (локальное состояние сервера) | 0 | Конфиг без секретов, auth, возраст capability-кэша, счётчики, последний аудит; активные сессии — за HTTP-слоем |
+
+Ограничения и ловушки:
+
+- **Данные отстают до ~2 с**: контроллер обновляет телеметрию циклом, а не по запросу.
+- **`observed_at`/`last_update_ms` — это `millis()` устройства (uptime), не epoch.** Их
+  нельзя сравнивать с часами сервера.
+- **`stale`** считается по памяти: сервер запоминает последнее `lastUpdate` и монотонное
+  время его получения; `stale:true` — значение не менялось дольше 10 с (телеметрия встала).
+  Для снимка наблюдается `lastUpdate`; `observed_at` меняется на каждом запросе и потому
+  используется только как запасной вариант, если `lastUpdate` не пришёл.
+- **`partial[]`** — «данных нет», а не «ноль»: отсутствующий запрошенный компонент
+  добавляется в список.
+- **Старая прошивка без `/rest/oc/snapshot`**: `oc_get_state` отвечает
+  `feature_unsupported` с подсказкой. Прошивка отдаёт SPA-заглушку `200 text/html`,
+  поэтому «нет маршрута» определяется по Content-Type/телу, а не по коду. При этом
+  `oc_get_telemetry` и `oc_get_process_status` продолжают работать.
+- **`/rest/features` содержит не только bool** (`firmware_version`, …): домен разбирает
+  ответ терпимо, поэтому `oc_get_capabilities` не падает на живой прошивке.
+- **Ресурсы** `openconnect://info` и `openconnect://telemetry` реализованы в
+  `src/resources/*` (`registerInfoResource` / `registerTelemetryResource`). К серверу
+  каждой сессии их подключает WP11 — в текущем HTTP-срезе ресурсы ещё не
+  зарегистрированы, инструменты же доступны.

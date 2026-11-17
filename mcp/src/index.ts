@@ -4,8 +4,13 @@
  * Порядок важен: `.env` читается до `loadConfig`, обязательные переменные проверяются
  * до открытия порта («открытый порт без токена» недопустим, mcp-server.md §3.9).
  *
- * WP11 подключает сюда собранный каталог инструментов (`src/tools/index.ts`):
- * достаточно передать массив в `startService`. В WP0 каталог пуст.
+ * WP11 подключает сюда собранный каталог инструментов (`src/tools/index.ts`): достаточно
+ * передать массив в `startService`. Сейчас здесь подключён домен WP1 (информация,
+ * возможности, состояние и телеметрия); сервер уже отдаёт его `tools/list`/`tools/call`.
+ *
+ * Инструменты WP1 собираются из тех же `ToolDef`, что регистрируют `registerInfoTools` и
+ * `registerTelemetryTools`: сервер создаётся на сессию внутри `http/app.ts`, поэтому
+ * `startService` принимает список определений, а не готовый `McpServer`.
  */
 
 import { pathToFileURL } from 'node:url';
@@ -17,6 +22,8 @@ import { RawLogger } from './device/RawLogger.js';
 import { createApp, type AppHandle } from './http/app.js';
 import { createLogger, type Logger } from './logging.js';
 import type { ToolContext, ToolDef } from './mcp/types.js';
+import { infoTools } from './tools/info.tools.js';
+import { telemetryTools } from './tools/telemetry.tools.js';
 
 export interface StartServiceOptions {
   /** Окружение; по умолчанию `process.env`. */
@@ -95,7 +102,9 @@ export async function startService(opts: StartServiceOptions = {}): Promise<Star
 async function main(): Promise<void> {
   let service: StartedService;
   try {
-    service = await startService({ tools: [] });
+    // Домен WP1: информация, возможности, состояние/телеметрия и диагностика сервера.
+    const tools: ToolDef[] = [...infoTools(), ...telemetryTools()];
+    service = await startService({ tools });
   } catch (error) {
     if (error instanceof ConfigError) {
       process.stderr.write(`[ssvc-openconnect-mcp] Ошибка конфигурации: ${error.message}\n`);

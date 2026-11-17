@@ -41,8 +41,23 @@ export const deviceErrorBodySchema = z
 /** Ответ text/plain, нормализованный в объект: `{raw}`. */
 export const textResponseSchema = z.object({ raw: z.string() });
 
-/** GET /rest/features → карта булевых флагов. */
-export const featureFlagsSchema = z.record(z.boolean());
+/**
+ * `GET /rest/features` → карта флагов и метаданных.
+ *
+ * Только `z.boolean()` здесь ошибочно: живой ответ содержит и строки
+ * (`firmware_version`, `ssvc_version`), и числа, поэтому строгая схема валила
+ * запрос в `device_error`. Флаги извлекаются отдельно, см. `pickBooleanFlags`.
+ */
+export const featuresPayloadSchema = z.record(z.unknown());
+
+/** Только булевы флаги из `/rest/features`; остальные поля — метаданные. */
+export function pickBooleanFlags(payload: Record<string, unknown>): Record<string, boolean> {
+  const flags: Record<string, boolean> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (typeof value === 'boolean') flags[key] = value;
+  }
+  return flags;
+}
 
 /** Ответы вида `{"supported": false}` на GPIO-сборке — не ошибка, а «функция недоступна». */
 export const supportFlagSchema = z.object({ supported: z.boolean() }).passthrough();

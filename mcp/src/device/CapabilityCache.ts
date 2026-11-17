@@ -8,7 +8,7 @@
 import type { Logger } from '../logging.js';
 import type { DeviceMeta } from '../mcp/types.js';
 import type { DeviceClient } from './DeviceClient.js';
-import { featureFlagsSchema, parseJsonBody } from './schemas/common.js';
+import { featuresPayloadSchema, parseJsonBody, pickBooleanFlags } from './schemas/common.js';
 import {
   infoApiCode,
   infoCompatibility,
@@ -35,7 +35,7 @@ export class CapabilityCache {
   private info: OcInfo | null = null;
   private infoAt: number | null = null;
   private inflight: Promise<OcInfo> | null = null;
-  private featuresValue: Record<string, boolean> | null = null;
+  private featuresValue: Record<string, unknown> | null = null;
   private featuresAt: number | null = null;
 
   constructor(client: DeviceClient, opts: CapabilityCacheOptions = {}) {
@@ -101,10 +101,21 @@ export class CapabilityCache {
   }
 
   /**
-   * Рантайм-флаги прошивки `GET /rest/features` (карта bool).
-   * Кэшируются вместе с info: один TTL на оба запроса.
+   * Рантайм-флаги прошивки `GET /rest/features` — только булевы значения.
+   *
+   * Ответ прошивки содержит и метаданные (`firmware_version`, `ssvc_version`),
+   * поэтому схема терпимая, а в флаги попадают только bool. Полный ответ —
+   * `featuresPayload()`, если нужны метаданные.
    */
   async features(force = false): Promise<Record<string, boolean>> {
+    return pickBooleanFlags(await this.featuresPayload(force));
+  }
+
+  /**
+   * Полный ответ `GET /rest/features` (флаги + метаданные, например версия прошивки).
+   * Кэшируется вместе с info: один TTL на оба запроса.
+   */
+  async featuresPayload(force = false): Promise<Record<string, unknown>> {
     if (
       !force &&
       this.featuresValue !== null &&
@@ -129,7 +140,7 @@ export class CapabilityCache {
         details: { body: raw.body.slice(0, 2_000) },
       });
     }
-    const result = featureFlagsSchema.safeParse(parsed.value);
+    const result = featuresPayloadSchema.safeParse(parsed.value);
     if (!result.success) {
       throw new OcError('device_error', 'Ответ /rest/features не соответствует ожидаемой схеме', {
         hint: 'Проверьте версию прошивки контроллера.',

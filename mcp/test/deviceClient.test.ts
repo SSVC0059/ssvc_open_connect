@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { z } from 'zod';
 import { DeviceClient } from '../src/device/DeviceClient.js';
+import { CapabilityCache } from '../src/device/CapabilityCache.js';
 import { ocInfoSchema } from '../src/device/schemas/info.js';
 import { OcError } from '../src/errors.js';
 import { silentLogger } from '../src/logging.js';
@@ -246,4 +247,34 @@ test('withWrite сериализует записи: одновременно в
   });
   await assert.rejects(failing, /write failed/);
   assert.equal(await write('d', 0), 'd');
+});
+
+test('features() переживает метаданные в /rest/features и отдаёт только булевы флаги', async () => {
+  // Живой ответ прошивки содержит не только bool: строки версий и числа.
+  // Строгая схема `z.record(z.boolean())` валила такой ответ в device_error.
+  const { client } = makeClient([
+    signInRoute(),
+    {
+      method: 'GET',
+      path: '/rest/features',
+      reply: () => ({
+        status: 200,
+        body: {
+          security: false,
+          mqtt: true,
+          ntp: true,
+          firmware_version: '0.2.9.2',
+          ssvc_version: '2.3.30',
+          uptime: 42,
+        },
+      }),
+    },
+  ]);
+  const caps = new CapabilityCache(client, { log: silentLogger() });
+
+  const flags = await caps.features();
+  assert.deepEqual(flags, { security: false, mqtt: true, ntp: true });
+
+  const payload = await caps.featuresPayload();
+  assert.equal(payload.firmware_version, '0.2.9.2', 'метаданные доступны отдельно');
 });
