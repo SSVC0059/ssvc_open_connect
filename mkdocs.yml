@@ -101,6 +101,7 @@ nav:
       - "MCP-сервер (архитектура и план)": develop/mcp-server.md
       - "MCP-сервер: пакеты работ для агентов": develop/mcp-server-agents.md
       - "MCP-сервер: пользовательские сценарии": develop/mcp-scenarios.md
+      - "MCP-сервер: контракт прошивки (разведка)": develop/mcp-contract-notes.md
       - "UART API SSVC (справка)": ssvc_uart_api_docs.md
       - "Протокол UART — примеры (JSON/TXT)": ssvc-serial-protocol/develop/Readme.md
       - "Фронтенд":
