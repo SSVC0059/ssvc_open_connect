@@ -66,6 +66,16 @@ public:
     ~TelemetryService();
     void begin() const; // Метод для запуска Ticker
 
+    /**
+     * @brief Экземпляр сервиса для читателей состояния.
+     *
+     * Нужен агрегирующему снимку GET /rest/oc/snapshot: он читает телеметрию тем
+     * же StatefulService::read(), что и HttpEndpoint, не дёргая сеть и не
+     * сериализуя состояние повторно. Сервис создаётся в SsvcOpenConnect::begin()
+     * и сам регистрируется в конструкторе — владельцу не нужен новый аксессор.
+     */
+    static TelemetryService* getInstance() { return _instance; }
+
 private:
     RectificationProcess& _rProcess;
     HttpEndpoint<TelemetryState> _httpEndpoint;
@@ -73,6 +83,10 @@ private:
 
     JsonSpiRamAllocator _jsonAllocator;
     TimerHandle_t _updateTimer = nullptr;
+
+    // Ссылка на единственный созданный экземпляр. Хранится ради читателей
+    // состояния (snapshot); nullptr означает «сервис ещё не создан».
+    static TelemetryService* _instance;
 
     void readStateToJson(TelemetryState& state, JsonObject& root);
     static void vUpdateTimerCallback(TimerHandle_t xTimer);

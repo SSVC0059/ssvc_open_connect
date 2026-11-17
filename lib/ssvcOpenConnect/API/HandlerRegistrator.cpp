@@ -163,6 +163,17 @@ void HandlerRegistrator::registerTelegramBotHandler() const
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
 
+    // Агрегированный снимок состояния (info + telemetry + status + sensor + faults).
+    // Путь без завершающего слеша: клиент обращается ровно к /rest/oc/snapshot.
+    // Только IS_ADMIN: /rest/telemetry и /rest/sensor в прошивке admin-only, иначе
+    // снимок стал бы обходом прав для гостя.
+    _server.on("/rest/oc/snapshot", HTTP_GET,
+              _securityManager->wrapRequest(
+                  [](AsyncWebServerRequest* request) {
+                      OpenConnectHandler::getSnapshot(request);
+                  },
+                  AuthenticationPredicates::IS_ADMIN));
+
     _server.on("/rest/oc/hardware-config", HTTP_GET,
               _securityManager->wrapRequest(
                   [](AsyncWebServerRequest* request) {

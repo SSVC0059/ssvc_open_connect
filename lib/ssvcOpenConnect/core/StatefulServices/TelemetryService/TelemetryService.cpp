@@ -15,6 +15,10 @@
 
 static JsonMemoryLogger s_readMemLogger("TelemetryRead", 20);  // лог раз в 20 вызовов
 
+// Регистрируется конструктором: сервис создаётся как обычно в
+// SsvcOpenConnect::begin(), поэтому владельцу не нужен отдельный setInstance.
+TelemetryService* TelemetryService::_instance = nullptr;
+
 void TelemetryService::readStateToJson(TelemetryState& state, JsonObject& root)
 {
     s_readMemLogger.recordBefore();
@@ -69,6 +73,9 @@ TelemetryService::TelemetryService(AsyncWebServer *server,
                false)
 
 {
+    // Снимок должен видеть именно работающий сервис, а не его отсутствие.
+    _instance = this;
+
     // Создание FreeRTOS Timer
     _updateTimer = xTimerCreate(
         "TelemetryUpdateTimer",
@@ -86,6 +93,12 @@ TelemetryService::TelemetryService(AsyncWebServer *server,
 
 TelemetryService::~TelemetryService()
 {
+    // Ссылка снимается только если она указывает на этот экземпляр: следующий
+    // сервис не должен потерять регистрацию из-за удаления предыдущего.
+    if (_instance == this) {
+        _instance = nullptr;
+    }
+
     // Остановка и удаление таймера (для корректной очистки памяти)
     if (_updateTimer != nullptr) {
         if (xTimerIsTimerActive(_updateTimer) != pdFALSE) {
