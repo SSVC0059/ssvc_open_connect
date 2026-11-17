@@ -22,6 +22,29 @@
 		let telemetry = $derived(data?.telemetry)
 		let status = $derived(data?.status)
 
+		// Давление от SSVC: в API common.mmhg приходит строкой, поэтому приводим к числу
+		// и не показываем, если значение не разобралось.
+		const ssvcPressure = $derived.by((): number | null => {
+			const raw = telemetry?.common?.mmhg;
+			const value = typeof raw === 'number' ? raw : Number(raw);
+			return Number.isFinite(value) ? value : null;
+		});
+
+		// Атмосферное давление измеряет BMP581 — единственный датчик типа "pressure"
+		// в /rest/sensor. Раньше этот блок читал telemetry.tank_mmhg, но SSVC такого
+		// поля в телеметрии не присылает (есть common.mmhg), поэтому он не отрисовывался.
+		const pressureSensor = $derived.by(() => {
+			if (!temperatureResponse) return null;
+			for (const sensorMap of Object.values(temperatureResponse)) {
+				for (const [address, reading] of Object.entries(sensorMap)) {
+					if (reading?.type === 'pressure') {
+						return { address, ...reading };
+					}
+				}
+			}
+			return null;
+		});
+
 		// параметры опроса
 		const TELEMETRY_INTERVAL = 2000;
 		const STATUS_INTERVAL = 3000;
@@ -144,9 +167,9 @@
 			<span class="status-item">
 				<span class="label">T2:</span> {telemetry?.common.tp2?.toFixed(2)}°C
 			</span>
-            {#if telemetry?.tank_mmhg}
+            {#if ssvcPressure !== null}
                 <span class="status-item">
-                    <span class="label">Давление:</span> {telemetry?.tank_mmhg} ммРс
+                    <span class="label">Давление:</span> {ssvcPressure.toFixed(2)} мм рт. ст.
                 </span>
             {/if}
 		</div>
@@ -172,10 +195,11 @@
 										<span class="reading-label">Куб</span>
 										<span class="reading-value">{telemetry.common.tp2.toFixed(2)}°C</span>
 									</div>
-									{#if telemetry.tank_mmhg}
-										<div class="reading-item">
-											<span class="reading-label">Атмосферное давление:</span>
-											<span class="reading-value">{telemetry.tank_mmhg} ммРс</span>
+									{#if pressureSensor}
+										<!-- Узкая колонка: длинная подпись и единица «мм рт. ст.» не влезают в одну строку -->
+										<div class="reading-item reading-item--pressure">
+											<span class="reading-label">Атмосферное давление</span>
+											<span class="reading-value">{pressureSensor.v.toFixed(3)} {pressureSensor.u}</span>
 										</div>
 									{/if}
 								</div>
@@ -456,6 +480,19 @@
 					.readings-list .reading-item .reading-label,
 					.readings-list .reading-item .reading-value {
 						color: var(--text-color) !important;
+					}
+
+					/* Давление: подпись и значение друг под другом, иначе длинная
+					   единица «мм рт. ст.» ломает строку в узкой колонке. */
+					.readings-list .reading-item--pressure {
+						flex-direction: column;
+						align-items: flex-start;
+						gap: 0.1rem;
+
+						.reading-value {
+							align-self: flex-end;
+							white-space: nowrap;
+						}
 					}
 				}
 

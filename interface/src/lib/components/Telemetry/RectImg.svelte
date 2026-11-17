@@ -79,6 +79,22 @@
 	let tankCriticalTemp = $state(100);
 	let isCriticalTankTemp = $state(false)
 
+	/**
+	 * Давление на схеме куба: датчик BMP581 (тип "pressure") из /rest/sensor.
+	 * `telemetry.tank_mmhg` SSVC не присылает (в телеметрии есть только common.mmhg),
+	 * поэтому прежняя подпись под кубом не отрисовывалась даже при включённом датчике.
+	 */
+	const tankPressure = $derived.by((): SensorDetails | null => {
+		for (const sensorMap of Object.values(temperatureResponse ?? {})) {
+			for (const details of Object.values(sensorMap)) {
+				if (details.type === 'pressure') {
+					return details;
+				}
+			}
+		}
+		return null;
+	});
+
 	function getGradientStops(minimalTemperature: number, maximalTemperature: number, midTemperature: number, currentTemperature: number) {
 		if (currentTemperature <= midTemperature) {
 			// Температура ниже 78.8°C - меняем синий stop
@@ -420,12 +436,12 @@
 						class="sensor-text">{tankThermalValue.toFixed(2)}</text>
 		</g>
 	</g>
-	{#if telemetry.tank_mmhg}
+	{#if tankPressure}
 		<g>
-			<g>
-				<text x="125.5" y="377"
-							class="sensor-text">{telemetry.tank_mmhg}ммРс</text>
-			</g>
+			<!-- Подпись давления датчика BMP581 под температурой куба (x/y из исходной схемы) -->
+			<text x="121.5" y="376" class="pressure-text">
+				{tankPressure.v.toFixed(3)}<tspan class="pressure-unit" dx="1.5">{tankPressure.u}</tspan>
+			</text>
 		</g>
 	{/if}
 	<g>
@@ -561,6 +577,21 @@
         font-size: 12px;
         font-weight: bold;
         text-anchor: middle;
+    }
+
+    /* Давление под кубом: значение чуть мельче температуры, единица — ещё мельче,
+       чтобы «мм рт. ст.» уместилось в габаритах куба (viewBox 280x470). */
+    .pressure-text {
+        font-family: Arial, sans-serif;
+        font-size: 10px;
+        font-weight: bold;
+        text-anchor: middle;
+        fill: var(--glass-primary-800, #1f2937);
+    }
+
+    .pressure-unit {
+        font-size: 6.5px;
+        font-weight: normal;
     }
 
     /*Капли*/
