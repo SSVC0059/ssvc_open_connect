@@ -17,20 +17,15 @@
  * помнить вложенность `ssvc`/`oc` прошивки.
  */
 
+import { z } from 'zod';
 import type { DeviceClient } from '../device/DeviceClient.js';
-import { OcError, httpError } from '../errors.js';
-import {
-  bodyForDetails,
-  headerValue,
-  isJsonContentType,
-  parseJsonBody,
-} from '../device/schemas/common.js';
 import {
   infoApiCode,
   infoCompatibility,
   unavailableFeatures,
   type OcInfo,
 } from '../device/schemas/info.js';
+import { readJson } from './readJson.js';
 
 export const INFO_PATH = '/rest/oc/info';
 export const FEATURES_PATH = '/rest/features';
@@ -128,49 +123,32 @@ export function splitRuntimeFeatures(raw: Record<string, unknown>): RuntimeFeatu
  *  - сеть/таймаут — из `DeviceClient.request`;
  *  - `404`/SPA-заглушка — `feature_unsupported`: на этой прошивке маршрута нет;
  *  - не JSON/не объект — `device_error` с телом ответа.
+ *
+ * Разбор (404, Content-Type, JSON, схема) — общий `readJson.ts`: домен задаёт только
+ * русские тексты. SPA-заглушка по общему правилу (mcp-server.md §2.5 п.16) — это
+ * `feature_unsupported`; до сведения разбора в один владелец здесь отдавался
+ * `device_error`, то есть домен спорил с собственным контрактом.
  */
 export async function loadRuntimeFeatures(client: DeviceClient): Promise<RuntimeFeatures> {
-  const response = await client.request('GET', FEATURES_PATH, undefined, {
-    headers: { accept: 'application/json' },
-  });
-
-  if (response.status === 404) {
-    throw new OcError('feature_unsupported', 'Прошивка не отдаёт список функций /rest/features', {
+  const payload = await readJson(client, FEATURES_PATH, z.record(z.unknown()), {
+    notFound: {
+      message: 'Прошивка не отдаёт список функций /rest/features',
       hint:
         'Обновите прошивку OpenConnect: рантайм-флаги появились в версии с GET /rest/features. ' +
         'Реестр возможностей UART API при этом доступен в oc_get_info.',
-      details: { status: response.status, path: FEATURES_PATH },
-    });
-  }
-  if (response.status < 200 || response.status >= 300) {
-    throw httpError({ status: response.status, body: response.body, method: 'GET', path: FEATURES_PATH });
-  }
-  // Неизвестный путь прошивка отдаёт SPA-заглушкой 200 text/html (mcp-server.md §2.5 п.16).
-  if (!isJsonContentType(response.headers)) {
-    throw new OcError('device_error', 'Ответ /rest/features не является JSON', {
-      hint:
-        'Похоже, прошивка не знает этого маршрута и вернула веб-страницу. Проверьте версию прошивки.',
-      details: {
-        status: response.status,
-        content_type: headerValue(response.headers, 'content-type') ?? null,
-        body: bodyForDetails(response.body),
-      },
-    });
-  }
-  const parsed = parseJsonBody(response.body);
-  if (!parsed.ok) {
-    throw new OcError('device_error', 'Ответ /rest/features не является корректным JSON', {
-      hint: 'Проверьте версию прошивки контроллера и повторите запрос.',
-      details: { status: response.status, parse_error: parsed.error, body: bodyForDetails(response.body) },
-    });
-  }
-  if (typeof parsed.value !== 'object' || parsed.value === null || Array.isArray(parsed.value)) {
-    throw new OcError('device_error', 'Ответ /rest/features имеет неожиданную форму', {
+    },
+    notJson: {
+      code: 'device_error',
+      message: 'Ответ /rest/features не является JSON',
+      hint: 'Похоже, прошивка не знает этого маршрута и вернула веб-страницу. Проверьте версию прошивки.',
+    },
+    invalidJson: { message: 'Ответ /rest/features не является корректным JSON' },
+    schemaMismatch: {
+      message: 'Ответ /rest/features имеет неожиданную форму',
       hint: 'Ожидалась карта «имя флага → bool». Проверьте версию прошивки контроллера.',
-      details: { status: response.status, body: bodyForDetails(response.body) },
-    });
-  }
-  return splitRuntimeFeatures(parsed.value as Record<string, unknown>);
+    },
+  });
+  return splitRuntimeFeatures(payload);
 }
 
 /** Возможности для `oc_get_capabilities`: реестр API + (опционально) рантайм-флаги. */

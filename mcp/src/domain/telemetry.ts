@@ -33,13 +33,7 @@
 
 import { z } from 'zod';
 import type { DeviceClient } from '../device/DeviceClient.js';
-import { OcError, httpError } from '../errors.js';
-import {
-  bodyForDetails,
-  headerValue,
-  isJsonContentType,
-  parseJsonBody,
-} from '../device/schemas/common.js';
+import { OcError } from '../errors.js';
 import { ocInfoSchema } from '../device/schemas/info.js';
 import {
   TELEMETRY_STALE_MS,
@@ -47,6 +41,7 @@ import {
   type RectStatus,
 } from '../device/schemas/telemetry.js';
 import { mapInfo, type InfoView } from './info.js';
+import { readJson } from './readJson.js';
 
 export const SNAPSHOT_PATH = '/rest/oc/snapshot';
 export const TELEMETRY_PATH = '/rest/telemetry';
@@ -320,70 +315,32 @@ function toMillis(value: number | string | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function snapshotUnsupported(status: number, contentType: string | null): OcError {
-  return new OcError('feature_unsupported', 'Контроллер не отдаёт снимок состояния /rest/oc/snapshot', {
-    hint:
-      'Нужна прошивка OpenConnect с GET /rest/oc/snapshot (0.2.9.x или новее). ' +
-      'Пока используйте oc_get_telemetry и oc_get_process_status: они читают /rest/telemetry.',
-    details: { status, content_type: contentType, path: SNAPSHOT_PATH },
-  });
-}
+const SNAPSHOT_UNSUPPORTED_MESSAGE = 'Контроллер не отдаёт снимок состояния /rest/oc/snapshot';
+const SNAPSHOT_UNSUPPORTED_HINT =
+  'Нужна прошивка OpenConnect с GET /rest/oc/snapshot (0.2.9.x или новее). ' +
+  'Пока используйте oc_get_telemetry и oc_get_process_status: они читают /rest/telemetry.';
 
 /**
  * Читает `/rest/oc/snapshot` и проверяет форму ответа.
  *
- * Используется `client.request`, а не `client.get`, потому что отсутствие маршрута на
- * старой прошивке выглядит как успех: `200 text/html` (SPA-заглушка). Код ответа сам
- * по себе не distinguish, поэтому смотрим Content-Type/тело и отвечаем
- * `feature_unsupported` с подсказкой про прошивку.
+ * Отсутствие маршрута на старой прошивке выглядит как успех: `200 text/html` (SPA-заглушка)
+ * или `501`. Поэтому «нет маршрута» определяется общим разбором (`readJson.ts`: статус,
+ * Content-Type, JSON, схема), а домен задаёт только текст с подсказкой про запасные
+ * инструменты. Разбор в домене не дублируется.
  */
 export async function fetchSnapshot(client: DeviceClient): Promise<SnapshotRaw> {
-  const response = await client.request('GET', SNAPSHOT_PATH, undefined, {
-    headers: { accept: 'application/json' },
-  });
-  const contentType = headerValue(response.headers, 'content-type') ?? null;
-
-  if (response.status === 404 || response.status === 501) {
-    throw snapshotUnsupported(response.status, contentType);
-  }
-  if (response.status < 200 || response.status >= 300) {
-    throw httpError({
-      status: response.status,
-      body: response.body,
-      method: 'GET',
-      path: SNAPSHOT_PATH,
-    });
-  }
-  if (!isJsonContentType(response.headers)) {
-    // Не «битый JSON», а именно отсутствие маршрута: прошивка отдала веб-страницу.
-    throw snapshotUnsupported(response.status, contentType);
-  }
-
-  const parsed = parseJsonBody(response.body);
-  if (!parsed.ok) {
-    throw new OcError('device_error', 'Ответ /rest/oc/snapshot не является корректным JSON', {
-      hint: 'Проверьте версию прошивки контроллера и повторите запрос.',
-      details: { status: response.status, parse_error: parsed.error, body: bodyForDetails(response.body) },
-    });
-  }
-  const result = snapshotSchema.safeParse(parsed.value);
-  if (!result.success) {
-    throw new OcError('device_error', 'Ответ /rest/oc/snapshot не соответствует ожидаемой схеме', {
+  return readJson(client, SNAPSHOT_PATH, snapshotSchema, {
+    unsupportedStatuses: [501],
+    notFound: { message: SNAPSHOT_UNSUPPORTED_MESSAGE, hint: SNAPSHOT_UNSUPPORTED_HINT },
+    notJson: { message: SNAPSHOT_UNSUPPORTED_MESSAGE, hint: SNAPSHOT_UNSUPPORTED_HINT },
+    invalidJson: { message: 'Ответ /rest/oc/snapshot не является корректным JSON' },
+    schemaMismatch: {
+      message: 'Ответ /rest/oc/snapshot не соответствует ожидаемой схеме',
       hint:
         'Расхождение контракта с прошивкой: посмотрите details.issues/details.body ' +
         'и при необходимости включите SSVC_RAW_LOG=all.',
-      details: {
-        status: response.status,
-        path: SNAPSHOT_PATH,
-        issues: result.error.issues.map((issue) => ({
-          path: issue.path.join('.'),
-          message: issue.message,
-        })),
-        body: bodyForDetails(response.body),
-      },
-    });
-  }
-  return result.data;
+    },
+  });
 }
 
 /**
@@ -395,112 +352,52 @@ export async function fetchTelemetry(client: DeviceClient): Promise<{
   status: RectStatus;
   lastUpdate: number | null;
 }> {
-  const response = await client.request('GET', TELEMETRY_PATH, undefined, {
-    headers: { accept: 'application/json' },
-  });
-  if (response.status === 404) {
-    throw new OcError('feature_unsupported', 'Прошивка не отдаёт телеметрию /rest/telemetry', {
+  const data = await readJson(client, TELEMETRY_PATH, telemetryResponseSchema, {
+    notFound: {
+      message: 'Прошивка не отдаёт телеметрию /rest/telemetry',
       hint:
         'Проверьте версию прошивки SSVC: /rest/telemetry — базовый маршрут, его отсутствие ' +
         'означает несовместимую сборку.',
-      details: { status: response.status, path: TELEMETRY_PATH },
-    });
-  }
-  if (response.status < 200 || response.status >= 300) {
-    throw httpError({
-      status: response.status,
-      body: response.body,
-      method: 'GET',
-      path: TELEMETRY_PATH,
-    });
-  }
-  if (!isJsonContentType(response.headers)) {
-    throw new OcError('device_error', 'Ответ /rest/telemetry не является JSON', {
+    },
+    notJson: {
+      code: 'device_error',
+      message: 'Ответ /rest/telemetry не является JSON',
+      hint: 'Похоже, прошивка не знает маршрута и вернула веб-страницу. Проверьте версию прошивки.',
+    },
+    invalidJson: { message: 'Ответ /rest/telemetry не является корректным JSON' },
+    schemaMismatch: {
+      message: 'Ответ /rest/telemetry не содержит телеметрии или имеет неожиданную форму',
       hint:
-        'Похоже, прошивка не знает маршрута и вернула веб-страницу. Проверьте версию прошивки.',
-      details: {
-        status: response.status,
-        content_type: headerValue(response.headers, 'content-type') ?? null,
-        body: bodyForDetails(response.body),
-      },
-    });
-  }
-
-  const parsed = parseJsonBody(response.body);
-  if (!parsed.ok) {
-    throw new OcError('device_error', 'Ответ /rest/telemetry не является корректным JSON', {
-      hint: 'Проверьте версию прошивки контроллера и повторите запрос.',
-      details: { status: response.status, parse_error: parsed.error, body: bodyForDetails(response.body) },
-    });
-  }
-  const result = telemetryResponseSchema.safeParse(parsed.value);
-  if (!result.success) {
-    throw new OcError(
-      'device_error',
-      'Ответ /rest/telemetry не содержит телеметрии или имеет неожиданную форму',
-      {
-        hint:
-          'Прошивка должна вернуть {telemetry:{...}, status:{...}, lastUpdate}. ' +
-          'Отсутствие telemetry — это «данных нет», а не нулевые показания.',
-        details: {
-          status: response.status,
-          path: TELEMETRY_PATH,
-          issues: result.error.issues.map((issue) => ({
-            path: issue.path.join('.'),
-            message: issue.message,
-          })),
-          body: bodyForDetails(response.body),
-        },
-      },
-    );
-  }
+        'Прошивка должна вернуть {telemetry:{...}, status:{...}, lastUpdate}. ' +
+        'Отсутствие telemetry — это «данных нет», а не нулевые показания.',
+    },
+  });
   return {
-    telemetry: result.data.telemetry,
-    status: result.data.status,
-    lastUpdate: toMillis(result.data.lastUpdate),
+    telemetry: data.telemetry,
+    status: data.status,
+    lastUpdate: toMillis(data.lastUpdate),
   };
 }
 
 /** Читает `GET /rest/sensor` (admin). Возвращает нормализованную карту зон. */
 export async function fetchSensors(client: DeviceClient): Promise<SensorMap> {
-  const response = await client.request('GET', SENSOR_PATH, undefined, {
-    headers: { accept: 'application/json' },
-  });
-  if (response.status < 200 || response.status >= 300) {
-    throw httpError({ status: response.status, body: response.body, method: 'GET', path: SENSOR_PATH });
-  }
-  if (!isJsonContentType(response.headers)) {
-    throw new OcError('device_error', 'Ответ /rest/sensor не является JSON', {
+  const raw = await readJson(client, SENSOR_PATH, sensorMapRawSchema, {
+    notFound: { message: 'Прошивка не отдаёт датчики /rest/sensor' },
+    notJson: {
+      code: 'device_error',
+      message: 'Ответ /rest/sensor не является JSON',
       hint: 'Проверьте версию прошивки контроллера.',
-      details: {
-        status: response.status,
-        content_type: headerValue(response.headers, 'content-type') ?? null,
-        body: bodyForDetails(response.body),
-      },
-    });
-  }
-  const parsed = parseJsonBody(response.body);
-  if (!parsed.ok) {
-    throw new OcError('device_error', 'Ответ /rest/sensor не является корректным JSON', {
+    },
+    invalidJson: {
+      message: 'Ответ /rest/sensor не является корректным JSON',
       hint: 'Проверьте версию прошивки контроллера.',
-      details: { status: response.status, parse_error: parsed.error, body: bodyForDetails(response.body) },
-    });
-  }
-  const result = sensorMapRawSchema.safeParse(parsed.value);
-  if (!result.success) {
-    throw new OcError('device_error', 'Ответ /rest/sensor не соответствует ожидаемой схеме', {
+    },
+    schemaMismatch: {
+      message: 'Ответ /rest/sensor не соответствует ожидаемой схеме',
       hint: 'Ожидалась карта «зона → адрес → {v,u,type}». Проверьте версию прошивки.',
-      details: {
-        status: response.status,
-        issues: result.error.issues.map((issue) => ({
-          path: issue.path.join('.'),
-          message: issue.message,
-        })),
-        body: bodyForDetails(response.body),
-      },
-    });
-  }
-  return normalizeSensorMap(result.data);
+    },
+  });
+  return normalizeSensorMap(raw);
 }
 
 // ---------------------------------------------------------------------------

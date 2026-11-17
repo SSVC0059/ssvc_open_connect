@@ -1,0 +1,36 @@
+# MCP-сервер OpenConnect в Docker: `docker compose up -d --build`.
+#
+# Порядок:
+#   1. cp .env.example .env и заполнить SSVC_DEVICE_URL, SSVC_PASSWORD, SSVC_MCP_TOKEN;
+#   2. docker compose up -d --build;
+#   3. проверить: curl http://127.0.0.1:8080/healthz
+#
+# Один контейнер — один контроллер: URL устройства задаётся в `.env`, а не в запросах
+# MCP-клиента. Наружу сервис выставляется только через TLS-прокси (Caddy/Traefik):
+# встроенного TLS по умолчанию нет (SSVC_MCP_TLS_CERT/_KEY — если он всё же нужен).
+
+services:
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ssvc-openconnect-mcp:0.1.0
+    container_name: ssvc-openconnect-mcp
+    # Секреты и настройки — из .env (в git не попадает, монтируется как env-файл).
+    env_file:
+      - .env
+    environment:
+      # Внутри контейнера адрес прослушивания — все интерфейсы: иначе проброс порта
+      # из .env (SSVC_MCP_BIND=127.0.0.1) сделал бы сервис недоступным снаружи.
+      SSVC_MCP_BIND: 0.0.0.0
+    ports:
+      # Только локальный интерфейс хоста: наружу — через reverse-proxy с TLS.
+      - "127.0.0.1:${SSVC_MCP_PORT:-8080}:${SSVC_MCP_PORT:-8080}"
+    volumes:
+      # Сырые логи, аудит и скачанные файлы/журналы переживают пересоздание контейнера.
+      - ./logs:/app/logs
+    restart: unless-stopped
+    # HEALTHCHECK объявлен в Dockerfile (GET /healthz): здесь его не переопределяем —
+    # иначе compose заменил бы проверку из образа вариантом без `test`.
+    security_opt:
+      - no-new-privileges:true

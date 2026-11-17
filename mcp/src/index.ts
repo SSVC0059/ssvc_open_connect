@@ -4,13 +4,11 @@
  * Порядок важен: `.env` читается до `loadConfig`, обязательные переменные проверяются
  * до открытия порта («открытый порт без токена» недопустим, mcp-server.md §3.9).
  *
- * WP11 подключает сюда собранный каталог инструментов (`src/tools/index.ts`): достаточно
- * передать массив в `startService`. Сейчас здесь подключён домен WP1 (информация,
- * возможности, состояние и телеметрия); сервер уже отдаёт его `tools/list`/`tools/call`.
- *
- * Инструменты WP1 собираются из тех же `ToolDef`, что регистрируют `registerInfoTools` и
- * `registerTelemetryTools`: сервер создаётся на сессию внутри `http/app.ts`, поэтому
- * `startService` принимает список определений, а не готовый `McpServer`.
+ * WP11 подключает здесь собранный каталог (`src/tools/index.ts`): `allTools` — это все
+ * инструменты всех доменов одним массивом, а промпты и ресурсы подключаются в
+ * `registerSessionCatalog` там же (её вызывает HTTP-слой на каждую сессию).
+ * Сервер создаётся на сессию внутри `http/app.ts`, поэтому `startService` принимает
+ * список определений, а не готовый `McpServer`.
  */
 
 import { pathToFileURL } from 'node:url';
@@ -22,18 +20,7 @@ import { RawLogger } from './device/RawLogger.js';
 import { createApp, type AppHandle } from './http/app.js';
 import { createLogger, type Logger } from './logging.js';
 import type { ToolContext, ToolDef } from './mcp/types.js';
-import { infoTools } from './tools/info.tools.js';
-import { telemetryTools } from './tools/telemetry.tools.js';
-import { commandsTools } from './tools/commands.tools.js';
-import { settingsTools } from './tools/settings.tools.js';
-import { sensorsTools } from './tools/sensors.tools.js';
-import { relayTools } from './tools/relay.tools.js';
-import { hardwareTools } from './tools/hardware.tools.js';
-import { xkc25Tools } from './tools/xkc25.tools.js';
-import { logsTools } from './tools/logs.tools.js';
-import { profilesTools } from './tools/profiles.tools.js';
-import { filesTools } from './tools/files.tools.js';
-import { systemTools } from './tools/system.tools.js';
+import { allTools } from './tools/index.js';
 
 export interface StartServiceOptions {
   /** Окружение; по умолчанию `process.env`. */
@@ -112,28 +99,9 @@ export async function startService(opts: StartServiceOptions = {}): Promise<Star
 async function main(): Promise<void> {
   let service: StartedService;
   try {
-    // Домены WP1 (информация, состояние/телеметрия), WP2 (команды и ожидание), WP3 (настройки),
-    // WP4 (датчики, зоны, пороги тревог), WP5 (реле PCF8574, аппаратная конфигурация),
-    // WP6 (датчики уровня XKC-25: статус, калибровка, проверка возврата),
-    // WP7 (журналы ректификации: список, скачивание в файл, отмена),
-    // WP8 (профили ректификации: список, чтение, создание, копия, переименование,
-    // содержимое, сохранение текущих настроек, применение, удаление) и
-    // WP9 (файлы LittleFS, подсистемы, systemStatus, перезагрузка).
-    const tools: ToolDef[] = [
-      ...infoTools(),
-      ...telemetryTools(),
-      ...commandsTools(),
-      ...settingsTools(),
-      ...sensorsTools(),
-      ...relayTools(),
-      ...hardwareTools(),
-      ...xkc25Tools(),
-      ...logsTools(),
-      ...profilesTools(),
-      ...filesTools(),
-      ...systemTools(),
-    ];
-    service = await startService({ tools });
+    // Один каталог на все домены WP1–WP9: список инструментов, ресурсы и промпты
+    // собирает `src/tools/index.ts`, включая проверку уникальности имён на старте.
+    service = await startService({ tools: [...allTools] });
   } catch (error) {
     if (error instanceof ConfigError) {
       process.stderr.write(`[ssvc-openconnect-mcp] Ошибка конфигурации: ${error.message}\n`);

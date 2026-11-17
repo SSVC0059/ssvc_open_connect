@@ -17,12 +17,7 @@
  */
 
 import type { DeviceClient, HttpResponse } from '../device/DeviceClient.js';
-import {
-  bodyForDetails,
-  headerValue,
-  isJsonContentType,
-  parseJsonBody,
-} from '../device/schemas/common.js';
+import { bodyForDetails, headerValue, parseJsonBody } from '../device/schemas/common.js';
 import {
   settingsEnvelopeSchema,
   settingsWriteResponseSchema,
@@ -30,6 +25,7 @@ import {
   type SettingsWriteResponseBody,
 } from '../device/schemas/settings.js';
 import { OcError, httpError } from '../errors.js';
+import { readJson } from './readJson.js';
 
 export const SETTINGS_PATH = '/rest/settings';
 
@@ -76,85 +72,28 @@ export interface SettingsUpdateResult extends SettingsWriteOutcome {
  * Читает `GET /rest/settings` и разворачивает обёртку.
  *
  * SPA-заглушка (`200 text/html`) — не успех: неизвестный маршрут прошивка отдаёт
- * веб-страницей (mcp-server.md §2.5 п.16), поэтому такой ответ становится
- * `feature_unsupported`, а не «пустыми настройками».
+ * веб-страницей (mcp-server.md §2.5 п.16). Разбор общий — `readJson.ts`: домен
+ * задаёт только русские тексты, поведение (404/SPA → `feature_unsupported`,
+ * битый JSON/схема → `device_error`) одинаково во всех доменах.
  */
 export async function getSettings(client: DeviceClient): Promise<SettingsSnapshot> {
-  const response = await client.request('GET', SETTINGS_PATH, undefined, {
-    headers: { accept: 'application/json' },
-  });
-
-  if (response.status === 404) {
-    throw new OcError('feature_unsupported', 'Прошивка не отдаёт настройки SSVC (/rest/settings)', {
+  const envelope = await readJson(client, SETTINGS_PATH, settingsEnvelopeSchema, {
+    notFound: {
+      message: 'Прошивка не отдаёт настройки SSVC (/rest/settings)',
       hint:
         'Обновите прошивку OpenConnect: маршрут GET/PUT /rest/settings появился в версии с ' +
         'настройками SSVC. Повтор запроса не поможет.',
-      details: { status: response.status, path: SETTINGS_PATH },
-    });
-  }
-  if (response.status < 200 || response.status >= 300) {
-    throw httpError({
-      status: response.status,
-      body: response.body,
-      method: 'GET',
-      path: SETTINGS_PATH,
-    });
-  }
-
-  const parsed = parseJsonBody(response.body);
-  if (!parsed.ok) {
-    const contentType = headerValue(response.headers, 'content-type') ?? null;
-    if (!isJsonContentType(response.headers)) {
-      throw new OcError(
-        'feature_unsupported',
-        'Ответ /rest/settings не является JSON: похоже на SPA-заглушку прошивки',
-        {
-          hint:
-            'Неизвестный маршрут прошивка отдаёт веб-страницей (200 text/html). Проверьте ' +
-            'версию прошивки OpenConnect: в ней должен быть GET /rest/settings.',
-          details: {
-            status: response.status,
-            content_type: contentType,
-            parse_error: parsed.error,
-            body: bodyForDetails(response.body),
-          },
-        },
-      );
-    }
-    throw new OcError('device_error', 'Ответ /rest/settings не является корректным JSON', {
-      hint: 'Проверьте версию прошивки контроллера и повторите запрос.',
-      details: {
-        status: response.status,
-        content_type: contentType,
-        parse_error: parsed.error,
-        body: bodyForDetails(response.body),
-      },
-    });
-  }
-
-  const envelope = settingsEnvelopeSchema.safeParse(parsed.value);
-  if (!envelope.success) {
-    throw new OcError(
-      'device_error',
-      'Ответ /rest/settings не содержит объект ssvcSettings ожидаемой формы',
-      {
-        hint:
-          'Расхождение контракта с прошивкой: ожидался { "ssvcSettings": { ... } }. ' +
-          'Проверьте версию контроллера и тело ответа в details.',
-        details: {
-          status: response.status,
-          issues: envelope.error.issues.map((issue) => ({
-            path: issue.path.join('.'),
-            message: issue.message,
-          })),
-          body: bodyForDetails(response.body),
-        },
-      },
-    );
-  }
+    },
+    schemaMismatch: {
+      message: 'Ответ /rest/settings не содержит объект ssvcSettings ожидаемой формы',
+      hint:
+        'Расхождение контракта с прошивкой: ожидался { "ssvcSettings": { ... } }. ' +
+        'Проверьте версию контроллера и тело ответа в details.',
+    },
+  });
 
   return {
-    settings: envelope.data.ssvcSettings,
+    settings: envelope.ssvcSettings,
     observed_at: new Date().toISOString(),
   };
 }

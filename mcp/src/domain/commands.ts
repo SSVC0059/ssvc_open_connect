@@ -16,6 +16,8 @@
  *
  * SPA-заглушка (`200 text/html`) на `/rest/commands` — это не успех: старый или
  * чужой сервер вернул веб-страницу вместо JSON, команда никуда не пошла.
+ * Распознавание такой страницы — общее (`looksLikeSpa` из `readJson.ts`), чтобы
+ * «веб-страница вместо API» определялась одинаково во всех доменах.
  */
 
 import type { DeviceClient, HttpResponse } from '../device/DeviceClient.js';
@@ -35,6 +37,7 @@ import {
   parseCommandId,
 } from '../device/schemas/commands.js';
 import { OcError, httpError } from '../errors.js';
+import { looksLikeSpa } from './readJson.js';
 import {
   buildStateView,
   fetchSnapshot,
@@ -71,13 +74,6 @@ export interface CommandDispatch {
 export interface SendCommandOptions {
   /** Параметры команды (для SET/AT/GET_LOG); по умолчанию пустая строка. */
   parameters?: string;
-}
-
-function looksLikeSpa(headers: Record<string, string>, body: string): boolean {
-  const contentType = (headerValue(headers, 'content-type') ?? '').toLowerCase();
-  if (contentType.includes('text/html')) return true;
-  const head = body.trimStart().slice(0, 64).toLowerCase();
-  return head.startsWith('<!doctype') || head.startsWith('<html');
 }
 
 function commandDetails(name: string, response: HttpResponse): Record<string, unknown> {

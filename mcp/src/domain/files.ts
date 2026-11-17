@@ -29,10 +29,15 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import type { DeviceClient, HttpResponse } from '../device/DeviceClient.js';
-import { bodyForDetails, headerValue } from '../device/schemas/common.js';
+import {
+  bodyForDetails,
+  headerValue,
+  isJsonContentType,
+  parseJsonBody,
+} from '../device/schemas/common.js';
 import { fileTreeSchema, type FileTree, type FileTreeEntry } from '../device/schemas/files.js';
 import { OcError, httpError, truncateBody } from '../errors.js';
-import { readJson } from './readJson.js';
+import { looksLikeSpa, readJson } from './readJson.js';
 
 export const FILES_PATH = '/rest/files';
 export const FILES_COPY_PATH = '/rest/files/copy';
@@ -346,7 +351,8 @@ function downloadBytes(path: string, response: HttpResponse): Buffer {
   }
 
   const contentType = (headerValue(response.headers, 'content-type') ?? '').toLowerCase();
-  if (contentType.includes('text/html')) {
+  // Распознавание «вместо файла пришла веб-страница» — общее (`looksLikeSpa`).
+  if (looksLikeSpa(response.headers, response.body)) {
     throw new OcError(
       'feature_unsupported',
       'Вместо файла контроллер вернул веб-страницу: маршрут скачивания недоступен',
@@ -365,7 +371,7 @@ function downloadBytes(path: string, response: HttpResponse): Buffer {
   }
 
   const bytes = response.bodyBytes ?? Buffer.from(response.body, 'utf8');
-  if (looksLikeFileTree(contentType, bytes)) {
+  if (looksLikeFileTree(response.headers, bytes)) {
     throw new OcError(
       'feature_unsupported',
       'Маршрут скачивания файла перекрыт обработчиком дерева: прошивка вернула список файлов',
@@ -392,24 +398,25 @@ function downloadBytes(path: string, response: HttpResponse): Buffer {
  * Нужно только для диагностики перекрытого маршрута: массив объектов
  * `{name, type:"file"|"directory"}` — это ответ `GET /rest/files`, а не файл.
  * Пустой массив деревом не считаем, чтобы не отвергать пустой `.json`-файл.
+ *
+ * Разбор байтов — общий `parseJsonBody`/`isJsonContentType` (`device/schemas/common.ts`):
+ * своего `JSON.parse` в домене нет.
  */
-function looksLikeFileTree(contentType: string, bytes: Buffer): boolean {
-  if (!contentType.includes('json')) return false;
+function looksLikeFileTree(headers: Record<string, string>, bytes: Buffer): boolean {
+  if (!isJsonContentType(headers)) return false;
   if (bytes.length === 0 || bytes.length > 2_000_000) return false;
-  try {
-    const value: unknown = JSON.parse(bytes.toString('utf8'));
-    if (!Array.isArray(value) || value.length === 0) return false;
-    return value.every((item) => {
-      if (typeof item !== 'object' || item === null) return false;
-      const record = item as Record<string, unknown>;
-      return (
-        typeof record.name === 'string' &&
-        (record.type === 'file' || record.type === 'directory')
-      );
-    });
-  } catch {
-    return false;
-  }
+  const parsed = parseJsonBody(bytes.toString('utf8'));
+  if (!parsed.ok) return false;
+  const value = parsed.value;
+  if (!Array.isArray(value) || value.length === 0) return false;
+  return value.every((item) => {
+    if (typeof item !== 'object' || item === null) return false;
+    const record = item as Record<string, unknown>;
+    return (
+      typeof record.name === 'string' &&
+      (record.type === 'file' || record.type === 'directory')
+    );
+  });
 }
 
 /**

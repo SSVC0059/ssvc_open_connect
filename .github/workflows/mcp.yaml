@@ -1,0 +1,64 @@
+# CI для MCP-сервера (пакет mcp/): типы, тесты, сборка.
+#
+# Отдельный workflow, чтобы не трогать прошивочные ci.yaml/firmware.yaml: MCP-пакет
+# собирается Node.js, а не PlatformIO, и не должен ждать сборки прошивки.
+# Запускается только при изменениях в mcp/ (и своего файла), чтобы не тратить минуты
+# на документацию и фронтенд.
+#
+# Шаги — ровно те, что описаны в mcp/README.md §2 и §13:
+# npm ci → typecheck → test (включая e2e на портах 0) → build.
+
+name: mcp
+
+on:
+  push:
+    paths:
+      - 'mcp/**'
+      - '.github/workflows/mcp.yaml'
+  pull_request:
+    paths:
+      - 'mcp/**'
+      - '.github/workflows/mcp.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mcp-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: typecheck + test + build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mcp
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+
+      # --ignore-scripts: build-скрипты зависимостей в CI не нужны.
+      - name: Установка зависимостей
+        run: npm ci --ignore-scripts
+
+      - name: Проверка типов
+        run: npm run typecheck
+
+      # Тесты сами компилируют src/, test/ и mock/ в .test-dist и поднимают
+      # мок-устройство и MCP-сервис на портах 0 (реальные порты не занимаются).
+      - name: Тесты (unit + контракт + каталог + релизные + e2e)
+        run: npm test
+
+      - name: Сборка dist/
+        run: npm run build

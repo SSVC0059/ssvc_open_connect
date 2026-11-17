@@ -39,14 +39,8 @@
  * `confirm` не требуется.
  */
 
-import type { z } from 'zod';
 import type { DeviceClient, HttpResponse } from '../device/DeviceClient.js';
-import {
-  bodyForDetails,
-  headerValue,
-  isJsonContentType,
-  parseJsonBody,
-} from '../device/schemas/common.js';
+import { bodyForDetails, parseJsonBody } from '../device/schemas/common.js';
 import {
   ZONE_NAMES_BY_ID,
   alarmsEnvelopeSchema,
@@ -57,6 +51,7 @@ import {
   type ZoneValue,
 } from '../device/schemas/sensors.js';
 import { OcError, httpError } from '../errors.js';
+import { readJson, type JsonReadOptions } from './readJson.js';
 import { normalizeScalar } from './telemetry.js';
 
 export const SENSOR_PATH = '/rest/sensor';
@@ -74,85 +69,15 @@ export const SENSOR_ADDRESS_RE = /^[0-9a-fA-F]{16}$/;
 const THRESHOLD_EPSILON = 0.001;
 
 // ---------------------------------------------------------------------------
-// Чтение JSON с диагностикой SPA-заглушки
+// Чтение JSON: общий разбор SPA-заглушки в `readJson.ts` (один владелец на все домены)
 // ---------------------------------------------------------------------------
 
-/**
- * GET JSON-ответа с проверкой Content-Type.
- *
- * 404 здесь означает «маршрута нет в этой прошивке»: неизвестный путь прошивка
- * отдаёт SPA-страницей или 404, и «пустые данные» были бы ложью.
- */
-async function readJson<T>(
-  client: DeviceClient,
-  path: string,
-  schema: z.ZodType<T>,
-): Promise<T> {
-  const response = await client.request('GET', path, undefined, {
-    headers: { accept: 'application/json' },
-  });
+/** Сообщения для чтения датчиков: терминология домена, поведение — общее (§readJson). */
+const SENSORS_READ_HINT =
+  'Обновите прошивку OpenConnect: маршрут должен быть в сборке с датчиками и зонами. ' +
+  'Повтор запроса не поможет.';
 
-  if (response.status === 404) {
-    throw new OcError('feature_unsupported', `Прошивка не отдаёт ${path}`, {
-      hint:
-        'Обновите прошивку OpenConnect: маршрут должен быть в сборке с датчиками и зонами. ' +
-        'Повтор запроса не поможет.',
-      details: { status: response.status, path },
-    });
-  }
-  if (response.status < 200 || response.status >= 300) {
-    throw httpError({ status: response.status, body: response.body, method: 'GET', path });
-  }
-
-  const contentType = headerValue(response.headers, 'content-type') ?? null;
-  if (!isJsonContentType(response.headers)) {
-    throw new OcError(
-      'feature_unsupported',
-      `Ответ ${path} не является JSON: похоже на SPA-заглушку прошивки`,
-      {
-        hint:
-          'Неизвестный маршрут прошивка отдаёт веб-страницей (200 text/html). Проверьте ' +
-          `версию прошивки OpenConnect: в ней должен быть GET ${path}.`,
-        details: {
-          status: response.status,
-          content_type: contentType,
-          body: bodyForDetails(response.body),
-        },
-      },
-    );
-  }
-
-  const parsed = parseJsonBody(response.body);
-  if (!parsed.ok) {
-    throw new OcError('device_error', `Ответ ${path} не является корректным JSON`, {
-      hint: 'Проверьте версию прошивки контроллера и повторите запрос.',
-      details: {
-        status: response.status,
-        content_type: contentType,
-        parse_error: parsed.error,
-        body: bodyForDetails(response.body),
-      },
-    });
-  }
-
-  const result = schema.safeParse(parsed.value);
-  if (!result.success) {
-    throw new OcError('device_error', `Ответ ${path} не соответствует ожидаемой схеме`, {
-      hint:
-        'Расхождение контракта с прошивкой: проверьте версию контроллера и поля ответа ' +
-        'в details.issues / details.body.',
-      details: {
-        status: response.status,
-        issues: result.error.issues.map((issue) => ({
-          path: issue.path.join('.'),
-          message: issue.message,
-        })),
-        body: bodyForDetails(response.body),
-      },
-    });
-  }
-  return result.data;
-}
+const READ_OPTIONS: JsonReadOptions = { notFound: { hint: SENSORS_READ_HINT } };
 
 // ---------------------------------------------------------------------------
 // Нормализация адресов, зон и значений
@@ -283,7 +208,7 @@ export async function getSensors(
   client: DeviceClient,
   opts: { zone?: string | null } = {},
 ): Promise<SensorsSnapshot> {
-  const raw = await readJson(client, SENSOR_PATH, sensorMapSchema);
+  const raw = await readJson(client, SENSOR_PATH, sensorMapSchema, READ_OPTIONS);
   return {
     zones: groupSensorReadings(raw, opts.zone ?? null),
     observed_at: new Date().toISOString(),
@@ -302,7 +227,7 @@ export interface ZoneMapSnapshot {
 
 /** Читает `GET /rest/zones` и переводит числовые id зон в имена. */
 export async function getZones(client: DeviceClient): Promise<ZoneMapSnapshot> {
-  const data = await readJson(client, ZONES_PATH, zonesEnvelopeSchema);
+  const data = await readJson(client, ZONES_PATH, zonesEnvelopeSchema, READ_OPTIONS);
   const zones: Record<string, string | number> = {};
   for (const address of Object.keys(data.zones).sort(compareText)) {
     zones[address] = zoneNameOf(data.zones[address]);
@@ -414,7 +339,7 @@ export interface AlarmsSnapshot {
 
 /** Читает `GET /rest/alarms`. */
 export async function getAlarms(client: DeviceClient): Promise<AlarmsSnapshot> {
-  const data = await readJson(client, ALARMS_PATH, alarmsEnvelopeSchema);
+  const data = await readJson(client, ALARMS_PATH, alarmsEnvelopeSchema, READ_OPTIONS);
   return { thresholds: data.thresholds, observed_at: new Date().toISOString() };
 }
 

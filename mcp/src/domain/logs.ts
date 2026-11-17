@@ -28,6 +28,7 @@ import type { DeviceClient, HttpResponse } from '../device/DeviceClient.js';
 import {
   bodyForDetails,
   headerValue,
+  isJsonContentType,
   parseJsonBody,
 } from '../device/schemas/common.js';
 import {
@@ -37,7 +38,7 @@ import {
   type LogsSnapshotBody,
 } from '../device/schemas/logs.js';
 import { OcError, httpError, truncateBody } from '../errors.js';
-import { parseJsonResponse } from './readJson.js';
+import { looksLikeSpa, parseJsonResponse } from './readJson.js';
 
 export const LOGS_PATH = '/rest/logs';
 
@@ -279,7 +280,7 @@ async function receiveCsv(
 /** 200 на `/rest/logs/{id}` обязан быть CSV: JSON/HTML означают чужой ответ. */
 function csvBody(response: HttpResponse): string {
   const contentType = (headerValue(response.headers, 'content-type') ?? '').toLowerCase();
-  if (contentType.includes('json')) {
+  if (isJsonContentType(response.headers)) {
     throw new OcError('device_error', 'Контроллер вернул JSON вместо CSV журнала', {
       hint:
         'Прошивка ответила не файлом журнала. Проверьте версию контроллера и повторите ' +
@@ -291,7 +292,8 @@ function csvBody(response: HttpResponse): string {
       },
     });
   }
-  if (contentType.includes('text/html')) {
+  // Распознавание SPA-заглушки общее (`looksLikeSpa`): Content-Type text/html или HTML в теле.
+  if (looksLikeSpa(response.headers, response.body)) {
     throw new OcError(
       'feature_unsupported',
       'Вместо CSV контроллер вернул веб-страницу: маршрут скачивания журнала недоступен',
