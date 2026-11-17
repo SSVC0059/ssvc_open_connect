@@ -118,10 +118,12 @@ GET  /rest/verifyAuthorization                                →  200 | 401 (40
 | Канал | Что даёт | Пригодность для MCP |
 |---|---|---|
 | **REST** | всё: телеметрия, настройки, команды, журналы, файлы | основной канал |
-| **WebSocket** `/ws/events` | push-события `battery`, `wifi/rssi`, `features`, `notification`, `ota`; формат **MessagePack** (`EVENT_USE_JSON` выключен), подписка `{event:"subscribe",data:"<name>"}` | **телеметрию ректификации не пушит**: `emitEvent` в прикладном коде не вызывается, `EventEndpoint` для OC-состояний не заведён. Для MCP бесполезен как источник состояния, полезен как индикатор связи |
+| **WebSocket** `/ws/events` | push-события `battery`, `wifi/rssi`, `features`, `notification`, `ota`, а начиная с прошивки с §9 — ещё `telemetry`, `stage`, `alarm`. Формат кадров **MessagePack** (`EVENT_USE_JSON` выключен); управляющий кадр подписки `{event:"subscribe",data:"<name>"}` — **тоже MessagePack**, текстовый JSON сервер игнорирует | пригоден для «ждать изменения» без опроса: `telemetry` — полный снимок при изменении (не чаще ~1 раза в 2 с) плюс догоняющая отправка при подписке; `stage` — только переход стадии/статуса/pid; `alarm` — только raise/clear, догоняющей отправки нет (снимок — REST). Описание: `docs/develop/api/events.md` |
 | **MQTT** | `openconnect/telemetry`, `openconnect/settings`, `openconnect/sensor/state`, `openconnect/sensor/threshold/*`, команды `openconnect/command/send` + `.../response` | альтернатива для «сервер всегда онлайн», но требует брокера и не покрывает журналы/профили → во второй очереди |
 
-**Вывод:** состояние тянем опросом `GET /rest/telemetry` (сервер обновляет его раз в 2 с), а не через WS.
+**Вывод:** базовое состояние читаем из REST (`GET /rest/oc/snapshot` — один запрос вместо четырёх),
+а ожидание изменений строим на `/ws/events` (`telemetry`/`stage`/`alarm`) с откатом на опрос,
+если сокет недоступен.
 
 ### 2.4 Инвентарь эндпоинтов
 
@@ -131,8 +133,9 @@ GET  /rest/verifyAuthorization                                →  200 | 401 (40
 
 | Метод | Путь | Доступ | Назначение |
 |---|---|---|---|
-| POST | `/rest/signIn` | — | логин, выдаёт JWT |
-| GET | `/rest/verifyAuthorization` | любой | проверка токена (404 — security off) |
+| POST | `/rest/signIn` | — | логин, выдаёт JWT (`{access_token}`); payload содержит `username`, `admin` и, при синхронизированных часах, `iat`/`exp` |
+| GET | `/rest/refreshToken` | auth | новый токен для текущего пользователя: `{token, exp}`; **только на secure-сборке** — на не-secure маршрута нет и GET отдаёт SPA-заглушку (`200 text/html`) |
+| GET | `/rest/verifyAuthorization` | любой | проверка токена (404 — security off; 401 — токен истёк/невалиден) |
 | GET | `/rest/features` | auth | рантайм-флаги фич |
 | GET | `/rest/systemStatus` | admin | heap, uptime, прошивка, чип |
 | GET/POST | `/rest/restart` | admin | перезагрузка (POST) |
@@ -150,7 +153,8 @@ GET  /rest/verifyAuthorization                                →  200 | 401 (40
 | GET | `/rest/telemetry` | **admin** | R | `{telemetry:{...}, status:{stage,status,startTime,endTime,stages,uartConnectionError}, lastUpdate}`; кэш 2 с |
 | GET | `/rest/settings` | auth | R | `{ssvcSettings:{...}}` — **вложенный** объект |
 | PUT | `/rest/settings` | auth | W | тело — **плоский** объект `{"hyst":0.5}`; ответ `{success,accepted,ignored[],skipped[]}` |
-| POST | `/rest/commands` | auth | P/D | `{commands:"start",parameters:""}`; **200 = принято в очередь, не выполнено** |
+| POST | `/rest/commands` | auth | P/D | `{commands:"start",parameters:""}`; **200 = принято в очередь, не выполнено**; ответ `{status:"accepted",command,commandId,warnings?[]}` (warnings — предупреждения предохранителей, команда всё равно принята) |
+| GET | `/rest/commands/{id}` | auth | R | журнал попытки (TTL 10 мин, кольцо на 16 записей): `{id,command,state,queued_at,started_at,finished_at,ok,reason,confidence:"transport"}`; `state` ∈ `queued/running/sent/done/rejected/timeout`; 400 `invalid_id`, 404 `not_found` (в т.ч. вытесненная запись). `confidence:"transport"` — подтверждение только на уровне транспорта UART, не «физическое действие выполнено» |
 | GET | `/rest/subsystem` | auth | R | карта `{i2c_bus, thermal, atm_sensor, telegram_bot, vk_bot, settings}` |
 | PUT | `/rest/subsystem` | auth | W | `{name:bool}`; ответ `{success, errors[]}`; отдельные подсистемы включаются >60 с |
 | GET | `/rest/sensor` | **admin** | R | `{<zone>:{<address>:{v,u,type}}}` |
@@ -166,6 +170,7 @@ GET  /rest/verifyAuthorization                                →  200 | 401 (40
 | Метод | Путь | Тип | Ответ |
 |---|---|---|---|
 | GET | `/rest/oc/info` | R | `{ssvc:{version,api,api_code,mode}, oc:{version,is_support_api,is_support_release,api_min,api_target,api_compatibility,api_features[{name,min_api,available}]}}` |
+| GET | `/rest/oc/snapshot` | R (admin) | **агрегат для MCP:** одна сводка `{observed_at, info, telemetry, status, lastUpdate, sensor, faults, partial[]}`; `partial` — имена компонентов, которые не удалось собрать (например `["sensor"]` при сбое шины). Admin, потому что `/rest/telemetry` и `/rest/sensor` — admin |
 | GET | `/rest/oc/hardware-config` | R | конфиг I²C-устройств + пробы `bmp581ProbeOk`/`ds3231ProbeOk`/`lcd1602ProbeOk`/`relayPcf8574ProbeOk[]`, `needsReboot`, `capabilities` |
 | PUT | `/rest/oc/hardware-config` | W | частичное обновление, валидация, `needsReboot` |
 | GET | `/rest/oc/hardware-faults` | R | `{faults[{code,codeLabel,address,role}],count,i2cBusActive,i2cScan[]}` |
@@ -224,9 +229,13 @@ GET  /rest/verifyAuthorization                                →  200 | 401 (40
 | 10 | Ответы команд — `text/plain`, остальное — JSON | толерантный парсер + нормализация в `structuredContent` |
 | 11 | В UI есть вызовы `/rest/sensors/thresholds` и `/rest/profiles/import`, которых **нет в прошивке** | не моделировать; пороги — через `/rest/alarms`, импорт — через `POST /rest/profiles` |
 | 12 | Включение `telegram_bot` может занять >60 с | таймауты инструментов подсистем ≥120 с, не блокировать общий пул |
-| 13 | Нет `commandId`/идемпотентности, нет результата команды | идемпотентность на стороне сервера: сверять состояние до/после, дедуп по «тот же вызов в пределах N мс» |
+| 13 | `POST /rest/commands` возвращает `commandId`, но журнал живёт 10 мин и кольцом на 16 записей; `confidence:"transport"` означает «ушло в UART», а не «сделано» | опрашивать `GET /rest/commands/{id}` до терминального `state`, но трактовать `done` как «устройство подтвердило транспорт», а `sent` (START/NEXT/RESUME/STOP) — как «принято, ответа не будет»; 404 означает «запись вытеснена», а не «команда не выполнялась» |
 | 14 | Регистрация маршрутов чувствительна к порядку/матчеру (см. комментарии в `HandlerRegistrator.cpp`) | никогда не добавлять завершающий `/` и не «нормализовать» пути |
 | 15 | `HttpEndpoint` по умолчанию `IS_ADMIN` | учётка admin либо явная проверка `GET /rest/telemetry` на старте |
+| 16 | Неизвестный GET (и любой GET несуществующего `/rest/*`) отдаёт **SPA-заглушку**: `200 text/html`, ~664 Б `<!DOCTYPE html>` | проверять `Content-Type`/тело, а не только код: иначе «route отсутствует» выглядит как успех. Касается, например, `/rest/refreshToken` на не-secure сборке |
+| 17 | `lastUpdate` в `/rest/telemetry` и `/rest/oc/snapshot` — это `millis()` (uptime устройства), не epoch; `observed_at` в snapshot — тоже uptime | свежесть считать по монотонному времени устройства или по времени получения ответа, не сравнивать с `Date.now()` |
+| 18 | События `/ws/events` — только при подключённом клиенте и только по подписке; подписка — MessagePack-кадр | при старте подписываться на `telemetry`/`stage`/`alarm`, при обрыве — переподключаться с backoff; пропущенное не догоняется (кроме снимка при подписке), поэтому после реконнекта перечитать `/rest/oc/snapshot` |
+| 19 | `alarm`-событие не имеет истории и догоняющей отправки | текущие тревоги читать из `GET /rest/oc/hardware-faults` и порогов; событие использовать как триггер «перечитать», а не как источник истины |
 
 ### 2.6 Версии и возможности
 
@@ -801,7 +810,7 @@ duration_ms`. Уровень — `SSVC_LOG_LEVEL`. Секреты вырезаю
 | Частичное применение настроек | «потерянные» параметры, повторная запись | `partial:true` → без ретрая, перечитать GET, показать `skipped` |
 | Одна лог-сессия на устройство | 409 и потеря прогресса | лиз на устройство, очередь запросов журналов |
 | Admin-only эндпоинты | половина инструментов 403 | требовать admin, проверять на старте, понятная ошибка |
-| JWT без `exp` | долгоживущий доступ | память процесса, relogin при 401, рекомендация прошивке (§9) |
+| Истечение JWT | 401 в середине длинной операции | `exp` 7 суток + `GET /rest/refreshToken` и повтор запроса в сервере; relogin при 401 на самом refresh |
 | Дрейф прошивки | схемы расходятся | capability-гейты + контрактные фикстуры по версиям |
 | Нагрузка на ESP32 | рост латентности, watchdog | бюджет rps, джиттер, single-flight, backoff |
 | `enable` по умолчанию `true` в relay override | случайное включение реле | всегда явные аргументы + схема `required` |
@@ -809,20 +818,42 @@ duration_ms`. Уровень — `SSVC_LOG_LEVEL`. Секреты вырезаю
 
 ---
 
-## 9. Предложения по доработке прошивки (backlog, не блокируют v1)
+## 9. Доработки прошивки, выполненные до MCP (backlog v1)
 
-1. **`GET /rest/oc/snapshot`** — агрегат `info + telemetry + status + sensor + hardware-faults` за один
-   запрос: минус 4 round-trip на каждый цикл агента.
-2. **События OpenConnect в `EventSocket`** (`telemetry`, `stage`, `alarm`) через `EventEndpoint` — тогда
-   MCP сможет слать `notifications/resources/updated` без поллинга.
-3. **`commandId` в `POST /rest/commands`** + `GET /rest/commands/{id}` — реальный результат команды
-   вместо «принято в очередь».
-4. **`exp` в JWT** и endpoint обновления токена. Учесть, что `SecuritySettingsService::validatePayload`
-   сравнивает payload на **полное равенство** `{username, admin}` — при добавлении `exp`/`iat` проверку
-   придётся переписать, иначе аутентификация сломается.
-5. **Опциональный HTTPS** (или документированный reverse-proxy) для работы вне полностью доверенной сети.
-6. **Убрать мёртвые вызовы UI** `/rest/sensors/thresholds` и `/rest/profiles/import` либо реализовать их.
-7. **CORS** включать только при необходимости браузерного клиента.
+Все семь пунктов закрыты в ветке `feature/mcp-server` до начала реализации MCP, чтобы сервер
+писался под фактический контракт, а не под обходные пути. Ниже — что именно сделано и чем
+подтверждено (сборка/тесты/живое устройство).
+
+1. **`GET /rest/oc/snapshot`** — агрегат `info + telemetry + status + sensor + faults` за один запрос,
+   admin (потому что `/rest/telemetry` и `/rest/sensor` — admin). Поле `partial[]` перечисляет
+   компоненты, которые не удалось собрать. **Проверено на устройстве:** `200 application/json`,
+   все ключи на месте, `partial: []`, `tank ≈ 766.9 мм рт. ст.`
+2. **События `telemetry`/`stage`/`alarm` в `/ws/events`** — эмиссия по изменению, не по таймеру;
+   `telemetry` и `stage` догоняют при подписке, `alarm` — только raise/clear с дедупликацией.
+   Описание: [events.md](api/events.md). **Проверено на устройстве:** `telemetry` — 424 Б на кадр,
+   `stage` — 81 Б и ровно два кадра на две смены стадии; `alarm` намеренно не провоцировался.
+   Важно: управляющий кадр подписки — **MessagePack**, текстовый JSON игнорируется.
+3. **`commandId` в `POST /rest/commands`** + `GET /rest/commands/{id}`: журнал на 16 записей,
+   TTL 10 мин, `confidence:"transport"`. **Проверено на устройстве:** `accepted` → `commandId`,
+   затем `done/ok:true` за 234 мс; `404` на неизвестный id, `400` на нечисловой.
+4. **`exp`/`iat` в JWT и `GET /rest/refreshToken`.** `validatePayload` переписан на сравнение по
+   подмножеству, поэтому токены без `exp` продолжают работать; при несинхронизированных часах
+   (`time() < 1700000000`) `iat`/`exp` не ставятся и не проверяются. TTL по умолчанию 7 суток,
+   переопределяется `-DJWT_TTL_SECONDS`. Фронтенд обновляет токен по 401 и повторяет запрос один раз.
+   **Проверено на устройстве (secure-сборка с `-DJWT_TTL_SECONDS=30`):** `exp − iat = 30`,
+   `refreshToken` отдаёт новый токен с тем же `exp`, истёкший токен даёт `401` и на
+   `verifyAuthorization`, и на `refreshToken`; свежий — `200`. После проверки устройство возвращено
+   на не-secure сборку. **Не проверено на устройстве:** приём токена без `exp` (для этого нужен
+   секрет подписи) — гарантируется кодом и тестами уровня устройства.
+5. **HTTPS** — на этом стеке серверного TLS нет (`AsyncWebServerSecure` отсутствует, `beginSecure`
+   под неопределённым `ASYNC_TCP_SSL_ENABLED`), поэтому задокументирован reverse-proxy:
+   [reverse-proxy.md](reverse-proxy.md) с конфигурациями nginx/Caddy, WebSocket и OTA.
+6. **Мёртвые вызовы UI** `/rest/sensors/thresholds` и `/rest/profiles/import` удалены из
+   `interface/src/lib/api/ssvcApi.ts`; пороги идут через `POST /rest/alarms`, импорт профиля —
+   через `POST /rest/profiles`. Проверено `npm run check` и `npm run test:run` (103 теста).
+7. **CORS** — признан ненужным: UI работает с того же origin, MCP-сервер — процесс, а не браузер.
+   Среды сборки `-cors` удалены; код остался за явным `-DENABLE_CORS` и один раз проверен сборкой.
+   Решение и команда включения: [build.md](build.md).
 
 ---
 
@@ -834,7 +865,8 @@ duration_ms`. Уровень — `SSVC_LOG_LEVEL`. Секреты вырезаю
 Остаются:
 
 1. Точный список MCP-клиентов, которые будут подключаться (от него зависит, нужен ли `mcp-remote`/OAuth).
-2. Где хостится сервис: мини-ПК/NAS/Raspberry Pi и нужен ли встроенный TLS или Caddy перед ним.
+2. Где хостится сервис: мини-ПК/NAS/Raspberry Pi. Встроенного TLS нет — снаружи ставится
+   reverse-proxy (см. [reverse-proxy.md](reverse-proxy.md)), MCP-сервер за ним тоже по HTTPS.
 3. Порт и адрес: оставить `8080` на всех интерфейсах или привязать к конкретному адресу.
 4. Нужен ли `oc_send_command` в релизе или достаточно именованных инструментов.
 5. Политика хранения сырых логов: 7 дней или только до заполнения лимита.
