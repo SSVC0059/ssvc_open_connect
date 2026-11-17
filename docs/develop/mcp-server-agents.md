@@ -392,6 +392,16 @@ README фиксирует решение по `outputSchema`.
 
 ## 5. WP1 — информация, возможности, телеметрия, диагностика
 
+> **Обновление после §9 (обязательно к исполнению).** Прошивка уже отдаёт
+> `GET /rest/oc/snapshot` — один admin-запрос с `{observed_at, info, telemetry, status, lastUpdate, sensor, faults, partial[]}`.
+> Опрос нескольких эндпоинтов ниже оставлен как справка по формам, но состояния по умолчанию
+> читаются снимком: `oc_get_state` = snapshot, `oc_get_telemetry` = snapshot без `sensor`
+> (либо `include_sensors:true`). `partial[]` обязательно доносить до агента: компонент, которого
+> нет, — это «данных нет», а не «ноль». Время `lastUpdate`/`observed_at` — это `millis()` устройства,
+> поэтому `stale` считается по возрасту с момента ответа, а не сравнением с системными часами.
+> События `/ws/events` (`telemetry`, `stage`) в v1 не используются: ожидание изменения — опрос
+> snapshot раз в 2 с. Интеграция событий — отдельный опциональный пакет после WP11.
+
 **REST-контракт устройства:**
 
 ```
@@ -422,6 +432,7 @@ GET /rest/sensor → { "receiver_tank_1": { "28ff...": { "v": 78.6, "u": "°C", 
 | `oc_get_info` | 0 | — | `device`, `firmware`, `ssvc_version`, `api`, `api_code`, `mode`, `compatibility`, `is_support_release`, `api_min`, `api_target` |
 | `oc_get_capabilities` | 0 | `include_runtime?` (bool, по умолчанию true) | `api_features[]`, `features`, `unavailable[]` (имена недоступных возможностей) |
 | `oc_get_telemetry` | 0 | `include_sensors?` (bool, false) | `telemetry`, `status`, `observed_at`, `stale`, `last_update_ms` |
+| `oc_get_state` | 0 | `include?` (`telemetry,sensors,faults,info`, по умолчанию все) | один вызов `GET /rest/oc/snapshot`: `info`, `telemetry`, `status`, `sensor?`, `faults?`, `partial[]`, `observed_at`, `stale` |
 | `oc_get_process_status` | 0 | — | `stage`, `status`, `uart_error`, `started_at`, `ended_at`, `stages` |
 | `oc_diagnostics` | 0 | — | `config` (без секретов), `auth` (ok/disabled), `capability_cache` (age_ms), `counters`, `sessions`, `last_audit[]` |
 
@@ -455,6 +466,22 @@ GET /rest/sensor → { "receiver_tank_1": { "28ff...": { "v": 78.6, "u": "°C", 
 ---
 
 ## 6. WP2 — команды, ожидание, предохранители
+
+> **Обновление после §9 (обязательно к исполнению).** Успешный `POST /rest/commands` теперь отдаёт
+> **JSON**: `{"status":"accepted","command":"<имя>","commandId":<число>,"warnings":[…]?}`.
+> Каждая команда журналируется, и `GET /rest/commands/{id}` возвращает
+> `{id,command,state,queued_at,started_at,finished_at,ok,reason,confidence:"transport"}`, где `state`
+> ∈ `queued/running/sent/done/rejected/timeout`. Поэтому:
+> - `accepted` в инструменте должен содержать `command_id` и `warnings[]` (предупреждения ≠ отказ);
+> - для команд, которые ждут реакции (`status`, `version`, `get_settings`, `set`, `get_log`),
+>   инструмент опрашивает `GET /rest/commands/{id}` до терминального состояния и возвращает его;
+> - для `start/next/pause/resume/stop` терминальное `sent` означает «ушло в UART, ответа не будет» —
+>   это норма, а не ошибка; фактический результат берётся из `oc_wait_for_change`/снимка;
+> - `404` на `/rest/commands/{id}` — «запись вытеснена» (журнал 16 записей, TTL 10 мин), а не «команда
+>   не выполнялась»: в этом случае падать нельзя, нужно вернуть `command_id` + `state:"unknown"`;
+> - `confidence:"transport"` всегда, и это надо писать в описании инструмента прямо: подтверждение
+>   транспортное, физического действия сервер не подтверждает.
+> Коды 409/503/501 из таблицы ниже остаются в силе.
 
 **REST-контракт:**
 
