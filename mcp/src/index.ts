@@ -25,6 +25,7 @@ import type { ToolContext, ToolDef } from './mcp/types.js';
 import { infoTools } from './tools/info.tools.js';
 import { telemetryTools } from './tools/telemetry.tools.js';
 import { commandsTools } from './tools/commands.tools.js';
+import { settingsTools } from './tools/settings.tools.js';
 
 export interface StartServiceOptions {
   /** Окружение; по умолчанию `process.env`. */
@@ -103,8 +104,13 @@ export async function startService(opts: StartServiceOptions = {}): Promise<Star
 async function main(): Promise<void> {
   let service: StartedService;
   try {
-    // Домены WP1 (информация, состояние/телеметрия) и WP2 (команды и ожидание).
-    const tools: ToolDef[] = [...infoTools(), ...telemetryTools(), ...commandsTools()];
+    // Домены WP1 (информация, состояние/телеметрия), WP2 (команды и ожидание) и WP3 (настройки).
+    const tools: ToolDef[] = [
+      ...infoTools(),
+      ...telemetryTools(),
+      ...commandsTools(),
+      ...settingsTools(),
+    ];
     service = await startService({ tools });
   } catch (error) {
     if (error instanceof ConfigError) {
