@@ -26,6 +26,7 @@ import { infoTools } from './tools/info.tools.js';
 import { telemetryTools } from './tools/telemetry.tools.js';
 import { commandsTools } from './tools/commands.tools.js';
 import { settingsTools } from './tools/settings.tools.js';
+import { sensorsTools } from './tools/sensors.tools.js';
 
 export interface StartServiceOptions {
   /** Окружение; по умолчанию `process.env`. */
@@ -104,12 +105,14 @@ export async function startService(opts: StartServiceOptions = {}): Promise<Star
 async function main(): Promise<void> {
   let service: StartedService;
   try {
-    // Домены WP1 (информация, состояние/телеметрия), WP2 (команды и ожидание) и WP3 (настройки).
+    // Домены WP1 (информация, состояние/телеметрия), WP2 (команды и ожидание), WP3 (настройки)
+    // и WP4 (датчики, зоны, пороги тревог).
     const tools: ToolDef[] = [
       ...infoTools(),
       ...telemetryTools(),
       ...commandsTools(),
       ...settingsTools(),
+      ...sensorsTools(),
     ];
     service = await startService({ tools });
   } catch (error) {
