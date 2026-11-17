@@ -1,0 +1,909 @@
+# MCP-сервер для OpenConnect: архитектура и план разработки
+
+> **Статус:** предложение (RFC), редакция 2. Документ фиксирует результаты разбора фактического REST API
+> прошивки (`APP_VERSION 0.2.9.1`), целевую архитектуру MCP-сервера и поэтапный план работ.
+>
+> **Решения этой редакции:** транспорт — **Streamable HTTP с первого этапа** (OpenConnect — сетевое
+> устройство, проводное подключение к нему — редкий сценарий); описания инструментов — **на русском**;
+> разрушительные операции **временно включены**, но требуют явного подтверждения и **отключаются перед
+> релизом**; поддерживается **один контроллер**; пароли — **только в локальном `.env`**; запись сырых
+> ответов — **включена на время разработки**, затем опциональный параметр.
+>
+> **Разбивка на пакеты работ для агентов:** [mcp-server-agents.md](mcp-server-agents.md) — волны,
+> владение файлами, контракты и критерии приёмки каждого пакета.
+
+---
+
+## 1. Цель и границы
+
+### 1.1 Что делаем
+
+Сетевой MCP-сервер (HTTP-сервис), который превращает REST-поверхность контроллера OpenConnect в
+типизированные MCP-инструменты, ресурсы и промпты: «посмотреть состояние ректификации», «запустить
+процесс по профилю», «прочитать журнал», «откалибровать датчик уровня», «диагностировать I²C».
+
+Сервер работает там, где ему удобно (мини-ПК, NAS, Raspberry Pi, Docker на домашнем сервере), и
+обращается к контроллеру по сети. MCP-клиенты (агенты, IDE, чат-клиенты) подключаются к серверу по HTTP
+из той же сети или через тоннель.
+
+MCP-сервер — **внешний адаптер**, а не второй бэкенд:
+
+- прошивка остаётся единственным источником истины (состояние, гейты версий, предохранители);
+- сервер не дублирует бизнес-логику ректификации и не хранит собственную модель процесса;
+- сервер добавляет только то, чего у контроллера нет: типизацию, идемпотентные обёртки, ожидание
+  терминальных состояний, политику опасных операций, аудит и удобный для LLM формат ответов.
+
+### 1.2 Принятые решения и их следствия
+
+| № | Решение | Что меняется в архитектуре |
+|---|---|---|
+| 1 | **Только HTTP-транспорт, сразу** | Постоянно работающий сервис: порт, сессии, аутентификация клиентов, TLS/прокси, health-check, Docker. stdio — не планируется (при необходимости добавляется обёрткой `mcp-remote` на стороне клиента) |
+| 2 | **Описания инструментов на русском** | `title`, `description`, описания параметров, тексты ошибок и подсказки — русские. Ключи JSON, значения enum и имена инструментов остаются латиницей: это контракт |
+| 3 | **Разрушительные операции включены до релиза**, с обязательным подтверждением | Флаг `SSVC_ALLOW_DESTRUCTIVE`, `confirm:true` + `reason`, аудит; отдельная задача «release hardening» выключает их перед релизом |
+| 4 | **Один контроллер** | Нет реестра устройств, нет аргумента `device` в инструментах, нет mDNS-обнаружения. Конфигурация — один `.env`. В коде остаётся шов (`DeviceClient` как интерфейс), чтобы мультиустройство не потребовало переписывания |
+| 5 | **Пароли только в локальном `.env`** | `dotenv`, `.env` в `.gitignore`, `.env.example` в репозитории; никаких keyring, облачных хранилищ и паролей в аргументах/логах |
+| 6 | **Сырые ответы пишем на время разработки** | `SSVC_RAW_LOG=all` в P0–P3, `off` по умолчанию в P4; точечно — параметр `debug:true` в вызове инструмента |
+
+### 1.3 Не-цели
+
+| Не делаем | Почему |
+|---|---|
+| Прошивку на ESP32, говорящую на MCP | +память, +TLS, +JSON-RPC на устройстве без выгоды: клиенты и так ходят по сети |
+| stdio-транспорт в v1 | Сервер живёт как сервис; stdio-клиенты подключаются через `mcp-remote` |
+| Мультиустройство | Один контроллер; реестр появится, если понадобится, без изменения доменного слоя |
+| Собственную очередь команд поверх устройства | Очередь уже есть в прошивке (`SsvcCommandsQueue`, 50 слотов + safety-очередь) |
+| OAuth/DCR в v1 | Один пользователь, статический bearer-токен; OAuth — только если клиент не умеет заголовки |
+| Замену веб-интерфейсу | UI остаётся; MCP — ещё один клиент того же API |
+| Автоматическое «ведение» ректификации без человека | Опасный процесс: сервер даёт инструменты, решение принимает человек/агент с подтверждением |
+
+### 1.4 Пользовательские сценарии
+
+Полный каталог — **29 сценариев** в девяти группах, с разбором ситуаций, эффекта и ограничений:
+[mcp-scenarios.md](mcp-scenarios.md).
+
+Коротко, что покрывается:
+
+| Группа | Примеры |
+|---|---|
+| Перед запуском | готовность оборудования, «почему не стартует», что умеет прошивка |
+| Ведение процесса | запуск с отсрочкой, ручные переходы, закрытие клапана, аварийная остановка |
+| Ночной дозор | события и эскалация, обнаружение застоя |
+| Настройка параметров | гистерезис и предекремент, формула, сброс и снижение, `valve_bw`, правка на ходу |
+| Профили и расчёт | профиль из расчёта, расхождение с контроллером, перенос на другой аппарат |
+| Разбор после процесса | разбор журнала, план против факта, статистика по сырью |
+| Безопасность | датчики уровня, пороги тревог, реле-автоматика |
+| Диагностика | шина I²C, «настройки не применились», журнал не качается |
+| Интеграции | мессенджеры, умный дом, строка `STATUS` на экране |
+
+Сценарии опираются на фактическое поведение прошивок 2.2.55 (Pro) и 2.3.28 (Pro.3H), UART API
+SSVC0059_V2 и калькулятор ректификации OpenConnect; расхождения источников зафиксированы в
+[mcp-scenarios.md §15](mcp-scenarios.md).
+
+---
+
+## 2. Что есть на контроллере: разбор REST API
+
+### 2.1 Транспорт и адресация
+
+| Параметр | Факт | Следствие для MCP |
+|---|---|---|
+| HTTP | `AsyncWebServer`, **порт 80, только HTTP** | TLS на стороне устройства нет; MCP-сервер работает по HTTP внутри доверенной сети, наружу — только через TLS-прокси |
+| mDNS | `MDNS.begin(<hostname>)`, сервисы `http`/`ws`, TXT `Firmware Version` | Адрес контроллера задаётся в `.env`; mDNS-поиск не нужен |
+| CORS | `ENABLE_CORS` **закомментирован** в `platformio.ini` | Браузерный клиент напрямую к устройству не сходится; для MCP не важно |
+| Сборки | `-secure` = `FT_SECURITY=1`, обычная = `FT_SECURITY=0` | На обычной сборке аутентификации нет: `verifyAuthorization` → 404 |
+| Статика | `EMBED_WWW` или LittleFS | На API не влияет |
+
+### 2.2 Аутентификация и авторизация
+
+```
+POST /rest/signIn   {"username":"admin","password":"admin"}  →  200 {"access_token":"<JWT>"}
+GET  /rest/verifyAuthorization                                →  200 | 401 (404 — security выключена)
+```
+
+- JWT передаётся либо заголовком `Authorization: Bearer <jwt>`, либо query-параметром
+  `?access_token=<jwt>` (второй вариант нужен WebSocket).
+- Payload JWT: `{"username": "...", "admin": true|false}`. **Поля `exp` нет** — токен не истекает,
+  пока не сменится `jwtSecret`; перевыпуск — по `GET /rest/generateToken` (только admin).
+- Два уровня доступа: `IS_AUTHENTICATED` (любой пользователь) и `IS_ADMIN`.
+
+> **Критично.** `HttpEndpoint<T>` по умолчанию применяет `IS_ADMIN`, и прикладные сервисы
+> (`/rest/telemetry`, `/rest/sensor`, `/rest/alarms`, `/rest/zones`, а также WiFi/NTP/MQTT/AP/System)
+> предикат не переопределяют. То есть **телеметрия и датчики доступны только администратору**, а
+> `/rest/settings`, `/rest/commands`, `/rest/oc/*`, `/rest/profiles*`, `/rest/files*`, `/rest/logs` —
+> любому аутентифицированному. MCP-серверу нужна учётная запись admin, иначе половина инструментов
+> вернёт `403`, что легко принять за «устройство не поддерживает».
+
+### 2.3 Каналы данных
+
+| Канал | Что даёт | Пригодность для MCP |
+|---|---|---|
+| **REST** | всё: телеметрия, настройки, команды, журналы, файлы | основной канал |
+| **WebSocket** `/ws/events` | push-события `battery`, `wifi/rssi`, `features`, `notification`, `ota`; формат **MessagePack** (`EVENT_USE_JSON` выключен), подписка `{event:"subscribe",data:"<name>"}` | **телеметрию ректификации не пушит**: `emitEvent` в прикладном коде не вызывается, `EventEndpoint` для OC-состояний не заведён. Для MCP бесполезен как источник состояния, полезен как индикатор связи |
+| **MQTT** | `openconnect/telemetry`, `openconnect/settings`, `openconnect/sensor/state`, `openconnect/sensor/threshold/*`, команды `openconnect/command/send` + `.../response` | альтернатива для «сервер всегда онлайн», но требует брокера и не покрывает журналы/профили → во второй очереди |
+
+**Вывод:** состояние тянем опросом `GET /rest/telemetry` (сервер обновляет его раз в 2 с), а не через WS.
+
+### 2.4 Инвентарь эндпоинтов
+
+Обозначения: **R** — чтение, **W** — обратимая запись, **P** — влияет на процесс, **D** — разрушительно.
+
+#### 2.4.1 Аутентификация и служебное
+
+| Метод | Путь | Доступ | Назначение |
+|---|---|---|---|
+| POST | `/rest/signIn` | — | логин, выдаёт JWT |
+| GET | `/rest/verifyAuthorization` | любой | проверка токена (404 — security off) |
+| GET | `/rest/features` | auth | рантайм-флаги фич |
+| GET | `/rest/systemStatus` | admin | heap, uptime, прошивка, чип |
+| GET/POST | `/rest/restart` | admin | перезагрузка (POST) |
+| POST | `/rest/factoryReset` | admin | сброс к заводским |
+| GET | `/rest/coreDump` | admin | дамп паники |
+| GET/POST | `/rest/wifiStatus`, `/rest/wifiSettings`, `/rest/apStatus`, `/rest/apSettings`, `/rest/ntpStatus`, `/rest/ntpSettings`, `/rest/mqttStatus`, `/rest/mqttSettings`, `/rest/securitySettings` | admin | состояния и настройки подсистем фреймворка |
+| GET/POST | `/rest/scanNetworks`, `/rest/listNetworks`, `/rest/time` | admin | сканирование Wi-Fi, установка времени |
+| POST | `/rest/uploadFirmware`, `/rest/downloadUpdate` | admin | OTA (`FT_UPLOAD_FIRMWARE`/`FT_DOWNLOAD_FIRMWARE`) |
+| — | `/rest/sleep` | — | **не существует** в этой сборке (`FT_SLEEP=0`) |
+
+#### 2.4.2 Ректификация (ядро)
+
+| Метод | Путь | Доступ | Тип | Примечание |
+|---|---|---|---|---|
+| GET | `/rest/telemetry` | **admin** | R | `{telemetry:{...}, status:{stage,status,startTime,endTime,stages,uartConnectionError}, lastUpdate}`; кэш 2 с |
+| GET | `/rest/settings` | auth | R | `{ssvcSettings:{...}}` — **вложенный** объект |
+| PUT | `/rest/settings` | auth | W | тело — **плоский** объект `{"hyst":0.5}`; ответ `{success,accepted,ignored[],skipped[]}` |
+| POST | `/rest/commands` | auth | P/D | `{commands:"start",parameters:""}`; **200 = принято в очередь, не выполнено** |
+| GET | `/rest/subsystem` | auth | R | карта `{i2c_bus, thermal, atm_sensor, telegram_bot, vk_bot, settings}` |
+| PUT | `/rest/subsystem` | auth | W | `{name:bool}`; ответ `{success, errors[]}`; отдельные подсистемы включаются >60 с |
+| GET | `/rest/sensor` | **admin** | R | `{<zone>:{<address>:{v,u,type}}}` |
+| GET/POST | `/rest/zones` | **admin** | R/W | привязка датчиков к зонам |
+| GET/POST | `/rest/alarms` | **admin** | R/W | `{thresholds:{<addr>:{enabled,min,dangerous,critical}}}` |
+| PUT | `/rest/sensors/zone` | auth | W | `?address=&zone=` (одна привязка) |
+
+Команды `COMMAND_MAP`: `at`, `next`, `pause`, `stop`, `start`, `resume`, `version`, `get_settings`,
+`settings`, `emergency_stop`, `status`, `set`, `get_log`.
+
+#### 2.4.3 OpenConnect (`/rest/oc/*`)
+
+| Метод | Путь | Тип | Ответ |
+|---|---|---|---|
+| GET | `/rest/oc/info` | R | `{ssvc:{version,api,api_code,mode}, oc:{version,is_support_api,is_support_release,api_min,api_target,api_compatibility,api_features[{name,min_api,available}]}}` |
+| GET | `/rest/oc/hardware-config` | R | конфиг I²C-устройств + пробы `bmp581ProbeOk`/`ds3231ProbeOk`/`lcd1602ProbeOk`/`relayPcf8574ProbeOk[]`, `needsReboot`, `capabilities` |
+| PUT | `/rest/oc/hardware-config` | W | частичное обновление, валидация, `needsReboot` |
+| GET | `/rest/oc/hardware-faults` | R | `{faults[{code,codeLabel,address,role}],count,i2cBusActive,i2cScan[]}` |
+| GET | `/rest/oc/xkc25/status` | R | датчики уровня: `live`,`rawLevel`,`filled`,`calibrated`, `blockStart`,`blockReasons[]`,`warnings[]` |
+| POST | `/rest/oc/xkc25/calibrate` | W | `{index, step}` где `step` = `without_liquid` / `with_liquid` / `verify_return`; `verify_return` → **202**, затем `GET .../verify-status` |
+| GET | `/rest/oc/xkc25/verify-status` | R | `{status}` ∈ `none` / `pending` / `done`, плюс `ok`, `completed`, `code`, `rawLevel`, `message` |
+| GET | `/rest/oc/relay/capabilities` | R | `{supported, pcf8574:{...}}`; на GPIO-сборке `supported:false` |
+| GET | `/rest/oc/relay/metadata` | R | реле, их `targetBit`, `editable`, причины блокировки, коды сбоев, стадии, поля SSVC |
+| GET | `/rest/oc/relay/state` | R | `{supported, userShadow, userShadows[]}` |
+| POST | `/rest/oc/relay/override` | P | `{bit, enable?, energized?}`; **`enable` по умолчанию `true`**, если не передан |
+
+#### 2.4.4 Профили, журналы, файлы
+
+| Метод | Путь | Тип | Примечание |
+|---|---|---|---|
+| GET | `/rest/profiles` | R | список метаданных |
+| GET | `/rest/profiles/active` | R | `{id}` или 404 |
+| GET | `/rest/profiles/content?id=` | R | полный профиль (включая `ssvcSettings`, `analytics`, правила реле) |
+| POST | `/rest/profiles` | W | создать `{name,content?}` → 201 `{success,id}` |
+| POST | `/rest/profiles/copy` | W | `{sourceId,newName}` |
+| POST | `/rest/profiles/content` | W | `{id,content}` |
+| POST | `/rest/profiles/save` | W | сохранить текущие настройки в профиль |
+| POST | `/rest/profiles/set-active` | P | сделать активным и **применить** к контроллеру |
+| PUT | `/rest/profiles/meta` | W | переименовать `{id,name}` |
+| DELETE | `/rest/profiles/delete` | D | `{id}` (тело в DELETE!) |
+| GET | `/rest/logs` | R | stateful-сессия: `?statusOnly=1`, `?refresh=1`; статусы `idle/list/receiving/completed/error` |
+| GET | `/rest/logs/{processId}` | R | 202 + прогресс, затем **CSV** (`Content-Disposition`) |
+| DELETE | `/rest/logs` | W | отмена передачи |
+| GET | `/rest/files` | R | дерево LittleFS |
+| GET | `/rest/files{path}` | R | скачать файл |
+| POST | `/rest/files/copy` | W | `{source,destination}` |
+| DELETE | `/rest/files{path}` | D | удалить файл |
+
+#### 2.4.5 Мессенджеры
+
+| Метод | Путь | Примечание |
+|---|---|---|
+| GET/PUT | `/rest/telegram/config` | `{token,chat_id}` |
+| GET/PUT | `/rest/vk/config`, POST `/rest/vk/peers` | `FT_VK_BOT` |
+
+### 2.5 Особенности контракта, которые определяют архитектуру
+
+Это главный результат разбора: MCP-сервер нельзя писать как «тонкий проброс URL».
+
+| № | Поведение | Что должен делать MCP-сервер |
+|---|---|---|
+| 1 | `POST /rest/commands` асинхронен: 200 = «в очереди», не «выполнено» | инструмент возвращает `accepted` + отдельный инструмент/режим ожидания (`oc_wait_for_change`) |
+| 2 | `start` может вернуть **409** `{status:"rejected",blockReasons[]}` — предохранитель XKC-25 | разобрать `blockReasons` в структурированную ошибку с подсказкой, что калибровать |
+| 3 | Отказ очереди: **409** `feature_unsupported` (старая прошивка), **503** `queue_full` | разные коды ошибок MCP; `queue_full` — ретрай с backoff, `feature_unsupported` — нет |
+| 4 | `PUT /rest/settings` при частичном сбое: **503** + `partial:true`, часть SET уже ушла | **никогда не повторять тело целиком**; вернуть «частично применено» и перечитать `GET /rest/settings` |
+| 5 | GET отдаёт `{ssvcSettings:{...}}`, PUT ждёт плоский объект; неизвестные ключи молча уходят в `ignored` | адаптер оборачивает/разворачивает; `ignored` доносится до пользователя явно |
+| 6 | `/rest/logs` — одна сессия передачи на устройство: `409 log_transfer_busy`, 202 + поллинг | на устройство — мьютекс/лиз; скачивание в файл, а не в контекст модели |
+| 7 | `verify_return` в калибровке асинхронен (202) | двухшаговый инструмент: постановка → опрос `verify-status` |
+| 8 | `relay/override`: `enable` по умолчанию `true` | всегда передавать `enable` и `energized` явно |
+| 9 | GPIO-сборка отдаёт `{"supported":false}` вместо ошибки | трактовать как «функция недоступна в этой прошивке», а не как сбой |
+| 10 | Ответы команд — `text/plain`, остальное — JSON | толерантный парсер + нормализация в `structuredContent` |
+| 11 | В UI есть вызовы `/rest/sensors/thresholds` и `/rest/profiles/import`, которых **нет в прошивке** | не моделировать; пороги — через `/rest/alarms`, импорт — через `POST /rest/profiles` |
+| 12 | Включение `telegram_bot` может занять >60 с | таймауты инструментов подсистем ≥120 с, не блокировать общий пул |
+| 13 | Нет `commandId`/идемпотентности, нет результата команды | идемпотентность на стороне сервера: сверять состояние до/после, дедуп по «тот же вызов в пределах N мс» |
+| 14 | Регистрация маршрутов чувствительна к порядку/матчеру (см. комментарии в `HandlerRegistrator.cpp`) | никогда не добавлять завершающий `/` и не «нормализовать» пути |
+| 15 | `HttpEndpoint` по умолчанию `IS_ADMIN` | учётка admin либо явная проверка `GET /rest/telemetry` на старте |
+
+### 2.6 Версии и возможности
+
+`GET /rest/oc/info` отдаёт реестр возможностей с минимальной версией API: `base`(1.7), `formula`(1.7),
+`extended_heads`(1.8), `tank_mmhg_act`(1.7), `predec`(1.9), `formula_auto92`(1.9),
+`hearts_preempt_cnt`(1.8), `get_log`(1.10). Сравнение — целым кодом `major*100+minor`, не строкой.
+Тот же принцип обязателен в MCP-сервере: **инструмент не «исчезает» молча, а отвечает
+`feature_unsupported` с `required_api`/`device_api`**, повторяя формулировки прошивки.
+
+---
+
+## 3. Целевая архитектура
+
+### 3.1 Принципы
+
+1. **Сервис, а не процесс на одну сессию.** HTTP-сервер запускается один раз (Docker/systemd) и живёт
+   постоянно; клиенты подключаются и отключаются, состояние устройства от этого не зависит.
+2. **Capability-first.** На старте сессии — `GET /rest/oc/info` + `/rest/features`; реестр инструментов
+   и их описания учитывают возможности устройства.
+3. **Никакой «магии» поверх процесса.** Сервер не решает, когда переходить фракцию; он даёт
+   детерминированные операции и наблюдение.
+4. **Один ответ — одно состояние.** Каждый инструмент возвращает снимок + `observed_at`, а не поток.
+5. **Single-flight и один писатель на устройство.** Параллельные чтения схлопываются, записи
+   сериализуются: ESP32 не должна получать конкурирующие команды от двух агентов.
+6. **Опасное — явно.** Классы риска, подтверждение, аудит, флаг `SSVC_ALLOW_DESTRUCTIVE`.
+7. **Ошибка — данные.** Структурированный `code` + `hint` + `retryable`, а не текст исключения.
+8. **Контракт = zod-схемы рядом с типами фронтенда.** `interface/src/lib/types/ssvc.ts` — источник
+   для схем; расхождение ловится контрактными тестами.
+
+### 3.2 Слои
+
+```mermaid
+flowchart TB
+    subgraph Clients[MCP-клиенты]
+      A1[Агент / IDE]
+      A2[Чат-клиент]
+    end
+
+    subgraph Service["MCP-сервер (Node, HTTP-сервис)"]
+      H[HTTP-сервер :8080]
+      AUTHN[Bearer-токен клиента<br/>allowlist адресов]
+      SESS[Менеджер сессий<br/>Mcp-Session-Id]
+      T[Streamable HTTP транспорт<br/>POST / GET / DELETE /mcp]
+      REG[Реестр инструментов<br/>tools / resources / prompts]
+      POL[Политика: риск, confirm, аудит]
+      DOM[Доменные сервисы]
+      DC[DeviceClient<br/>auth + HTTP + retry + rate-limit]
+      CAP[CapabilityCache]
+      RAW[(raw/*.jsonl)]
+      AUD[(audit.jsonl)]
+    end
+
+    subgraph Device["Контроллер OpenConnect :80"]
+      REST[REST]
+    end
+
+    A1 -->|HTTPS/HTTP + Bearer| H --> AUTHN --> SESS --> T --> REG
+    A2 --> H
+    REG --> POL --> DOM --> DC --> REST
+    CAP --- DOM
+    DC --> RAW
+    POL --> AUD
+```
+
+### 3.3 Структура репозитория
+
+Каталог `mcp/` — самостоятельный npm-пакет внутри репозитория (не часть прошивки и не часть
+`interface/`, чтобы не ломать сборку фронта и `pio`).
+
+```
+mcp/
+├── package.json                 # "type":"module", bin: ssvc-openconnect-mcp
+├── tsconfig.json
+├── Dockerfile
+├── docker-compose.yml           # сервис + (опционально) Caddy для TLS
+├── .env.example                 # без секретов, с комментариями
+├── README.md                    # запуск, .env, подключение клиентов
+├── src/
+│   ├── index.ts                 # сборка: конфиг → сервис → serve
+│   ├── config.ts                # zod-схема .env, отказ старта без обязательных
+│   ├── logging.ts               # структурный лог (JSON) в stdout
+│   ├── http/
+│   │   ├── app.ts               # node:http, маршруты /mcp /healthz /readyz
+│   │   ├── auth.ts              # сверка Bearer-токена, CIDR-allowlist
+│   │   ├── sessions.ts          # Map<sessionId, Session>, лимиты, idle-cleanup
+│   │   └── tls.ts               # встроенный TLS (cert/key) или «за прокси»
+│   ├── rawlog.ts                # запись сырых обменов + редакция секретов
+│   ├── audit.ts                 # JSONL-аудит опасных операций
+│   ├── mcp/
+│   │   ├── server.ts            # создание McpServer на сессию
+│   │   ├── errors.ts            # код → MCP-ошибка, маппинг HTTP
+│   │   ├── resources.ts         # openconnect://..., подписки
+│   │   └── prompts.ts           # сценарии (рус.)
+│   ├── device/
+│   │   ├── DeviceClient.ts      # HTTP, таймауты, ретраи, single-flight
+│   │   ├── AuthSession.ts       # signIn, кэш JWT, relogin на 401
+│   │   ├── CapabilityCache.ts   # /rest/oc/info, TTL, инвалидация
+│   │   ├── WriteQueue.ts        # один писатель, приоритет чтений
+│   │   └── schemas/             # zod: telemetry, settings, oc, profiles, logs
+│   ├── domain/                  # Info, Telemetry, Command, Settings, Sensor,
+│   │                            # Relay, Xkc25, Logs, Profile, System
+│   ├── tools/                   # по файлу на домен, декларативная регистрация
+│   └── policy/
+│       ├── risk.ts              # классы риска и аннотации
+│       └── confirmation.ts      # проверка confirm/reason, флаг destructive
+├── mock/                        # заглушка устройства + фикстуры 1.7 / 1.10
+└── test/                        # unit / contract / http / e2e
+```
+
+### 3.4 Транспорт, сессии и доступ
+
+**Стек.** `@modelcontextprotocol/sdk@1.32.2` (зафиксирован), `node:http` без веб-фреймворка, zod 3,
+Node ≥ 22. Отказ от Fastify/Express осознанный: маршрутов три, а любая прослойка добавляет зависимость
+и второй слой обработки тела запроса.
+
+**Эндпоинт.** Один путь `/mcp` (по умолчанию), обслуживающий `POST`, `GET` и `DELETE` в соответствии со
+Streamable HTTP. `GET` открывает SSE-поток сервер→клиент (нужен для `notifications/resources/updated`),
+`DELETE` завершает сессию. `POST` несёт JSON-RPC.
+
+**Сессии.** Состояние нужно: подписки на ресурсы и уведомления привязаны к сессии. Поэтому режим
+stateful:
+
+| Параметр | Значение | Обоснование |
+|---|---|---|
+| `sessionIdGenerator` | `randomUUID()` | криптостойкий идентификатор |
+| `MAX_SESSIONS` | 32 | один пользователь, несколько агентов; защита от утечки памяти |
+| `IDLE_MS` | 30 мин | сессия без открытых ответов закрывается |
+| `onsessioninitialized` / `onsessionclosed` | учёт в `Map`, лог, счётчики | наблюдаемость |
+| Неизвестный `Mcp-Session-Id` | `404` | клиент пересоздаёт сессию |
+| Нет `Mcp-Session-Id` на не-init запросе | `400` | нарушение протокола |
+| `isInitializeRequest` + лимит сессий | `503` | «слишком много сессий» |
+
+**Доступ к серверу.**
+
+| Механизм | Реализация |
+|---|---|
+| Аутентификация клиента | `Authorization: Bearer ${SSVC_MCP_TOKEN}`; сравнение в постоянном времени; `401` + `WWW-Authenticate: Bearer` |
+| Обязательность токена | сервер **не стартует** без `SSVC_MCP_TOKEN` (fail-fast, а не «открытый порт») |
+| Сетевой фильтр | `SSVC_MCP_ALLOWED_CIDRS` (по умолчанию — вся частная сеть) |
+| DNS-rebinding | `SSVC_MCP_ALLOWED_HOSTS` + проверка `Host`/`Origin`; запросы без `Origin` разрешены (не браузерные клиенты) |
+| TLS | встроенный (`SSVC_MCP_TLS_CERT`/`_KEY`) либо Caddy/Traefik перед сервисом; наружу — только TLS |
+| CORS | выключен: браузерных MCP-клиентов не поддерживаем |
+| Проверка живости | `GET /healthz` (без токена, только «процесс жив»), `GET /readyz` (с токеном: проверка `GET /rest/oc/info`) |
+
+**Ограничения конкурентности.** Несколько агентов одновременно — реальность HTTP-режима, поэтому:
+
+- не более 4 одновременных вызовов на сессию;
+- глобальная очередь к устройству глубиной 16, дальше — `503 busy`;
+- чтения имеют приоритет над записями; записи — строго по одной (`WriteQueue`);
+- бюджет запросов к ESP32 — общий на процесс, а не на сессию.
+
+### 3.5 DeviceClient — ядро надёжности
+
+Ответственность: превратить «сырой HTTP к ESP32» в предсказуемый вызов.
+
+| Возможность | Реализация |
+|---|---|
+| Аутентификация | `AuthSession`: ленивый `signIn`, кэш JWT в памяти, `401` → один повтор после `signIn`; `404` на `verifyAuthorization` = security off, токен не нужен |
+| Таймауты | connect 2 с, read 10 с по умолчанию; per-tool override; `GET /rest/logs/{id}` — до 60 с |
+| Ретраи | только `GET` и только на сетевые ошибки/`502-504`/`503 queue_full`, экспоненциальный backoff 3 попытки; **POST/PUT/DELETE не ретраятся** |
+| Rate limit | token bucket: 5 rps burst 10, потолок по умолчанию 2 rps для опроса |
+| Single-flight | `Map<key, Promise>`: одновременные `getTelemetry()` → один запрос |
+| Запись | `WriteQueue` с мьютексом на устройство; дедуп одинаковых вызовов в пределах 1 с |
+| Нормализация | `text/plain` → `{raw}`; `{"supported":false}` → `featureUnavailable`; `409/503` → коды |
+| Наблюдаемость | длительность, статус, размер ответа; счётчики для `oc_diagnostics` |
+
+Скелет:
+
+```ts
+export class DeviceClient {
+  constructor(
+    private readonly cfg: DeviceConfig,
+    private readonly auth: AuthSession,
+    private readonly raw: RawLogger,
+  ) {}
+
+  async getJson<T>(path: string, schema: z.ZodType<T>, opts: ReadOpts = {}): Promise<T> {
+    return this.singleFlight(`GET ${path}`, async () => {
+      const { status, body, ms } = await this.request('GET', path, undefined, opts);
+      await this.raw.record({ method: 'GET', path, status, ms, response: body });
+      return schema.parse(body);
+    });
+  }
+
+  async postCommand(name: CommandName, params = ''): Promise<CommandAccepted> {
+    // 200 → accepted; 409/503 → типизированный отказ, без ретрая
+    return this.write(() =>
+      this.deserialize(
+        this.request('POST', '/rest/commands', { commands: name, parameters: params }),
+        commandAcceptedSchema,
+        { method: 'POST', command: name },
+      ),
+    );
+  }
+}
+```
+
+### 3.6 Доменные сервисы
+
+Каждый сервис — единственное место знания о своём участке REST и о его странностях.
+
+| Сервис | REST | Что инкапсулирует |
+|---|---|---|
+| `InfoService` | `/rest/oc/info`, `/rest/features`, `/rest/systemStatus` | capability-модель, совместимость версий |
+| `TelemetryService` | `/rest/telemetry`, `/rest/sensor` | снимок, `lastUpdate`, «изменилось ли», ожидание стадии |
+| `CommandService` | `/rest/commands` | имена команд, разбор 409/503, `emergency_stop`, ожидание эффекта |
+| `SettingsService` | `/rest/settings` (GET/PUT) | обёртка/разворот `ssvcSettings`, отчёт `accepted/ignored/skipped`, запрет слепого ретрая |
+| `SensorService` | `/rest/zones`, `/rest/sensors/zone`, `/rest/alarms`, `/rest/sensor` | зоны и пороги; admin-only |
+| `RelayService` | `/rest/oc/relay/*` | `supported:false`, обязательные `enable`/`energized`, зарезервированные биты |
+| `Xkc25Service` | `/rest/oc/xkc25/*` | двухшаговая калибровка, `blockReasons`, `verify-status` |
+| `LogsService` | `/rest/logs*` | лиз сессии, 202-поллинг, CSV в файл, `409 busy` |
+| `ProfileService` | `/rest/profiles*` | CRUD + «применить активный», порядок путей |
+| `SystemService` | `/rest/subsystem`, `/rest/hardware-*`, `/rest/systemStatus` | длинные таймауты, `needsReboot` |
+
+### 3.7 MCP-слой: инструменты, ресурсы, промпты
+
+**Инструменты.** Имя `oc_<область>_<действие>`, snake_case, латиницей (это часть контракта); всё
+остальное — по-русски:
+
+- `title` и `description` — русские, 1–2 предложения: что делает и **чего не делает** (например,
+  «ставит в очередь, не ждёт выполнения»);
+- описания параметров — русские (`confirm`: «явное подтверждение влияющего на процесс действия»);
+- `inputSchema` — строгий zod, `additionalProperties:false`;
+- `annotations`: `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint:false`;
+- `outputSchema` + `structuredContent` — чтобы клиент видел поля, а не текст;
+- тексты ошибок и `hint` — русские; `code`, `details.*` — латиницей.
+
+**Ресурсы** (URI без сегмента устройства — контроллер один; подписка → уведомление при изменении):
+
+| URI | Содержимое |
+|---|---|
+| `openconnect://info` | версии, возможности, совместимость |
+| `openconnect://telemetry` | последний снимок |
+| `openconnect://settings` | действующие настройки SSVC |
+| `openconnect://alarms` | пороги и активные сбои |
+| `openconnect://profiles` | список профилей |
+| `openconnect://logs/{processId}.csv` | скачанный журнал |
+
+**Промпты** (готовые сценарии на русском, снижают число ошибок модели):
+
+1. `start_rectification` — проверить info/telemetry/guard → предложить старт → подтвердить → ждать стадию.
+2. `troubleshoot_start_blocked` — разобрать `blockReasons`, `hardware-faults`, `i2cScan`.
+3. `calibrate_xkc25` — мастер из трёх шагов с проверкой состояния между ними.
+4. `analyze_last_run` — журнал + телеметрия → краткий разбор.
+5. `apply_profile` — выбрать профиль, показать diff настроек, применить.
+
+### 3.8 Состояние, кэш и «ожидание»
+
+- **Снимок телеметрии** кэшируется 1–2 с (сервер всё равно обновляет его раз в 2 с); `lastUpdate`
+  отдаётся клиенту, чтобы он видел актуальность. Частота фонового опроса — `SSVC_POLL_HZ` (по умолчанию 1 Гц),
+  с джиттером; при отсутствии подписчиков опрос не выполняется.
+- **Capability-кэш** — TTL 60 с + инвалидация по `404`/`409 feature_unsupported`/`restart`.
+- **Ожидание** реализуется отдельными инструментами, а не долгим `await` внутри команды:
+  `oc_wait_for_change({expect:{stage:"hearts"}, timeout_s:120})` — поллинг с адаптивным интервалом
+  (0.5 с → 2 с), возврат `{matched, observed, elapsed_s}` или `{timeout:true, observed}`.
+  Это важно: MCP-клиенты любят таймауты, а процесс идёт минутами.
+- **Дедупликация записи**: одинаковый вызов в пределах 1 с возвращает результат первого (защита от
+  «двойного клика» агента и от двух агентов, делающих одно и то же).
+- **Разрыв сессии** не отменяет команду на устройстве; `oc_diagnostics` показывает активные сессии.
+
+### 3.9 Один контроллер: конфигурация и секреты
+
+Конфигурация — только `.env` рядом с сервисом (или переменные окружения контейнера). Файл создаётся
+пользователем из `.env.example`, в git не попадает.
+
+| Переменная | Обязательна | По умолчанию | Назначение |
+|---|---|---|---|
+| `SSVC_DEVICE_URL` | да | — | `http://192.168.1.42` |
+| `SSVC_USER` | да | `admin` | учётка контроллера (**admin**) |
+| `SSVC_PASSWORD` | да | — | пароль контроллера |
+| `SSVC_MCP_TOKEN` | да | — | bearer-токен для MCP-клиентов; без него старт запрещён |
+| `SSVC_MCP_BIND` | нет | `0.0.0.0` | адрес прослушивания |
+| `SSVC_MCP_PORT` | нет | `8080` | порт |
+| `SSVC_MCP_ALLOWED_HOSTS` | при `bind 0.0.0.0` | — | список `Host` для защиты от DNS-rebinding |
+| `SSVC_MCP_ALLOWED_CIDRS` | нет | `private` | кто может подключаться |
+| `SSVC_MCP_TLS_CERT` / `_KEY` | нет | — | встроенный TLS; иначе — за прокси |
+| `SSVC_ALLOW_DESTRUCTIVE` | нет | `1` до релиза | разрушительные инструменты |
+| `SSVC_RAW_LOG` | нет | `all` до релиза | `off` / `errors` / `all` |
+| `SSVC_RAW_LOG_MAX_MB` | нет | `50` | предел каталога сырых логов |
+| `SSVC_ALLOW_DEBUG` | нет | `1` до релиза | разрешить `debug:true` в вызовах |
+| `SSVC_POLL_HZ` | нет | `1` | частота фонового опроса |
+| `SSVC_AUDIT_PATH` | нет | `./logs/audit.jsonl` | аудит |
+| `SSVC_LOG_LEVEL` | нет | `info` | уровень логов |
+
+Правила секретов:
+
+- `.env` в `.gitignore`; в репозитории только `.env.example` с пустыми значениями;
+- права файла `600`, владелец — пользователь сервиса; в Docker — `env_file`, не `environment`;
+- пароли и токены **никогда** не попадают в логи, аудит, сырые логи и `oc_diagnostics`;
+- смена пароля контроллера — только правка `.env` + рестарт сервиса (relogin автоматический);
+- генерация `SSVC_MCP_TOKEN`: `openssl rand -hex 32`.
+
+### 3.10 Ошибки
+
+Единый конверт в `structuredContent` и в тексте (сообщения — русские, коды — латиницей):
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "feature_unsupported",
+    "message": "Команда GET_LOG недоступна: требуется API 1.10, устройство сообщает 1.7",
+    "hint": "Обновите прошивку SSVC-0059 до версии с API 1.10 или не запрашивайте журнал",
+    "retryable": false,
+    "details": { "feature": "get_log", "required_api": "1.10", "device_api": "1.7" }
+  }
+}
+```
+
+| Код | Когда | `retryable` |
+|---|---|---|
+| `device_unreachable` | таймаут/сеть | да (с backoff) |
+| `auth_failed` / `auth_required` | 401 после relogin | нет |
+| `forbidden_admin_required` | 403 | нет |
+| `feature_unsupported` | `409 feature_unsupported`, `supported:false` | нет |
+| `queue_full` | 503 `queue_full` | да |
+| `guard_blocked` | 409 `blockReasons` | нет (нужны действия) |
+| `validation_failed` | 400 | нет |
+| `partial_apply` | 503 `partial:true` | нет (перечитать состояние) |
+| `busy` | 409 `log_transfer_busy`, лимит очереди | да (позже) |
+| `not_found` | 404 | нет |
+| `confirmation_required` | нет `confirm`/`reason` | нет |
+| `disabled_by_policy` | инструмент выключен (`SSVC_ALLOW_DESTRUCTIVE=0`) | нет |
+
+### 3.11 Безопасность: два контура
+
+**Контур A — клиент → MCP-сервер.** Bearer-токен, опционально TLS, CIDR-allowlist, проверка `Host`/
+`Origin`, лимит сессий и вызовов, аудит. Сервер не публикуется в интернет без TLS-прокси.
+
+**Контур B — MCP-сервер → контроллер.** HTTP без TLS по локальной сети, учётка admin, JWT в памяти.
+Пароль читается только из `.env`. Трафик в LAN не шифруется — это осознанное ограничение прошивки,
+зафиксированное в README.
+
+**Классы риска и подтверждение.**
+
+| Класс | Примеры | Правило |
+|---|---|---|
+| 0. Чтение | info, telemetry, sensors, profiles list, logs status | свободно |
+| 1. Обратимая запись | настройки, зоны, пороги, профили, подсистемы | свободно, с отчётом об изменении |
+| 2. Влияет на процесс | `start`, `pause`, `resume`, `next`, `stop`, `relay/override`, `set-active` | `confirm:true` обязательно; в ответе — что именно изменено |
+| 3. Разрушительное | `profiles/delete`, `files` DELETE, `restart`, `factoryReset`, OTA | `confirm:true` + `reason` (≥10 символов); аудит; **выключено флагом перед релизом** |
+| — | `emergency_stop` | всегда разрешён, без подтверждения: это защитное действие |
+
+**Режим «до релиза».** `SSVC_ALLOW_DESTRUCTIVE=1` — инструменты классов 3 доступны, но каждое
+исполнение требует подтверждения и пишется в аудит. **Release hardening (P4):** значение по умолчанию
+меняется на `0`, инструменты отвечают `disabled_by_policy`, в README появляется раздел «как включить
+осознанно». Это отдельный пункт приёмки релиза, а не «потом поправим».
+
+**Аудит.** JSONL: `ts, session, tool, risk, confirm, reason, args_hash, result, duration_ms`.
+Секреты, тела файлов и журналы не пишутся.
+
+### 3.12 Наблюдаемость и сырые логи
+
+**Логи.** Структурный JSON в stdout (Docker/systemd собирают штатно): `ts, level, session, tool, msg,
+duration_ms`. Уровень — `SSVC_LOG_LEVEL`. Секреты вырезаются на уровне логгера.
+
+**Сырые обмены (`raw`).** Отдельный слой в `DeviceClient`, пишет то, чего не видно в обычных логах:
+метод, путь, статус, длительность, тело запроса и тело ответа.
+
+| Параметр | Значение |
+|---|---|
+| Формат | `logs/raw/YYYY-MM-DD.jsonl`, одна строка — один обмен |
+| Объём тела | до 64 КБ на поле, дальше — усечение с пометкой `truncated:true` |
+| Редакция | `Authorization`, `password`, `access_token`, `token` → `"***"` |
+| Режимы | `SSVC_RAW_LOG=all` (все обмены), `errors` (только статусы ≥400 и таймауты), `off` |
+| Ротация | по дням + предел каталога `SSVC_RAW_LOG_MAX_MB` (удаляется самое старое) |
+| По умолчанию | **`all` в P0–P3** (разработка), **`off` в P4** (релиз) |
+| Точечно | параметр `debug:true` в вызове инструмента добавляет в ответ блок `raw` (только при `SSVC_ALLOW_DEBUG=1`) |
+
+Почему так: на этапе интеграции с прошивкой нужны реальные тела ответов (расхождения схем, «странные»
+коды), а в проде хранение всех обменов — это и диск, и потенциальные чувствительные данные.
+
+---
+
+## 4. Каталог инструментов
+
+Колонки: риск (0–4), REST-источник. Все описания в коде — русские.
+
+| Инструмент | Риск | REST |
+|---|---|---|
+| `oc_get_info` | 0 | `GET /rest/oc/info` |
+| `oc_get_capabilities` | 0 | `/rest/oc/info` + `/rest/features` |
+| `oc_get_telemetry` | 0 | `GET /rest/telemetry` |
+| `oc_get_process_status` | 0 | `GET /rest/telemetry` (`status`) |
+| `oc_wait_for_change` | 0 | поллинг `/rest/telemetry` |
+| `oc_get_settings` | 0 | `GET /rest/settings` |
+| `oc_update_settings` | 1 | `PUT /rest/settings` |
+| `oc_get_sensors` | 0 | `GET /rest/sensor` |
+| `oc_get_zones` / `oc_set_zone` | 0/1 | `/rest/zones`, `/rest/sensors/zone` |
+| `oc_get_alarms` / `oc_set_alarm_thresholds` | 0/1 | `/rest/alarms` |
+| `oc_get_hardware_faults` | 0 | `GET /rest/oc/hardware-faults` |
+| `oc_get_hardware_config` / `oc_update_hardware_config` | 0/1 | `/rest/oc/hardware-config` |
+| `oc_get_subsystems` / `oc_set_subsystem` | 0/1 | `/rest/subsystem` |
+| `oc_start` / `oc_pause` / `oc_resume` / `oc_next` | 2 | `POST /rest/commands` |
+| `oc_stop` | 2 | `POST /rest/commands` |
+| `oc_emergency_stop` | — | `POST /rest/commands {"commands":"emergency_stop"}` |
+| `oc_send_command` (escape hatch) | 2 | `POST /rest/commands`, allowlist имён |
+| `oc_get_relay_metadata` / `oc_get_relay_state` | 0 | `/rest/oc/relay/*` |
+| `oc_relay_override` | 2 | `POST /rest/oc/relay/override` |
+| `oc_get_xkc25_status` | 0 | `/rest/oc/xkc25/status` |
+| `oc_xkc25_calibrate` | 1 | `POST /rest/oc/xkc25/calibrate` (+ опрос) |
+| `oc_profiles_list` / `oc_profile_get` | 0 | `/rest/profiles*` |
+| `oc_profile_create` / `oc_profile_copy` / `oc_profile_rename` | 1 | `/rest/profiles*` |
+| `oc_profile_update_content` / `oc_profile_save_current` | 1 | `/rest/profiles/content`, `/rest/profiles/save` |
+| `oc_profile_apply` | 2 | `POST /rest/profiles/set-active` |
+| `oc_profile_delete` | 3* | `DELETE /rest/profiles/delete` |
+| `oc_logs_list` / `oc_logs_download` / `oc_logs_cancel` | 0/0/1 | `/rest/logs*` |
+| `oc_files_list` / `oc_file_download` | 0 | `/rest/files*` |
+| `oc_file_delete` / `oc_file_copy` | 3*/1 | `/rest/files*` |
+| `oc_system_status` / `oc_restart` | 0/3* | `/rest/systemStatus`, `/rest/restart` |
+| `oc_diagnostics` | 0 | локально (конфиг без секретов, сессии, счётчики) |
+
+`*` — класс 3, доступен только при `SSVC_ALLOW_DESTRUCTIVE=1` и с `confirm`+`reason`; перед релизом
+выключается по умолчанию.
+
+Правила каталога:
+
+- одна операция — один инструмент (кроме мастеров калибровки и ожиданий, где шаги явные);
+- никаких «сделай всё» инструментов: LLM должен видеть границу каждого шага;
+- `oc_send_command` — только с allowlist, чтобы нельзя было вызвать неизвестную/опасную команду;
+- каждый ответ содержит `observed_at` и `stale` (bool);
+- аргумента `device` нет: контроллер один (решение №4).
+
+---
+
+## 5. Нефункциональные требования
+
+| Требование | Цель |
+|---|---|
+| Доступность сервиса | старт < 2 с; переживает недоступность контроллера, не падает |
+| Латентность read-инструмента | p95 < 300 мс (локальная сеть), без учёта `wait_*` |
+| Нагрузка на ESP32 | ≤ 2 rps устойчиво, burst ≤ 5; опрос телеметрии ≤ 1 Гц |
+| Параллельные клиенты | 4 сессии штатно, 32 максимум; вызовы на сессию ≤ 4 |
+| Память сервера | < 150 МБ RSS, без роста при 24-часовой работе |
+| Образ Docker | < 200 МБ, non-root, healthcheck |
+| Совместимость | прошивки с API 1.7…1.10; secure и не-secure сборки; `PINOUT_USE_GPIO` 0 и 1 |
+| Безопасность | токен обязателен; секреты только из `.env`; аудит всех операций класса ≥2 |
+| Деградация | при недоступности устройства — `device_unreachable` с `hint`, без «залипания» сессий |
+
+---
+
+## 6. План разработки
+
+Оценки — для одного разработчика, в рабочих днях. Все этапы заканчиваются работоспособным сервисом
+в контейнере.
+
+### P0. HTTP-сервис и чтение (5 дней)
+
+- [ ] `mcp/` пакет, TypeScript, ESLint/Prettier, `node:test`, CI-джоба.
+- [ ] HTTP-приложение на `node:http`: `/mcp` (Streamable HTTP, **stateful**: `sessionIdGenerator`,
+      `onsessioninitialized`, `onsessionclosed`), `/healthz`, `/readyz`.
+- [ ] Менеджер сессий: `MAX_SESSIONS=32`, idle-cleanup 30 мин, коды `400/404/503` по протоколу.
+- [ ] Аутентификация клиента: `SSVC_MCP_TOKEN` (fail-fast), CIDR-allowlist, проверка `Host`/`Origin`.
+- [ ] `config.ts`: zod-схема `.env`, `.env.example`, отказ старта при отсутствии обязательных.
+- [ ] `rawlog.ts`: `SSVC_RAW_LOG=all`, JSONL, редакция секретов, ротация и предел объёма.
+- [ ] `DeviceClient` + `AuthSession` + `CapabilityCache` + `WriteQueue` (каркас).
+- [ ] Инструменты: `oc_get_info`, `oc_get_capabilities`, `oc_get_telemetry`, `oc_get_process_status`,
+      `oc_diagnostics`; ресурсы `info` и `telemetry`.
+- [ ] `mock/deviceMock.ts` (по мотивам `scripts/smoke_rest.py --self-test`) + фикстуры 1.7/1.10.
+- [ ] Dockerfile (non-root, healthcheck) + `docker-compose.yml` + `.env.example`.
+- [ ] README: запуск, токен, подключение клиента, ограничения.
+
+**Приёмка:** `initialize` по HTTP создаёт сессию, повторный запрос с `Mcp-Session-Id` её переиспользует;
+без токена — `401`, с чужим `Host` — `403`, неизвестная сессия — `404`; MCP Inspector по HTTP видит
+5 инструментов; телеметрия читается с mock и с реального контроллера; `logs/raw/` содержит обмены с
+вырезанным `Authorization`; контейнер поднимается по `docker compose up` и проходит healthcheck.
+
+### P1. Управление и настройки (6 дней)
+
+- [ ] `CommandService`: `start/pause/resume/next/stop/emergency_stop`, разбор 409 `blockReasons`,
+      503 `queue_full`, 409 `feature_unsupported`.
+- [ ] `oc_wait_for_change` (стадия/статус/тип телеметрии) с таймаутом и возвратом наблюдённого.
+- [ ] `SettingsService`: обёртка GET/PUT, отчёт `accepted/ignored/skipped`, запрет ретрая при `partial`.
+- [ ] Политика риска: `confirm` для класса ≥2, `confirmation_required` с русской подсказкой,
+      аудит JSONL, `emergency_stop` без подтверждения.
+- [ ] Preflight перед `oc_start` (guard XKC-25 + hardware faults) в ответе инструмента.
+- [ ] `WriteQueue` в бою: один писатель, дедуп 1 с, приоритет чтений.
+- [ ] Флаг `SSVC_ALLOW_DESTRUCTIVE` и `disabled_by_policy` (пока не используется — готовим почву).
+- [ ] Тесты: юнит на маппинг ошибок, HTTP-тесты сессий, контрактные на схемы настроек.
+
+**Приёмка:** полный цикл «старт → ожидание стадии `heads` → пауза → стоп» на mock и на устройстве;
+заблокированный guard даёт `guard_blocked` с причинами; частичный сбой настроек не приводит к
+повторной отправке тела; два одновременных `oc_start` не создают двух команд.
+
+### P2. Датчики, реле, калибровка, подсистемы (7 дней)
+
+- [ ] `SensorService`: `/rest/sensor`, `/rest/zones`, `/rest/sensors/zone`, `/rest/alarms`.
+- [ ] `RelayService`: capabilities/metadata/state, `oc_relay_override` с явными `enable`/`energized`,
+      обработка `supported:false` и 403 для зарезервированных битов.
+- [ ] `Xkc25Service`: статус, пошаговая калибровка, асинхронный `verify_return` (202 → опрос).
+- [ ] `oc_get_hardware_faults`, hardware-config get/put, `oc_get_subsystems`/`oc_set_subsystem`
+      (таймаут ≥120 с, без блокировки остальных вызовов).
+- [ ] Промпты `troubleshoot_start_blocked`, `calibrate_xkc25`.
+
+**Приёмка:** на GPIO-сборке реле-инструменты отвечают `feature_unsupported`; калибровка проходит
+три шага; `oc_set_subsystem` на `telegram_bot` не роняет остальные запросы (проверка параллельным
+вызовом телеметрии).
+
+### P3. Журналы, профили, файлы, разрушительные операции (6 дней)
+
+- [ ] `LogsService`: статус, `refresh`, 202-поллинг, скачивание CSV в файл, `DELETE` отмены,
+      лиз «одна сессия на устройство», `busy` при конфликте.
+- [ ] `ProfileService`: list/get/create/copy/rename/content/save/apply/delete.
+- [ ] `FilesService`: list/download/delete/copy.
+- [ ] Разрушительные инструменты (класс 3) с `confirm` + `reason` и аудитом, под флагом.
+- [ ] Промпты `start_rectification`, `apply_profile`, `analyze_last_run`.
+- [ ] Ресурс-шаблон `logs/{id}.csv` + уведомления об изменении телеметрии (SSE-поток сессии).
+
+**Приёмка:** журнал скачивается и отдаётся файлом-ресурсом; параллельный запрос второго журнала даёт
+`busy`; профиль создаётся, применяется и удаляется с аудитом; удаление без `reason` отклоняется
+`confirmation_required`.
+
+### P4. Стабилизация и релиз (6 дней)
+
+- [ ] `SystemService`: `systemStatus`, `restart`, OTA/factoryReset — только при `SSVC_ALLOW_DESTRUCTIVE=1`.
+- [ ] **Release hardening:** `SSVC_ALLOW_DESTRUCTIVE` по умолчанию `0`; проверить, что каждый
+      инструмент класса 3 отвечает `disabled_by_policy`; README «как включить осознанно».
+- [ ] **Release hardening:** `SSVC_RAW_LOG` по умолчанию `off`, `SSVC_ALLOW_DEBUG` — `0`; точечный
+      `debug:true` проверен и документирован.
+- [ ] Нагрузочный/soak-тест: 24 ч опроса + параллельные сессии; контроль RSS и ошибок.
+- [ ] Матрица совместимости: secure/insecure, GPIO/PCF8574, API 1.7 и 1.10.
+- [ ] Docker-образ с тегом, healthcheck, инструкция по обновлению; CHANGELOG.
+- [ ] Документация: этот файл + `README.md` пакета + раздел в `docs/develop/api/`.
+
+**Приёмка:** 24-часовой прогон без утечек и падений; на всех конфигурациях зелёный смоук; на «релизном»
+`.env` разрушительные инструменты недоступны, сырые логи не пишутся; сервис переживает рестарт
+контроллера и восстанавливает работу без ручных действий.
+
+### P5. Опционально (после v1)
+
+- `mcp-remote`/stdio-мост для клиентов без поддержки HTTP (документация, не код).
+- OAuth/DCR, если клиент не умеет статический bearer.
+- MQTT-источник телеметрии вместо опроса.
+- Мультиустройство (реестр + аргумент `device`) — только при реальной потребности.
+
+**Итого до v1: ~30 рабочих дней (≈6 недель).**
+
+---
+
+## 7. Стратегия тестирования
+
+| Уровень | Что проверяет | Инструмент |
+|---|---|---|
+| Юнит | auth/relogin, backoff, single-flight, `WriteQueue`, risk-политика, маппинг ошибок | `node:test` |
+| Контракт | zod-схемы против фикстур реальных ответов (API 1.7 / 1.10, GPIO / PCF) | `node:test` + `mock/fixtures` |
+| HTTP-транспорт | `initialize`, переиспользование `Mcp-Session-Id`, `400/404/503`, `DELETE` сессии, лимит сессий, idle-cleanup | `node:test` + `fetch` |
+| Доступ | `401` без токена, `403` при чужом `Host`/`Origin`, CIDR-allowlist, fail-fast без `SSVC_MCP_TOKEN` | `node:test` |
+| Политика | `confirm`/`reason`, `disabled_by_policy`, `emergency_stop` без подтверждения, запись аудита | `node:test` |
+| Сырые логи | редакция `Authorization`/`password`, ротация, предел объёма, `debug:true` только при флаге | `node:test` |
+| Мок-устройство | 202/409/503, частичный PUT, лог-сессия, guard старта | `mock/deviceServer.ts` |
+| Интеграция MCP | валидность `tools/list`, схем, аннотаций; вызовы по HTTP | `@modelcontextprotocol/inspector` |
+| E2E | реальное устройство: чтение, старт/стоп на эмуляторе SSVC, журнал | скрипт + `scripts/smoke_rest.py` как эталон |
+| Контейнер | сборка, non-root, healthcheck, `env_file`, рестарт | `docker compose` в CI |
+| Нагрузка | 24 ч, 1 Гц + 2 сессии, отсутствие роста памяти | node-скрипт |
+
+Отдельно: **тест на расхождение контракта** — сравнение zod-схем с `interface/src/lib/types/ssvc.ts`
+(скрипт-генератор или чек-лист в PR), чтобы фронт и MCP не разъехались.
+
+---
+
+## 8. Риски и меры
+
+| Риск | Влияние | Мера |
+|---|---|---|
+| MCP-эндпоинт доступен по сети | несанкционированное управление процессом | обязательный токен, CIDR-allowlist, TLS-прокси, аудит, лимит сессий |
+| Клиент не умеет статический Bearer | интеграция не заводится | `mcp-remote` как мост; OAuth — в P5; проверить целевые клиенты на P0 |
+| Нет TLS между сервером и контроллером | пароль/JWT видны в LAN | осознанное ограничение прошивки; сервер в доверенном сегменте; README |
+| Разрушительные операции включены до релиза | случайное удаление профиля/файла | `confirm`+`reason`, аудит, отдельный пункт release hardening, тест «по умолчанию выключено» |
+| Сырые логи содержат чувствительное | утечка токенов/данных | редакция, локальный каталог, `off` в релизе, предел объёма |
+| Два агента командуют одновременно | конкурирующие команды на ESP32 | `WriteQueue`, дедуп, лимит вызовов на сессию |
+| Асинхронные команды воспринимаются как «выполнено» | агент делает следующий шаг раньше времени | `wait_*`, поле `accepted` вместо `ok` |
+| Частичное применение настроек | «потерянные» параметры, повторная запись | `partial:true` → без ретрая, перечитать GET, показать `skipped` |
+| Одна лог-сессия на устройство | 409 и потеря прогресса | лиз на устройство, очередь запросов журналов |
+| Admin-only эндпоинты | половина инструментов 403 | требовать admin, проверять на старте, понятная ошибка |
+| JWT без `exp` | долгоживущий доступ | память процесса, relogin при 401, рекомендация прошивке (§9) |
+| Дрейф прошивки | схемы расходятся | capability-гейты + контрактные фикстуры по версиям |
+| Нагрузка на ESP32 | рост латентности, watchdog | бюджет rps, джиттер, single-flight, backoff |
+| `enable` по умолчанию `true` в relay override | случайное включение реле | всегда явные аргументы + схема `required` |
+| Забытый рестарт после смены `.env` | работа со старым паролем/токеном | лог фактического конфига при старте (без секретов) + `/readyz` |
+
+---
+
+## 9. Предложения по доработке прошивки (backlog, не блокируют v1)
+
+1. **`GET /rest/oc/snapshot`** — агрегат `info + telemetry + status + sensor + hardware-faults` за один
+   запрос: минус 4 round-trip на каждый цикл агента.
+2. **События OpenConnect в `EventSocket`** (`telemetry`, `stage`, `alarm`) через `EventEndpoint` — тогда
+   MCP сможет слать `notifications/resources/updated` без поллинга.
+3. **`commandId` в `POST /rest/commands`** + `GET /rest/commands/{id}` — реальный результат команды
+   вместо «принято в очередь».
+4. **`exp` в JWT** и endpoint обновления токена. Учесть, что `SecuritySettingsService::validatePayload`
+   сравнивает payload на **полное равенство** `{username, admin}` — при добавлении `exp`/`iat` проверку
+   придётся переписать, иначе аутентификация сломается.
+5. **Опциональный HTTPS** (или документированный reverse-proxy) для работы вне полностью доверенной сети.
+6. **Убрать мёртвые вызовы UI** `/rest/sensors/thresholds` и `/rest/profiles/import` либо реализовать их.
+7. **CORS** включать только при необходимости браузерного клиента.
+
+---
+
+## 10. Открытые вопросы
+
+Закрыты в этой редакции: транспорт (HTTP), язык описаний (русский), режим разрушительных операций
+(включены до релиза), число устройств (одно), хранение паролей (`.env`), сырые логи (вкл. на разработке).
+
+Остаются:
+
+1. Точный список MCP-клиентов, которые будут подключаться (от него зависит, нужен ли `mcp-remote`/OAuth).
+2. Где хостится сервис: мини-ПК/NAS/Raspberry Pi и нужен ли встроенный TLS или Caddy перед ним.
+3. Порт и адрес: оставить `8080` на всех интерфейсах или привязать к конкретному адресу.
+4. Нужен ли `oc_send_command` в релизе или достаточно именованных инструментов.
+5. Политика хранения сырых логов: 7 дней или только до заполнения лимита.
+
+---
+
+## 11. Приложение: пример инструмента
+
+```ts
+server.registerTool(
+  'oc_start',
+  {
+    title: 'Запустить ректификацию',
+    description:
+      'Ставит команду START в очередь контроллера SSVC и возвращает результат постановки. ' +
+      'НЕ ждёт начала процесса: чтобы дождаться стадии, используйте oc_wait_for_change.',
+    inputSchema: {
+      confirm: z.literal(true).describe('Явное подтверждение действия, влияющего на процесс'),
+    },
+    outputSchema: {
+      ok: z.boolean(),
+      accepted: z.boolean(),
+      observed_at: z.string(),
+      preflight: z.object({
+        guard_mode: z.number(),
+        block_start: z.boolean(),
+        block_reasons: z.array(z.string()),
+        warnings: z.array(z.string()),
+      }),
+      error: z
+        .object({
+          code: z.string(),
+          message: z.string(),
+          hint: z.string().optional(),
+          retryable: z.boolean(),
+          details: z.record(z.unknown()).optional(),
+        })
+        .optional(),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  },
+  async ({ confirm }) => {
+    if (confirm !== true) {
+      return fail('confirmation_required', 'Подтвердите запуск: передайте confirm: true');
+    }
+    const preflight = await domain.xkc25.preflight(client);   // GET /rest/oc/xkc25/status
+    if (preflight.blockStart) {
+      return fail('guard_blocked', 'Старт заблокирован предохранителем XKC-25', preflight.blockReasons);
+    }
+    const res = await domain.commands.send(client, 'start');  // 200/409/503 → типизировано
+    audit.write({ tool: 'oc_start', risk: 2, confirm, result: res.ok ? 'accepted' : res.code });
+    return ok({ ...res, observed_at: now(), preflight });
+  },
+);
+```
+
+---
+
+## 12. Чек-лист готовности v1
+
+- [ ] Все инструменты каталога §4 реализованы и покрыты контрактными тестами.
+- [ ] HTTP-транспорт: сессии, лимиты, `400/404/503`, idle-cleanup, `DELETE`.
+- [ ] Доступ: токен обязателен, CIDR-allowlist, проверка `Host`/`Origin`, TLS или документированный прокси.
+- [ ] Опасные операции требуют подтверждения и пишутся в аудит; класс 3 **выключен по умолчанию**.
+- [ ] Понятные русские ошибки для `guard_blocked`, `feature_unsupported`, `partial_apply`, `busy`,
+      `confirmation_required`, `disabled_by_policy`.
+- [ ] Журналы не попадают в контекст модели целиком (файл + краткая сводка).
+- [ ] Сырые логи по умолчанию выключены; `debug:true` работает только при `SSVC_ALLOW_DEBUG=1`.
+- [ ] Работает на secure и не-secure прошивке, на GPIO- и PCF8574-конфигурации, на API 1.7 и 1.10.
+- [ ] 24-часовой soak с параллельными сессиями без утечек и роста ошибок.
+- [ ] README с `.env.example` и примером подключения клиента по HTTP.
+- [ ] Раздел документации добавлен в `mkdocs.yml`.
