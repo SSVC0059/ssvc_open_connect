@@ -122,12 +122,22 @@ inline float hpaToMmHg(const float hpa) {
 }
 
 /**
- * Rejects the "no frame" marker and the datasheet invalid marker. Without this
- * check an empty frame (0x7F7F7F) is turned into a plausible-looking but
- * meaningless 1305.58 hPa, which is how the frozen 979.266 mmHg appeared.
+ * Pressure is a 24-bit unsigned value: 0x7F7F7F means "no frame" and >= 0x800000
+ * is the datasheet invalid marker. Without this check an empty frame is turned
+ * into a plausible-looking but meaningless 1305.58 hPa, which is how the frozen
+ * 979.266 mmHg appeared.
  */
-inline bool isRawValid(const uint32_t raw) {
+inline bool isPressureRawValid(const uint32_t raw) {
     return raw != RAW_EMPTY_FRAME && raw < RAW_INVALID;
+}
+
+/**
+ * Temperature is 24-bit two's complement, so every value below 0 degC has bit 23
+ * set (0xFA8000 is -5.5 degC). Only the "no frame" marker is rejected here — the
+ * pressure rule would discard the whole frame at any negative temperature.
+ */
+inline bool isTemperatureRawValid(const uint32_t raw) {
+    return raw != RAW_EMPTY_FRAME;
 }
 
 struct Config {
@@ -363,7 +373,7 @@ private:
 
         frame.rawTemperature = raw24(bytes);
         frame.rawPressure = raw24(bytes + 3);
-        frame.valid = isRawValid(frame.rawPressure) && isRawValid(frame.rawTemperature);
+        frame.valid = isPressureRawValid(frame.rawPressure) && isTemperatureRawValid(frame.rawTemperature);
         frame.pressureHpa = frame.valid ? pressureHpa(frame.rawPressure) : 0.0f;
         frame.temperatureC = frame.valid ? temperatureC(frame.rawTemperature) : 0.0f;
         return true;

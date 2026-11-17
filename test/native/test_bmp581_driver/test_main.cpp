@@ -292,7 +292,7 @@ TEST_CASE("the empty frame marker is never published as a pressure") {
     CHECK(bmp581::pressureHpa(bmp581::RAW_EMPTY_FRAME) == doctest::Approx(1305.58f).epsilon(0.001));
     CHECK(bmp581::hpaToMmHg(bmp581::pressureHpa(bmp581::RAW_EMPTY_FRAME)) ==
           doctest::Approx(979.266f).epsilon(0.001));
-    CHECK_FALSE(bmp581::isRawValid(bmp581::RAW_EMPTY_FRAME));
+    CHECK_FALSE(bmp581::isPressureRawValid(bmp581::RAW_EMPTY_FRAME));
 
     FakeBmp581 fake;
     bmp581::Driver driver(fake);
@@ -309,9 +309,36 @@ TEST_CASE("the empty frame marker is never published as a pressure") {
 }
 
 TEST_CASE("the datasheet invalid marker is rejected") {
-    CHECK_FALSE(bmp581::isRawValid(bmp581::RAW_INVALID));
-    CHECK_FALSE(bmp581::isRawValid(0xFFFFFFu));
-    CHECK(bmp581::isRawValid(0x63FF83u));
+    CHECK_FALSE(bmp581::isPressureRawValid(bmp581::RAW_INVALID));
+    CHECK_FALSE(bmp581::isPressureRawValid(0xFFFFFFu));
+    CHECK(bmp581::isPressureRawValid(0x63FF83u));
+}
+
+TEST_CASE("negative temperature does not invalidate the frame") {
+    // Температура BMP581 — 24-битное дополнение до двух: у -5.5 °C (raw 0xFA8000)
+    // старший бит установлен. При проверке «как давление» такой кадр отбраковывался
+    // и датчик отдавал NO_DATA при любой отрицательной температуре.
+    FakeBmp581 fake;
+    fake.pressurePa = 102398.0f;
+    fake.temperatureC = -5.5f;
+
+    bmp581::Driver driver(fake);
+    REQUIRE(driver.begin());
+
+    bmp581::Frame frame;
+    REQUIRE(driver.read(frame));
+    CHECK(frame.valid);
+    CHECK(frame.rawTemperature >= bmp581::RAW_INVALID);  // действительно отрицательная
+    CHECK(frame.temperatureC == doctest::Approx(-5.5f).epsilon(0.001));
+    CHECK(frame.pressureHpa == doctest::Approx(1023.98f).epsilon(0.001));
+    CHECK(driver.invalidFrames() == 0);
+}
+
+TEST_CASE("temperature validity accepts negatives but rejects the empty marker") {
+    CHECK(bmp581::isTemperatureRawValid(0xFA8000u));  // -5.5 C
+    CHECK(bmp581::isTemperatureRawValid(0x000000u));  // 0 C
+    CHECK(bmp581::isTemperatureRawValid(0x190000u));  // +25 C
+    CHECK_FALSE(bmp581::isTemperatureRawValid(bmp581::RAW_EMPTY_FRAME));
 }
 
 TEST_CASE("an empty frame is recovered by reconfiguring the sensor") {
@@ -339,8 +366,8 @@ TEST_CASE("frames captured from the real sensor decode to sane values") {
     const uint32_t rawTemperature = bmp581::raw24(bytes);
     const uint32_t rawPressure = bmp581::raw24(bytes + 3);
 
-    CHECK(bmp581::isRawValid(rawTemperature));
-    CHECK(bmp581::isRawValid(rawPressure));
+    CHECK(bmp581::isTemperatureRawValid(rawTemperature));
+    CHECK(bmp581::isPressureRawValid(rawPressure));
     CHECK(bmp581::temperatureC(rawTemperature) == doctest::Approx(26.076f).epsilon(0.001));
     CHECK(bmp581::pressureHpa(rawPressure) == doctest::Approx(1023.98f).epsilon(0.001));
     CHECK(bmp581::hpaToMmHg(1023.98f) == doctest::Approx(767.5f).epsilon(0.01));
