@@ -42,8 +42,9 @@ public:
     /**
      * @brief Регистрирует подсистему для включения в централизованный цикл опроса.
      * @param subsystem Указатель на объект, реализующий PollingSubsystem.
+     * @return true, если initialize() подсистемы прошёл успешно и она попала в цикл опроса.
      */
-    void registerPollingSubsystem(PollingSubsystem* subsystem);
+    bool registerPollingSubsystem(PollingSubsystem* subsystem);
 
     /**
      * @brief Выполняет полный цикл сбора и публикации данных.
