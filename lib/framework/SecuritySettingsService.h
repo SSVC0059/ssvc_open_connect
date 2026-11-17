@@ -20,6 +20,7 @@
 #include <SecurityManager.h>
 #include <HttpEndpoint.h>
 #include <FSPersistence.h>
+#include <time.h>
 
 #ifndef FACTORY_JWT_SECRET
 #define FACTORY_JWT_SECRET "#{random}-#{random}"
@@ -45,6 +46,28 @@
 #define SECURITY_SETTINGS_PATH "/rest/securitySettings"
 
 #define GENERATE_TOKEN_PATH "/rest/generateToken"
+#define REFRESH_TOKEN_PATH "/rest/refreshToken"
+
+/*
+ * Token lifetime in seconds (7 days by default).
+ *
+ * Overridable at build time, primarily for on-device checks, e.g.
+ *   -DJWT_TTL_SECONDS=30
+ * so that expiry/refresh can be observed without waiting a week.
+ */
+#ifndef JWT_TTL_SECONDS
+#define JWT_TTL_SECONDS (7 * 24 * 60 * 60)
+#endif
+
+/*
+ * Unix time below this threshold means the clock has not been synchronised yet
+ * (device epoch is 1970-01-01). Tokens issued then carry no iat/exp, and exp/nbf
+ * in presented tokens are not enforced; otherwise every sign-in before NTP would
+ * be rejected as "already expired".
+ */
+#ifndef JWT_CLOCK_SYNC_THRESHOLD
+#define JWT_CLOCK_SYNC_THRESHOLD 1700000000
+#endif
 
 #if FT_ENABLED(FT_SECURITY)
 
@@ -117,6 +140,17 @@ private:
     ArduinoJsonJWT _jwtHandler;
 
     void generateToken(AsyncWebServerRequest *request);
+
+    /*
+     * Issue a fresh token for the user that authenticated the request.
+     */
+    void refreshToken(AsyncWebServerRequest *request);
+
+    /*
+     * Build a JWT for the user at the given instant, so the exp returned to the
+     * caller is exactly the exp embedded in the token.
+     */
+    String generateJWTAt(User *user, time_t now);
 
     void configureJWTHandler();
 

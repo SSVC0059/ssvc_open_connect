@@ -631,6 +631,54 @@ function getAuthHeaders(): HeadersInit {
 	};
 }
 
+/**
+ * Пути, для которых 401 не запускает обновление токена: сам вход и сам refresh
+ * (иначе получилась бы рекурсия).
+ */
+const REFRESH_EXCLUDED_PATHS = ['/rest/signIn', '/rest/refreshToken'];
+
+/** Единственное обновление в полёте: параллельные 401 не плодят запросы. */
+let refreshInFlight: Promise<boolean> | null = null;
+
+function shouldRefreshToken(url: string): boolean {
+	// На не-secure сборке JWT нет вообще — обновлять нечего.
+	if (!page.data.features.security) return false;
+	return !REFRESH_EXCLUDED_PATHS.some((path) => url.startsWith(path));
+}
+
+/**
+ * Запрашивает у устройства новый токен и сохраняет его в стор тем же способом,
+ * что и вход (user.init): декодирует username/admin из payload и пишет
+ * bearer_token в localStorage.
+ */
+async function refreshAccessToken(): Promise<boolean> {
+	if (refreshInFlight) return refreshInFlight;
+
+	const attempt = (async (): Promise<boolean> => {
+		try {
+			const response = await fetch('/rest/refreshToken', {
+				method: 'GET',
+				headers: getAuthHeaders(),
+				cache: 'no-store'
+			});
+			if (!response.ok) return false;
+			const data = (await response.json()) as { token?: unknown };
+			if (typeof data.token !== 'string' || data.token === '') return false;
+			user.init(data.token);
+			return true;
+		} catch (error) {
+			console.error('Не удалось обновить токен:', error);
+			return false;
+		}
+	})();
+
+	refreshInFlight = attempt;
+	try {
+		return await attempt;
+	} finally {
+		if (refreshInFlight === attempt) refreshInFlight = null;
+	}
+}
 
 /**
  * Универсальный fetch-запрос с обработкой ошибок
@@ -638,7 +686,8 @@ function getAuthHeaders(): HeadersInit {
 export async function apiFetch<T>(
 	url: string,
 	method: string = 'GET',
-	body?: unknown
+	body?: unknown,
+	isRetry: boolean = false
 ): Promise<ApiResponse<T>> {
 	try {
 		const response = await fetch(url, {
@@ -648,6 +697,16 @@ export async function apiFetch<T>(
 			// Свежие данные с контроллера (избегаем устаревшего кэша GET после POST)
 			cache: method === 'GET' ? 'no-store' : 'default'
 		});
+
+		// Токен истёк: один раз обновляем его и повторяем исходный запрос.
+		// isRetry ограничивает повтор одним разом, а refresh идёт напрямую
+		// (не через apiFetch), поэтому зацикливания нет.
+		if (response.status === 401 && !isRetry && shouldRefreshToken(url)) {
+			if (await refreshAccessToken()) {
+				return apiFetch<T>(url, method, body, true);
+			}
+			// Обновление не удалось — отдаём исходную ошибку 401 ниже.
+		}
 
 		if (!response.ok) {
 			// Тело отказа несёт причину (какие параметры отвергнуты), без него
