@@ -31,11 +31,13 @@ void AtmosphericSubsystem::enable() {
 
     _sensor = new BMP581Sensor(sensorAddr, "Давление", &i2cBus);
 
-    if (_sensor->initialize()) {
+    // initialize() выполняется ровно один раз внутри registerPollingSubsystem().
+    // Раньше он вызывался здесь, а затем ещё раз координатором, из-за чего
+    // датчик получал лишний soft reset сразу после настройки.
+    if (SensorCoordinator::getInstance().registerPollingSubsystem(_sensor)) {
         SensorManager::getInstance().registerSensor(_sensor);
         _enabled = true;
         ESP_LOGI(TAG, "BMP581 Sensor successfully started");
-        SensorCoordinator::getInstance().registerPollingSubsystem(_sensor);
     } else {
         ESP_LOGE(TAG, "Failed to initialize BMP581 hardware. Disabling subsystem.");
         delete _sensor;
