@@ -27,6 +27,8 @@ import { telemetryTools } from './tools/telemetry.tools.js';
 import { commandsTools } from './tools/commands.tools.js';
 import { settingsTools } from './tools/settings.tools.js';
 import { sensorsTools } from './tools/sensors.tools.js';
+import { relayTools } from './tools/relay.tools.js';
+import { hardwareTools } from './tools/hardware.tools.js';
 
 export interface StartServiceOptions {
   /** Окружение; по умолчанию `process.env`. */
@@ -105,14 +107,16 @@ export async function startService(opts: StartServiceOptions = {}): Promise<Star
 async function main(): Promise<void> {
   let service: StartedService;
   try {
-    // Домены WP1 (информация, состояние/телеметрия), WP2 (команды и ожидание), WP3 (настройки)
-    // и WP4 (датчики, зоны, пороги тревог).
+    // Домены WP1 (информация, состояние/телеметрия), WP2 (команды и ожидание), WP3 (настройки),
+    // WP4 (датчики, зоны, пороги тревог) и WP5 (реле PCF8574, аппаратная конфигурация).
     const tools: ToolDef[] = [
       ...infoTools(),
       ...telemetryTools(),
       ...commandsTools(),
       ...settingsTools(),
       ...sensorsTools(),
+      ...relayTools(),
+      ...hardwareTools(),
     ];
     service = await startService({ tools });
   } catch (error) {
