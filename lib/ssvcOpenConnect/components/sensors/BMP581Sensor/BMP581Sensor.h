@@ -3,9 +3,19 @@
 
 #include "components/sensors/AbstractSensor/AbstractSensor.h"
 #include "components/sensors/PollingSubsystem/PollingSubsystem.h"
+#include "components/sensors/BMP581Sensor/BMP581Driver.h"
 #include "components/subsystem/I2CBusSubsystem.h"
-#include <Adafruit_BMP5xx.h>
+#include <memory>
 
+/**
+ * @brief Датчик абсолютного давления BMP581 на шине I2C.
+ *
+ * Работа с регистрами вынесена в `bmp581::Driver` (см. BMP581Driver.h):
+ * он проверяет идентификатор чипа, программирует и **верифицирует**
+ * конфигурацию (включённый канал давления, normal mode) и отбраковывает
+ * пустые кадры (0x7F7F7F / 0x800000), которые раньше превращались в
+ * «замороженные» 979.266 mmHg.
+ */
 class BMP581Sensor final : public AbstractSensor, public PollingSubsystem {
 public:
     /** @param alarmDeviceRole стабильный идентификатор для `AlarmMonitor` (строковый литерал). */
@@ -16,8 +26,12 @@ public:
     BMP581Sensor(const Address addr, const std::string& name, I2CBusSubsystem* bus,
                  const char* alarmDeviceRole = "bmp581");
 
-    // Реализация для PollingSubsystem (виртуальный метод)
-    // Теперь это "override" виртуальной функции, а не "hiding" статической
+    ~BMP581Sensor() override;
+
+    BMP581Sensor(const BMP581Sensor&) = delete;
+    BMP581Sensor& operator=(const BMP581Sensor&) = delete;
+
+    // Реализация для PollingSubsystem
     const std::string& getName() const override;
 
     std::string getUnit() const override;
@@ -32,19 +46,20 @@ public:
     float getData() const override;
 
 private:
+    /** Транспорт I2C (Wire) для bmp581::Driver; определён в .cpp. */
+    class BusTransport;
+
     static Address& createAddr(const uint8_t i2c) {
         static Address a = {};
         a[0] = i2c;
         return a;
     }
 
-    uint8_t readRegister(uint8_t reg);
-    uint32_t readRaw24(uint8_t reg);
-    void logDiagnostics(uint32_t rawPressure, uint32_t rawTemperature, float pressureMmHg);
-
     I2CBusSubsystem* _bus;
     const char* _alarmDeviceRole;
-    Adafruit_BMP5xx _bmp;
+    std::unique_ptr<BusTransport> _transport;
+    std::unique_ptr<bmp581::Driver> _driver;
+
     float _lastPressure = 0.0f;
     float _filteredPressure = 0.0f;
 
