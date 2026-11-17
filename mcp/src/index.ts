@@ -24,6 +24,7 @@ import { createLogger, type Logger } from './logging.js';
 import type { ToolContext, ToolDef } from './mcp/types.js';
 import { infoTools } from './tools/info.tools.js';
 import { telemetryTools } from './tools/telemetry.tools.js';
+import { commandsTools } from './tools/commands.tools.js';
 
 export interface StartServiceOptions {
   /** Окружение; по умолчанию `process.env`. */
@@ -102,8 +103,8 @@ export async function startService(opts: StartServiceOptions = {}): Promise<Star
 async function main(): Promise<void> {
   let service: StartedService;
   try {
-    // Домен WP1: информация, возможности, состояние/телеметрия и диагностика сервера.
-    const tools: ToolDef[] = [...infoTools(), ...telemetryTools()];
+    // Домены WP1 (информация, состояние/телеметрия) и WP2 (команды и ожидание).
+    const tools: ToolDef[] = [...infoTools(), ...telemetryTools(), ...commandsTools()];
     service = await startService({ tools });
   } catch (error) {
     if (error instanceof ConfigError) {

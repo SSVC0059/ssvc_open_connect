@@ -99,6 +99,25 @@ export function createNodeHttp(opts: NodeHttpOptions = {}): HttpLike {
           fn();
         };
 
+        /*
+         * ESPAsyncWebServer не поддерживает `Transfer-Encoding: chunked`: когда Node
+         * пишет тело без `Content-Length`, он выбирает chunked, и контроллер рвёт
+         * соединение (ECONNRESET) до разбора тела. Поэтому длина ставится всегда явно.
+         */
+        const headers: Record<string, string> = { ...(input.headers ?? {}) };
+        const hasHeader = (name: string): boolean =>
+          Object.keys(headers).some((key) => key.toLowerCase() === name);
+        const body =
+          input.body === undefined
+            ? undefined
+            : Buffer.isBuffer(input.body)
+              ? input.body
+              : Buffer.from(input.body, 'utf8');
+        if (body !== undefined) {
+          if (!hasHeader('content-length')) headers['Content-Length'] = String(body.length);
+          if (!hasHeader('content-type')) headers['Content-Type'] = 'application/json';
+        }
+
         const req = transport(
           {
             protocol: url.protocol,
@@ -106,7 +125,7 @@ export function createNodeHttp(opts: NodeHttpOptions = {}): HttpLike {
             port: url.port === '' ? undefined : url.port,
             path: `${url.pathname}${url.search}`,
             method: input.method.toUpperCase(),
-            headers: input.headers,
+            headers,
             agent: false,
           },
           (res) => {
@@ -170,7 +189,7 @@ export function createNodeHttp(opts: NodeHttpOptions = {}): HttpLike {
           finish(() => reject(toTransportError(error, input.method, url.pathname, timeoutMs)));
         });
 
-        if (input.body !== undefined) req.write(input.body);
+        if (body !== undefined) req.write(body);
         req.end();
       });
     },

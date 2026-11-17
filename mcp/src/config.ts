@@ -46,7 +46,10 @@ export const DEFAULTS = {
   port: 8080,
   maxSessions: 32,
   idleMs: 30 * 60 * 1000,
-  rawMode: 'all' as const,
+  // Безопасные умолчания: сырые обмены не пишутся, разрушительные операции и debug
+  // выключены. Включаются явно в .env — так «минимальный» конфиг не открывает
+  // опасные инструменты по недосмотру (см. .env.example и README).
+  rawMode: 'off' as const,
   rawDir: './logs/raw',
   rawMaxMb: 50,
   auditPath: './logs/audit.jsonl',
@@ -256,8 +259,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       dir: readString(env, 'SSVC_RAW_LOG_DIR') ?? DEFAULTS.rawDir,
       maxMb: readFloat(env, 'SSVC_RAW_LOG_MAX_MB', DEFAULTS.rawMaxMb, { min: 0.001, max: 100_000 }),
     },
-    allowDestructive: readBool(env, 'SSVC_ALLOW_DESTRUCTIVE', true),
-    allowDebug: readBool(env, 'SSVC_ALLOW_DEBUG', true),
+    allowDestructive: readBool(env, 'SSVC_ALLOW_DESTRUCTIVE', false),
+    allowDebug: readBool(env, 'SSVC_ALLOW_DEBUG', false),
     auditPath: readString(env, 'SSVC_AUDIT_PATH') ?? DEFAULTS.auditPath,
     logLevel: parseLogLevel(readString(env, 'SSVC_LOG_LEVEL'), DEFAULTS.logLevel),
   };
