@@ -87,6 +87,7 @@ nav:
       - develop/testing.md
       - develop/docs-previews.md
       - develop/i2c_monitoring.md
+      - develop/reverse-proxy.md
       - "REST API":
           - develop/api/index.md
           - develop/api/settings.md
