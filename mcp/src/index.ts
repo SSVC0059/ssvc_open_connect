@@ -32,6 +32,8 @@ import { hardwareTools } from './tools/hardware.tools.js';
 import { xkc25Tools } from './tools/xkc25.tools.js';
 import { logsTools } from './tools/logs.tools.js';
 import { profilesTools } from './tools/profiles.tools.js';
+import { filesTools } from './tools/files.tools.js';
+import { systemTools } from './tools/system.tools.js';
 
 export interface StartServiceOptions {
   /** Окружение; по умолчанию `process.env`. */
@@ -113,9 +115,10 @@ async function main(): Promise<void> {
     // Домены WP1 (информация, состояние/телеметрия), WP2 (команды и ожидание), WP3 (настройки),
     // WP4 (датчики, зоны, пороги тревог), WP5 (реле PCF8574, аппаратная конфигурация),
     // WP6 (датчики уровня XKC-25: статус, калибровка, проверка возврата),
-    // WP7 (журналы ректификации: список, скачивание в файл, отмена) и
+    // WP7 (журналы ректификации: список, скачивание в файл, отмена),
     // WP8 (профили ректификации: список, чтение, создание, копия, переименование,
-    // содержимое, сохранение текущих настроек, применение, удаление).
+    // содержимое, сохранение текущих настроек, применение, удаление) и
+    // WP9 (файлы LittleFS, подсистемы, systemStatus, перезагрузка).
     const tools: ToolDef[] = [
       ...infoTools(),
       ...telemetryTools(),
@@ -127,6 +130,8 @@ async function main(): Promise<void> {
       ...xkc25Tools(),
       ...logsTools(),
       ...profilesTools(),
+      ...filesTools(),
+      ...systemTools(),
     ];
     service = await startService({ tools });
   } catch (error) {

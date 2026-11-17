@@ -27,11 +27,18 @@ export interface FakeCall {
   query: Record<string, string>;
   body: unknown;
   headers: Record<string, string>;
+  /** Таймаут, с которым домен позвал транспорт (в тестах проверяются долгие вызовы). */
+  timeoutMs?: number;
 }
 
 export interface FakeReply {
   status?: number;
   body?: unknown;
+  /**
+   * Сырые байты файла для `GET /rest/files{path}`: строка ответа строится
+   * UTF-8-декодированием, как в реальном транспорте, а байты отдаются отдельно.
+   */
+  bodyBytes?: Buffer;
   headers?: Record<string, string>;
 }
 
@@ -72,21 +79,37 @@ function parseRequestBody(body: string | undefined): unknown {
   return body;
 }
 
-function shapeReply(reply: FakeReply): HttpResult {
+function shapeReply(reply: FakeReply, captureBytes: boolean): HttpResult {
   const headers = normalizeHeaders(reply.headers);
   let body: string;
-  if (reply.body === undefined) {
+  let bodyBytes: Buffer | undefined;
+
+  if (reply.bodyBytes !== undefined) {
+    bodyBytes = Buffer.from(reply.bodyBytes);
+    body = bodyBytes.toString('utf8');
+  } else if (reply.body === undefined) {
     body = '';
   } else if (typeof reply.body === 'string') {
     body = reply.body;
   } else {
     body = JSON.stringify(reply.body);
   }
+
   if (headers['content-type'] === undefined) {
     headers['content-type'] =
-      typeof reply.body === 'string' ? 'text/plain; charset=utf-8' : 'application/json; charset=utf-8';
+      reply.bodyBytes !== undefined
+        ? 'application/octet-stream'
+        : typeof reply.body === 'string'
+          ? 'text/plain; charset=utf-8'
+          : 'application/json; charset=utf-8';
   }
-  return { status: reply.status ?? 200, headers, body, ms: 0 };
+  return {
+    status: reply.status ?? 200,
+    headers,
+    body,
+    ...(captureBytes && bodyBytes !== undefined ? { bodyBytes } : {}),
+    ms: 0,
+  };
 }
 
 /**
@@ -107,7 +130,9 @@ export function fakeHttp(routes: FakeRoute[] = []): FakeHttp {
         query: Object.fromEntries(url.searchParams.entries()),
         body: parseRequestBody(input.body),
         headers,
+        timeoutMs: input.timeoutMs,
       };
+      const captureBytes = input.captureBytes === true;
       calls.push(call);
 
       const route = registered.find((candidate) => {
@@ -117,12 +142,15 @@ export function fakeHttp(routes: FakeRoute[] = []): FakeHttp {
           : candidate.path.test(call.path);
       });
       if (route === undefined) {
-        return shapeReply({
-          status: 404,
-          body: { error: 'not_found', path: call.path },
-        });
+        return shapeReply(
+          {
+            status: 404,
+            body: { error: 'not_found', path: call.path },
+          },
+          captureBytes,
+        );
       }
-      return shapeReply(await route.reply(call));
+      return shapeReply(await route.reply(call), captureBytes);
     },
   };
 

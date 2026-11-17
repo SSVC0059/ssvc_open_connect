@@ -22,12 +22,22 @@ export interface HttpRequestOptions {
   signal?: AbortSignal;
   /** Предел размера ответа: защита от «бесконечного» CSV в памяти. */
   maxResponseBytes?: number;
+  /**
+   * Сохранить сырые байты ответа рядом со строкой (`HttpResult.bodyBytes`).
+   *
+   * Нужно только скачиванию файлов (WP9): `body` — это UTF-8-декодирование, и для
+   * бинарного файла оно необратимо. Остальные домены работают со строкой и байты
+   * не запрашивают, чтобы не держать в памяти вторую копию крупного ответа.
+   */
+  captureBytes?: boolean;
 }
 
 export interface HttpResult {
   status: number;
   headers: Record<string, string>;
   body: string;
+  /** Сырые байты ответа; заполняется только при `captureBytes:true`. */
+  bodyBytes?: Buffer;
   ms: number;
 }
 
@@ -89,6 +99,7 @@ export function createNodeHttp(opts: NodeHttpOptions = {}): HttpLike {
       const transport = url.protocol === 'https:' ? httpsRequest : httpRequest;
       const timeoutMs = input.timeoutMs ?? 10_000;
       const limit = input.maxResponseBytes ?? maxResponseBytes;
+      const captureBytes = input.captureBytes === true;
 
       return new Promise<HttpResult>((resolve, reject) => {
         let settled = false;
@@ -148,14 +159,16 @@ export function createNodeHttp(opts: NodeHttpOptions = {}): HttpLike {
               chunks.push(chunk);
             });
             res.on('end', () => {
-              finish(() =>
+              finish(() => {
+                const buffer = Buffer.concat(chunks);
                 resolve({
                   status: res.statusCode ?? 0,
                   headers: normalizeHeaders(res.headers),
-                  body: Buffer.concat(chunks).toString('utf8'),
+                  body: buffer.toString('utf8'),
+                  ...(captureBytes ? { bodyBytes: buffer } : {}),
                   ms: Date.now() - started,
-                }),
-              );
+                });
+              });
             });
             res.on('error', (error) => {
               finish(() => reject(toTransportError(error, input.method, url.pathname, timeoutMs)));

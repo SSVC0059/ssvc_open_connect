@@ -38,12 +38,20 @@ export interface RequestOptions {
   headers?: Record<string, string>;
   /** Отключить single-flight для GET (редкие случаи: статус передачи журнала). */
   noSingleFlight?: boolean;
+  /**
+   * Запросить сырые байты ответа (`HttpResponse.bodyBytes`).
+   * Нужно только скачиванию файлов WP9: `body` — UTF-8-строка и бинарный файл
+   * через неё не восстановить.
+   */
+  captureBytes?: boolean;
 }
 
 export interface HttpResponse {
   status: number;
   headers: Record<string, string>;
   body: string;
+  /** Сырые байты ответа; заполняется только при `captureBytes:true`. */
+  bodyBytes?: Buffer;
   ms: number;
 }
 
@@ -334,6 +342,7 @@ export class DeviceClient {
           headers: this.withAuth(headers, token),
           ...(payload === undefined ? {} : { body: payload }),
           timeoutMs,
+          ...(opts.captureBytes === true ? { captureBytes: true } : {}),
         });
       } catch (error) {
         const failure =
@@ -417,6 +426,7 @@ export class DeviceClient {
         status: result.status,
         headers: result.headers,
         body: result.body,
+        ...(result.bodyBytes === undefined ? {} : { bodyBytes: result.bodyBytes }),
         ms: result.ms,
       };
     }
