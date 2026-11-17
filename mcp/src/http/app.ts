@@ -26,6 +26,7 @@ import { ocInfoSchema } from '../device/schemas/info.js';
 import { errorEnvelope, MAX_DETAILS_BODY, truncateBody } from '../errors.js';
 import { createMcpServer } from '../mcp/server.js';
 import type { ToolContext, ToolDef } from '../mcp/types.js';
+import { registerPrompts } from '../prompts/prompts.js';
 import { authorize, checkNetwork, createAccessPolicy, type AccessFailure, type AccessPolicy } from './auth.js';
 import { normalizeIp } from './net.js';
 import { SessionManager } from './sessions.js';
@@ -181,6 +182,8 @@ export async function createApp(opts: AppOptions): Promise<AppHandle> {
     const sessionAudit = new AuditLog({ path: cfg.auditPath, session: 'pending', log });
     const sessionCtx: ToolContext = { ...ctx, audit: sessionAudit };
     const server = createMcpServer({ ctx: sessionCtx, tools: opts.tools ?? [] });
+    // Промпты-сценарии (WP10): регистрируются на каждую сессию рядом с инструментами.
+    registerPrompts(server);
     let transport!: StreamableHTTPServerTransport;
     transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
