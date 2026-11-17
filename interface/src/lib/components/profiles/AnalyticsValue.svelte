@@ -64,7 +64,7 @@
 		text-decoration: line-through;
 	}
 
-	@media (prefers-color-scheme: dark) {
+	:global([data-theme='business']) {
 		.analytics-item {
 			background-color: var(--dark-step-inactive-bg);
 			&.modified {

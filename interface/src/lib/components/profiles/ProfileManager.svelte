@@ -1,15 +1,12 @@
 <script lang="ts">
-	import {Fa} from 'svelte-fa';
-import {
-		faClone,
-		faDownload,
-		faEllipsisV,
-		faFileImport,
-		faPen,
-		faPlay,
-		faPlus,
-		faTrash
-	} from '@fortawesome/free-solid-svg-icons';
+	import IconCopy from '~icons/tabler/copy';
+	import IconDownload from '~icons/tabler/download';
+	import IconDotsVertical from '~icons/tabler/dots-vertical';
+	import IconFileImport from '~icons/tabler/file-import';
+	import IconPencil from '~icons/tabler/pencil';
+	import IconPlayerPlay from '~icons/tabler/player-play';
+	import IconPlus from '~icons/tabler/plus';
+	import IconTrash from '~icons/tabler/trash';
 	import type {Profile, Profiles} from '$lib/types/ssvc';
 	import ProfileViewer from '$lib/components/profiles/ProfileViewer.svelte';
 	import ProfileEditor from '$lib/components/profiles/ProfileEditor.svelte';
@@ -287,7 +284,7 @@ $effect(() => {
 									title="Создать новый профиль"
 									disabled={editingProfile !== null}
 								>
-									<Fa icon={faPlus} />
+									<IconPlus />
 								</button>
 								<button
 									class="icon-button"
@@ -295,7 +292,7 @@ $effect(() => {
 									title="Импортировать профиль из файла"
 									disabled={editingProfile !== null}
 								>
-									<Fa icon={faFileImport} />
+									<IconFileImport />
 								</button>
 								<button
 									class="icon-button"
@@ -303,7 +300,7 @@ $effect(() => {
 									title="Выгрузить выбранный профиль в файл"
 									disabled={editingProfile !== null || !selectedProfile}
 								>
-									<Fa icon={faDownload} />
+									<IconDownload />
 								</button>
 							</div>
 						</div>
@@ -348,7 +345,7 @@ $effect(() => {
 													title="Действия с профилем"
 													disabled={editingProfile !== null}
 												>
-													<Fa icon={faEllipsisV} />
+													<IconDotsVertical />
 												</button>
 												<ul
 													tabindex="-1"
@@ -360,7 +357,7 @@ $effect(() => {
 															onclick={() => startEditing(profile)}
 															disabled={editingProfile !== null}
 														>
-															<Fa icon={faPen} />
+															<IconPencil />
 															<span>Редактировать</span>
 														</button>
 													</li>
@@ -370,7 +367,7 @@ $effect(() => {
 															onclick={() => handleApply(profile.id)}
 															disabled={profile.isApplied || editingProfile !== null}
 														>
-															<Fa icon={faPlay} />
+															<IconPlayerPlay />
 															<span>Применить</span>
 														</button>
 													</li>
@@ -380,7 +377,7 @@ $effect(() => {
 															onclick={() => handleClone(profile.id)}
 															disabled={editingProfile !== null}
 														>
-															<Fa icon={faClone} />
+															<IconCopy />
 															<span>Клонировать</span>
 														</button>
 													</li>
@@ -390,7 +387,7 @@ $effect(() => {
 															onclick={() => handleDownload(profile)}
 															disabled={editingProfile !== null}
 														>
-															<Fa icon={faDownload} />
+															<IconDownload />
 															<span>Выгрузить</span>
 														</button>
 													</li>
@@ -400,7 +397,7 @@ $effect(() => {
 															onclick={() => confirmDelete(profile)}
 															disabled={editingProfile !== null}
 														>
-															<Fa icon={faTrash} />
+															<IconTrash />
 															<span>Удалить</span>
 														</button>
 													</li>

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Fa } from 'svelte-fa';
-	import { faCog, faPlay } from '@fortawesome/free-solid-svg-icons';
+	import IconPlayerPlay from '~icons/tabler/player-play';
+	import IconSettings from '~icons/tabler/settings';
 	import { goto } from '$app/navigation';
 	import type { Profile, Profiles } from '$lib/types/ssvc';
 	import { getProfiles, setActiveAndApplyProfile } from '$lib/api/Profiles';
@@ -79,11 +79,11 @@
 	{/if}
 	{#if hasChanged}
 		<button class="btn btn-icon" onclick={saveProfileChange} disabled={isSaving} title="Применить профиль">
-			<Fa icon={faPlay} />
+			<IconPlayerPlay />
 		</button>
 	{/if}
 	<button class="btn btn-icon" onclick={goToSettings} title="Управление профилями">
-		<Fa icon={faCog} />
+		<IconSettings />
 	</button>
 </div>
 <style lang="scss">

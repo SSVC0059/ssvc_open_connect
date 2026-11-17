@@ -2,30 +2,34 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
-	import { Chart, registerables } from 'chart.js';
+	import type { Chart as ChartInstance } from 'chart.js';
 	import { daisyColor } from '$lib/DaisyUiHelper';
 	import { analytics } from '$lib/stores/analytics';
 	import BatteryMetrics from './metrics/BatteryMetrics.svelte';
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
+	import { loadChartJs } from '$lib/charts';
 
-	Chart.register(...registerables);
+	// chart.js грузится лениво: конструктор присваивается в onMount,
+	// chartReady перезапускает эффекты, которые ждали библиотеку.
+	let Chart: typeof ChartInstance;
+	let chartReady = $state(false);
 
 	const chartLayout = {
 		padding: { top: 2, right: 6, bottom: 0, left: 2 }
 	};
 
 	let heapChartElement: HTMLCanvasElement = $state()!;
-	let heapChart: Chart;
+	let heapChart: ChartInstance;
 
 	let psramChartElement: HTMLCanvasElement = $state()!;
-	let psramChart: Chart | undefined;
+	let psramChart: ChartInstance | undefined;
 
 	let filesystemChartElement: HTMLCanvasElement = $state()!;
-	let filesystemChart: Chart;
+	let filesystemChart: ChartInstance;
 
 	let temperatureChartElement: HTMLCanvasElement = $state()!;
-	let temperatureChart: Chart;
+	let temperatureChart: ChartInstance;
 
 	let hasPsramData = $derived.by(() => {
 		const s = $analytics.psram_size;
@@ -93,6 +97,22 @@
 	}
 
 	onMount(() => {
+		void initCharts();
+
+		const intervalId = setInterval(updateData, 2000);
+		return () => {
+			clearInterval(intervalId);
+			heapChart?.destroy();
+			psramChart?.destroy();
+			filesystemChart?.destroy();
+			temperatureChart?.destroy();
+		};
+	});
+
+	async function initCharts() {
+		Chart = (await loadChartJs()).Chart;
+		chartReady = true;
+
 		if (!heapChartElement) return;
 		heapChart = new Chart(heapChartElement, {
 			type: 'line',
@@ -264,16 +284,11 @@
 			}
 		});
 
-		const intervalId = setInterval(updateData, 2000);
-		return () => {
-			clearInterval(intervalId);
-			psramChart?.destroy();
-			psramChart = undefined;
-		};
-	});
+	}
+
 
 	$effect(() => {
-		if (!hasPsramData || !psramChartElement) {
+		if (!chartReady || !hasPsramData || !psramChartElement) {
 			psramChart?.destroy();
 			psramChart = undefined;
 			return;

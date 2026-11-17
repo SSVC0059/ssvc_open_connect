@@ -10,8 +10,7 @@
 	import { fetchHardwareConfig, getSubsystemState, setSubsystemState } from '$lib/api/ssvcApi';
 	import type { SubsystemsState } from '$lib/types/ssvc';
 	import SettingsMobileScroll from '$lib/components/settings-layout/SettingsMobileScroll.svelte';
-
-	const MOBILE_MQ = '(max-width: 767px)';
+	import { MOBILE_MQ } from '$lib/breakpoints';
 
 	type SettingsTabId = keyof SubsystemsState | 'profiles' | 'hardware' | 'messengers';
 

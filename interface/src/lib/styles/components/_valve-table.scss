@@ -6,7 +6,7 @@
   display: block;
   font-size: 1.15rem;
   font-weight: 600;
-  color: oklch(var(--bc));
+  color: var(--color-base-content);
   text-align: center;
 }
 
@@ -19,17 +19,17 @@
   td {
     padding: 0.5rem 0.25rem;
     text-align: center;
-    border: 1px solid oklch(var(--bc) / 0.3);
+    border: 1px solid color-mix(in oklab, var(--color-base-content) 30%, transparent);
     transition: var(--transition);
-    color: oklch(var(--bc));
+    color: var(--color-base-content);
   }
 
   thead {
     th {
       font-weight: 600;
-      color: oklch(var(--bc));
-      background-color: oklch(var(--b2));
-      border-color: oklch(var(--bc) / 0.35);
+      color: var(--color-base-content);
+      background-color: var(--color-base-200);
+      border-color: color-mix(in oklab, var(--color-base-content) 35%, transparent);
 
       &:first-child {
         border-top-left-radius: var(--border-radius);
@@ -49,19 +49,19 @@
   .input-cell {
     padding: 0.25rem 0.5rem;
     font-size: 0.875rem;
-    border: 1px solid oklch(var(--bc) / 0.35);
+    border: 1px solid color-mix(in oklab, var(--color-base-content) 35%, transparent);
     border-radius: var(--border-radius);
     outline: none;
     transition: var(--transition);
-    background-color: oklch(var(--b1));
-    color: oklch(var(--bc));
+    background-color: var(--color-base-100);
+    color: var(--color-base-content);
     text-align: center;
     width: auto;
     min-width: 50px;
     max-width: 80px;
     &:focus {
-      border-color: oklch(var(--p));
-      box-shadow: 0 0 0 3px oklch(var(--p) / 0.2);
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 20%, transparent);
     }
 
     &[type="number"],
@@ -73,21 +73,21 @@
 
   .input-readonly {
     @extend .input-cell;
-    background-color: oklch(var(--b2));
-    color: oklch(var(--bc) / 0.8);
+    background-color: var(--color-base-200);
+    color: color-mix(in oklab, var(--color-base-content) 80%, transparent);
     cursor: default;
     box-shadow: none;
     pointer-events: none;
-    border-color: oklch(var(--bc) / 0.35);
+    border-color: color-mix(in oklab, var(--color-base-content) 35%, transparent);
     &:focus {
-      border-color: oklch(var(--bc) / 0.5);
-      box-shadow: 0 0 0 2px oklch(var(--p) / 0.2);
+      border-color: color-mix(in oklab, var(--color-base-content) 50%, transparent);
+      box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 20%, transparent);
     }
   }
 }
 
 /* Тёмная тема: усиленные границы таблицы (контраст с фоном) */
-@media (prefers-color-scheme: dark) {
+[data-theme='business'] {
   .valve-table {
     th,
     td {
@@ -105,20 +105,20 @@
 }
 
 .valve-info {
-  border: 1px solid oklch(var(--p));
+  border: 1px solid var(--color-primary);
   border-radius: 0.25rem;
   padding: 0.25rem 0.75rem;
   margin-top: 0.5rem;
 
   p:first-child {
     font-size: 0.875rem;
-    color: oklch(var(--bc));
+    color: var(--color-base-content);
     margin: 0;
   }
 
   p:last-child {
     font-size: 0.75rem;
-    color: oklch(var(--bc) / 0.8);
+    color: color-mix(in oklab, var(--color-base-content) 80%, transparent);
     margin-top: 0.25rem;
   }
 }
@@ -132,7 +132,7 @@
     tr {
       display: block;
       margin-bottom: 0.625em;
-      border-bottom: 1px solid oklch(var(--bc) / 0.3);
+      border-bottom: 1px solid color-mix(in oklab, var(--color-base-content) 30%, transparent);
       padding-bottom: 0.625em;
     }
 

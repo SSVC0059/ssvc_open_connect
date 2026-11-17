@@ -1,6 +1,11 @@
 /*
  * Одна внешняя карточка на узком экране (SettingsMobileScroll и т.п.).
  * На md+ не применяется — десктоп остаётся с вложенными .settings-container / секциями как раньше.
+ *
+ * `!important` здесь не нужен: каждый селектор начинается с .settings-stack-card,
+ * поэтому он минимум на один класс специфичнее базовых правил (.settings-container,
+ * .settings-section, .sensor-card, .profile-list-panel). Файл подключается после
+ * базовых стилей, значит при равной специфичности выигрывает каскад.
  */
 @use "$lib/styles/base/variables" as v;
 
@@ -9,24 +14,24 @@ $max-md: v.$breakpoint-md - 1px;
 @media (max-width: $max-md) {
 	.settings-stack-card {
 		> .settings-container {
-			background: transparent !important;
-			border: none !important;
-			box-shadow: none !important;
-			padding: 0 !important;
+			background: transparent;
+			border: none;
+			box-shadow: none;
+			padding: 0;
 		}
 
 		.settings-grid .settings-panel .settings-section {
-			margin: 0 !important;
-			padding: 0 !important;
-			border: none !important;
+			margin: 0;
+			padding: 0;
+			border: none;
 			border-radius: 0;
 			overflow: visible;
 			box-shadow: none;
 		}
 
 		.settings-grid .settings-panel .settings-section:not(:last-child) {
-			border-bottom: 1px solid oklch(var(--bc, 0.25 0 260) / 0.12) !important;
-			padding-bottom: 0.75rem !important;
+			border-bottom: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
+			padding-bottom: 0.75rem;
 			margin-bottom: 0.5rem;
 		}
 
@@ -39,15 +44,15 @@ $max-md: v.$breakpoint-md - 1px;
 		}
 
 		.profile-list-panel {
-			margin: 0 !important;
-			padding: 0.75rem !important;
-			border: none !important;
-			box-shadow: none !important;
+			margin: 0;
+			padding: 0.75rem;
+			border: none;
+			box-shadow: none;
 		}
 
 		.applied-profile-summary {
-			margin-left: 0.25rem !important;
-			margin-right: 0.25rem !important;
+			margin-left: 0.25rem;
+			margin-right: 0.25rem;
 		}
 
 		.profile-manager-layout {
@@ -55,32 +60,32 @@ $max-md: v.$breakpoint-md - 1px;
 		}
 
 		.profile-settings-panel {
-			padding: 0 !important;
-			background: transparent !important;
-			border-radius: 0 !important;
-			box-shadow: none !important;
+			padding: 0;
+			background: transparent;
+			border-radius: 0;
+			box-shadow: none;
 		}
 
 		.sensors-main-container {
-			gap: 0.75rem !important;
+			gap: 0.75rem;
 		}
 
 		.zone-title {
-			padding: 0.5rem 0.75rem !important;
+			padding: 0.5rem 0.75rem;
 		}
 
 		.sensors-grid {
-			padding: 0.25rem !important;
-			gap: 0.75rem !important;
+			padding: 0.25rem;
+			gap: 0.75rem;
 		}
 
 		.sensor-card {
-			margin-bottom: 0.5rem !important;
-			padding: 0.75rem !important;
+			margin-bottom: 0.5rem;
+			padding: 0.75rem;
 		}
 
 		.sensor-card:last-child {
-			margin-bottom: 0 !important;
+			margin-bottom: 0;
 		}
 	}
 }

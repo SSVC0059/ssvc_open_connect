@@ -155,7 +155,7 @@
 }
 
 /* Тёмная тема: те же селекторы, что и выше, чтобы переопределения имели ту же специфичность при загрузке в компоненте */
-@media (prefers-color-scheme: dark) {
+[data-theme='business'] {
   .wizard-overlay-override {
     background-color: var(--dark-bg-overlay);
   }
