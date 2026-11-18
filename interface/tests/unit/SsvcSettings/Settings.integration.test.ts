@@ -39,17 +39,24 @@ vi.mock('$app/environment', () => ({
 
 vi.mock('$lib/api/ssvcApi', () => ({
 	fetchSettings: vi.fn(),
+	fetchTelemetry: vi.fn().mockResolvedValue({ telemetry: { tp1_target: null } }),
 	updateSetting: vi.fn(),
 	getInfo: vi.fn(),
 	infoCacheVersion: writable(0)
 }));
 
+vi.mock('$lib/api/Profiles', () => ({
+	getActiveProfile: vi.fn().mockResolvedValue({ id: '1' }),
+	updateProfileContent: vi.fn().mockResolvedValue(true)
+}));
+
 vi.mock('$lib/components/toasts/notifications', () => ({
-	notifications: { success: vi.fn(), error: vi.fn() }
+	notifications: { success: vi.fn(), error: vi.fn(), warning: vi.fn() }
 }));
 
 import Settings from '../../../src/routes/oc/ssvc/Settings.svelte';
 import { fetchSettings, updateSetting } from '$lib/api/ssvcApi';
+import { updateProfileContent } from '$lib/api/Profiles';
 import { notifications } from '$lib/components/toasts/notifications';
 
 describe('Settings — Параметры отбора (updateSetting)', () => {
@@ -59,11 +66,14 @@ describe('Settings — Параметры отбора (updateSetting)', () => {
 		pageUrlRef.href = 'http://test/oc/ssvc?tab=speed';
 		vi.mocked(updateSetting).mockReset();
 		vi.mocked(updateSetting).mockResolvedValue(true);
+		vi.mocked(updateProfileContent).mockReset();
+		vi.mocked(updateProfileContent).mockResolvedValue(true);
 		vi.mocked(fetchSettings).mockReset();
 		vi.mocked(fetchSettings).mockResolvedValue(
 			createMockSsvcSettings({ heads: headsSpec.expectedRequestBody })
 		);
 		vi.mocked(notifications.error).mockClear();
+		vi.mocked(notifications.warning).mockClear();
 	});
 
 	it('при сохранении параметров отбора вызывает updateSetting с телом запроса из реестра', async () => {
@@ -91,6 +101,11 @@ describe('Settings — Параметры отбора (updateSetting)', () => {
 		});
 
 		expect(updateSetting).toHaveBeenCalledWith(headsSpec.field, headsSpec.expectedRequestBody);
+		await waitFor(() => {
+			expect(updateProfileContent).toHaveBeenCalledWith('1', {
+				ssvcSettings: { [headsSpec.field]: headsSpec.expectedRequestBody }
+			});
+		});
 	});
 
 	it('при нажатии «Перезагрузить настройки» вызывается fetchSettings снова', async () => {

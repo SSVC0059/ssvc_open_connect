@@ -11,6 +11,7 @@
 		infoCacheVersion
 	} from '$lib/api/ssvcApi';
 	import { notifications } from '$lib/components/toasts/notifications';
+	import { getActiveProfile, updateProfileContent } from '$lib/api/Profiles';
 	import GeneralSettings from '$lib/components/SsvcSettings/GeneralSettings.svelte';
 	import ValveBandwidth from '$lib/components/SsvcSettings/ValveBandwidth.svelte';
 	import SpeedSettings from '$lib/components/SsvcSettings/SpeedSettings.svelte';
@@ -64,10 +65,35 @@
 		}
 	};
 
+	/**
+	 * При загрузке настройки применяются из активного профиля
+	 * (`ProfileService` → `SsvcSettings::onProfileApply`). Если изменить только
+	 * текущие настройки, после перезагрузки профиль вернёт прежнее значение.
+	 * Пишем в профиль лишь изменённое поле, не затирая остальные.
+	 */
+	async function persistActiveProfileField(field: string, value: unknown): Promise<boolean> {
+		try {
+			const active = (await getActiveProfile()) as unknown as { id?: string } | null;
+			const id = active?.id;
+			if (id == null) return false;
+			return await updateProfileContent(String(id), { ssvcSettings: { [field]: value } });
+		} catch (err) {
+			console.error('Не удалось сохранить настройку в активный профиль', err);
+			return false;
+		}
+	}
+
 	async function saveChanges(field: string, value: unknown) {
 		const result = await updateSetting(field, value);
 		if (result) {
 			notifications.success('Настройка сохранена', 5000);
+			const persisted = await persistActiveProfileField(field, value);
+			if (!persisted) {
+				notifications.warning(
+					'Настройка применена, но не сохранена в активный профиль: после перезагрузки вернётся прежнее значение',
+					7000
+				);
+			}
 			await loadSsvcSettings();
 		} else {
 			notifications.error('Ошибка сохранения настроек', 5000);
