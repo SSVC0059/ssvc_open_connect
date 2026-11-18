@@ -47,7 +47,7 @@ vi.mock('$lib/api/ssvcApi', () => ({
 
 vi.mock('$lib/api/Profiles', () => ({
 	getActiveProfile: vi.fn().mockResolvedValue({ id: '1' }),
-	updateProfileContent: vi.fn().mockResolvedValue(true)
+	saveCurrentSettingsToProfile: vi.fn().mockResolvedValue(true)
 }));
 
 vi.mock('$lib/components/toasts/notifications', () => ({
@@ -56,7 +56,7 @@ vi.mock('$lib/components/toasts/notifications', () => ({
 
 import Settings from '../../../src/routes/oc/ssvc/Settings.svelte';
 import { fetchSettings, updateSetting } from '$lib/api/ssvcApi';
-import { updateProfileContent } from '$lib/api/Profiles';
+import { saveCurrentSettingsToProfile } from '$lib/api/Profiles';
 import { notifications } from '$lib/components/toasts/notifications';
 
 describe('Settings — Параметры отбора (updateSetting)', () => {
@@ -66,8 +66,8 @@ describe('Settings — Параметры отбора (updateSetting)', () => {
 		pageUrlRef.href = 'http://test/oc/ssvc?tab=speed';
 		vi.mocked(updateSetting).mockReset();
 		vi.mocked(updateSetting).mockResolvedValue(true);
-		vi.mocked(updateProfileContent).mockReset();
-		vi.mocked(updateProfileContent).mockResolvedValue(true);
+		vi.mocked(saveCurrentSettingsToProfile).mockReset();
+		vi.mocked(saveCurrentSettingsToProfile).mockResolvedValue(true);
 		vi.mocked(fetchSettings).mockReset();
 		vi.mocked(fetchSettings).mockResolvedValue(
 			createMockSsvcSettings({ heads: headsSpec.expectedRequestBody })
@@ -102,9 +102,7 @@ describe('Settings — Параметры отбора (updateSetting)', () => {
 
 		expect(updateSetting).toHaveBeenCalledWith(headsSpec.field, headsSpec.expectedRequestBody);
 		await waitFor(() => {
-			expect(updateProfileContent).toHaveBeenCalledWith('1', {
-				ssvcSettings: { [headsSpec.field]: headsSpec.expectedRequestBody }
-			});
+			expect(saveCurrentSettingsToProfile).toHaveBeenCalledWith('1');
 		});
 	});
 
