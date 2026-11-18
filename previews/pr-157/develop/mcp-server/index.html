@@ -1,0 +1,5826 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Модуль расширения функционала автоматики отбора для ректификации  SSVC0059V2,">
+      
+      
+        <meta name="author" content="thedemoncat">
+      
+      
+        <link rel="canonical" href="https://SSVC0059.github.io/ssvc_open_connect/previews/pr-157/develop/mcp-server/">
+      
+      
+        <link rel="prev" href="../api/security/">
+      
+      
+        <link rel="next" href="../mcp-server-agents/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../media/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>MCP-сервер (архитектура и план) - SSVC Open Connect</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#mcp-openconnect" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="SSVC Open Connect" class="md-header__button md-logo" aria-label="SSVC Open Connect" data-md-component="logo">
+      
+  <img src="../../media/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SSVC Open Connect
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              MCP-сервер (архитектура и план)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/SSVC0059/ssvc_open_connect" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SSVC0059/ssvc_open_connect
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Главная
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../preparation/driver/" class="md-tabs__link">
+          
+  
+  
+  Подготовка
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../usage/get_started/" class="md-tabs__link">
+          
+  
+  
+  Первый запуск
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../usage/interfaces/uart/" class="md-tabs__link">
+          
+  
+  
+  Периферия
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../calculator/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Калькулятор ректификации
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../preparation/controller/" class="md-tabs__link">
+          
+  
+  
+  Платы и готовые модули
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../glossary/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Глоссарий
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../info/changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Список изменений
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Для разработчиков
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SSVC Open Connect" class="md-nav__button md-logo" aria-label="SSVC Open Connect" data-md-component="logo">
+      
+  <img src="../../media/logo.png" alt="logo">
+
+    </a>
+    SSVC Open Connect
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/SSVC0059/ssvc_open_connect" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SSVC0059/ssvc_open_connect
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Главная
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подготовка
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Подготовка
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/driver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Прошивка контроллера под OS Windows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Скачивание релиза SSVC Open Connect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/flasher/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Автоматическая установка актуальной версии
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/flasher_manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Автоматическая установка актуальной версии
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/adafruit_webserial_esptool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Прошивка через Adafruit WebSerial ESPTool
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Первый запуск
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Первый запуск
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/get_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Начало работы с контроллером
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/messengers/vk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Уведомления VK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Периферия
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Периферия
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/uart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение к SSVC по UART
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Питание контроллера
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/ds18b20/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Датчик температуры DS18B20
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/bmp581/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Датчик давления BMP581 (I²C)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/rgb_led/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение адресного светодиода
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/ds3231-rtc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Часы реального времени DS3231 (I2C)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../calculator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Калькулятор ректификации
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Платы и готовые модули
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Платы и готовые модули
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модули ESP32-S3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    KC868-A6v3
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    KC868-A6v3
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../boards/kc868-a6/KC868-A6v3-KinCony.ru/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Описание (KinCony)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../boards/kc868-a6/GPIO_Pinout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Распиновка GPIO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../boards/kc868-a6/I2C_devices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    I2C устройства
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Готовые модули
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Готовые модули
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ready_made/connect/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение модуля
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ready_made/din_version/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модуль для установки на DIN рейку
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ready_made/inside_version/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модуль для установки внутри ящика
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Глоссарий
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../info/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Список изменений
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Для разработчиков
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture-manifest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Манифест архитектуры: IoT-проект на базе ESP32SvelteKit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Сборка прошивки
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Тестирование
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docs-previews/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Превью документации из pull request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../i2c_monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Мониторинг I2C и алертинг (прошивка)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reverse-proxy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Удалённый доступ: TLS через reverse-proxy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_10_8" id="__nav_10_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    REST API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Документация по REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Настроек
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Команд
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/sensors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Датчики
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/telegram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Telegram Бота
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/subsystem/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Подсистемы
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/openconnect/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API OpenConnect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Профили
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Файлов
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/logs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Журналов ректификаций
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    События WebSocket (/ws/events)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Безопасности (JWT)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP-сервер (архитектура и план)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP-сервер (архитектура и план)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Цель и границы
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Цель и границы">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Что делаем
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Принятые решения и их следствия
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Не-цели
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Пользовательские сценарии
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-rest-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Что есть на контроллере: разбор REST API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Что есть на контроллере: разбор REST API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Транспорт и адресация
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Аутентификация и авторизация
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Каналы данных
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Инвентарь эндпоинтов
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.4 Инвентарь эндпоинтов">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#241" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4.1 Аутентификация и служебное
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#242" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4.2 Ректификация (ядро)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#243-openconnect-restoc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4.3 OpenConnect (/rest/oc/*)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#244" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4.4 Профили, журналы, файлы
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#245" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4.5 Мессенджеры
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 Особенности контракта, которые определяют архитектуру
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6 Версии и возможности
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Целевая архитектура
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Целевая архитектура">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Принципы
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Слои
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Структура репозитория
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Транспорт, сессии и доступ
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-deviceclient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 DeviceClient — ядро надёжности
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Доменные сервисы
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#37-mcp-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.7 MCP-слой: инструменты, ресурсы, промпты
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.8 Состояние, кэш и «ожидание»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.9 Один контроллер: конфигурация и секреты
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#310" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.10 Ошибки
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#311" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.11 Безопасность: два контура
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#312" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.12 Наблюдаемость и сырые логи
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Каталог инструментов
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Нефункциональные требования
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. План разработки
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. План разработки">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p0-http-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P0. HTTP-сервис и чтение (5 дней)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p1-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1. Управление и настройки (6 дней)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p2-7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2. Датчики, реле, калибровка, подсистемы (7 дней)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p3-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3. Журналы, профили, файлы, разрушительные операции (6 дней)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p4-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P4. Стабилизация и релиз (6 дней)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p5-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P5. Опционально (после v1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Стратегия тестирования
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Риски и меры
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-mcp-backlog-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Доработки прошивки, выполненные до MCP (backlog v1)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Открытые вопросы
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Приложение: пример инструмента
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Чек-лист готовности v1
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-server-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP-сервер: пакеты работ для агентов
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP-сервер: пользовательские сценарии
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-contract-notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP-сервер: контракт прошивки (разведка)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ssvc_uart_api_docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UART API SSVC (справка)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ssvc-serial-protocol/develop/Readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Протокол UART — примеры (JSON/TXT)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_10_15" id="__nav_10_15_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Фронтенд
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_15">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Фронтенд
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frontend/frontend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    📑 SCSS Классы и Компоненты Пользовательского Интерфейса
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frontend/styling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Стратегия стилей (Tailwind + DaisyUI)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Цель и границы
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Цель и границы">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Что делаем
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Принятые решения и их следствия
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Не-цели
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Пользовательские сценарии
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-rest-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Что есть на контроллере: разбор REST API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Что есть на контроллере: разбор REST API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Транспорт и адресация
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Аутентификация и авторизация
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Каналы данных
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Инвентарь эндпоинтов
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.4 Инвентарь эндпоинтов">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#241" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4.1 Аутентификация и служебное
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#242" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4.2 Ректификация (ядро)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#243-openconnect-restoc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4.3 OpenConnect (/rest/oc/*)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#244" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4.4 Профили, журналы, файлы
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#245" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4.5 Мессенджеры
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 Особенности контракта, которые определяют архитектуру
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6 Версии и возможности
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Целевая архитектура
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Целевая архитектура">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Принципы
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Слои
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Структура репозитория
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Транспорт, сессии и доступ
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-deviceclient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 DeviceClient — ядро надёжности
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Доменные сервисы
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#37-mcp-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.7 MCP-слой: инструменты, ресурсы, промпты
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.8 Состояние, кэш и «ожидание»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.9 Один контроллер: конфигурация и секреты
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#310" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.10 Ошибки
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#311" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.11 Безопасность: два контура
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#312" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.12 Наблюдаемость и сырые логи
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Каталог инструментов
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Нефункциональные требования
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. План разработки
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. План разработки">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p0-http-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P0. HTTP-сервис и чтение (5 дней)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p1-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1. Управление и настройки (6 дней)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p2-7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2. Датчики, реле, калибровка, подсистемы (7 дней)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p3-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3. Журналы, профили, файлы, разрушительные операции (6 дней)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p4-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P4. Стабилизация и релиз (6 дней)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p5-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P5. Опционально (после v1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Стратегия тестирования
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Риски и меры
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-mcp-backlog-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Доработки прошивки, выполненные до MCP (backlog v1)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Открытые вопросы
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Приложение: пример инструмента
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Чек-лист готовности v1
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<div><h1 id="mcp-openconnect">MCP-сервер для OpenConnect: архитектура и план разработки</h1>
+<blockquote>
+<p><strong>Статус:</strong> предложение (RFC), редакция 2. Документ фиксирует результаты разбора фактического REST API
+прошивки (<code>APP_VERSION 0.2.9.1</code>), целевую архитектуру MCP-сервера и поэтапный план работ.</p>
+<p><strong>Решения этой редакции:</strong> транспорт — <strong>Streamable HTTP с первого этапа</strong> (OpenConnect — сетевое
+устройство, проводное подключение к нему — редкий сценарий); описания инструментов — <strong>на русском</strong>;
+разрушительные операции <strong>временно включены</strong>, но требуют явного подтверждения и <strong>отключаются перед
+релизом</strong>; поддерживается <strong>один контроллер</strong>; пароли — <strong>только в локальном <code>.env</code></strong>; запись сырых
+ответов — <strong>включена на время разработки</strong>, затем опциональный параметр.</p>
+<p><strong>Разбивка на пакеты работ для агентов:</strong> <a href="../mcp-server-agents/">mcp-server-agents.md</a> — волны,
+владение файлами, контракты и критерии приёмки каждого пакета.</p>
+</blockquote>
+<hr>
+<h2 id="1">1. Цель и границы</h2>
+<h3 id="11">1.1 Что делаем</h3>
+<p>Сетевой MCP-сервер (HTTP-сервис), который превращает REST-поверхность контроллера OpenConnect в
+типизированные MCP-инструменты, ресурсы и промпты: «посмотреть состояние ректификации», «запустить
+процесс по профилю», «прочитать журнал», «откалибровать датчик уровня», «диагностировать I²C».</p>
+<p>Сервер работает там, где ему удобно (мини-ПК, NAS, Raspberry Pi, Docker на домашнем сервере), и
+обращается к контроллеру по сети. MCP-клиенты (агенты, IDE, чат-клиенты) подключаются к серверу по HTTP
+из той же сети или через тоннель.</p>
+<p>MCP-сервер — <strong>внешний адаптер</strong>, а не второй бэкенд:</p>
+<ul>
+<li>прошивка остаётся единственным источником истины (состояние, гейты версий, предохранители);</li>
+<li>сервер не дублирует бизнес-логику ректификации и не хранит собственную модель процесса;</li>
+<li>сервер добавляет только то, чего у контроллера нет: типизацию, идемпотентные обёртки, ожидание
+  терминальных состояний, политику опасных операций, аудит и удобный для LLM формат ответов.</li>
+</ul>
+<h3 id="12">1.2 Принятые решения и их следствия</h3>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Решение</th>
+<th>Что меняется в архитектуре</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Только HTTP-транспорт, сразу</strong></td>
+<td>Постоянно работающий сервис: порт, сессии, аутентификация клиентов, TLS/прокси, health-check, Docker. stdio — не планируется (при необходимости добавляется обёрткой <code>mcp-remote</code> на стороне клиента)</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Описания инструментов на русском</strong></td>
+<td><code>title</code>, <code>description</code>, описания параметров, тексты ошибок и подсказки — русские. Ключи JSON, значения enum и имена инструментов остаются латиницей: это контракт</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Разрушительные операции включены до релиза</strong>, с обязательным подтверждением</td>
+<td>Флаг <code>SSVC_ALLOW_DESTRUCTIVE</code>, <code>confirm:true</code> + <code>reason</code>, аудит; отдельная задача «release hardening» выключает их перед релизом</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Один контроллер</strong></td>
+<td>Нет реестра устройств, нет аргумента <code>device</code> в инструментах, нет mDNS-обнаружения. Конфигурация — один <code>.env</code>. В коде остаётся шов (<code>DeviceClient</code> как интерфейс), чтобы мультиустройство не потребовало переписывания</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Пароли только в локальном <code>.env</code></strong></td>
+<td><code>dotenv</code>, <code>.env</code> в <code>.gitignore</code>, <code>.env.example</code> в репозитории; никаких keyring, облачных хранилищ и паролей в аргументах/логах</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Сырые ответы пишем на время разработки</strong></td>
+<td><code>SSVC_RAW_LOG=all</code> в P0–P3, <code>off</code> по умолчанию в P4; точечно — параметр <code>debug:true</code> в вызове инструмента</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13-">1.3 Не-цели</h3>
+<table>
+<thead>
+<tr>
+<th>Не делаем</th>
+<th>Почему</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Прошивку на ESP32, говорящую на MCP</td>
+<td>+память, +TLS, +JSON-RPC на устройстве без выгоды: клиенты и так ходят по сети</td>
+</tr>
+<tr>
+<td>stdio-транспорт в v1</td>
+<td>Сервер живёт как сервис; stdio-клиенты подключаются через <code>mcp-remote</code></td>
+</tr>
+<tr>
+<td>Мультиустройство</td>
+<td>Один контроллер; реестр появится, если понадобится, без изменения доменного слоя</td>
+</tr>
+<tr>
+<td>Собственную очередь команд поверх устройства</td>
+<td>Очередь уже есть в прошивке (<code>SsvcCommandsQueue</code>, 50 слотов + safety-очередь)</td>
+</tr>
+<tr>
+<td>OAuth/DCR в v1</td>
+<td>Один пользователь, статический bearer-токен; OAuth — только если клиент не умеет заголовки</td>
+</tr>
+<tr>
+<td>Замену веб-интерфейсу</td>
+<td>UI остаётся; MCP — ещё один клиент того же API</td>
+</tr>
+<tr>
+<td>Автоматическое «ведение» ректификации без человека</td>
+<td>Опасный процесс: сервер даёт инструменты, решение принимает человек/агент с подтверждением</td>
+</tr>
+</tbody>
+</table>
+<h3 id="14">1.4 Пользовательские сценарии</h3>
+<p>Полный каталог — <strong>29 сценариев</strong> в девяти группах, с разбором ситуаций, эффекта и ограничений:
+<a href="../mcp-scenarios/">mcp-scenarios.md</a>.</p>
+<p>Коротко, что покрывается:</p>
+<table>
+<thead>
+<tr>
+<th>Группа</th>
+<th>Примеры</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Перед запуском</td>
+<td>готовность оборудования, «почему не стартует», что умеет прошивка</td>
+</tr>
+<tr>
+<td>Ведение процесса</td>
+<td>запуск с отсрочкой, ручные переходы, закрытие клапана, аварийная остановка</td>
+</tr>
+<tr>
+<td>Ночной дозор</td>
+<td>события и эскалация, обнаружение застоя</td>
+</tr>
+<tr>
+<td>Настройка параметров</td>
+<td>гистерезис и предекремент, формула, сброс и снижение, <code>valve_bw</code>, правка на ходу</td>
+</tr>
+<tr>
+<td>Профили и расчёт</td>
+<td>профиль из расчёта, расхождение с контроллером, перенос на другой аппарат</td>
+</tr>
+<tr>
+<td>Разбор после процесса</td>
+<td>разбор журнала, план против факта, статистика по сырью</td>
+</tr>
+<tr>
+<td>Безопасность</td>
+<td>датчики уровня, пороги тревог, реле-автоматика</td>
+</tr>
+<tr>
+<td>Диагностика</td>
+<td>шина I²C, «настройки не применились», журнал не качается</td>
+</tr>
+<tr>
+<td>Интеграции</td>
+<td>мессенджеры, умный дом, строка <code>STATUS</code> на экране</td>
+</tr>
+</tbody>
+</table>
+<p>Сценарии опираются на фактическое поведение прошивок 2.2.55 (Pro) и 2.3.28 (Pro.3H), UART API
+SSVC0059_V2 и калькулятор ректификации OpenConnect; расхождения источников зафиксированы в
+<a href="../mcp-scenarios/">mcp-scenarios.md §15</a>.</p>
+<hr>
+<h2 id="2-rest-api">2. Что есть на контроллере: разбор REST API</h2>
+<h3 id="21">2.1 Транспорт и адресация</h3>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Факт</th>
+<th>Следствие для MCP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HTTP</td>
+<td><code>AsyncWebServer</code>, <strong>порт 80, только HTTP</strong></td>
+<td>TLS на стороне устройства нет; MCP-сервер работает по HTTP внутри доверенной сети, наружу — только через TLS-прокси</td>
+</tr>
+<tr>
+<td>mDNS</td>
+<td><code>MDNS.begin(&lt;hostname&gt;)</code>, сервисы <code>http</code>/<code>ws</code>, TXT <code>Firmware Version</code></td>
+<td>Адрес контроллера задаётся в <code>.env</code>; mDNS-поиск не нужен</td>
+</tr>
+<tr>
+<td>CORS</td>
+<td><code>ENABLE_CORS</code> <strong>закомментирован</strong> в <code>platformio.ini</code></td>
+<td>Браузерный клиент напрямую к устройству не сходится; для MCP не важно</td>
+</tr>
+<tr>
+<td>Сборки</td>
+<td><code>-secure</code> = <code>FT_SECURITY=1</code>, обычная = <code>FT_SECURITY=0</code></td>
+<td>На обычной сборке аутентификации нет: <code>verifyAuthorization</code> → 404</td>
+</tr>
+<tr>
+<td>Статика</td>
+<td><code>EMBED_WWW</code> или LittleFS</td>
+<td>На API не влияет</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22">2.2 Аутентификация и авторизация</h3>
+<div class="highlight"><pre><span></span><code>POST /rest/signIn   {"username":"admin","password":"admin"}  →  200 {"access_token":"&lt;JWT&gt;"}
+GET  /rest/verifyAuthorization                                →  200 | 401 (404 — security выключена)
+</code></pre></div>
+<ul>
+<li>JWT передаётся либо заголовком <code>Authorization: Bearer &lt;jwt&gt;</code>, либо query-параметром
+  <code>?access_token=&lt;jwt&gt;</code> (второй вариант нужен WebSocket).</li>
+<li>Payload JWT: <code>{"username": "...", "admin": true|false}</code>. <strong>Поля <code>exp</code> нет</strong> — токен не истекает,
+  пока не сменится <code>jwtSecret</code>; перевыпуск — по <code>GET /rest/generateToken</code> (только admin).</li>
+<li>Два уровня доступа: <code>IS_AUTHENTICATED</code> (любой пользователь) и <code>IS_ADMIN</code>.</li>
+</ul>
+<blockquote>
+<p><strong>Критично.</strong> <code>HttpEndpoint&lt;T&gt;</code> по умолчанию применяет <code>IS_ADMIN</code>, и прикладные сервисы
+(<code>/rest/telemetry</code>, <code>/rest/sensor</code>, <code>/rest/alarms</code>, <code>/rest/zones</code>, а также WiFi/NTP/MQTT/AP/System)
+предикат не переопределяют. То есть <strong>телеметрия и датчики доступны только администратору</strong>, а
+<code>/rest/settings</code>, <code>/rest/commands</code>, <code>/rest/oc/*</code>, <code>/rest/profiles*</code>, <code>/rest/files*</code>, <code>/rest/logs</code> —
+любому аутентифицированному. MCP-серверу нужна учётная запись admin, иначе половина инструментов
+вернёт <code>403</code>, что легко принять за «устройство не поддерживает».</p>
+</blockquote>
+<h3 id="23">2.3 Каналы данных</h3>
+<table>
+<thead>
+<tr>
+<th>Канал</th>
+<th>Что даёт</th>
+<th>Пригодность для MCP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>REST</strong></td>
+<td>всё: телеметрия, настройки, команды, журналы, файлы</td>
+<td>основной канал</td>
+</tr>
+<tr>
+<td><strong>WebSocket</strong> <code>/ws/events</code></td>
+<td>push-события <code>battery</code>, <code>wifi/rssi</code>, <code>features</code>, <code>notification</code>, <code>ota</code>, а начиная с прошивки с §9 — ещё <code>telemetry</code>, <code>stage</code>, <code>alarm</code>. Формат кадров <strong>MessagePack</strong> (<code>EVENT_USE_JSON</code> выключен); управляющий кадр подписки <code>{event:"subscribe",data:"&lt;name&gt;"}</code> — <strong>тоже MessagePack</strong>, текстовый JSON сервер игнорирует</td>
+<td>пригоден для «ждать изменения» без опроса: <code>telemetry</code> — полный снимок при изменении (не чаще ~1 раза в 2 с) плюс догоняющая отправка при подписке; <code>stage</code> — только переход стадии/статуса/pid; <code>alarm</code> — только raise/clear, догоняющей отправки нет (снимок — REST). Описание: <code>docs/develop/api/events.md</code></td>
+</tr>
+<tr>
+<td><strong>MQTT</strong></td>
+<td><code>openconnect/telemetry</code>, <code>openconnect/settings</code>, <code>openconnect/sensor/state</code>, <code>openconnect/sensor/threshold/*</code>, команды <code>openconnect/command/send</code> + <code>.../response</code></td>
+<td>альтернатива для «сервер всегда онлайн», но требует брокера и не покрывает журналы/профили → во второй очереди</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Вывод:</strong> базовое состояние читаем из REST (<code>GET /rest/oc/snapshot</code> — один запрос вместо четырёх),
+а ожидание изменений строим на <code>/ws/events</code> (<code>telemetry</code>/<code>stage</code>/<code>alarm</code>) с откатом на опрос,
+если сокет недоступен.</p>
+<h3 id="24">2.4 Инвентарь эндпоинтов</h3>
+<p>Обозначения: <strong>R</strong> — чтение, <strong>W</strong> — обратимая запись, <strong>P</strong> — влияет на процесс, <strong>D</strong> — разрушительно.</p>
+<h4 id="241">2.4.1 Аутентификация и служебное</h4>
+<table>
+<thead>
+<tr>
+<th>Метод</th>
+<th>Путь</th>
+<th>Доступ</th>
+<th>Назначение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/rest/signIn</code></td>
+<td>—</td>
+<td>логин, выдаёт JWT (<code>{access_token}</code>); payload содержит <code>username</code>, <code>admin</code> и, при синхронизированных часах, <code>iat</code>/<code>exp</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/refreshToken</code></td>
+<td>auth</td>
+<td>новый токен для текущего пользователя: <code>{token, exp}</code>; <strong>только на secure-сборке</strong> — на не-secure маршрута нет и GET отдаёт SPA-заглушку (<code>200 text/html</code>)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/verifyAuthorization</code></td>
+<td>любой</td>
+<td>проверка токена (404 — security off; 401 — токен истёк/невалиден)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/features</code></td>
+<td>auth</td>
+<td>рантайм-флаги фич</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/systemStatus</code></td>
+<td>admin</td>
+<td>heap, uptime, прошивка, чип</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/rest/restart</code></td>
+<td>admin</td>
+<td>перезагрузка (POST)</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/rest/factoryReset</code></td>
+<td>admin</td>
+<td>сброс к заводским</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/coreDump</code></td>
+<td>admin</td>
+<td>дамп паники</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/rest/wifiStatus</code>, <code>/rest/wifiSettings</code>, <code>/rest/apStatus</code>, <code>/rest/apSettings</code>, <code>/rest/ntpStatus</code>, <code>/rest/ntpSettings</code>, <code>/rest/mqttStatus</code>, <code>/rest/mqttSettings</code>, <code>/rest/securitySettings</code></td>
+<td>admin</td>
+<td>состояния и настройки подсистем фреймворка</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/rest/scanNetworks</code>, <code>/rest/listNetworks</code>, <code>/rest/time</code></td>
+<td>admin</td>
+<td>сканирование Wi-Fi, установка времени</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/rest/uploadFirmware</code>, <code>/rest/downloadUpdate</code></td>
+<td>admin</td>
+<td>OTA (<code>FT_UPLOAD_FIRMWARE</code>/<code>FT_DOWNLOAD_FIRMWARE</code>)</td>
+</tr>
+<tr>
+<td>—</td>
+<td><code>/rest/sleep</code></td>
+<td>—</td>
+<td><strong>не существует</strong> в этой сборке (<code>FT_SLEEP=0</code>)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="242">2.4.2 Ректификация (ядро)</h4>
+<table>
+<thead>
+<tr>
+<th>Метод</th>
+<th>Путь</th>
+<th>Доступ</th>
+<th>Тип</th>
+<th>Примечание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/rest/telemetry</code></td>
+<td><strong>admin</strong></td>
+<td>R</td>
+<td><code>{telemetry:{...}, status:{stage,status,startTime,endTime,stages,uartConnectionError}, lastUpdate}</code>; кэш 2 с</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/settings</code></td>
+<td>auth</td>
+<td>R</td>
+<td><code>{ssvcSettings:{...}}</code> — <strong>вложенный</strong> объект</td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/rest/settings</code></td>
+<td>auth</td>
+<td>W</td>
+<td>тело — <strong>плоский</strong> объект <code>{"hyst":0.5}</code>; ответ <code>{success,accepted,ignored[],skipped[]}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/rest/commands</code></td>
+<td>auth</td>
+<td>P/D</td>
+<td><code>{commands:"start",parameters:""}</code>; <strong>200 = принято в очередь, не выполнено</strong>; ответ <code>{status:"accepted",command,commandId,warnings?[]}</code> (warnings — предупреждения предохранителей, команда всё равно принята)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/commands/{id}</code></td>
+<td>auth</td>
+<td>R</td>
+<td>журнал попытки (TTL 10 мин, кольцо на 16 записей): <code>{id,command,state,queued_at,started_at,finished_at,ok,reason,confidence:"transport"}</code>; <code>state</code> ∈ <code>queued/running/sent/done/rejected/timeout</code>; 400 <code>invalid_id</code>, 404 <code>not_found</code> (в т.ч. вытесненная запись). <code>confidence:"transport"</code> — подтверждение только на уровне транспорта UART, не «физическое действие выполнено»</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/subsystem</code></td>
+<td>auth</td>
+<td>R</td>
+<td>карта <code>{i2c_bus, thermal, atm_sensor, telegram_bot, vk_bot, settings}</code></td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/rest/subsystem</code></td>
+<td>auth</td>
+<td>W</td>
+<td><code>{name:bool}</code>; ответ <code>{success, errors[]}</code>; отдельные подсистемы включаются &gt;60 с</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/sensor</code></td>
+<td><strong>admin</strong></td>
+<td>R</td>
+<td><code>{&lt;zone&gt;:{&lt;address&gt;:{v,u,type}}}</code></td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/rest/zones</code></td>
+<td><strong>admin</strong></td>
+<td>R/W</td>
+<td>привязка датчиков к зонам</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/rest/alarms</code></td>
+<td><strong>admin</strong></td>
+<td>R/W</td>
+<td><code>{thresholds:{&lt;addr&gt;:{enabled,min,dangerous,critical}}}</code></td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/rest/sensors/zone</code></td>
+<td>auth</td>
+<td>W</td>
+<td><code>?address=&amp;zone=</code> (одна привязка)</td>
+</tr>
+</tbody>
+</table>
+<p>Команды <code>COMMAND_MAP</code>: <code>at</code>, <code>next</code>, <code>pause</code>, <code>stop</code>, <code>start</code>, <code>resume</code>, <code>version</code>, <code>get_settings</code>,
+<code>settings</code>, <code>emergency_stop</code>, <code>status</code>, <code>set</code>, <code>get_log</code>.</p>
+<h4 id="243-openconnect-restoc">2.4.3 OpenConnect (<code>/rest/oc/*</code>)</h4>
+<table>
+<thead>
+<tr>
+<th>Метод</th>
+<th>Путь</th>
+<th>Тип</th>
+<th>Ответ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/rest/oc/info</code></td>
+<td>R</td>
+<td><code>{ssvc:{version,api,api_code,mode}, oc:{version,is_support_api,is_support_release,api_min,api_target,api_compatibility,api_features[{name,min_api,available}]}}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/oc/snapshot</code></td>
+<td>R (admin)</td>
+<td><strong>агрегат для MCP:</strong> одна сводка <code>{observed_at, info, telemetry, status, lastUpdate, sensor, faults, partial[]}</code>; <code>partial</code> — имена компонентов, которые не удалось собрать (например <code>["sensor"]</code> при сбое шины). Admin, потому что <code>/rest/telemetry</code> и <code>/rest/sensor</code> — admin</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/oc/hardware-config</code></td>
+<td>R</td>
+<td>конфиг I²C-устройств + пробы <code>bmp581ProbeOk</code>/<code>ds3231ProbeOk</code>/<code>lcd1602ProbeOk</code>/<code>relayPcf8574ProbeOk[]</code>, <code>needsReboot</code>, <code>capabilities</code></td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/rest/oc/hardware-config</code></td>
+<td>W</td>
+<td>частичное обновление, валидация, <code>needsReboot</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/oc/hardware-faults</code></td>
+<td>R</td>
+<td><code>{faults[{code,codeLabel,address,role}],count,i2cBusActive,i2cScan[]}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/oc/xkc25/status</code></td>
+<td>R</td>
+<td>датчики уровня: <code>live</code>,<code>rawLevel</code>,<code>filled</code>,<code>calibrated</code>, <code>blockStart</code>,<code>blockReasons[]</code>,<code>warnings[]</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/rest/oc/xkc25/calibrate</code></td>
+<td>W</td>
+<td><code>{index, step}</code> где <code>step</code> = <code>without_liquid</code> / <code>with_liquid</code> / <code>verify_return</code>; <code>verify_return</code> → <strong>202</strong>, затем <code>GET .../verify-status</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/oc/xkc25/verify-status</code></td>
+<td>R</td>
+<td><code>{status}</code> ∈ <code>none</code> / <code>pending</code> / <code>done</code>, плюс <code>ok</code>, <code>completed</code>, <code>code</code>, <code>rawLevel</code>, <code>message</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/oc/relay/capabilities</code></td>
+<td>R</td>
+<td><code>{supported, pcf8574:{...}}</code>; на GPIO-сборке <code>supported:false</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/oc/relay/metadata</code></td>
+<td>R</td>
+<td>реле, их <code>targetBit</code>, <code>editable</code>, причины блокировки, коды сбоев, стадии, поля SSVC</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/oc/relay/state</code></td>
+<td>R</td>
+<td><code>{supported, userShadow, userShadows[]}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/rest/oc/relay/override</code></td>
+<td>P</td>
+<td><code>{bit, enable?, energized?}</code>; <strong><code>enable</code> по умолчанию <code>true</code></strong>, если не передан</td>
+</tr>
+</tbody>
+</table>
+<h4 id="244">2.4.4 Профили, журналы, файлы</h4>
+<table>
+<thead>
+<tr>
+<th>Метод</th>
+<th>Путь</th>
+<th>Тип</th>
+<th>Примечание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/rest/profiles</code></td>
+<td>R</td>
+<td>список метаданных</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/profiles/active</code></td>
+<td>R</td>
+<td><code>{id}</code> или 404</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/profiles/content?id=</code></td>
+<td>R</td>
+<td>полный профиль (включая <code>ssvcSettings</code>, <code>analytics</code>, правила реле)</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/rest/profiles</code></td>
+<td>W</td>
+<td>создать <code>{name,content?}</code> → 201 <code>{success,id}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/rest/profiles/copy</code></td>
+<td>W</td>
+<td><code>{sourceId,newName}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/rest/profiles/content</code></td>
+<td>W</td>
+<td><code>{id,content}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/rest/profiles/save</code></td>
+<td>W</td>
+<td>сохранить текущие настройки в профиль</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/rest/profiles/set-active</code></td>
+<td>P</td>
+<td>сделать активным и <strong>применить</strong> к контроллеру</td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/rest/profiles/meta</code></td>
+<td>W</td>
+<td>переименовать <code>{id,name}</code></td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/rest/profiles/delete</code></td>
+<td>D</td>
+<td><code>{id}</code> (тело в DELETE!)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/logs</code></td>
+<td>R</td>
+<td>stateful-сессия: <code>?statusOnly=1</code>, <code>?refresh=1</code>; статусы <code>idle/list/receiving/completed/error</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/logs/{processId}</code></td>
+<td>R</td>
+<td>202 + прогресс, затем <strong>CSV</strong> (<code>Content-Disposition</code>)</td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/rest/logs</code></td>
+<td>W</td>
+<td>отмена передачи</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/files</code></td>
+<td>R</td>
+<td>дерево LittleFS</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/rest/files{path}</code></td>
+<td>R</td>
+<td>скачать файл</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/rest/files/copy</code></td>
+<td>W</td>
+<td><code>{source,destination}</code></td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/rest/files{path}</code></td>
+<td>D</td>
+<td>удалить файл</td>
+</tr>
+</tbody>
+</table>
+<h4 id="245">2.4.5 Мессенджеры</h4>
+<table>
+<thead>
+<tr>
+<th>Метод</th>
+<th>Путь</th>
+<th>Примечание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET/PUT</td>
+<td><code>/rest/telegram/config</code></td>
+<td><code>{token,chat_id}</code></td>
+</tr>
+<tr>
+<td>GET/PUT</td>
+<td><code>/rest/vk/config</code>, POST <code>/rest/vk/peers</code></td>
+<td><code>FT_VK_BOT</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="25">2.5 Особенности контракта, которые определяют архитектуру</h3>
+<p>Это главный результат разбора: MCP-сервер нельзя писать как «тонкий проброс URL».</p>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Поведение</th>
+<th>Что должен делать MCP-сервер</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>POST /rest/commands</code> асинхронен: 200 = «в очереди», не «выполнено»</td>
+<td>инструмент возвращает <code>accepted</code> + отдельный инструмент/режим ожидания (<code>oc_wait_for_change</code>)</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>start</code> может вернуть <strong>409</strong> <code>{status:"rejected",blockReasons[]}</code> — предохранитель XKC-25</td>
+<td>разобрать <code>blockReasons</code> в структурированную ошибку с подсказкой, что калибровать</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Отказ очереди: <strong>409</strong> <code>feature_unsupported</code> (старая прошивка), <strong>503</strong> <code>queue_full</code></td>
+<td>разные коды ошибок MCP; <code>queue_full</code> — ретрай с backoff, <code>feature_unsupported</code> — нет</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>PUT /rest/settings</code> при частичном сбое: <strong>503</strong> + <code>partial:true</code>, часть SET уже ушла</td>
+<td><strong>никогда не повторять тело целиком</strong>; вернуть «частично применено» и перечитать <code>GET /rest/settings</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>GET отдаёт <code>{ssvcSettings:{...}}</code>, PUT ждёт плоский объект; неизвестные ключи молча уходят в <code>ignored</code></td>
+<td>адаптер оборачивает/разворачивает; <code>ignored</code> доносится до пользователя явно</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>/rest/logs</code> — одна сессия передачи на устройство: <code>409 log_transfer_busy</code>, 202 + поллинг</td>
+<td>на устройство — мьютекс/лиз; скачивание в файл, а не в контекст модели</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>verify_return</code> в калибровке асинхронен (202)</td>
+<td>двухшаговый инструмент: постановка → опрос <code>verify-status</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>relay/override</code>: <code>enable</code> по умолчанию <code>true</code></td>
+<td>всегда передавать <code>enable</code> и <code>energized</code> явно</td>
+</tr>
+<tr>
+<td>9</td>
+<td>GPIO-сборка отдаёт <code>{"supported":false}</code> вместо ошибки</td>
+<td>трактовать как «функция недоступна в этой прошивке», а не как сбой</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Ответы команд — <code>text/plain</code>, остальное — JSON</td>
+<td>толерантный парсер + нормализация в <code>structuredContent</code></td>
+</tr>
+<tr>
+<td>11</td>
+<td>В UI есть вызовы <code>/rest/sensors/thresholds</code> и <code>/rest/profiles/import</code>, которых <strong>нет в прошивке</strong></td>
+<td>не моделировать; пороги — через <code>/rest/alarms</code>, импорт — через <code>POST /rest/profiles</code></td>
+</tr>
+<tr>
+<td>12</td>
+<td>Включение <code>telegram_bot</code> может занять &gt;60 с</td>
+<td>таймауты инструментов подсистем ≥120 с, не блокировать общий пул</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>POST /rest/commands</code> возвращает <code>commandId</code>, но журнал живёт 10 мин и кольцом на 16 записей; <code>confidence:"transport"</code> означает «ушло в UART», а не «сделано»</td>
+<td>опрашивать <code>GET /rest/commands/{id}</code> до терминального <code>state</code>, но трактовать <code>done</code> как «устройство подтвердило транспорт», а <code>sent</code> (START/NEXT/RESUME/STOP) — как «принято, ответа не будет»; 404 означает «запись вытеснена», а не «команда не выполнялась»</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Регистрация маршрутов чувствительна к порядку/матчеру (см. комментарии в <code>HandlerRegistrator.cpp</code>)</td>
+<td>никогда не добавлять завершающий <code>/</code> и не «нормализовать» пути</td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>HttpEndpoint</code> по умолчанию <code>IS_ADMIN</code></td>
+<td>учётка admin либо явная проверка <code>GET /rest/telemetry</code> на старте</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Неизвестный GET (и любой GET несуществующего <code>/rest/*</code>) отдаёт <strong>SPA-заглушку</strong>: <code>200 text/html</code>, ~664 Б <code>&lt;!DOCTYPE html&gt;</code></td>
+<td>проверять <code>Content-Type</code>/тело, а не только код: иначе «route отсутствует» выглядит как успех. Касается, например, <code>/rest/refreshToken</code> на не-secure сборке</td>
+</tr>
+<tr>
+<td>17</td>
+<td><code>lastUpdate</code> в <code>/rest/telemetry</code> и <code>/rest/oc/snapshot</code> — это <code>millis()</code> (uptime устройства), не epoch; <code>observed_at</code> в snapshot — тоже uptime</td>
+<td>свежесть считать по монотонному времени устройства или по времени получения ответа, не сравнивать с <code>Date.now()</code></td>
+</tr>
+<tr>
+<td>18</td>
+<td>События <code>/ws/events</code> — только при подключённом клиенте и только по подписке; подписка — MessagePack-кадр</td>
+<td>при старте подписываться на <code>telemetry</code>/<code>stage</code>/<code>alarm</code>, при обрыве — переподключаться с backoff; пропущенное не догоняется (кроме снимка при подписке), поэтому после реконнекта перечитать <code>/rest/oc/snapshot</code></td>
+</tr>
+<tr>
+<td>19</td>
+<td><code>alarm</code>-событие не имеет истории и догоняющей отправки</td>
+<td>текущие тревоги читать из <code>GET /rest/oc/hardware-faults</code> и порогов; событие использовать как триггер «перечитать», а не как источник истины</td>
+</tr>
+<tr>
+<td>20</td>
+<td><code>ESPAsyncWebServer</code> <strong>не принимает <code>Transfer-Encoding: chunked</code></strong>: POST/PUT с телом без <code>Content-Length</code> приводят к обрыву соединения (<code>ECONNRESET</code>) до разбора тела</td>
+<td>всегда отправлять тело с явной длиной; в MCP-сервере это делает общий транспорт (<code>src/device/http.ts</code>), а не отдельные домены</td>
+</tr>
+<tr>
+<td>21</td>
+<td><code>GET /rest/files{path}</code> перекрыт обработчиком дерева: на прошивке 0.2.9.2 запрос файла возвращает <code>200 application/json</code> с деревом, а не содержимое файла</td>
+<td>не сохранять такой ответ как файл: распознавать <code>Content-Type</code> и сообщать <code>feature_unsupported</code> с подсказкой; исправление — порядок маршрутов в прошивке (см. §9, п. 8)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="26">2.6 Версии и возможности</h3>
+<p><code>GET /rest/oc/info</code> отдаёт реестр возможностей с минимальной версией API: <code>base</code>(1.7), <code>formula</code>(1.7),
+<code>extended_heads</code>(1.8), <code>tank_mmhg_act</code>(1.7), <code>predec</code>(1.9), <code>formula_auto92</code>(1.9),
+<code>hearts_preempt_cnt</code>(1.8), <code>get_log</code>(1.10). Сравнение — целым кодом <code>major*100+minor</code>, не строкой.
+Тот же принцип обязателен в MCP-сервере: <strong>инструмент не «исчезает» молча, а отвечает
+<code>feature_unsupported</code> с <code>required_api</code>/<code>device_api</code></strong>, повторяя формулировки прошивки.</p>
+<hr>
+<h2 id="3">3. Целевая архитектура</h2>
+<h3 id="31">3.1 Принципы</h3>
+<ol>
+<li><strong>Сервис, а не процесс на одну сессию.</strong> HTTP-сервер запускается один раз (Docker/systemd) и живёт
+   постоянно; клиенты подключаются и отключаются, состояние устройства от этого не зависит.</li>
+<li><strong>Capability-first.</strong> На старте сессии — <code>GET /rest/oc/info</code> + <code>/rest/features</code>; реестр инструментов
+   и их описания учитывают возможности устройства.</li>
+<li><strong>Никакой «магии» поверх процесса.</strong> Сервер не решает, когда переходить фракцию; он даёт
+   детерминированные операции и наблюдение.</li>
+<li><strong>Один ответ — одно состояние.</strong> Каждый инструмент возвращает снимок + <code>observed_at</code>, а не поток.</li>
+<li><strong>Single-flight и один писатель на устройство.</strong> Параллельные чтения схлопываются, записи
+   сериализуются: ESP32 не должна получать конкурирующие команды от двух агентов.</li>
+<li><strong>Опасное — явно.</strong> Классы риска, подтверждение, аудит, флаг <code>SSVC_ALLOW_DESTRUCTIVE</code>.</li>
+<li><strong>Ошибка — данные.</strong> Структурированный <code>code</code> + <code>hint</code> + <code>retryable</code>, а не текст исключения.</li>
+<li><strong>Контракт = zod-схемы рядом с типами фронтенда.</strong> <code>interface/src/lib/types/ssvc.ts</code> — источник
+   для схем; расхождение ловится контрактными тестами.</li>
+</ol>
+<h3 id="32">3.2 Слои</h3>
+<pre class="mermaid"><code>flowchart TB
+    subgraph Clients[MCP-клиенты]
+      A1[Агент / IDE]
+      A2[Чат-клиент]
+    end
+
+    subgraph Service["MCP-сервер (Node, HTTP-сервис)"]
+      H[HTTP-сервер :8080]
+      AUTHN[Bearer-токен клиента&lt;br/&gt;allowlist адресов]
+      SESS[Менеджер сессий&lt;br/&gt;Mcp-Session-Id]
+      T[Streamable HTTP транспорт&lt;br/&gt;POST / GET / DELETE /mcp]
+      REG[Реестр инструментов&lt;br/&gt;tools / resources / prompts]
+      POL[Политика: риск, confirm, аудит]
+      DOM[Доменные сервисы]
+      DC[DeviceClient&lt;br/&gt;auth + HTTP + retry + rate-limit]
+      CAP[CapabilityCache]
+      RAW[(raw/*.jsonl)]
+      AUD[(audit.jsonl)]
+    end
+
+    subgraph Device["Контроллер OpenConnect :80"]
+      REST[REST]
+    end
+
+    A1 --&gt;|HTTPS/HTTP + Bearer| H --&gt; AUTHN --&gt; SESS --&gt; T --&gt; REG
+    A2 --&gt; H
+    REG --&gt; POL --&gt; DOM --&gt; DC --&gt; REST
+    CAP --- DOM
+    DC --&gt; RAW
+    POL --&gt; AUD</code></pre>
+<h3 id="33">3.3 Структура репозитория</h3>
+<p>Каталог <code>mcp/</code> — самостоятельный npm-пакет внутри репозитория (не часть прошивки и не часть
+<code>interface/</code>, чтобы не ломать сборку фронта и <code>pio</code>).</p>
+<div class="highlight"><pre><span></span><code>mcp/
+├── package.json                 # "type":"module", bin: ssvc-openconnect-mcp
+├── tsconfig.json
+├── Dockerfile
+├── docker-compose.yml           # сервис + (опционально) Caddy для TLS
+├── .env.example                 # без секретов, с комментариями
+├── README.md                    # запуск, .env, подключение клиентов
+├── src/
+│   ├── index.ts                 # сборка: конфиг → сервис → serve
+│   ├── config.ts                # zod-схема .env, отказ старта без обязательных
+│   ├── logging.ts               # структурный лог (JSON) в stdout
+│   ├── http/
+│   │   ├── app.ts               # node:http, маршруты /mcp /healthz /readyz
+│   │   ├── auth.ts              # сверка Bearer-токена, CIDR-allowlist
+│   │   ├── sessions.ts          # Map&lt;sessionId, Session&gt;, лимиты, idle-cleanup
+│   │   └── tls.ts               # встроенный TLS (cert/key) или «за прокси»
+│   ├── rawlog.ts                # запись сырых обменов + редакция секретов
+│   ├── audit.ts                 # JSONL-аудит опасных операций
+│   ├── mcp/
+│   │   ├── server.ts            # создание McpServer на сессию
+│   │   ├── errors.ts            # код → MCP-ошибка, маппинг HTTP
+│   │   ├── resources.ts         # openconnect://..., подписки
+│   │   └── prompts.ts           # сценарии (рус.)
+│   ├── device/
+│   │   ├── DeviceClient.ts      # HTTP, таймауты, ретраи, single-flight
+│   │   ├── AuthSession.ts       # signIn, кэш JWT, relogin на 401
+│   │   ├── CapabilityCache.ts   # /rest/oc/info, TTL, инвалидация
+│   │   ├── WriteQueue.ts        # один писатель, приоритет чтений
+│   │   └── schemas/             # zod: telemetry, settings, oc, profiles, logs
+│   ├── domain/                  # Info, Telemetry, Command, Settings, Sensor,
+│   │                            # Relay, Xkc25, Logs, Profile, System
+│   ├── tools/                   # по файлу на домен, декларативная регистрация
+│   └── policy/
+│       ├── risk.ts              # классы риска и аннотации
+│       └── confirmation.ts      # проверка confirm/reason, флаг destructive
+├── mock/                        # заглушка устройства + фикстуры 1.7 / 1.10
+└── test/                        # unit / contract / http / e2e
+</code></pre></div>
+<h3 id="34">3.4 Транспорт, сессии и доступ</h3>
+<p><strong>Стек.</strong> <code>@modelcontextprotocol/sdk@1.32.2</code> (зафиксирован), <code>node:http</code> без веб-фреймворка, zod 3,
+Node ≥ 22. Отказ от Fastify/Express осознанный: маршрутов три, а любая прослойка добавляет зависимость
+и второй слой обработки тела запроса.</p>
+<p><strong>Эндпоинт.</strong> Один путь <code>/mcp</code> (по умолчанию), обслуживающий <code>POST</code>, <code>GET</code> и <code>DELETE</code> в соответствии со
+Streamable HTTP. <code>GET</code> открывает SSE-поток сервер→клиент (нужен для <code>notifications/resources/updated</code>),
+<code>DELETE</code> завершает сессию. <code>POST</code> несёт JSON-RPC.</p>
+<p><strong>Сессии.</strong> Состояние нужно: подписки на ресурсы и уведомления привязаны к сессии. Поэтому режим
+stateful:</p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Значение</th>
+<th>Обоснование</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sessionIdGenerator</code></td>
+<td><code>randomUUID()</code></td>
+<td>криптостойкий идентификатор</td>
+</tr>
+<tr>
+<td><code>MAX_SESSIONS</code></td>
+<td>32</td>
+<td>один пользователь, несколько агентов; защита от утечки памяти</td>
+</tr>
+<tr>
+<td><code>IDLE_MS</code></td>
+<td>30 мин</td>
+<td>сессия без открытых ответов закрывается</td>
+</tr>
+<tr>
+<td><code>onsessioninitialized</code> / <code>onsessionclosed</code></td>
+<td>учёт в <code>Map</code>, лог, счётчики</td>
+<td>наблюдаемость</td>
+</tr>
+<tr>
+<td>Неизвестный <code>Mcp-Session-Id</code></td>
+<td><code>404</code></td>
+<td>клиент пересоздаёт сессию</td>
+</tr>
+<tr>
+<td>Нет <code>Mcp-Session-Id</code> на не-init запросе</td>
+<td><code>400</code></td>
+<td>нарушение протокола</td>
+</tr>
+<tr>
+<td><code>isInitializeRequest</code> + лимит сессий</td>
+<td><code>503</code></td>
+<td>«слишком много сессий»</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Доступ к серверу.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Механизм</th>
+<th>Реализация</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Аутентификация клиента</td>
+<td><code>Authorization: Bearer ${SSVC_MCP_TOKEN}</code>; сравнение в постоянном времени; <code>401</code> + <code>WWW-Authenticate: Bearer</code></td>
+</tr>
+<tr>
+<td>Обязательность токена</td>
+<td>сервер <strong>не стартует</strong> без <code>SSVC_MCP_TOKEN</code> (fail-fast, а не «открытый порт»)</td>
+</tr>
+<tr>
+<td>Сетевой фильтр</td>
+<td><code>SSVC_MCP_ALLOWED_CIDRS</code> (по умолчанию — вся частная сеть)</td>
+</tr>
+<tr>
+<td>DNS-rebinding</td>
+<td><code>SSVC_MCP_ALLOWED_HOSTS</code> + проверка <code>Host</code>/<code>Origin</code>; запросы без <code>Origin</code> разрешены (не браузерные клиенты)</td>
+</tr>
+<tr>
+<td>TLS</td>
+<td>встроенный (<code>SSVC_MCP_TLS_CERT</code>/<code>_KEY</code>) либо Caddy/Traefik перед сервисом; наружу — только TLS</td>
+</tr>
+<tr>
+<td>CORS</td>
+<td>выключен: браузерных MCP-клиентов не поддерживаем</td>
+</tr>
+<tr>
+<td>Проверка живости</td>
+<td><code>GET /healthz</code> (без токена, только «процесс жив»), <code>GET /readyz</code> (с токеном: проверка <code>GET /rest/oc/info</code>)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ограничения конкурентности.</strong> Несколько агентов одновременно — реальность HTTP-режима, поэтому:</p>
+<ul>
+<li>не более 4 одновременных вызовов на сессию;</li>
+<li>глобальная очередь к устройству глубиной 16, дальше — <code>503 busy</code>;</li>
+<li>чтения имеют приоритет над записями; записи — строго по одной (<code>WriteQueue</code>);</li>
+<li>бюджет запросов к ESP32 — общий на процесс, а не на сессию.</li>
+</ul>
+<h3 id="35-deviceclient">3.5 DeviceClient — ядро надёжности</h3>
+<p>Ответственность: превратить «сырой HTTP к ESP32» в предсказуемый вызов.</p>
+<table>
+<thead>
+<tr>
+<th>Возможность</th>
+<th>Реализация</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Аутентификация</td>
+<td><code>AuthSession</code>: ленивый <code>signIn</code>, кэш JWT в памяти, <code>401</code> → один повтор после <code>signIn</code>; <code>404</code> на <code>verifyAuthorization</code> = security off, токен не нужен</td>
+</tr>
+<tr>
+<td>Таймауты</td>
+<td>connect 2 с, read 10 с по умолчанию; per-tool override; <code>GET /rest/logs/{id}</code> — до 60 с</td>
+</tr>
+<tr>
+<td>Ретраи</td>
+<td>только <code>GET</code> и только на сетевые ошибки/<code>502-504</code>/<code>503 queue_full</code>, экспоненциальный backoff 3 попытки; <strong>POST/PUT/DELETE не ретраятся</strong></td>
+</tr>
+<tr>
+<td>Rate limit</td>
+<td>token bucket: 5 rps burst 10, потолок по умолчанию 2 rps для опроса</td>
+</tr>
+<tr>
+<td>Single-flight</td>
+<td><code>Map&lt;key, Promise&gt;</code>: одновременные <code>getTelemetry()</code> → один запрос</td>
+</tr>
+<tr>
+<td>Запись</td>
+<td><code>WriteQueue</code> с мьютексом на устройство; дедуп одинаковых вызовов в пределах 1 с</td>
+</tr>
+<tr>
+<td>Нормализация</td>
+<td><code>text/plain</code> → <code>{raw}</code>; <code>{"supported":false}</code> → <code>featureUnavailable</code>; <code>409/503</code> → коды</td>
+</tr>
+<tr>
+<td>Наблюдаемость</td>
+<td>длительность, статус, размер ответа; счётчики для <code>oc_diagnostics</code></td>
+</tr>
+</tbody>
+</table>
+<p>Скелет:</p>
+<div class="highlight"><pre><span></span><code><span class="k">export</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nx">DeviceClient</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kr">constructor</span><span class="p">(</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="k">readonly</span><span class="w"> </span><span class="nx">cfg</span><span class="o">:</span><span class="w"> </span><span class="kt">DeviceConfig</span><span class="p">,</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="k">readonly</span><span class="w"> </span><span class="nx">auth</span><span class="o">:</span><span class="w"> </span><span class="kt">AuthSession</span><span class="p">,</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="k">readonly</span><span class="w"> </span><span class="nx">raw</span><span class="o">:</span><span class="w"> </span><span class="kt">RawLogger</span><span class="p">,</span>
+<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+
+<span class="w">  </span><span class="k">async</span><span class="w"> </span><span class="nx">getJson</span><span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">path</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">schema</span><span class="o">:</span><span class="w"> </span><span class="kt">z.ZodType</span><span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="nx">opts</span><span class="o">:</span><span class="w"> </span><span class="kt">ReadOpts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{})</span><span class="o">:</span><span class="w"> </span><span class="nb">Promise</span><span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">singleFlight</span><span class="p">(</span><span class="sb">`GET </span><span class="si">${</span><span class="nx">path</span><span class="si">}</span><span class="sb">`</span><span class="p">,</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">status</span><span class="p">,</span><span class="w"> </span><span class="nx">body</span><span class="p">,</span><span class="w"> </span><span class="nx">ms</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">request</span><span class="p">(</span><span class="s1">'GET'</span><span class="p">,</span><span class="w"> </span><span class="nx">path</span><span class="p">,</span><span class="w"> </span><span class="kc">undefined</span><span class="p">,</span><span class="w"> </span><span class="nx">opts</span><span class="p">);</span>
+<span class="w">      </span><span class="k">await</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">raw</span><span class="p">.</span><span class="nx">record</span><span class="p">({</span><span class="w"> </span><span class="nx">method</span><span class="o">:</span><span class="w"> </span><span class="s1">'GET'</span><span class="p">,</span><span class="w"> </span><span class="nx">path</span><span class="p">,</span><span class="w"> </span><span class="nx">status</span><span class="p">,</span><span class="w"> </span><span class="nx">ms</span><span class="p">,</span><span class="w"> </span><span class="nx">response</span><span class="o">:</span><span class="w"> </span><span class="kt">body</span><span class="w"> </span><span class="p">});</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="nx">schema</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">body</span><span class="p">);</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">async</span><span class="w"> </span><span class="nx">postCommand</span><span class="p">(</span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="kt">CommandName</span><span class="p">,</span><span class="w"> </span><span class="nx">params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">''</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="nb">Promise</span><span class="o">&lt;</span><span class="nx">CommandAccepted</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// 200 → accepted; 409/503 → типизированный отказ, без ретрая</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">write</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span>
+<span class="w">      </span><span class="k">this</span><span class="p">.</span><span class="nx">deserialize</span><span class="p">(</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="nx">request</span><span class="p">(</span><span class="s1">'POST'</span><span class="p">,</span><span class="w"> </span><span class="s1">'/rest/commands'</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">commands</span><span class="o">:</span><span class="w"> </span><span class="kt">name</span><span class="p">,</span><span class="w"> </span><span class="nx">parameters</span><span class="o">:</span><span class="w"> </span><span class="kt">params</span><span class="w"> </span><span class="p">}),</span>
+<span class="w">        </span><span class="nx">commandAcceptedSchema</span><span class="p">,</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nx">method</span><span class="o">:</span><span class="w"> </span><span class="s1">'POST'</span><span class="p">,</span><span class="w"> </span><span class="nx">command</span><span class="o">:</span><span class="w"> </span><span class="kt">name</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="p">),</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="36">3.6 Доменные сервисы</h3>
+<p>Каждый сервис — единственное место знания о своём участке REST и о его странностях.</p>
+<table>
+<thead>
+<tr>
+<th>Сервис</th>
+<th>REST</th>
+<th>Что инкапсулирует</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>InfoService</code></td>
+<td><code>/rest/oc/info</code>, <code>/rest/features</code>, <code>/rest/systemStatus</code></td>
+<td>capability-модель, совместимость версий</td>
+</tr>
+<tr>
+<td><code>TelemetryService</code></td>
+<td><code>/rest/telemetry</code>, <code>/rest/sensor</code></td>
+<td>снимок, <code>lastUpdate</code>, «изменилось ли», ожидание стадии</td>
+</tr>
+<tr>
+<td><code>CommandService</code></td>
+<td><code>/rest/commands</code></td>
+<td>имена команд, разбор 409/503, <code>emergency_stop</code>, ожидание эффекта</td>
+</tr>
+<tr>
+<td><code>SettingsService</code></td>
+<td><code>/rest/settings</code> (GET/PUT)</td>
+<td>обёртка/разворот <code>ssvcSettings</code>, отчёт <code>accepted/ignored/skipped</code>, запрет слепого ретрая</td>
+</tr>
+<tr>
+<td><code>SensorService</code></td>
+<td><code>/rest/zones</code>, <code>/rest/sensors/zone</code>, <code>/rest/alarms</code>, <code>/rest/sensor</code></td>
+<td>зоны и пороги; admin-only</td>
+</tr>
+<tr>
+<td><code>RelayService</code></td>
+<td><code>/rest/oc/relay/*</code></td>
+<td><code>supported:false</code>, обязательные <code>enable</code>/<code>energized</code>, зарезервированные биты</td>
+</tr>
+<tr>
+<td><code>Xkc25Service</code></td>
+<td><code>/rest/oc/xkc25/*</code></td>
+<td>двухшаговая калибровка, <code>blockReasons</code>, <code>verify-status</code></td>
+</tr>
+<tr>
+<td><code>LogsService</code></td>
+<td><code>/rest/logs*</code></td>
+<td>лиз сессии, 202-поллинг, CSV в файл, <code>409 busy</code></td>
+</tr>
+<tr>
+<td><code>ProfileService</code></td>
+<td><code>/rest/profiles*</code></td>
+<td>CRUD + «применить активный», порядок путей</td>
+</tr>
+<tr>
+<td><code>SystemService</code></td>
+<td><code>/rest/subsystem</code>, <code>/rest/hardware-*</code>, <code>/rest/systemStatus</code></td>
+<td>длинные таймауты, <code>needsReboot</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="37-mcp-">3.7 MCP-слой: инструменты, ресурсы, промпты</h3>
+<p><strong>Инструменты.</strong> Имя <code>oc_&lt;область&gt;_&lt;действие&gt;</code>, snake_case, латиницей (это часть контракта); всё
+остальное — по-русски:</p>
+<ul>
+<li><code>title</code> и <code>description</code> — русские, 1–2 предложения: что делает и <strong>чего не делает</strong> (например,
+  «ставит в очередь, не ждёт выполнения»);</li>
+<li>описания параметров — русские (<code>confirm</code>: «явное подтверждение влияющего на процесс действия»);</li>
+<li><code>inputSchema</code> — строгий zod, <code>additionalProperties:false</code>;</li>
+<li><code>annotations</code>: <code>readOnlyHint</code>, <code>destructiveHint</code>, <code>idempotentHint</code>, <code>openWorldHint:false</code>;</li>
+<li><code>outputSchema</code> + <code>structuredContent</code> — чтобы клиент видел поля, а не текст;</li>
+<li>тексты ошибок и <code>hint</code> — русские; <code>code</code>, <code>details.*</code> — латиницей.</li>
+</ul>
+<p><strong>Ресурсы</strong> (URI без сегмента устройства — контроллер один; подписка → уведомление при изменении):</p>
+<table>
+<thead>
+<tr>
+<th>URI</th>
+<th>Содержимое</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>openconnect://info</code></td>
+<td>версии, возможности, совместимость</td>
+</tr>
+<tr>
+<td><code>openconnect://telemetry</code></td>
+<td>последний снимок</td>
+</tr>
+<tr>
+<td><code>openconnect://settings</code></td>
+<td>действующие настройки SSVC</td>
+</tr>
+<tr>
+<td><code>openconnect://alarms</code></td>
+<td>пороги и активные сбои</td>
+</tr>
+<tr>
+<td><code>openconnect://profiles</code></td>
+<td>список профилей</td>
+</tr>
+<tr>
+<td><code>openconnect://logs/{processId}.csv</code></td>
+<td>скачанный журнал</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Промпты</strong> (готовые сценарии на русском, снижают число ошибок модели):</p>
+<ol>
+<li><code>start_rectification</code> — проверить info/telemetry/guard → предложить старт → подтвердить → ждать стадию.</li>
+<li><code>troubleshoot_start_blocked</code> — разобрать <code>blockReasons</code>, <code>hardware-faults</code>, <code>i2cScan</code>.</li>
+<li><code>calibrate_xkc25</code> — мастер из трёх шагов с проверкой состояния между ними.</li>
+<li><code>analyze_last_run</code> — журнал + телеметрия → краткий разбор.</li>
+<li><code>apply_profile</code> — выбрать профиль, показать diff настроек, применить.</li>
+</ol>
+<h3 id="38">3.8 Состояние, кэш и «ожидание»</h3>
+<ul>
+<li><strong>Снимок телеметрии</strong> кэшируется 1–2 с (сервер всё равно обновляет его раз в 2 с); <code>lastUpdate</code>
+  отдаётся клиенту, чтобы он видел актуальность. Частота фонового опроса — <code>SSVC_POLL_HZ</code> (по умолчанию 1 Гц),
+  с джиттером; при отсутствии подписчиков опрос не выполняется.</li>
+<li><strong>Capability-кэш</strong> — TTL 60 с + инвалидация по <code>404</code>/<code>409 feature_unsupported</code>/<code>restart</code>.</li>
+<li><strong>Ожидание</strong> реализуется отдельными инструментами, а не долгим <code>await</code> внутри команды:
+  <code>oc_wait_for_change({expect:{stage:"hearts"}, timeout_s:120})</code> — поллинг с адаптивным интервалом
+  (0.5 с → 2 с), возврат <code>{matched, observed, elapsed_s}</code> или <code>{timeout:true, observed}</code>.
+  Это важно: MCP-клиенты любят таймауты, а процесс идёт минутами.</li>
+<li><strong>Дедупликация записи</strong>: одинаковый вызов в пределах 1 с возвращает результат первого (защита от
+  «двойного клика» агента и от двух агентов, делающих одно и то же).</li>
+<li><strong>Разрыв сессии</strong> не отменяет команду на устройстве; <code>oc_diagnostics</code> показывает активные сессии.</li>
+</ul>
+<h3 id="39">3.9 Один контроллер: конфигурация и секреты</h3>
+<p>Конфигурация — только <code>.env</code> рядом с сервисом (или переменные окружения контейнера). Файл создаётся
+пользователем из <code>.env.example</code>, в git не попадает.</p>
+<table>
+<thead>
+<tr>
+<th>Переменная</th>
+<th>Обязательна</th>
+<th>По умолчанию</th>
+<th>Назначение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SSVC_DEVICE_URL</code></td>
+<td>да</td>
+<td>—</td>
+<td><code>http://192.168.1.42</code></td>
+</tr>
+<tr>
+<td><code>SSVC_USER</code></td>
+<td>да</td>
+<td><code>admin</code></td>
+<td>учётка контроллера (<strong>admin</strong>)</td>
+</tr>
+<tr>
+<td><code>SSVC_PASSWORD</code></td>
+<td>да</td>
+<td>—</td>
+<td>пароль контроллера</td>
+</tr>
+<tr>
+<td><code>SSVC_MCP_TOKEN</code></td>
+<td>да</td>
+<td>—</td>
+<td>bearer-токен для MCP-клиентов; без него старт запрещён</td>
+</tr>
+<tr>
+<td><code>SSVC_MCP_BIND</code></td>
+<td>нет</td>
+<td><code>0.0.0.0</code></td>
+<td>адрес прослушивания</td>
+</tr>
+<tr>
+<td><code>SSVC_MCP_PORT</code></td>
+<td>нет</td>
+<td><code>8080</code></td>
+<td>порт</td>
+</tr>
+<tr>
+<td><code>SSVC_MCP_ALLOWED_HOSTS</code></td>
+<td>при <code>bind 0.0.0.0</code></td>
+<td>—</td>
+<td>список <code>Host</code> для защиты от DNS-rebinding</td>
+</tr>
+<tr>
+<td><code>SSVC_MCP_ALLOWED_CIDRS</code></td>
+<td>нет</td>
+<td><code>private</code></td>
+<td>кто может подключаться</td>
+</tr>
+<tr>
+<td><code>SSVC_MCP_TLS_CERT</code> / <code>_KEY</code></td>
+<td>нет</td>
+<td>—</td>
+<td>встроенный TLS; иначе — за прокси</td>
+</tr>
+<tr>
+<td><code>SSVC_ALLOW_DESTRUCTIVE</code></td>
+<td>нет</td>
+<td><code>1</code> до релиза</td>
+<td>разрушительные инструменты</td>
+</tr>
+<tr>
+<td><code>SSVC_RAW_LOG</code></td>
+<td>нет</td>
+<td><code>all</code> до релиза</td>
+<td><code>off</code> / <code>errors</code> / <code>all</code></td>
+</tr>
+<tr>
+<td><code>SSVC_RAW_LOG_MAX_MB</code></td>
+<td>нет</td>
+<td><code>50</code></td>
+<td>предел каталога сырых логов</td>
+</tr>
+<tr>
+<td><code>SSVC_ALLOW_DEBUG</code></td>
+<td>нет</td>
+<td><code>1</code> до релиза</td>
+<td>разрешить <code>debug:true</code> в вызовах</td>
+</tr>
+<tr>
+<td><code>SSVC_POLL_HZ</code></td>
+<td>нет</td>
+<td><code>1</code></td>
+<td>частота фонового опроса</td>
+</tr>
+<tr>
+<td><code>SSVC_AUDIT_PATH</code></td>
+<td>нет</td>
+<td><code>./logs/audit.jsonl</code></td>
+<td>аудит</td>
+</tr>
+<tr>
+<td><code>SSVC_LOG_LEVEL</code></td>
+<td>нет</td>
+<td><code>info</code></td>
+<td>уровень логов</td>
+</tr>
+</tbody>
+</table>
+<p>Правила секретов:</p>
+<ul>
+<li><code>.env</code> в <code>.gitignore</code>; в репозитории только <code>.env.example</code> с пустыми значениями;</li>
+<li>права файла <code>600</code>, владелец — пользователь сервиса; в Docker — <code>env_file</code>, не <code>environment</code>;</li>
+<li>пароли и токены <strong>никогда</strong> не попадают в логи, аудит, сырые логи и <code>oc_diagnostics</code>;</li>
+<li>смена пароля контроллера — только правка <code>.env</code> + рестарт сервиса (relogin автоматический);</li>
+<li>генерация <code>SSVC_MCP_TOKEN</code>: <code>openssl rand -hex 32</code>.</li>
+</ul>
+<h3 id="310">3.10 Ошибки</h3>
+<p>Единый конверт в <code>structuredContent</code> и в тексте (сообщения — русские, коды — латиницей):</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"ok"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"error"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"feature_unsupported"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Команда GET_LOG недоступна: требуется API 1.10, устройство сообщает 1.7"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"hint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Обновите прошивку SSVC-0059 до версии с API 1.10 или не запрашивайте журнал"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"retryable"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"details"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"feature"</span><span class="p">:</span><span class="w"> </span><span class="s2">"get_log"</span><span class="p">,</span><span class="w"> </span><span class="nt">"required_api"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1.10"</span><span class="p">,</span><span class="w"> </span><span class="nt">"device_api"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1.7"</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Код</th>
+<th>Когда</th>
+<th><code>retryable</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>device_unreachable</code></td>
+<td>таймаут/сеть</td>
+<td>да (с backoff)</td>
+</tr>
+<tr>
+<td><code>auth_failed</code> / <code>auth_required</code></td>
+<td>401 после relogin</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>forbidden_admin_required</code></td>
+<td>403</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>feature_unsupported</code></td>
+<td><code>409 feature_unsupported</code>, <code>supported:false</code></td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>queue_full</code></td>
+<td>503 <code>queue_full</code></td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>guard_blocked</code></td>
+<td>409 <code>blockReasons</code></td>
+<td>нет (нужны действия)</td>
+</tr>
+<tr>
+<td><code>validation_failed</code></td>
+<td>400</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>partial_apply</code></td>
+<td>503 <code>partial:true</code></td>
+<td>нет (перечитать состояние)</td>
+</tr>
+<tr>
+<td><code>busy</code></td>
+<td>409 <code>log_transfer_busy</code>, лимит очереди</td>
+<td>да (позже)</td>
+</tr>
+<tr>
+<td><code>not_found</code></td>
+<td>404</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>confirmation_required</code></td>
+<td>нет <code>confirm</code>/<code>reason</code></td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>disabled_by_policy</code></td>
+<td>инструмент выключен (<code>SSVC_ALLOW_DESTRUCTIVE=0</code>)</td>
+<td>нет</td>
+</tr>
+</tbody>
+</table>
+<h3 id="311">3.11 Безопасность: два контура</h3>
+<p><strong>Контур A — клиент → MCP-сервер.</strong> Bearer-токен, опционально TLS, CIDR-allowlist, проверка <code>Host</code>/
+<code>Origin</code>, лимит сессий и вызовов, аудит. Сервер не публикуется в интернет без TLS-прокси.</p>
+<p><strong>Контур B — MCP-сервер → контроллер.</strong> HTTP без TLS по локальной сети, учётка admin, JWT в памяти.
+Пароль читается только из <code>.env</code>. Трафик в LAN не шифруется — это осознанное ограничение прошивки,
+зафиксированное в README.</p>
+<p><strong>Классы риска и подтверждение.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Класс</th>
+<th>Примеры</th>
+<th>Правило</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0. Чтение</td>
+<td>info, telemetry, sensors, profiles list, logs status</td>
+<td>свободно</td>
+</tr>
+<tr>
+<td>1. Обратимая запись</td>
+<td>настройки, зоны, пороги, профили, подсистемы</td>
+<td>свободно, с отчётом об изменении</td>
+</tr>
+<tr>
+<td>2. Влияет на процесс</td>
+<td><code>start</code>, <code>pause</code>, <code>resume</code>, <code>next</code>, <code>stop</code>, <code>relay/override</code>, <code>set-active</code></td>
+<td><code>confirm:true</code> обязательно; в ответе — что именно изменено</td>
+</tr>
+<tr>
+<td>3. Разрушительное</td>
+<td><code>profiles/delete</code>, <code>files</code> DELETE, <code>restart</code>, <code>factoryReset</code>, OTA</td>
+<td><code>confirm:true</code> + <code>reason</code> (≥10 символов); аудит; <strong>выключено флагом перед релизом</strong></td>
+</tr>
+<tr>
+<td>—</td>
+<td><code>emergency_stop</code></td>
+<td>всегда разрешён, без подтверждения: это защитное действие</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Режим «до релиза».</strong> <code>SSVC_ALLOW_DESTRUCTIVE=1</code> — инструменты классов 3 доступны, но каждое
+исполнение требует подтверждения и пишется в аудит. <strong>Release hardening (P4):</strong> значение по умолчанию
+меняется на <code>0</code>, инструменты отвечают <code>disabled_by_policy</code>, в README появляется раздел «как включить
+осознанно». Это отдельный пункт приёмки релиза, а не «потом поправим».</p>
+<p><strong>Аудит.</strong> JSONL: <code>ts, session, tool, risk, confirm, reason, args_hash, result, duration_ms</code>.
+Секреты, тела файлов и журналы не пишутся.</p>
+<h3 id="312">3.12 Наблюдаемость и сырые логи</h3>
+<p><strong>Логи.</strong> Структурный JSON в stdout (Docker/systemd собирают штатно): <code>ts, level, session, tool, msg,
+duration_ms</code>. Уровень — <code>SSVC_LOG_LEVEL</code>. Секреты вырезаются на уровне логгера.</p>
+<p><strong>Сырые обмены (<code>raw</code>).</strong> Отдельный слой в <code>DeviceClient</code>, пишет то, чего не видно в обычных логах:
+метод, путь, статус, длительность, тело запроса и тело ответа.</p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Значение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Формат</td>
+<td><code>logs/raw/YYYY-MM-DD.jsonl</code>, одна строка — один обмен</td>
+</tr>
+<tr>
+<td>Объём тела</td>
+<td>до 64 КБ на поле, дальше — усечение с пометкой <code>truncated:true</code></td>
+</tr>
+<tr>
+<td>Редакция</td>
+<td><code>Authorization</code>, <code>password</code>, <code>access_token</code>, <code>token</code> → <code>"***"</code></td>
+</tr>
+<tr>
+<td>Режимы</td>
+<td><code>SSVC_RAW_LOG=all</code> (все обмены), <code>errors</code> (только статусы ≥400 и таймауты), <code>off</code></td>
+</tr>
+<tr>
+<td>Ротация</td>
+<td>по дням + предел каталога <code>SSVC_RAW_LOG_MAX_MB</code> (удаляется самое старое)</td>
+</tr>
+<tr>
+<td>По умолчанию</td>
+<td><strong><code>all</code> в P0–P3</strong> (разработка), <strong><code>off</code> в P4</strong> (релиз)</td>
+</tr>
+<tr>
+<td>Точечно</td>
+<td>параметр <code>debug:true</code> в вызове инструмента добавляет в ответ блок <code>raw</code> (только при <code>SSVC_ALLOW_DEBUG=1</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Почему так: на этапе интеграции с прошивкой нужны реальные тела ответов (расхождения схем, «странные»
+коды), а в проде хранение всех обменов — это и диск, и потенциальные чувствительные данные.</p>
+<hr>
+<h2 id="4">4. Каталог инструментов</h2>
+<p>Колонки: риск (0–4), REST-источник. Все описания в коде — русские.</p>
+<table>
+<thead>
+<tr>
+<th>Инструмент</th>
+<th>Риск</th>
+<th>REST</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>oc_get_info</code></td>
+<td>0</td>
+<td><code>GET /rest/oc/info</code></td>
+</tr>
+<tr>
+<td><code>oc_get_capabilities</code></td>
+<td>0</td>
+<td><code>/rest/oc/info</code> + <code>/rest/features</code></td>
+</tr>
+<tr>
+<td><code>oc_get_telemetry</code></td>
+<td>0</td>
+<td><code>GET /rest/telemetry</code></td>
+</tr>
+<tr>
+<td><code>oc_get_process_status</code></td>
+<td>0</td>
+<td><code>GET /rest/telemetry</code> (<code>status</code>)</td>
+</tr>
+<tr>
+<td><code>oc_wait_for_change</code></td>
+<td>0</td>
+<td>поллинг <code>/rest/telemetry</code></td>
+</tr>
+<tr>
+<td><code>oc_get_settings</code></td>
+<td>0</td>
+<td><code>GET /rest/settings</code></td>
+</tr>
+<tr>
+<td><code>oc_update_settings</code></td>
+<td>1</td>
+<td><code>PUT /rest/settings</code></td>
+</tr>
+<tr>
+<td><code>oc_get_sensors</code></td>
+<td>0</td>
+<td><code>GET /rest/sensor</code></td>
+</tr>
+<tr>
+<td><code>oc_get_zones</code> / <code>oc_set_zone</code></td>
+<td>0/1</td>
+<td><code>/rest/zones</code>, <code>/rest/sensors/zone</code></td>
+</tr>
+<tr>
+<td><code>oc_get_alarms</code> / <code>oc_set_alarm_thresholds</code></td>
+<td>0/1</td>
+<td><code>/rest/alarms</code></td>
+</tr>
+<tr>
+<td><code>oc_get_hardware_faults</code></td>
+<td>0</td>
+<td><code>GET /rest/oc/hardware-faults</code></td>
+</tr>
+<tr>
+<td><code>oc_get_hardware_config</code> / <code>oc_update_hardware_config</code></td>
+<td>0/1</td>
+<td><code>/rest/oc/hardware-config</code></td>
+</tr>
+<tr>
+<td><code>oc_get_subsystems</code> / <code>oc_set_subsystem</code></td>
+<td>0/1</td>
+<td><code>/rest/subsystem</code></td>
+</tr>
+<tr>
+<td><code>oc_start</code> / <code>oc_pause</code> / <code>oc_resume</code> / <code>oc_next</code></td>
+<td>2</td>
+<td><code>POST /rest/commands</code></td>
+</tr>
+<tr>
+<td><code>oc_stop</code></td>
+<td>2</td>
+<td><code>POST /rest/commands</code></td>
+</tr>
+<tr>
+<td><code>oc_emergency_stop</code></td>
+<td>—</td>
+<td><code>POST /rest/commands {"commands":"emergency_stop"}</code></td>
+</tr>
+<tr>
+<td><code>oc_send_command</code> (escape hatch)</td>
+<td>2</td>
+<td><code>POST /rest/commands</code>, allowlist имён</td>
+</tr>
+<tr>
+<td><code>oc_get_relay_metadata</code> / <code>oc_get_relay_state</code></td>
+<td>0</td>
+<td><code>/rest/oc/relay/*</code></td>
+</tr>
+<tr>
+<td><code>oc_relay_override</code></td>
+<td>2</td>
+<td><code>POST /rest/oc/relay/override</code></td>
+</tr>
+<tr>
+<td><code>oc_get_xkc25_status</code></td>
+<td>0</td>
+<td><code>/rest/oc/xkc25/status</code></td>
+</tr>
+<tr>
+<td><code>oc_xkc25_calibrate</code></td>
+<td>1</td>
+<td><code>POST /rest/oc/xkc25/calibrate</code> (+ опрос)</td>
+</tr>
+<tr>
+<td><code>oc_profiles_list</code> / <code>oc_profile_get</code></td>
+<td>0</td>
+<td><code>/rest/profiles*</code></td>
+</tr>
+<tr>
+<td><code>oc_profile_create</code> / <code>oc_profile_copy</code> / <code>oc_profile_rename</code></td>
+<td>1</td>
+<td><code>/rest/profiles*</code></td>
+</tr>
+<tr>
+<td><code>oc_profile_update_content</code> / <code>oc_profile_save_current</code></td>
+<td>1</td>
+<td><code>/rest/profiles/content</code>, <code>/rest/profiles/save</code></td>
+</tr>
+<tr>
+<td><code>oc_profile_apply</code></td>
+<td>2</td>
+<td><code>POST /rest/profiles/set-active</code></td>
+</tr>
+<tr>
+<td><code>oc_profile_delete</code></td>
+<td>3*</td>
+<td><code>DELETE /rest/profiles/delete</code></td>
+</tr>
+<tr>
+<td><code>oc_logs_list</code> / <code>oc_logs_download</code> / <code>oc_logs_cancel</code></td>
+<td>0/0/1</td>
+<td><code>/rest/logs*</code></td>
+</tr>
+<tr>
+<td><code>oc_files_list</code> / <code>oc_file_download</code></td>
+<td>0</td>
+<td><code>/rest/files*</code></td>
+</tr>
+<tr>
+<td><code>oc_file_delete</code> / <code>oc_file_copy</code></td>
+<td>3*/1</td>
+<td><code>/rest/files*</code></td>
+</tr>
+<tr>
+<td><code>oc_system_status</code> / <code>oc_restart</code></td>
+<td>0/3*</td>
+<td><code>/rest/systemStatus</code>, <code>/rest/restart</code></td>
+</tr>
+<tr>
+<td><code>oc_diagnostics</code></td>
+<td>0</td>
+<td>локально (конфиг без секретов, сессии, счётчики)</td>
+</tr>
+</tbody>
+</table>
+<p><code>*</code> — класс 3, доступен только при <code>SSVC_ALLOW_DESTRUCTIVE=1</code> и с <code>confirm</code>+<code>reason</code>; перед релизом
+выключается по умолчанию.</p>
+<p>Правила каталога:</p>
+<ul>
+<li>одна операция — один инструмент (кроме мастеров калибровки и ожиданий, где шаги явные);</li>
+<li>никаких «сделай всё» инструментов: LLM должен видеть границу каждого шага;</li>
+<li><code>oc_send_command</code> — только с allowlist, чтобы нельзя было вызвать неизвестную/опасную команду;</li>
+<li>каждый ответ содержит <code>observed_at</code> и <code>stale</code> (bool);</li>
+<li>аргумента <code>device</code> нет: контроллер один (решение №4).</li>
+</ul>
+<hr>
+<h2 id="5">5. Нефункциональные требования</h2>
+<table>
+<thead>
+<tr>
+<th>Требование</th>
+<th>Цель</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Доступность сервиса</td>
+<td>старт &lt; 2 с; переживает недоступность контроллера, не падает</td>
+</tr>
+<tr>
+<td>Латентность read-инструмента</td>
+<td>p95 &lt; 300 мс (локальная сеть), без учёта <code>wait_*</code></td>
+</tr>
+<tr>
+<td>Нагрузка на ESP32</td>
+<td>≤ 2 rps устойчиво, burst ≤ 5; опрос телеметрии ≤ 1 Гц</td>
+</tr>
+<tr>
+<td>Параллельные клиенты</td>
+<td>4 сессии штатно, 32 максимум; вызовы на сессию ≤ 4</td>
+</tr>
+<tr>
+<td>Память сервера</td>
+<td>&lt; 150 МБ RSS, без роста при 24-часовой работе</td>
+</tr>
+<tr>
+<td>Образ Docker</td>
+<td>&lt; 200 МБ, non-root, healthcheck</td>
+</tr>
+<tr>
+<td>Совместимость</td>
+<td>прошивки с API 1.7…1.10; secure и не-secure сборки; <code>PINOUT_USE_GPIO</code> 0 и 1</td>
+</tr>
+<tr>
+<td>Безопасность</td>
+<td>токен обязателен; секреты только из <code>.env</code>; аудит всех операций класса ≥2</td>
+</tr>
+<tr>
+<td>Деградация</td>
+<td>при недоступности устройства — <code>device_unreachable</code> с <code>hint</code>, без «залипания» сессий</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="6">6. План разработки</h2>
+<p>Оценки — для одного разработчика, в рабочих днях. Все этапы заканчиваются работоспособным сервисом
+в контейнере.</p>
+<h3 id="p0-http-5">P0. HTTP-сервис и чтение (5 дней)</h3>
+<ul>
+<li>[ ] <code>mcp/</code> пакет, TypeScript, ESLint/Prettier, <code>node:test</code>, CI-джоба.</li>
+<li>[ ] HTTP-приложение на <code>node:http</code>: <code>/mcp</code> (Streamable HTTP, <strong>stateful</strong>: <code>sessionIdGenerator</code>,
+      <code>onsessioninitialized</code>, <code>onsessionclosed</code>), <code>/healthz</code>, <code>/readyz</code>.</li>
+<li>[ ] Менеджер сессий: <code>MAX_SESSIONS=32</code>, idle-cleanup 30 мин, коды <code>400/404/503</code> по протоколу.</li>
+<li>[ ] Аутентификация клиента: <code>SSVC_MCP_TOKEN</code> (fail-fast), CIDR-allowlist, проверка <code>Host</code>/<code>Origin</code>.</li>
+<li>[ ] <code>config.ts</code>: zod-схема <code>.env</code>, <code>.env.example</code>, отказ старта при отсутствии обязательных.</li>
+<li>[ ] <code>rawlog.ts</code>: <code>SSVC_RAW_LOG=all</code>, JSONL, редакция секретов, ротация и предел объёма.</li>
+<li>[ ] <code>DeviceClient</code> + <code>AuthSession</code> + <code>CapabilityCache</code> + <code>WriteQueue</code> (каркас).</li>
+<li>[ ] Инструменты: <code>oc_get_info</code>, <code>oc_get_capabilities</code>, <code>oc_get_telemetry</code>, <code>oc_get_process_status</code>,
+      <code>oc_diagnostics</code>; ресурсы <code>info</code> и <code>telemetry</code>.</li>
+<li>[ ] <code>mock/deviceMock.ts</code> (по мотивам <code>scripts/smoke_rest.py --self-test</code>) + фикстуры 1.7/1.10.</li>
+<li>[ ] Dockerfile (non-root, healthcheck) + <code>docker-compose.yml</code> + <code>.env.example</code>.</li>
+<li>[ ] README: запуск, токен, подключение клиента, ограничения.</li>
+</ul>
+<p><strong>Приёмка:</strong> <code>initialize</code> по HTTP создаёт сессию, повторный запрос с <code>Mcp-Session-Id</code> её переиспользует;
+без токена — <code>401</code>, с чужим <code>Host</code> — <code>403</code>, неизвестная сессия — <code>404</code>; MCP Inspector по HTTP видит
+5 инструментов; телеметрия читается с mock и с реального контроллера; <code>logs/raw/</code> содержит обмены с
+вырезанным <code>Authorization</code>; контейнер поднимается по <code>docker compose up</code> и проходит healthcheck.</p>
+<h3 id="p1-6">P1. Управление и настройки (6 дней)</h3>
+<ul>
+<li>[ ] <code>CommandService</code>: <code>start/pause/resume/next/stop/emergency_stop</code>, разбор 409 <code>blockReasons</code>,
+      503 <code>queue_full</code>, 409 <code>feature_unsupported</code>.</li>
+<li>[ ] <code>oc_wait_for_change</code> (стадия/статус/тип телеметрии) с таймаутом и возвратом наблюдённого.</li>
+<li>[ ] <code>SettingsService</code>: обёртка GET/PUT, отчёт <code>accepted/ignored/skipped</code>, запрет ретрая при <code>partial</code>.</li>
+<li>[ ] Политика риска: <code>confirm</code> для класса ≥2, <code>confirmation_required</code> с русской подсказкой,
+      аудит JSONL, <code>emergency_stop</code> без подтверждения.</li>
+<li>[ ] Preflight перед <code>oc_start</code> (guard XKC-25 + hardware faults) в ответе инструмента.</li>
+<li>[ ] <code>WriteQueue</code> в бою: один писатель, дедуп 1 с, приоритет чтений.</li>
+<li>[ ] Флаг <code>SSVC_ALLOW_DESTRUCTIVE</code> и <code>disabled_by_policy</code> (пока не используется — готовим почву).</li>
+<li>[ ] Тесты: юнит на маппинг ошибок, HTTP-тесты сессий, контрактные на схемы настроек.</li>
+</ul>
+<p><strong>Приёмка:</strong> полный цикл «старт → ожидание стадии <code>heads</code> → пауза → стоп» на mock и на устройстве;
+заблокированный guard даёт <code>guard_blocked</code> с причинами; частичный сбой настроек не приводит к
+повторной отправке тела; два одновременных <code>oc_start</code> не создают двух команд.</p>
+<h3 id="p2-7">P2. Датчики, реле, калибровка, подсистемы (7 дней)</h3>
+<ul>
+<li>[ ] <code>SensorService</code>: <code>/rest/sensor</code>, <code>/rest/zones</code>, <code>/rest/sensors/zone</code>, <code>/rest/alarms</code>.</li>
+<li>[ ] <code>RelayService</code>: capabilities/metadata/state, <code>oc_relay_override</code> с явными <code>enable</code>/<code>energized</code>,
+      обработка <code>supported:false</code> и 403 для зарезервированных битов.</li>
+<li>[ ] <code>Xkc25Service</code>: статус, пошаговая калибровка, асинхронный <code>verify_return</code> (202 → опрос).</li>
+<li>[ ] <code>oc_get_hardware_faults</code>, hardware-config get/put, <code>oc_get_subsystems</code>/<code>oc_set_subsystem</code>
+      (таймаут ≥120 с, без блокировки остальных вызовов).</li>
+<li>[ ] Промпты <code>troubleshoot_start_blocked</code>, <code>calibrate_xkc25</code>.</li>
+</ul>
+<p><strong>Приёмка:</strong> на GPIO-сборке реле-инструменты отвечают <code>feature_unsupported</code>; калибровка проходит
+три шага; <code>oc_set_subsystem</code> на <code>telegram_bot</code> не роняет остальные запросы (проверка параллельным
+вызовом телеметрии).</p>
+<h3 id="p3-6">P3. Журналы, профили, файлы, разрушительные операции (6 дней)</h3>
+<ul>
+<li>[ ] <code>LogsService</code>: статус, <code>refresh</code>, 202-поллинг, скачивание CSV в файл, <code>DELETE</code> отмены,
+      лиз «одна сессия на устройство», <code>busy</code> при конфликте.</li>
+<li>[ ] <code>ProfileService</code>: list/get/create/copy/rename/content/save/apply/delete.</li>
+<li>[ ] <code>FilesService</code>: list/download/delete/copy.</li>
+<li>[ ] Разрушительные инструменты (класс 3) с <code>confirm</code> + <code>reason</code> и аудитом, под флагом.</li>
+<li>[ ] Промпты <code>start_rectification</code>, <code>apply_profile</code>, <code>analyze_last_run</code>.</li>
+<li>[ ] Ресурс-шаблон <code>logs/{id}.csv</code> + уведомления об изменении телеметрии (SSE-поток сессии).</li>
+</ul>
+<p><strong>Приёмка:</strong> журнал скачивается и отдаётся файлом-ресурсом; параллельный запрос второго журнала даёт
+<code>busy</code>; профиль создаётся, применяется и удаляется с аудитом; удаление без <code>reason</code> отклоняется
+<code>confirmation_required</code>.</p>
+<h3 id="p4-6">P4. Стабилизация и релиз (6 дней)</h3>
+<ul>
+<li>[ ] <code>SystemService</code>: <code>systemStatus</code>, <code>restart</code>, OTA/factoryReset — только при <code>SSVC_ALLOW_DESTRUCTIVE=1</code>.</li>
+<li>[ ] <strong>Release hardening:</strong> <code>SSVC_ALLOW_DESTRUCTIVE</code> по умолчанию <code>0</code>; проверить, что каждый
+      инструмент класса 3 отвечает <code>disabled_by_policy</code>; README «как включить осознанно».</li>
+<li>[ ] <strong>Release hardening:</strong> <code>SSVC_RAW_LOG</code> по умолчанию <code>off</code>, <code>SSVC_ALLOW_DEBUG</code> — <code>0</code>; точечный
+      <code>debug:true</code> проверен и документирован.</li>
+<li>[ ] Нагрузочный/soak-тест: 24 ч опроса + параллельные сессии; контроль RSS и ошибок.</li>
+<li>[ ] Матрица совместимости: secure/insecure, GPIO/PCF8574, API 1.7 и 1.10.</li>
+<li>[ ] Docker-образ с тегом, healthcheck, инструкция по обновлению; CHANGELOG.</li>
+<li>[ ] Документация: этот файл + <code>README.md</code> пакета + раздел в <code>docs/develop/api/</code>.</li>
+</ul>
+<p><strong>Приёмка:</strong> 24-часовой прогон без утечек и падений; на всех конфигурациях зелёный смоук; на «релизном»
+<code>.env</code> разрушительные инструменты недоступны, сырые логи не пишутся; сервис переживает рестарт
+контроллера и восстанавливает работу без ручных действий.</p>
+<h3 id="p5-v1">P5. Опционально (после v1)</h3>
+<ul>
+<li><code>mcp-remote</code>/stdio-мост для клиентов без поддержки HTTP (документация, не код).</li>
+<li>OAuth/DCR, если клиент не умеет статический bearer.</li>
+<li>MQTT-источник телеметрии вместо опроса.</li>
+<li>Мультиустройство (реестр + аргумент <code>device</code>) — только при реальной потребности.</li>
+</ul>
+<p><strong>Итого до v1: ~30 рабочих дней (≈6 недель).</strong></p>
+<hr>
+<h2 id="7">7. Стратегия тестирования</h2>
+<table>
+<thead>
+<tr>
+<th>Уровень</th>
+<th>Что проверяет</th>
+<th>Инструмент</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Юнит</td>
+<td>auth/relogin, backoff, single-flight, <code>WriteQueue</code>, risk-политика, маппинг ошибок</td>
+<td><code>node:test</code></td>
+</tr>
+<tr>
+<td>Контракт</td>
+<td>zod-схемы против фикстур реальных ответов (API 1.7 / 1.10, GPIO / PCF)</td>
+<td><code>node:test</code> + <code>mock/fixtures</code></td>
+</tr>
+<tr>
+<td>HTTP-транспорт</td>
+<td><code>initialize</code>, переиспользование <code>Mcp-Session-Id</code>, <code>400/404/503</code>, <code>DELETE</code> сессии, лимит сессий, idle-cleanup</td>
+<td><code>node:test</code> + <code>fetch</code></td>
+</tr>
+<tr>
+<td>Доступ</td>
+<td><code>401</code> без токена, <code>403</code> при чужом <code>Host</code>/<code>Origin</code>, CIDR-allowlist, fail-fast без <code>SSVC_MCP_TOKEN</code></td>
+<td><code>node:test</code></td>
+</tr>
+<tr>
+<td>Политика</td>
+<td><code>confirm</code>/<code>reason</code>, <code>disabled_by_policy</code>, <code>emergency_stop</code> без подтверждения, запись аудита</td>
+<td><code>node:test</code></td>
+</tr>
+<tr>
+<td>Сырые логи</td>
+<td>редакция <code>Authorization</code>/<code>password</code>, ротация, предел объёма, <code>debug:true</code> только при флаге</td>
+<td><code>node:test</code></td>
+</tr>
+<tr>
+<td>Мок-устройство</td>
+<td>202/409/503, частичный PUT, лог-сессия, guard старта</td>
+<td><code>mock/deviceServer.ts</code></td>
+</tr>
+<tr>
+<td>Интеграция MCP</td>
+<td>валидность <code>tools/list</code>, схем, аннотаций; вызовы по HTTP</td>
+<td><code>@modelcontextprotocol/inspector</code></td>
+</tr>
+<tr>
+<td>E2E</td>
+<td>реальное устройство: чтение, старт/стоп на эмуляторе SSVC, журнал</td>
+<td>скрипт + <code>scripts/smoke_rest.py</code> как эталон</td>
+</tr>
+<tr>
+<td>Контейнер</td>
+<td>сборка, non-root, healthcheck, <code>env_file</code>, рестарт</td>
+<td><code>docker compose</code> в CI</td>
+</tr>
+<tr>
+<td>Нагрузка</td>
+<td>24 ч, 1 Гц + 2 сессии, отсутствие роста памяти</td>
+<td>node-скрипт</td>
+</tr>
+</tbody>
+</table>
+<p>Отдельно: <strong>тест на расхождение контракта</strong> — сравнение zod-схем с <code>interface/src/lib/types/ssvc.ts</code>
+(скрипт-генератор или чек-лист в PR), чтобы фронт и MCP не разъехались.</p>
+<hr>
+<h2 id="8">8. Риски и меры</h2>
+<table>
+<thead>
+<tr>
+<th>Риск</th>
+<th>Влияние</th>
+<th>Мера</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MCP-эндпоинт доступен по сети</td>
+<td>несанкционированное управление процессом</td>
+<td>обязательный токен, CIDR-allowlist, TLS-прокси, аудит, лимит сессий</td>
+</tr>
+<tr>
+<td>Клиент не умеет статический Bearer</td>
+<td>интеграция не заводится</td>
+<td><code>mcp-remote</code> как мост; OAuth — в P5; проверить целевые клиенты на P0</td>
+</tr>
+<tr>
+<td>Нет TLS между сервером и контроллером</td>
+<td>пароль/JWT видны в LAN</td>
+<td>осознанное ограничение прошивки; сервер в доверенном сегменте; README</td>
+</tr>
+<tr>
+<td>Разрушительные операции включены до релиза</td>
+<td>случайное удаление профиля/файла</td>
+<td><code>confirm</code>+<code>reason</code>, аудит, отдельный пункт release hardening, тест «по умолчанию выключено»</td>
+</tr>
+<tr>
+<td>Сырые логи содержат чувствительное</td>
+<td>утечка токенов/данных</td>
+<td>редакция, локальный каталог, <code>off</code> в релизе, предел объёма</td>
+</tr>
+<tr>
+<td>Два агента командуют одновременно</td>
+<td>конкурирующие команды на ESP32</td>
+<td><code>WriteQueue</code>, дедуп, лимит вызовов на сессию</td>
+</tr>
+<tr>
+<td>Асинхронные команды воспринимаются как «выполнено»</td>
+<td>агент делает следующий шаг раньше времени</td>
+<td><code>wait_*</code>, поле <code>accepted</code> вместо <code>ok</code></td>
+</tr>
+<tr>
+<td>Частичное применение настроек</td>
+<td>«потерянные» параметры, повторная запись</td>
+<td><code>partial:true</code> → без ретрая, перечитать GET, показать <code>skipped</code></td>
+</tr>
+<tr>
+<td>Одна лог-сессия на устройство</td>
+<td>409 и потеря прогресса</td>
+<td>лиз на устройство, очередь запросов журналов</td>
+</tr>
+<tr>
+<td>Admin-only эндпоинты</td>
+<td>половина инструментов 403</td>
+<td>требовать admin, проверять на старте, понятная ошибка</td>
+</tr>
+<tr>
+<td>Истечение JWT</td>
+<td>401 в середине длинной операции</td>
+<td><code>exp</code> 7 суток + <code>GET /rest/refreshToken</code> и повтор запроса в сервере; relogin при 401 на самом refresh</td>
+</tr>
+<tr>
+<td>Дрейф прошивки</td>
+<td>схемы расходятся</td>
+<td>capability-гейты + контрактные фикстуры по версиям</td>
+</tr>
+<tr>
+<td>Нагрузка на ESP32</td>
+<td>рост латентности, watchdog</td>
+<td>бюджет rps, джиттер, single-flight, backoff</td>
+</tr>
+<tr>
+<td><code>enable</code> по умолчанию <code>true</code> в relay override</td>
+<td>случайное включение реле</td>
+<td>всегда явные аргументы + схема <code>required</code></td>
+</tr>
+<tr>
+<td>Забытый рестарт после смены <code>.env</code></td>
+<td>работа со старым паролем/токеном</td>
+<td>лог фактического конфига при старте (без секретов) + <code>/readyz</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="9-mcp-backlog-v1">9. Доработки прошивки, выполненные до MCP (backlog v1)</h2>
+<p>Все семь пунктов закрыты в ветке <code>feature/mcp-server</code> до начала реализации MCP, чтобы сервер
+писался под фактический контракт, а не под обходные пути. Ниже — что именно сделано и чем
+подтверждено (сборка/тесты/живое устройство).</p>
+<ol>
+<li><strong><code>GET /rest/oc/snapshot</code></strong> — агрегат <code>info + telemetry + status + sensor + faults</code> за один запрос,
+   admin (потому что <code>/rest/telemetry</code> и <code>/rest/sensor</code> — admin). Поле <code>partial[]</code> перечисляет
+   компоненты, которые не удалось собрать. <strong>Проверено на устройстве:</strong> <code>200 application/json</code>,
+   все ключи на месте, <code>partial: []</code>, <code>tank ≈ 766.9 мм рт. ст.</code></li>
+<li><strong>События <code>telemetry</code>/<code>stage</code>/<code>alarm</code> в <code>/ws/events</code></strong> — эмиссия по изменению, не по таймеру;
+   <code>telemetry</code> и <code>stage</code> догоняют при подписке, <code>alarm</code> — только raise/clear с дедупликацией.
+   Описание: <a href="../api/events/">events.md</a>. <strong>Проверено на устройстве:</strong> <code>telemetry</code> — 424 Б на кадр,
+   <code>stage</code> — 81 Б и ровно два кадра на две смены стадии; <code>alarm</code> намеренно не провоцировался.
+   Важно: управляющий кадр подписки — <strong>MessagePack</strong>, текстовый JSON игнорируется.</li>
+<li><strong><code>commandId</code> в <code>POST /rest/commands</code></strong> + <code>GET /rest/commands/{id}</code>: журнал на 16 записей,
+   TTL 10 мин, <code>confidence:"transport"</code>. <strong>Проверено на устройстве:</strong> <code>accepted</code> → <code>commandId</code>,
+   затем <code>done/ok:true</code> за 234 мс; <code>404</code> на неизвестный id, <code>400</code> на нечисловой.</li>
+<li><strong><code>exp</code>/<code>iat</code> в JWT и <code>GET /rest/refreshToken</code>.</strong> <code>validatePayload</code> переписан на сравнение по
+   подмножеству, поэтому токены без <code>exp</code> продолжают работать; при несинхронизированных часах
+   (<code>time() &lt; 1700000000</code>) <code>iat</code>/<code>exp</code> не ставятся и не проверяются. TTL по умолчанию 7 суток,
+   переопределяется <code>-DJWT_TTL_SECONDS</code>. Фронтенд обновляет токен по 401 и повторяет запрос один раз.
+   <strong>Проверено на устройстве (secure-сборка с <code>-DJWT_TTL_SECONDS=30</code>):</strong> <code>exp − iat = 30</code>,
+   <code>refreshToken</code> отдаёт новый токен с тем же <code>exp</code>, истёкший токен даёт <code>401</code> и на
+   <code>verifyAuthorization</code>, и на <code>refreshToken</code>; свежий — <code>200</code>. После проверки устройство возвращено
+   на не-secure сборку. <strong>Не проверено на устройстве:</strong> приём токена без <code>exp</code> (для этого нужен
+   секрет подписи) — гарантируется кодом и тестами уровня устройства.</li>
+<li><strong>HTTPS</strong> — на этом стеке серверного TLS нет (<code>AsyncWebServerSecure</code> отсутствует, <code>beginSecure</code>
+   под неопределённым <code>ASYNC_TCP_SSL_ENABLED</code>), поэтому задокументирован reverse-proxy:
+   <a href="../reverse-proxy/">reverse-proxy.md</a> с конфигурациями nginx/Caddy, WebSocket и OTA.</li>
+<li><strong>Мёртвые вызовы UI</strong> <code>/rest/sensors/thresholds</code> и <code>/rest/profiles/import</code> удалены из
+   <code>interface/src/lib/api/ssvcApi.ts</code>; пороги идут через <code>POST /rest/alarms</code>, импорт профиля —
+   через <code>POST /rest/profiles</code>. Проверено <code>npm run check</code> и <code>npm run test:run</code> (103 теста).</li>
+<li><strong>CORS</strong> — признан ненужным: UI работает с того же origin, MCP-сервер — процесс, а не браузер.
+   Среды сборки <code>-cors</code> удалены; код остался за явным <code>-DENABLE_CORS</code> и один раз проверен сборкой.
+   Решение и команда включения: <a href="../build/">build.md</a>.</li>
+</ol>
+<hr>
+<h2 id="10">10. Открытые вопросы</h2>
+<p>Закрыты в этой редакции: транспорт (HTTP), язык описаний (русский), режим разрушительных операций
+(включены до релиза), число устройств (одно), хранение паролей (<code>.env</code>), сырые логи (вкл. на разработке).</p>
+<p>Остаются:</p>
+<ol>
+<li>Точный список MCP-клиентов, которые будут подключаться (от него зависит, нужен ли <code>mcp-remote</code>/OAuth).</li>
+<li>Где хостится сервис: мини-ПК/NAS/Raspberry Pi. Встроенного TLS нет — снаружи ставится
+   reverse-proxy (см. <a href="../reverse-proxy/">reverse-proxy.md</a>), MCP-сервер за ним тоже по HTTPS.</li>
+<li>Порт и адрес: оставить <code>8080</code> на всех интерфейсах или привязать к конкретному адресу.</li>
+<li>Нужен ли <code>oc_send_command</code> в релизе или достаточно именованных инструментов.</li>
+<li>Политика хранения сырых логов: 7 дней или только до заполнения лимита.</li>
+</ol>
+<hr>
+<h2 id="11_1">11. Приложение: пример инструмента</h2>
+<div class="highlight"><pre><span></span><code><span class="nx">server</span><span class="p">.</span><span class="nx">registerTool</span><span class="p">(</span>
+<span class="w">  </span><span class="s1">'oc_start'</span><span class="p">,</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">'Запустить ректификацию'</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">description</span><span class="o">:</span>
+<span class="w">      </span><span class="s1">'Ставит команду START в очередь контроллера SSVC и возвращает результат постановки. '</span><span class="w"> </span><span class="o">+</span>
+<span class="w">      </span><span class="s1">'НЕ ждёт начала процесса: чтобы дождаться стадии, используйте oc_wait_for_change.'</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">inputSchema</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">confirm</span><span class="o">:</span><span class="w"> </span><span class="kt">z.literal</span><span class="p">(</span><span class="kc">true</span><span class="p">).</span><span class="nx">describe</span><span class="p">(</span><span class="s1">'Явное подтверждение действия, влияющего на процесс'</span><span class="p">),</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">outputSchema</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">ok</span><span class="o">:</span><span class="w"> </span><span class="kt">z.boolean</span><span class="p">(),</span>
+<span class="w">      </span><span class="nx">accepted</span><span class="o">:</span><span class="w"> </span><span class="kt">z.boolean</span><span class="p">(),</span>
+<span class="w">      </span><span class="nx">observed_at</span><span class="o">:</span><span class="w"> </span><span class="kt">z.string</span><span class="p">(),</span>
+<span class="w">      </span><span class="nx">preflight</span><span class="o">:</span><span class="w"> </span><span class="kt">z.object</span><span class="p">({</span>
+<span class="w">        </span><span class="nx">guard_mode</span><span class="o">:</span><span class="w"> </span><span class="kt">z.number</span><span class="p">(),</span>
+<span class="w">        </span><span class="nx">block_start</span><span class="o">:</span><span class="w"> </span><span class="kt">z.boolean</span><span class="p">(),</span>
+<span class="w">        </span><span class="nx">block_reasons</span><span class="o">:</span><span class="w"> </span><span class="kt">z.array</span><span class="p">(</span><span class="nx">z</span><span class="p">.</span><span class="kt">string</span><span class="p">()),</span>
+<span class="w">        </span><span class="nx">warnings</span><span class="o">:</span><span class="w"> </span><span class="kt">z.array</span><span class="p">(</span><span class="nx">z</span><span class="p">.</span><span class="kt">string</span><span class="p">()),</span>
+<span class="w">      </span><span class="p">}),</span>
+<span class="w">      </span><span class="nx">error</span><span class="o">:</span><span class="w"> </span><span class="kt">z</span>
+<span class="w">        </span><span class="p">.</span><span class="nx">object</span><span class="p">({</span>
+<span class="w">          </span><span class="nx">code</span><span class="o">:</span><span class="w"> </span><span class="kt">z.string</span><span class="p">(),</span>
+<span class="w">          </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="kt">z.string</span><span class="p">(),</span>
+<span class="w">          </span><span class="nx">hint</span><span class="o">:</span><span class="w"> </span><span class="kt">z.string</span><span class="p">().</span><span class="nx">optional</span><span class="p">(),</span>
+<span class="w">          </span><span class="nx">retryable</span><span class="o">:</span><span class="w"> </span><span class="kt">z.boolean</span><span class="p">(),</span>
+<span class="w">          </span><span class="nx">details</span><span class="o">:</span><span class="w"> </span><span class="kt">z.record</span><span class="p">(</span><span class="nx">z</span><span class="p">.</span><span class="nx">unknown</span><span class="p">()).</span><span class="nx">optional</span><span class="p">(),</span>
+<span class="w">        </span><span class="p">})</span>
+<span class="w">        </span><span class="p">.</span><span class="nx">optional</span><span class="p">(),</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">annotations</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">readOnlyHint</span><span class="o">:</span><span class="w"> </span><span class="kt">false</span><span class="p">,</span><span class="w"> </span><span class="nx">destructiveHint</span><span class="o">:</span><span class="w"> </span><span class="kt">false</span><span class="p">,</span><span class="w"> </span><span class="nx">idempotentHint</span><span class="o">:</span><span class="w"> </span><span class="kt">false</span><span class="p">,</span><span class="w"> </span><span class="nx">openWorldHint</span><span class="o">:</span><span class="w"> </span><span class="kt">false</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="k">async</span><span class="w"> </span><span class="p">({</span><span class="w"> </span><span class="nx">confirm</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">confirm</span><span class="w"> </span><span class="o">!==</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="nx">fail</span><span class="p">(</span><span class="s1">'confirmation_required'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Подтвердите запуск: передайте confirm: true'</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">preflight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">domain</span><span class="p">.</span><span class="nx">xkc25</span><span class="p">.</span><span class="nx">preflight</span><span class="p">(</span><span class="nx">client</span><span class="p">);</span><span class="w">   </span><span class="c1">// GET /rest/oc/xkc25/status</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">preflight</span><span class="p">.</span><span class="nx">blockStart</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="nx">fail</span><span class="p">(</span><span class="s1">'guard_blocked'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Старт заблокирован предохранителем XKC-25'</span><span class="p">,</span><span class="w"> </span><span class="nx">preflight</span><span class="p">.</span><span class="nx">blockReasons</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">domain</span><span class="p">.</span><span class="nx">commands</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span><span class="w"> </span><span class="s1">'start'</span><span class="p">);</span><span class="w">  </span><span class="c1">// 200/409/503 → типизировано</span>
+<span class="w">    </span><span class="nx">audit</span><span class="p">.</span><span class="nx">write</span><span class="p">({</span><span class="w"> </span><span class="nx">tool</span><span class="o">:</span><span class="w"> </span><span class="s1">'oc_start'</span><span class="p">,</span><span class="w"> </span><span class="nx">risk</span><span class="o">:</span><span class="w"> </span><span class="kt">2</span><span class="p">,</span><span class="w"> </span><span class="nx">confirm</span><span class="p">,</span><span class="w"> </span><span class="nx">result</span><span class="o">:</span><span class="w"> </span><span class="kt">res.ok</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s1">'accepted'</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="nx">res</span><span class="p">.</span><span class="nx">code</span><span class="w"> </span><span class="p">});</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">ok</span><span class="p">({</span><span class="w"> </span><span class="p">...</span><span class="nx">res</span><span class="p">,</span><span class="w"> </span><span class="nx">observed_at</span><span class="o">:</span><span class="w"> </span><span class="kt">now</span><span class="p">(),</span><span class="w"> </span><span class="nx">preflight</span><span class="w"> </span><span class="p">});</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">);</span>
+</code></pre></div>
+<hr>
+<h2 id="12-v1">12. Чек-лист готовности v1</h2>
+<ul>
+<li>[ ] Все инструменты каталога §4 реализованы и покрыты контрактными тестами.</li>
+<li>[ ] HTTP-транспорт: сессии, лимиты, <code>400/404/503</code>, idle-cleanup, <code>DELETE</code>.</li>
+<li>[ ] Доступ: токен обязателен, CIDR-allowlist, проверка <code>Host</code>/<code>Origin</code>, TLS или документированный прокси.</li>
+<li>[ ] Опасные операции требуют подтверждения и пишутся в аудит; класс 3 <strong>выключен по умолчанию</strong>.</li>
+<li>[ ] Понятные русские ошибки для <code>guard_blocked</code>, <code>feature_unsupported</code>, <code>partial_apply</code>, <code>busy</code>,
+      <code>confirmation_required</code>, <code>disabled_by_policy</code>.</li>
+<li>[ ] Журналы не попадают в контекст модели целиком (файл + краткая сводка).</li>
+<li>[ ] Сырые логи по умолчанию выключены; <code>debug:true</code> работает только при <code>SSVC_ALLOW_DEBUG=1</code>.</li>
+<li>[ ] Работает на secure и не-secure прошивке, на GPIO- и PCF8574-конфигурации, на API 1.7 и 1.10.</li>
+<li>[ ] 24-часовой soak с параллельными сессиями без утечек и роста ошибок.</li>
+<li>[ ] README с <code>.env.example</code> и примером подключения клиента по HTTP.</li>
+<li>[ ] Раздел документации добавлен в <code>mkdocs.yml</code>.</li>
+</ul></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 by <a href="https://github.com/thedemoncat"  target="_blank" rel="noopener">elims</a> -
+<a href="#__consent">Изменить настройки файлов cookie</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/thedemoncat" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+
+  
+
+<h4>Cookie consent</h4>
+<p>Сайт использует cookie-файлы, чтобы сделать ваше пребывание на нём максимально удобным.  Оставаясь на сайте, вы даёте своё согласие на использование cookie-файлов.</p>
+<input class="md-toggle" type="checkbox" id="__settings" checked>
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+    
+      
+    
+    
+      
+        
+  
+  
+    
+    
+  
+  <li class="task-list-item">
+    <label class="task-list-control">
+      <input type="checkbox" name="github" checked>
+      <span class="task-list-indicator"></span>
+      GitHub
+    </label>
+  </li>
+
+      
+    
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout((function(){document.querySelector("[data-md-component=consent]").hidden=!1}),250);var form=document.forms.consent;for(var action of["submit","reset"])form.addEventListener(action,(function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map((function(e){return[e,!0]})))),location.hash="",location.reload()}))</script>
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "toc.follow", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../../calculator/rectification_calculator.js"></script>
+      
+        <script src="../../javascripts/docs-previews-list.js"></script>
+      
+    
+  </body>
+</html>
