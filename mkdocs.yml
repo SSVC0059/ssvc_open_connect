@@ -101,7 +101,7 @@ nav:
           - develop/api/logs.md
           - develop/api/events.md
           - develop/api/security.md
-      - "MCP-сервер (архитектура и план)": develop/mcp-server.md
+      - "MCP-сервер: состояние и план (входная точка)": develop/mcp-server.md
       - "MCP-сервер: пакеты работ для агентов": develop/mcp-server-agents.md
       - "MCP-сервер: пользовательские сценарии": develop/mcp-scenarios.md
       - "MCP-сервер: контракт прошивки (разведка)": develop/mcp-contract-notes.md
