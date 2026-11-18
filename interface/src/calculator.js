@@ -136,13 +136,28 @@ function initCalculator() {
 		});
 
 		try {
+			// В «Авто 92+» начало формулы фиксировано на 92 °C. Переопределяем
+			// значение до расчёта, чтобы модель и видимое поле не расходились.
+			const auto92 = currentParams.ssvcSettings.formula === 2;
+			if (auto92) {
+				currentParams.ssvcSettings.formula_start_temp = 92;
+			}
+
 			const profile = model.calculateProcess(currentParams);
 
 			// В «Авто 92+» начало формулы фиксировано на 92 °C, а первая Т
 			// предекремента нужна только этому режиму — показываем зависимость.
 			const formulaStartInput = r.querySelector('[data-path="ssvcSettings.formula_start_temp"]');
 			if (formulaStartInput) {
-				const auto92 = currentParams.ssvcSettings.formula === 2;
+				if (auto92) {
+					if (!formulaStartInput.dataset.auto92) {
+						formulaStartInput.dataset.auto92 = formulaStartInput.value;
+					}
+					formulaStartInput.value = '92';
+				} else if (formulaStartInput.dataset.auto92) {
+					formulaStartInput.value = formulaStartInput.dataset.auto92;
+					delete formulaStartInput.dataset.auto92;
+				}
 				formulaStartInput.disabled = auto92;
 				formulaStartInput.title = auto92
 					? 'В режиме «Авто 92+» начало формулы — 92 °C'

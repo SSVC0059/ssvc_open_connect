@@ -55,7 +55,7 @@ describe('DistillationCycleModel Process Logic', () => {
 		expect(result.hearts.percent).not.toBe(75);
 	});
 
-	it('должен учитывать декремент (снижение скорости) при включенной формуле', () => {
+	it('должен снижать скорость по кривой формулы (без отдельного decrement)', () => {
 		const profile = createDefaultProfile();
 		profile.ssvcSettings.formula = 1;
 		profile.ssvcSettings.decrement = 10; // 10%

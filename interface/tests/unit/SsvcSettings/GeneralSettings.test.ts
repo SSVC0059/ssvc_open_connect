@@ -208,7 +208,18 @@ describe('GeneralSettings (Общие)', () => {
 		expect(
 			within(item as HTMLElement).getByText('В «Авто 92+» начало формулы — 92 °C')
 		).toBeInTheDocument();
-		expect(item?.textContent).toContain('90');
+		expect(item?.textContent).toContain('92');
+		expect(item?.textContent).not.toContain('90');
+	});
+
+	it('показывает tails_temp, даже если прошивка не прислала поле при нуле', () => {
+		const settings = createMockSsvcSettings();
+		delete (settings as Record<string, unknown>).tails_temp;
+		render(GeneralSettings, { props: { settings, onSave: mockOnSave } });
+
+		expect(
+			screen.getByText('Температура ТД2 завершения отбора хвостов')
+		).toBeInTheDocument();
 	});
 
 	it('при сохранении времени сброса вызывает onSave согласно реестру (секция «Сброс и снижение»)', async () => {

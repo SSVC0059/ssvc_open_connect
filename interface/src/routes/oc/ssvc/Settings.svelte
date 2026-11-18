@@ -42,6 +42,9 @@
 				console.error(err);
 			}
 		}
+		// Панель «Защита от стопа» показывает пороги по текущей Т отбора:
+		// перечитываем её вместе с настройками, в том числе по кнопке «Обновить».
+		await loadTp1Target();
 	};
 
 	const loadApiFeatures = async () => {
@@ -154,7 +157,11 @@
 		// Возможности API и признак ветки прошивки нужны для гейта полей,
 		// появившихся в новых версиях API (см. GeneralSettings).
 		loadApiFeatures();
-		loadTp1Target();
+
+		// Т отбора для панели защиты могла измениться после запуска процесса:
+		// обновляем её, не дожидаясь ручного «Обновить».
+		const tp1Interval = setInterval(() => loadTp1Target(), 5000);
+		return () => clearInterval(tp1Interval);
 	});
 
 	$effect(() => {

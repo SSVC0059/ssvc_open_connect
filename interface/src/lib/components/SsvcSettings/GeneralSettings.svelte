@@ -7,6 +7,7 @@
 		PREDEC_VALUES,
 		formulaModeHint,
 		formulaModeLabel,
+		formulaStartTempForMode,
 		predecLabel
 	} from '$lib/actions/rectificationRules';
 
@@ -88,6 +89,7 @@
 					<span class="settings-value">
 						<select
 							class="settings-select"
+							aria-label="Предекремент"
 							disabled={!predecAvailable}
 							title={predecAvailable ? '' : 'Требуется API 1.9'}
 							value={settings.predec}
@@ -237,26 +239,24 @@
 			<div class="settings-section">
 				<h3 class="settings-section-title">Температурные настройки</h3>
 
-				{#if typeof settings.tails_temp === 'number'}
-					<div class="settings-item">
-						<span class="input-label">Температура ТД2 завершения отбора хвостов</span>
-						<EditNumbersModal
-							values={[
-										{
-											name: 'Температура ТД2 завершения отбора хвостов',
-											value: settings.tails_temp,
-											unit: '°С',
-											min: 0,
-											max: 110.0,
-											step: 0.1
-										}
-									]}
-							onSave={(newValues) => {
-										onSave('tails_temp', newValues[0].value);
-									}}
-						/>
-					</div>
-				{/if}
+				<div class="settings-item">
+					<span class="input-label">Температура ТД2 завершения отбора хвостов</span>
+					<EditNumbersModal
+						values={[
+									{
+										name: 'Температура ТД2 завершения отбора хвостов',
+										value: settings.tails_temp ?? 0,
+										unit: '°С',
+										min: 0,
+										max: 110.0,
+										step: 0.1
+									}
+								]}
+						onSave={(newValues) => {
+									onSave('tails_temp', newValues[0].value);
+								}}
+					/>
+				</div>
 
 				<div class="settings-item">
 					<span class="input-label">Температура ТД2 завершения отбора тела</span>
@@ -293,6 +293,7 @@
 						<span class="settings-value">
 							<select
 								class="settings-select"
+								aria-label="Формула"
 								value={settings.formula}
 								onchange={(e) => onSave('formula', Number(e.currentTarget.value))}
 							>
@@ -326,7 +327,7 @@
 						<div class="settings-row">
 							<span class="input-label">Температура начала формулы</span>
 							<span class="settings-value settings-value--disabled">
-								{settings.formula_start_temp} °С
+								{formulaStartTempForMode(2, settings.formula_start_temp)} °С
 							</span>
 						</div>
 						<span class="settings-hint">В «Авто 92+» начало формулы — 92 °C</span>

@@ -43,12 +43,21 @@ describe('PredecEvents: оценка события', () => {
 		expect(screen.getByText(predecVerdictHint('early'))).toBeInTheDocument();
 	});
 
-	it('помечает поздний предекремент и объясняет причину', () => {
+	it('помечает поздний первый предекремент и объясняет причину', () => {
+		render(PredecEvents, { props: { events: [makeEvent({ td2: 94.6 })] } });
+
+		expect(screen.getByText('Предекремент №1: ТД1 78,52 °C, ТД2 94,60 °C')).toBeInTheDocument();
+		expect(screen.getByText('поздно')).toBeInTheDocument();
+		expect(screen.getByText(predecVerdictHint('late'))).toBeInTheDocument();
+	});
+
+	it('для второго и следующих срабатываний не применяет оценку первого', () => {
 		render(PredecEvents, { props: { events: [makeEvent({ index: 2, td2: 94.6 })] } });
 
 		expect(screen.getByText('Предекремент №2: ТД1 78,52 °C, ТД2 94,60 °C')).toBeInTheDocument();
-		expect(screen.getByText('поздно')).toBeInTheDocument();
-		expect(screen.getByText(predecVerdictHint('late'))).toBeInTheDocument();
+		expect(screen.getByText('—')).toBeInTheDocument();
+		expect(screen.queryByText('поздно')).not.toBeInTheDocument();
+		expect(screen.queryByText(predecVerdictHint('late'))).not.toBeInTheDocument();
 	});
 
 	it('без ТД2 не выдумывает оценку', () => {

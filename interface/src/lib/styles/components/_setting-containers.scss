@@ -185,6 +185,11 @@
   outline-offset: 1px;
 }
 
+.settings-item .settings-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 // Глобальный класс для принудительной блокировки всех вложенных элементов
 // body в селекторе даёт достаточную специфичность вместо !important (в т.ч. поверх Tailwind)
 body .read-only,

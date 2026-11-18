@@ -317,7 +317,7 @@
 										<span class="reading-value">{telemetry.preempt_cnt}</span>
 									</span>
 								{/if}
-								{#if telemetry?.type === 'hearts'}
+								{#if telemetry?.type === 'hearts' && predecEvents.length > 0}
 									<PredecEvents events={predecEvents} />
 								{/if}
 								{#if telemetry?.common.cfg_chgd}

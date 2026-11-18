@@ -25,11 +25,17 @@
 {#if events.length > 0}
 	<div class="predec-events">
 		{#each events as event (event.index)}
-			{@const verdict = predecVerdict(event.td2)}
+			{@const verdict = event.index === 1 ? predecVerdict(event.td2) : null}
 			{@const summary = `Предекремент №${event.index}: ТД1 ${formatTemp(event.td1)} °C, ТД2 ${formatTemp(event.td2)} °C`}
 			<div class="reading-item">
 				<span class="reading-label">{summary}</span>
-				<span class="reading-value">{verdict ? VERDICT_LABEL[verdict] : 'нет данных'}</span>
+				<span class="reading-value"
+					>{verdict
+						? VERDICT_LABEL[verdict]
+						: event.index === 1
+							? 'нет данных'
+							: '—'}</span
+				>
 			</div>
 			{#if event.count > 1}
 				<div class="predec-events-note">{event.count} срабатываний за интервал</div>
@@ -38,6 +44,12 @@
 				<div class="predec-events-hint">{predecVerdictHint(verdict)}</div>
 			{/if}
 		{/each}
+		{#if events.length > 1}
+			<p class="predec-events-caption">
+				Оценка 92–94 °C относится к первому зафиксированному предекременту; для следующих показана
+				только температура.
+			</p>
+		{/if}
 	</div>
 {:else}
 	<p class="predec-events-empty">Пока не было</p>
@@ -83,6 +95,13 @@
 			font-size: 0.8rem;
 			color: var(--glass-secondary-700);
 			@include dark-theme-color;
+		}
+
+		.predec-events-caption {
+			margin: 0.4rem 0 0;
+			font-size: 0.75rem;
+			line-height: 1.35;
+			color: var(--glass-secondary-600);
 		}
 	}
 
