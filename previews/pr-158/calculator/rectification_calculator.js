@@ -639,10 +639,22 @@ function initCalculator() {
       setValueByPath(currentParams, el.dataset.path, val);
     });
     try {
+      const auto92 = currentParams.ssvcSettings.formula === 2;
+      if (auto92) {
+        currentParams.ssvcSettings.formula_start_temp = 92;
+      }
       const profile = model.calculateProcess(currentParams);
       const formulaStartInput = r.querySelector('[data-path="ssvcSettings.formula_start_temp"]');
       if (formulaStartInput) {
-        const auto92 = currentParams.ssvcSettings.formula === 2;
+        if (auto92) {
+          if (!formulaStartInput.dataset.auto92) {
+            formulaStartInput.dataset.auto92 = formulaStartInput.value;
+          }
+          formulaStartInput.value = "92";
+        } else if (formulaStartInput.dataset.auto92) {
+          formulaStartInput.value = formulaStartInput.dataset.auto92;
+          delete formulaStartInput.dataset.auto92;
+        }
         formulaStartInput.disabled = auto92;
         formulaStartInput.title = auto92 ? "В режиме «Авто 92+» начало формулы — 92 °C" : "";
       }
