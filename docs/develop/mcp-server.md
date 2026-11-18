@@ -1,16 +1,17 @@
 # MCP-сервер для OpenConnect: архитектура и план разработки
 
-> **Статус:** предложение (RFC), редакция 2. Документ фиксирует результаты разбора фактического REST API
-> прошивки (`APP_VERSION 0.2.9.1`), целевую архитектуру MCP-сервера и поэтапный план работ.
+> **Статус:** RFC реализован в ветке `feature/mcp-server` (не запушена, в master не влита), редакция 3.
+> Документ фиксирует результаты разбора фактического REST API прошивки (`APP_VERSION 0.2.9.2`), целевую
+> архитектуру MCP-сервера и поэтапный план работ; отметки о выполнении — в §6, §9 и §12.
 >
 > **Решения этой редакции:** транспорт — **Streamable HTTP с первого этапа** (OpenConnect — сетевое
 > устройство, проводное подключение к нему — редкий сценарий); описания инструментов — **на русском**;
-> разрушительные операции **временно включены**, но требуют явного подтверждения и **отключаются перед
-> релизом**; поддерживается **один контроллер**; пароли — **только в локальном `.env`**; запись сырых
-> ответов — **включена на время разработки**, затем опциональный параметр.
+> разрушительные операции **включены по явному флагу** и требуют подтверждения и причины (по умолчанию
+> выключены); поддерживается **один контроллер**; пароли — **только в локальном `.env`**; запись сырых
+> ответов — параметр `SSVC_RAW_LOG`, по умолчанию `off`.
 >
 > **Разбивка на пакеты работ для агентов:** [mcp-server-agents.md](mcp-server-agents.md) — волны,
-> владение файлами, контракты и критерии приёмки каждого пакета.
+> владение файлами, контракты, критерии приёмки и **статус выполнения** каждого пакета (§3.1).
 
 ---
 
@@ -686,19 +687,21 @@ duration_ms`. Уровень — `SSVC_LOG_LEVEL`. Секреты вырезаю
 
 ### P0. HTTP-сервис и чтение (5 дней)
 
-- [ ] `mcp/` пакет, TypeScript, ESLint/Prettier, `node:test`, CI-джоба.
-- [ ] HTTP-приложение на `node:http`: `/mcp` (Streamable HTTP, **stateful**: `sessionIdGenerator`,
+- [x] `mcp/` пакет, TypeScript, `node:test`, CI-джоба. (ESLint/Prettier не добавлялись: роль линтера
+      выполняет `tsc --noEmit` в `npm run typecheck`; CI — `.github/workflows/mcp.yaml`.)
+- [x] HTTP-приложение на `node:http`: `/mcp` (Streamable HTTP, **stateful**: `sessionIdGenerator`,
       `onsessioninitialized`, `onsessionclosed`), `/healthz`, `/readyz`.
-- [ ] Менеджер сессий: `MAX_SESSIONS=32`, idle-cleanup 30 мин, коды `400/404/503` по протоколу.
-- [ ] Аутентификация клиента: `SSVC_MCP_TOKEN` (fail-fast), CIDR-allowlist, проверка `Host`/`Origin`.
-- [ ] `config.ts`: zod-схема `.env`, `.env.example`, отказ старта при отсутствии обязательных.
-- [ ] `rawlog.ts`: `SSVC_RAW_LOG=all`, JSONL, редакция секретов, ротация и предел объёма.
-- [ ] `DeviceClient` + `AuthSession` + `CapabilityCache` + `WriteQueue` (каркас).
-- [ ] Инструменты: `oc_get_info`, `oc_get_capabilities`, `oc_get_telemetry`, `oc_get_process_status`,
-      `oc_diagnostics`; ресурсы `info` и `telemetry`.
-- [ ] `mock/deviceMock.ts` (по мотивам `scripts/smoke_rest.py --self-test`) + фикстуры 1.7/1.10.
-- [ ] Dockerfile (non-root, healthcheck) + `docker-compose.yml` + `.env.example`.
-- [ ] README: запуск, токен, подключение клиента, ограничения.
+- [x] Менеджер сессий: `MAX_SESSIONS=32`, idle-cleanup 30 мин, коды `400/404/503` по протоколу.
+- [x] Аутентификация клиента: `SSVC_MCP_TOKEN` (fail-fast), CIDR-allowlist, проверка `Host`/`Origin`.
+- [x] `config.ts`: zod-схема `.env`, `.env.example`, отказ старта при отсутствии обязательных.
+- [x] `rawlog.ts`: `SSVC_RAW_LOG=all`, JSONL, редакция секретов, ротация и предел объёма.
+- [x] `DeviceClient` + `AuthSession` + `CapabilityCache` + `WriteQueue` (каркас).
+- [x] Инструменты: `oc_get_info`, `oc_get_capabilities`, `oc_get_telemetry`, `oc_get_process_status`,
+      `oc_diagnostics`; ресурсы `info` и `telemetry`. (`oc_get_state` добавлен сверх плана — использует
+      `GET /rest/oc/snapshot`; `oc_get_process_status` выделен отдельно.)
+- [x] `mock/deviceServer.ts` + фикстуры (в плане — `mock/deviceMock.ts`; имя уточнено при сборке).
+- [x] Dockerfile (non-root, healthcheck) + `docker-compose.yml` + `.env.example`.
+- [x] README: запуск, токен, подключение клиента, ограничения.
 
 **Приёмка:** `initialize` по HTTP создаёт сессию, повторный запрос с `Mcp-Session-Id` её переиспользует;
 без токена — `401`, с чужим `Host` — `403`, неизвестная сессия — `404`; MCP Inspector по HTTP видит
@@ -707,16 +710,18 @@ duration_ms`. Уровень — `SSVC_LOG_LEVEL`. Секреты вырезаю
 
 ### P1. Управление и настройки (6 дней)
 
-- [ ] `CommandService`: `start/pause/resume/next/stop/emergency_stop`, разбор 409 `blockReasons`,
+- [x] `CommandService`: `start/pause/resume/next/stop/emergency_stop`, разбор 409 `blockReasons`,
       503 `queue_full`, 409 `feature_unsupported`.
-- [ ] `oc_wait_for_change` (стадия/статус/тип телеметрии) с таймаутом и возвратом наблюдённого.
-- [ ] `SettingsService`: обёртка GET/PUT, отчёт `accepted/ignored/skipped`, запрет ретрая при `partial`.
-- [ ] Политика риска: `confirm` для класса ≥2, `confirmation_required` с русской подсказкой,
+- [x] `oc_wait_for_change` (стадия/статус/тип телеметрии) с таймаутом и возвратом наблюдённого.
+- [x] `SettingsService`: обёртка GET/PUT, отчёт `accepted/ignored/skipped`, запрет ретрая при `partial`.
+- [x] Политика риска: `confirm` для класса ≥2, `confirmation_required` с русской подсказкой,
       аудит JSONL, `emergency_stop` без подтверждения.
-- [ ] Preflight перед `oc_start` (guard XKC-25 + hardware faults) в ответе инструмента.
-- [ ] `WriteQueue` в бою: один писатель, дедуп 1 с, приоритет чтений.
-- [ ] Флаг `SSVC_ALLOW_DESTRUCTIVE` и `disabled_by_policy` (пока не используется — готовим почву).
-- [ ] Тесты: юнит на маппинг ошибок, HTTP-тесты сессий, контрактные на схемы настроек.
+- [ ] Preflight перед `oc_start` (guard XKC-25 + hardware faults) в ответе инструмента. **Не сделано
+      отдельным шагом:** предохранитель приходит от устройства (`409` + `blockReasons` → `guard_blocked`),
+      а предварительный опрос XKC-25 и неисправностей задаёт промпт `start_rectification`.
+- [x] `WriteQueue` в бою: один писатель, дедуп 1 с, приоритет чтений.
+- [x] Флаг `SSVC_ALLOW_DESTRUCTIVE` и `disabled_by_policy` (к моменту P4 уже используется классом 3).
+- [x] Тесты: юнит на маппинг ошибок, HTTP-тесты сессий, контрактные на схемы настроек.
 
 **Приёмка:** полный цикл «старт → ожидание стадии `heads` → пауза → стоп» на mock и на устройстве;
 заблокированный guard даёт `guard_blocked` с причинами; частичный сбой настроек не приводит к
@@ -724,13 +729,16 @@ duration_ms`. Уровень — `SSVC_LOG_LEVEL`. Секреты вырезаю
 
 ### P2. Датчики, реле, калибровка, подсистемы (7 дней)
 
-- [ ] `SensorService`: `/rest/sensor`, `/rest/zones`, `/rest/sensors/zone`, `/rest/alarms`.
-- [ ] `RelayService`: capabilities/metadata/state, `oc_relay_override` с явными `enable`/`energized`,
-      обработка `supported:false` и 403 для зарезервированных битов.
-- [ ] `Xkc25Service`: статус, пошаговая калибровка, асинхронный `verify_return` (202 → опрос).
-- [ ] `oc_get_hardware_faults`, hardware-config get/put, `oc_get_subsystems`/`oc_set_subsystem`
-      (таймаут ≥120 с, без блокировки остальных вызовов).
-- [ ] Промпты `troubleshoot_start_blocked`, `calibrate_xkc25`.
+- [x] `SensorService`: `/rest/sensor`, `/rest/zones`, `/rest/sensors/zone`, `/rest/alarms`.
+- [x] `RelayService`: capabilities/metadata/state, `oc_relay_override` с явными `enable`/`energized`,
+      обработка `supported:false` и 403 для зарезервированных битов. (На стенде GPIO-сборка:
+      проверен ответ `supported:false`; `oc_relay_override` на устройстве не вызывался.)
+- [x] `Xkc25Service`: статус, пошаговая калибровка, асинхронный `verify_return` (202 → опрос).
+      (На устройстве проверен только статус: калибровка необратима без реальной жидкости.)
+- [x] `oc_get_hardware_faults`, hardware-config get/put, `oc_get_subsystems`/`oc_set_subsystem`
+      (таймаут ≥120 с, без блокировки остальных вызовов). (`oc_update_hardware_config` и
+      `oc_set_subsystem` на устройстве не вызывались — меняют конфигурацию стенда.)
+- [x] Промпты `troubleshoot_start_blocked`, `calibrate_xkc25`.
 
 **Приёмка:** на GPIO-сборке реле-инструменты отвечают `feature_unsupported`; калибровка проходит
 три шага; `oc_set_subsystem` на `telegram_bot` не роняет остальные запросы (проверка параллельным
@@ -738,13 +746,17 @@ duration_ms`. Уровень — `SSVC_LOG_LEVEL`. Секреты вырезаю
 
 ### P3. Журналы, профили, файлы, разрушительные операции (6 дней)
 
-- [ ] `LogsService`: статус, `refresh`, 202-поллинг, скачивание CSV в файл, `DELETE` отмены,
-      лиз «одна сессия на устройство», `busy` при конфликте.
-- [ ] `ProfileService`: list/get/create/copy/rename/content/save/apply/delete.
-- [ ] `FilesService`: list/download/delete/copy.
-- [ ] Разрушительные инструменты (класс 3) с `confirm` + `reason` и аудитом, под флагом.
-- [ ] Промпты `start_rectification`, `apply_profile`, `analyze_last_run`.
+- [x] `LogsService`: статус, `refresh`, 202-поллинг, скачивание CSV в файл, `DELETE` отмены,
+      лиз «одна сессия на устройство», `busy` при конфликте. (Бюджет скачивания — 45 с, а не 90:
+      клиенты обрывают вызов на 60 с. На стенде журналов нет — `err_mnt` без SD.)
+- [x] `ProfileService`: list/get/create/copy/rename/content/save/apply/delete.
+- [x] `FilesService`: list/download/delete/copy. (Скачивание было перекрыто деревом в прошивке —
+      исправлено коммитом `6c28ad4`, проверено на устройстве.)
+- [x] Разрушительные инструменты (класс 3) с `confirm` + `reason` и аудитом, под флагом.
+- [x] Промпты `start_rectification`, `apply_profile`, `analyze_last_run`.
 - [ ] Ресурс-шаблон `logs/{id}.csv` + уведомления об изменении телеметрии (SSE-поток сессии).
+      **Не сделано:** ресурсы — только `openconnect://info` и `openconnect://telemetry`; журнал
+      отдаётся инструментом в файл, уведомлений `notifications/resources/updated` нет.
 
 **Приёмка:** журнал скачивается и отдаётся файлом-ресурсом; параллельный запрос второго журнала даёт
 `busy`; профиль создаётся, применяется и удаляется с аудитом; удаление без `reason` отклоняется
@@ -752,15 +764,22 @@ duration_ms`. Уровень — `SSVC_LOG_LEVEL`. Секреты вырезаю
 
 ### P4. Стабилизация и релиз (6 дней)
 
-- [ ] `SystemService`: `systemStatus`, `restart`, OTA/factoryReset — только при `SSVC_ALLOW_DESTRUCTIVE=1`.
-- [ ] **Release hardening:** `SSVC_ALLOW_DESTRUCTIVE` по умолчанию `0`; проверить, что каждый
+- [x] `SystemService`: `systemStatus`, `restart`, OTA/factoryReset — только при `SSVC_ALLOW_DESTRUCTIVE=1`.
+      (`systemStatus` и `restart` реализованы; OTA и factoryReset не входили в объём — прошивка
+      обновляется через `/rest/uploadFirmware` веб-интерфейсом. `oc_restart` на устройстве не вызывался.)
+- [x] **Release hardening:** `SSVC_ALLOW_DESTRUCTIVE` по умолчанию `0`; проверить, что каждый
       инструмент класса 3 отвечает `disabled_by_policy`; README «как включить осознанно».
-- [ ] **Release hardening:** `SSVC_RAW_LOG` по умолчанию `off`, `SSVC_ALLOW_DEBUG` — `0`; точечный
+      (Проверяется динамически тестом `test/release.test.ts` по каталогу `allTools`.)
+- [x] **Release hardening:** `SSVC_RAW_LOG` по умолчанию `off`, `SSVC_ALLOW_DEBUG` — `0`; точечный
       `debug:true` проверен и документирован.
-- [ ] Нагрузочный/soak-тест: 24 ч опроса + параллельные сессии; контроль RSS и ошибок.
-- [ ] Матрица совместимости: secure/insecure, GPIO/PCF8574, API 1.7 и 1.10.
-- [ ] Docker-образ с тегом, healthcheck, инструкция по обновлению; CHANGELOG.
-- [ ] Документация: этот файл + `README.md` пакета + раздел в `docs/develop/api/`.
+- [ ] Нагрузочный/soak-тест: 24 ч опроса + параллельные сессии; контроль RSS и ошибок. **Не выполнялся.**
+- [ ] Матрица совместимости: secure/insecure, GPIO/PCF8574, API 1.7 и 1.10. **Частично:** не-secure +
+      GPIO + API 1.10 на живом устройстве; secure-сборка проверена только по JWT (TTL 30 с);
+      PCF8574 и API 1.7 недоступны.
+- [x] Docker-образ с тегом, healthcheck, инструкция по обновлению; CHANGELOG. (Образ собран локально
+      как `ssvc-mcp:test`, healthcheck `healthy`; публикация тега — при релизе.)
+- [x] Документация: этот файл + `README.md` пакета + раздел в `docs/develop/api/`
+      ([events.md](api/events.md), [security.md](api/security.md), [reverse-proxy.md](reverse-proxy.md)).
 
 **Приёмка:** 24-часовой прогон без утечек и падений; на всех конфигурациях зелёный смоук; на «релизном»
 `.env` разрушительные инструменты недоступны, сырые логи не пишутся; сервис переживает рестарт
@@ -774,6 +793,14 @@ duration_ms`. Уровень — `SSVC_LOG_LEVEL`. Секреты вырезаю
 - Мультиустройство (реестр + аргумент `device`) — только при реальной потребности.
 
 **Итого до v1: ~30 рабочих дней (≈6 недель).**
+
+**Фактически (актуализировано после реализации):** план выполнен в ветке `feature/mcp-server`
+последовательно, а не параллельно (один живой контроллер — проверки нельзя перемешивать): 12 пакетов
+WP0–WP11, 26 коммитов, 50 инструментов, 5 промптов, 2 ресурса, 230 тестов. Docker-образ собран и
+проходит healthcheck (non-root), но `docker compose up` не использовался — контейнер запускался
+`docker run` с теми же переменными. Приёмка P0 «5 инструментов» перевыполнена: к концу P0 их было 6,
+в финале — 50. Отклонения по пакетам и открытые пункты — в
+[mcp-server-agents.md §3.1–§3.2](mcp-server-agents.md) и §12 ниже.
 
 ---
 
@@ -940,15 +967,21 @@ server.registerTool(
 
 ## 12. Чек-лист готовности v1
 
-- [ ] Все инструменты каталога §4 реализованы и покрыты контрактными тестами.
-- [ ] HTTP-транспорт: сессии, лимиты, `400/404/503`, idle-cleanup, `DELETE`.
-- [ ] Доступ: токен обязателен, CIDR-allowlist, проверка `Host`/`Origin`, TLS или документированный прокси.
-- [ ] Опасные операции требуют подтверждения и пишутся в аудит; класс 3 **выключен по умолчанию**.
-- [ ] Понятные русские ошибки для `guard_blocked`, `feature_unsupported`, `partial_apply`, `busy`,
+- [x] Все инструменты каталога §4 реализованы и покрыты контрактными тестами. (50 инструментов,
+      230 тестов, включая e2e через SDK-клиент.)
+- [x] HTTP-транспорт: сессии, лимиты, `400/404/503`, idle-cleanup, `DELETE`.
+- [x] Доступ: токен обязателен, CIDR-allowlist, проверка `Host`/`Origin`, TLS или документированный прокси.
+- [x] Опасные операции требуют подтверждения и пишутся в аудит; класс 3 **выключен по умолчанию**.
+- [x] Понятные русские ошибки для `guard_blocked`, `feature_unsupported`, `partial_apply`, `busy`,
       `confirmation_required`, `disabled_by_policy`.
-- [ ] Журналы не попадают в контекст модели целиком (файл + краткая сводка).
-- [ ] Сырые логи по умолчанию выключены; `debug:true` работает только при `SSVC_ALLOW_DEBUG=1`.
+- [x] Журналы не попадают в контекст модели целиком (файл + краткая сводка).
+- [x] Сырые логи по умолчанию выключены; `debug:true` работает только при `SSVC_ALLOW_DEBUG=1`.
 - [ ] Работает на secure и не-secure прошивке, на GPIO- и PCF8574-конфигурации, на API 1.7 и 1.10.
-- [ ] 24-часовой soak с параллельными сессиями без утечек и роста ошибок.
-- [ ] README с `.env.example` и примером подключения клиента по HTTP.
-- [ ] Раздел документации добавлен в `mkdocs.yml`.
+      **Частично:** не-secure + GPIO + API 1.10 — полный живой прогон; secure-сборка — проверен JWT
+      (TTL 30 с, refresh, 401); PCF8574 и API 1.7 недоступны на стенде.
+- [ ] 24-часовой soak с параллельными сессиями без утечек и роста ошибок. **Не выполнялся.**
+- [x] README с `.env.example` и примером подключения клиента по HTTP.
+- [x] Раздел документации добавлен в `mkdocs.yml`.
+
+**Итог на момент актуализации:** v1 функционально готов в ветке `feature/mcp-server` (не запушена,
+в master не влита). Открытые пункты выше не блокируют функциональность, но обязательны перед релизом.
