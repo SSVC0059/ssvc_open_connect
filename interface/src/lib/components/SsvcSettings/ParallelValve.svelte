@@ -15,7 +15,7 @@
 {#if settings}
 	<div class="settings-grid">
 		<div class="settings-panel">
-			{#if settings.parallel_v1}
+			{#if Array.isArray(settings.parallel_v1) && settings.parallel_v1.length >= 2}
 				<div class="settings-section">
 					<div class="settings-item">
 						<h3 class="settings-section-title">Скорость параллельного отбора клапаном №1</h3>
@@ -39,7 +39,7 @@
                                 }
                             ]}>
 							<button class="edit-button">
-								<Pencil class="w-10 h-10" />
+								<Pencil class="h-5 w-5" />
 							</button>
 						</EditNumbersModal>
 					</div>
@@ -55,7 +55,7 @@
 				</div>
 			{/if}
 
-			{#if settings.parallel_v3}
+			{#if Array.isArray(settings.parallel_v3) && settings.parallel_v3.length > 0}
 				<div class="settings-section">
 					<div class="settings-item">
 						<h3 class="settings-section-title">Скорость параллельного отбора клапаном №3</h3>
@@ -82,7 +82,7 @@
 					</div>
 				</div>
 			{/if}
-			{#if settings.parallel}
+			{#if Array.isArray(settings.parallel) && settings.parallel.length >= 2}
 				<div class="settings-section">
 					<div class="settings-item">
 						<h3 class="settings-section-title">Скорость параллельного отбора клапаном №3</h3>
@@ -106,7 +106,7 @@
                                 }
                             ]}>
 							<button class="edit_button">
-								<Pencil class="w-10 h-10" />
+								<Pencil class="h-5 w-5" />
 							</button>
 						</EditNumbersModal>
 					</div>

@@ -167,7 +167,7 @@ export type SsvcSettings = {
 	parallel: SsvcTuple; // Параметры Parallel V3 - подголовники
 	hearts_temp_shift: boolean; // Смещение температуры для Hearts
 	hearts_pause: boolean; // Пауза для Hearts
-	formula: number; // Формула (0=выкл, 1=вкл)
+	formula: number; // Формула (0=выкл, 1=вкл, 2=авто 92+)
 	formula_start_temp: number; // Начальная температура для формулы
 	tank_mmhg: number;
 	predec: number; // Предекремент (0=выкл, 7=0.07, 13=0.13)
@@ -539,6 +539,15 @@ export type Profile = {
 	/** Пользовательская логика реле расширителя (только PCF8574 / PINOUT_USE_GPIO=0). */
 	openConnectRelayRules?: OpenConnectRelayRules;
 
+	/**
+	 * Параметры планирования калькулятора: не настройки контроллера и не
+	 * сохраняются в `ssvcSettings`. Нужны только для оценки «Авто 92+».
+	 */
+	planning?: {
+		/** Ожидаемая ТД2 первого предекремента, °C (по руководству 92…94). */
+		firstPredecTd2?: number;
+	};
+
 	analytics: Analytics;
 };
 
@@ -584,6 +593,20 @@ export type Analytics = {
 	};
 	residueMl: number;
 	residualFortress: number;
+	/**
+	 * Оценка работы формулы/авто 92+. `assumption: 'linear'` — явно
+	 * зафиксированное приближение: точная кривая контроллера неизвестна.
+	 */
+	formula?: {
+		start: number;
+		end: number;
+		firstPredec: number | null;
+		/** Начальное снижение скорости в точке первого предекремента, %. */
+		initialDropPct: number;
+		/** Средняя скорость тела относительно начальной, 0…1. */
+		avgFactor: number;
+		assumption: 'linear';
+	};
 };
 export type Profiles = Profile[];
 

@@ -3,7 +3,13 @@
 	import { browser } from '$app/environment';
 	import { tick } from 'svelte';
 	import type { OcApiFeature, SsvcSettings } from '$lib/types/ssvc';
-	import { fetchSettings, getInfo, updateSetting, infoCacheVersion } from '$lib/api/ssvcApi';
+	import {
+		fetchSettings,
+		fetchTelemetry,
+		getInfo,
+		updateSetting,
+		infoCacheVersion
+	} from '$lib/api/ssvcApi';
 	import { notifications } from '$lib/components/toasts/notifications';
 	import GeneralSettings from '$lib/components/SsvcSettings/GeneralSettings.svelte';
 	import ValveBandwidth from '$lib/components/SsvcSettings/ValveBandwidth.svelte';
@@ -22,6 +28,9 @@
 	// Признак ветки прошивки: «Сброс и снижение» есть только у прошивки
 	// с подголовниками. undefined — старая прошивка openConnect, поля нет.
 	let isSupportRelease = $state<boolean | undefined>(undefined);
+	// Текущая целевая ТД1 из телеметрии: по ней панель «Защита от стопа»
+	// показывает реальные пороги. null — данных нет, панель покажет формулу.
+	let tp1Target = $state<number | null>(null);
 
 	let activeTab = $state(0);
 
@@ -39,6 +48,17 @@
 		const info = await getInfo();
 		apiFeatures = info?.oc.api_features ?? [];
 		isSupportRelease = info?.oc.is_support_release;
+	};
+
+	// Одно чтение телеметрии: только Т отбора для панели защиты. Ошибку чтения
+	// не показываем — панель в этом случае объясняет пороги формулой.
+	const loadTp1Target = async () => {
+		try {
+			const response = await fetchTelemetry();
+			tp1Target = response?.telemetry?.tp1_target ?? null;
+		} catch {
+			tp1Target = null;
+		}
 	};
 
 	async function saveChanges(field: string, value: unknown) {
@@ -60,15 +80,34 @@
 
 	const availableTabs = $derived(computeTabs(ssvcSettings));
 
+	/**
+	 * Параллельный отбор отдаётся контроллером только для поддерживающей его
+	 * ветки SSVC0059: `fillSettings` пропускает пустые кортежи. Если полей нет,
+	 * вкладка была бы пустой — не показываем её вовсе.
+	 */
+	function hasParallelSettings(settings: SsvcSettings): boolean {
+		const s = settings as unknown as {
+			parallel?: unknown;
+			parallel_v1?: unknown;
+			parallel_v3?: unknown;
+		};
+		const isPair = (value: unknown) => Array.isArray(value) && value.length >= 2;
+		return (
+			isPair(s.parallel) ||
+			isPair(s.parallel_v1) ||
+			(Array.isArray(s.parallel_v3) && s.parallel_v3.length > 0)
+		);
+	}
+
 	function computeTabs(settings: SsvcSettings | null | undefined): Tab[] {
 		if (!settings) return [];
 
-		return [
+		const tabs: Tab[] = [
 			{
 				id: 'general',
 				title: 'Общие',
 				component: GeneralSettings,
-				props: { settings, onSave: saveChanges, apiFeatures, isSupportRelease }
+				props: { settings, onSave: saveChanges, apiFeatures, isSupportRelease, tp1Target }
 			},
 			{
 				id: 'valve-bandwidth',
@@ -81,14 +120,19 @@
 				title: 'Параметры отбора',
 				component: SpeedSettings,
 				props: { settings, onSave: saveChanges }
-			},
-			{
+			}
+		];
+
+		if (hasParallelSettings(settings)) {
+			tabs.push({
 				id: 'parallel',
 				title: 'Параллельный отбор',
 				component: ParallelValve,
 				props: { settings, onSave: saveChanges }
-			}
-		];
+			});
+		}
+
+		return tabs;
 	}
 
 	const mobileItems = $derived(
@@ -110,6 +154,7 @@
 		// Возможности API и признак ветки прошивки нужны для гейта полей,
 		// появившихся в новых версиях API (см. GeneralSettings).
 		loadApiFeatures();
+		loadTp1Target();
 	});
 
 	$effect(() => {
@@ -200,7 +245,7 @@
 			</div>
 		</div>
 
-		<div class="flex w-full flex-col md:hidden">
+		<div class="oc-ssvc-settings-root flex w-full flex-col md:hidden">
 			<SettingsMobileScroll
 				items={mobileItems}
 				sectionIdPrefix="oc-ssvc"
@@ -208,7 +253,7 @@
 				pageTitle="Настройки SSVC"
 				onRefresh={loadSsvcSettings}
 				denseGrid={true}
-				sectionBodyCard={true}
+				sectionBodyCard={false}
 			/>
 		</div>
 	{/if}
@@ -219,8 +264,45 @@
 		flex-direction: column;
 	}
 
+	/* Единая карточная сетка страницы SSVC: секции — самостоятельные карточки
+	   на фоне страницы, без вложенного «контейнера-карточки». */
 	:global(.oc-ssvc-settings-root .settings-container) {
 		width: 100%;
+		padding: 0;
+		background: transparent;
+		border: none;
+		box-shadow: none;
+		backdrop-filter: none;
+	}
+
+	:global(.oc-ssvc-settings-root .settings-grid) {
+		gap: 1rem;
+	}
+
+	:global(.oc-ssvc-settings-root .settings-grid .settings-panel) {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		overflow: visible;
+	}
+
+	:global(.oc-ssvc-settings-root .settings-grid .settings-panel .settings-section) {
+		margin: 0;
+		padding: 1rem 1.25rem;
+		border: 1px solid color-mix(in srgb, var(--color-base-content) 12%, transparent);
+		border-bottom: 1px solid color-mix(in srgb, var(--color-base-content) 12%, transparent);
+		border-radius: 1rem;
+		background: var(--color-base-100);
+	}
+
+	:global(.oc-ssvc-settings-root .settings-section-title) {
+		color: var(--color-base-content);
+	}
+
+	@media (max-width: 767px) {
+		:global(.oc-ssvc-settings-root .settings-grid .settings-panel .settings-section) {
+			padding: 0.85rem 0.95rem;
+		}
 	}
 
 	:global(.tabs .tab) {

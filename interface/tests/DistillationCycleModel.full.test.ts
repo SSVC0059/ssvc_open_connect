@@ -78,7 +78,7 @@ describe('DistillationCycleModel Process Logic', () => {
 		const profile = createDefaultProfile();
 		profile.volumeL = 10;
 		profile.strengthVol = 40; // 4000мл АС
-		profile.ssvcSettings.hearts_finish_temp = 90; // Температура, при которой отбор тела завершается
+		profile.ssvcSettings.hearts_finish_temp = 95; // Выше начала формулы (92 °C), иначе она не включится
 		profile.ssvcSettings.formula = 1; // Включаем формулу декремента
 		profile.ssvcSettings.decrement = 10; // Декремент 10%
 		profile.ssvcSettings.hyst = 0.1; // Гистерезис
@@ -96,6 +96,70 @@ describe('DistillationCycleModel Process Logic', () => {
 		if (result.analytics.flows.hearts_final) {
 			expect(result.analytics.flows.hearts_avg).toBeGreaterThan(result.analytics.flows.hearts_final);
 		}
+	});
+
+	it('не применяет формулу, если тело заканчивается ниже её начала (92 °C)', () => {
+		const model = new DistillationCycleModel();
+		const profile = createDefaultProfile();
+		profile.volumeL = 10;
+		profile.strengthVol = 40;
+		profile.ssvcSettings.hearts_finish_temp = 90; // Ниже 92 °C — формула не включается
+		profile.ssvcSettings.formula = 1;
+		profile.ssvcSettings.decrement = 10;
+		profile.hearts.targetFlowMlh = 1000;
+
+		const result = model.calculateProcess(profile);
+
+		expect(result.analytics.flows.hearts_final).toBe(profile.hearts.targetFlowMlh);
+		expect(result.analytics.flows.hearts_avg).toBe(profile.hearts.targetFlowMlh);
+	});
+
+	it('«Авто 92+» держит скорость дольше обычной формулы при позднем предекременте', () => {
+		const model = new DistillationCycleModel();
+		const build = (formula: number) => {
+			const profile = createDefaultProfile();
+			profile.volumeL = 10;
+			profile.strengthVol = 40;
+			profile.ssvcSettings.hearts_finish_temp = 97;
+			profile.ssvcSettings.formula = formula;
+			profile.ssvcSettings.formula_start_temp = 92;
+			profile.hearts.targetFlowMlh = 1000;
+			profile.planning = { firstPredecTd2: 96 };
+			return model.calculateProcess(profile);
+		};
+
+		const plain = build(1);
+		const auto = build(2);
+
+		expect(auto.analytics.flows.hearts_avg).toBeGreaterThan(plain.analytics.flows.hearts_avg!);
+		expect(auto.analytics.timers.hearts).toBeLessThan(plain.analytics.timers.hearts);
+		expect(auto.analytics.formula?.firstPredec).toBe(96);
+		expect(auto.analytics.formula?.initialDropPct).toBeGreaterThan(0);
+	});
+
+	it('более позднее начало формулы снижает скорость меньше', () => {
+		const model = new DistillationCycleModel();
+		const build = (start: number) => {
+			const profile = createDefaultProfile();
+			profile.volumeL = 10;
+			profile.strengthVol = 40;
+			profile.ssvcSettings.hearts_finish_temp = 97;
+			profile.ssvcSettings.formula = 1;
+			profile.ssvcSettings.formula_start_temp = start;
+			profile.hearts.targetFlowMlh = 1000;
+			return model.calculateProcess(profile);
+		};
+
+		const early = build(92);
+		const late = build(95);
+
+		expect(late.analytics.flows.hearts_avg).toBeGreaterThan(early.analytics.flows.hearts_avg!);
+		expect(late.analytics.timers.hearts).toBeLessThan(early.analytics.timers.hearts);
+	});
+
+	it('createDefaultProfile задаёт начало формулы 92 °C, а не 0', () => {
+		const profile = createDefaultProfile();
+		expect(profile.ssvcSettings.formula_start_temp).toBe(92);
 	});
 
 	it('должен корректно рассчитывать фракцию "Подголовники" с заданной скоростью', () => {

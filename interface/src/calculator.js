@@ -2,6 +2,11 @@
 // @ts-nocheck
 import { deepClone } from '$lib/utils/deepMerge.ts';
 import { DistillationCycleModel, createDefaultProfile } from '$lib/actions/DistillationCycleModel.ts';
+import {
+	minHysteresisFor,
+	predecLabel,
+	predecState
+} from '$lib/actions/rectificationRules.ts';
 
 const CALC_ROOT_SELECTOR = '.editor-layout#app';
 
@@ -85,9 +90,15 @@ function initCalculator() {
 	const root = getCalcRoot();
 	if (!root) return;
 
+	delete root.dataset.calcReady;
 	activeDefaultParams = buildFreshDefaults();
 
 	const formatResultText = (path, value) => {
+		if (path.startsWith('analytics.formula')) {
+			if (path.endsWith('initialDropPct')) return `${Math.round(value)} %`;
+			if (path.endsWith('avgFactor')) return `${Math.round(value * 100)} %`;
+			return `${value.toFixed(1)} °C`;
+		}
 		if (path.includes('timer') || path.includes('Time') || path.includes('process')) {
 			return formatTime(value);
 		}
@@ -127,6 +138,21 @@ function initCalculator() {
 		try {
 			const profile = model.calculateProcess(currentParams);
 
+			// В «Авто 92+» начало формулы фиксировано на 92 °C, а первая Т
+			// предекремента нужна только этому режиму — показываем зависимость.
+			const formulaStartInput = r.querySelector('[data-path="ssvcSettings.formula_start_temp"]');
+			if (formulaStartInput) {
+				const auto92 = currentParams.ssvcSettings.formula === 2;
+				formulaStartInput.disabled = auto92;
+				formulaStartInput.title = auto92
+					? 'В режиме «Авто 92+» начало формулы — 92 °C'
+					: '';
+			}
+			const firstPredecInput = r.querySelector('[data-path="planning.firstPredecTd2"]');
+			if (firstPredecInput) {
+				firstPredecInput.disabled = currentParams.ssvcSettings.formula !== 2;
+			}
+
 			r.querySelectorAll('[data-result]').forEach((el) => {
 				const path = el.dataset.result;
 				const value = getValueByPath(profile, path);
@@ -162,6 +188,25 @@ function initCalculator() {
 				warningDiv.style.display = totalPercent > 100 ? 'block' : 'none';
 				warningDiv.textContent = `Сумма фракций: ${totalPercent.toFixed(1)}% > 100%`;
 			}
+
+			const protectionWarning = document.getElementById('protection-warning');
+			if (protectionWarning) {
+				const predec = currentParams.ssvcSettings.predec;
+				const hyst = currentParams.ssvcSettings.hyst;
+				const state = predecState(predec, hyst);
+				let message = '';
+				if (state === 'hysteresis-too-small') {
+					const min = minHysteresisFor(predec);
+					const minText =
+						min === null ? '—' : min.toFixed(2).replace('.', ',');
+					message = `Предекремент не сработает: при ${predecLabel(predec)} нужен гистерезис не меньше ${minText} °C.`;
+				} else if (currentParams.ssvcSettings.formula === 2 && predec === 0) {
+					message =
+						'«Авто 92+» не сработает без предекремента: включите предекремент или выберите обычную формулу.';
+				}
+				protectionWarning.style.display = message ? 'block' : 'none';
+				protectionWarning.textContent = message;
+			}
 		} catch (e) {
 			console.error('Ошибка расчета:', e);
 		}
@@ -178,6 +223,9 @@ function initCalculator() {
 	});
 
 	updateUI();
+
+	// Сигнал для e2e и для отладки: поля уже привязаны к модели.
+	root.dataset.calcReady = '1';
 }
 
 let delegatedInputBound = false;

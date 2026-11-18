@@ -38,7 +38,7 @@ const { settings, onSave } = $props<{
 								}
 							]}>
 						<button class="edit_button">
-							<Pencil class="w-10 h-10" />
+							<Pencil class="h-5 w-5" />
 						</button>
 					</EditNumbersModal>
 				</div>
@@ -78,7 +78,7 @@ const { settings, onSave } = $props<{
 								}
 							]}>
 							<button class="edit_button">
-								<Pencil class="w-10 h-10" />
+								<Pencil class="h-5 w-5" />
 							</button>
 						</EditNumbersModal>
 					</div>
@@ -116,7 +116,7 @@ const { settings, onSave } = $props<{
 								}
 							]}>
 						<button class="edit_button">
-							<Pencil class="w-10 h-10" />
+							<Pencil class="h-5 w-5" />
 						</button>
 					</EditNumbersModal>
 				</div>
@@ -154,7 +154,7 @@ const { settings, onSave } = $props<{
 								}
 							]}>
 							<button class="edit_button">
-								<Pencil class="w-10 h-10" />
+								<Pencil class="h-5 w-5" />
 							</button>
 						</EditNumbersModal>
 					</div>

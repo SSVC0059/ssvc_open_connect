@@ -107,6 +107,20 @@ hide:
             border-radius: var(--border-radius);
             text-align: right;
         }
+        .input-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted-color);
+            margin: 0;
+        }
+        .protection-warning {
+            margin-top: 0.75rem;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--orange-400);
+            background: var(--orange-50);
+            color: var(--orange-800);
+            border-radius: var(--border-radius);
+            font-size: 0.85rem;
+        }
         .fraction-details {
             border-bottom: 1px solid var(--border-color);
         }
@@ -281,6 +295,8 @@ hide:
         </div>
     </div>
 
+    <div id="protection-warning" class="protection-warning" style="display: none;"></div>
+
     <!-- ======================================================================= -->
     <!-- НАСТРОЙКИ ФРАКЦИЙ                                                       -->
     <!-- ======================================================================= -->
@@ -376,7 +392,8 @@ hide:
                     <h4 class="col-title">Параметры отбора</h4>
                     <div class="input-group"><span class="input-label">% от АС</span><input data-path="hearts.percent" class="input-field" type="number" /></div>
                     <div class="input-group"><span class="input-label">T завершения, °C</span><input data-path="ssvcSettings.hearts_finish_temp" class="input-field" type="number" step="0.1" placeholder="0 = по %" /></div>
-                    <div class="input-group"><span class="input-label">Снижение скорости, %</span><input data-path="ssvcSettings.decrement" class="input-field" type="number" /></div>
+                    <div class="input-group"><span class="input-label">Снижение при стопе, %</span><input data-path="ssvcSettings.decrement" class="input-field" type="number" /></div>
+                    <p class="input-hint">Применяется при предекременте/стопе; время стопов не моделируется.</p>
                     <div class="input-group"><span class="input-label">Клапан, мл/ч</span><input data-path="ssvcSettings.valve_bw.1" class="input-field" type="number" /></div>
                     <div class="sub-settings-grid">
                         <div class="sub-settings-group">
@@ -389,12 +406,42 @@ hide:
                             <div class="input-group"><span class="input-label">Открытие, мс</span><input type="number" data-path="ssvcSettings.hearts.0" class="input-field" step="0.1"></div>
                         </div>
                     </div>
+                    <div class="sub-settings-grid">
+                        <div class="sub-settings-group">
+                            <h5 class="sub-settings-title">Снижение (Формула)</h5>
+                            <div class="input-group"><span class="input-label">Режим</span>
+                                <select data-path="ssvcSettings.formula" class="input-field">
+                                    <option value="0">Выкл</option>
+                                    <option value="1">Формула</option>
+                                    <option value="2">Авто 92+</option>
+                                </select>
+                            </div>
+                            <div class="input-group"><span class="input-label">Начало формулы, °C</span><input data-path="ssvcSettings.formula_start_temp" class="input-field" type="number" step="0.1" min="84" max="100" /></div>
+                            <div class="input-group"><span class="input-label">Ожидаемая Т первого предекремента, °C</span><input data-path="planning.firstPredecTd2" class="input-field" type="number" step="0.1" min="92" max="99" /></div>
+                            <p class="input-hint">Оценка: линейное снижение 92→99 °C; первая Т — только для «Авто 92+»; стопы не моделируются.</p>
+                        </div>
+                        <div class="sub-settings-group">
+                            <h5 class="sub-settings-title">Гистерезис и предекремент</h5>
+                            <div class="input-group"><span class="input-label">Гистерезис, °C</span><input data-path="ssvcSettings.hyst" class="input-field" type="number" step="0.01" min="0" max="50" /></div>
+                            <div class="input-group"><span class="input-label">Предекремент</span>
+                                <select data-path="ssvcSettings.predec" class="input-field">
+                                    <option value="0">Выкл</option>
+                                    <option value="7">0,07 °C</option>
+                                    <option value="13">0,13 °C</option>
+                                </select>
+                            </div>
+                            <p class="input-hint">Для 0,07 °C нужен гистерезис ≥ 0,12 °C, для 0,13 °C — ≥ 0,18 °C.</p>
+                        </div>
+                    </div>
                 </div>
                 <div class="results-col">
                     <h4 class="col-title">Расчетные значения</h4>
                     <div id="an-fractions-heartsMl" class="analytics-item"><span class="analytics-label">Объем</span><div class="value-container"><span class="analytics-value" data-result="analytics.fractions.heartsMl"></span></div></div>
                     <div id="an-flows-hearts" class="analytics-item"><span class="analytics-label">Скорость</span><div class="value-container"><span class="analytics-value" data-result="analytics.flows.hearts"></span><span class="initial-value" data-result="analytics.flows.hearts_final"></span></div></div>
                     <div id="an-timers-hearts_timer" class="analytics-item"><span class="analytics-label">Время</span><div class="value-container"><span class="analytics-value" data-result="analytics.timers.hearts"></span></div></div>
+                    <div id="an-flows-hearts_avg" class="analytics-item"><span class="analytics-label">Средняя скорость</span><div class="value-container"><span class="analytics-value" data-result="analytics.flows.hearts_avg"></span></div></div>
+                    <div id="an-formula-start" class="analytics-item"><span class="analytics-label">Формула</span><div class="value-container"><span class="analytics-value" data-result="analytics.formula.start"></span><span class="analytics-label">→</span><span class="analytics-value" data-result="analytics.formula.end"></span></div></div>
+                    <div id="an-formula-drop" class="analytics-item"><span class="analytics-label">Снижение на предекременте</span><div class="value-container"><span class="analytics-value" data-result="analytics.formula.initialDropPct"></span></div></div>
                 </div>
             </div>
         </details>

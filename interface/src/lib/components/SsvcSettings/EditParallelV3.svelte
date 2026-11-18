@@ -153,7 +153,7 @@
 			class="text-blue-500 hover:text-blue-700 flex-shrink-0"
 			onclick={openModal}
 		>
-			<Pencil class="w-10 h-10"/>
+			<Pencil class="h-5 w-5" />
 		</button>
 	{/if}
 </div>

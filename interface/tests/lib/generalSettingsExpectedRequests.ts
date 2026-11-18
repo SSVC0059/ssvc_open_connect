@@ -70,12 +70,28 @@ export const GENERAL_SETTINGS_EXPECTED_REQUESTS = {
 		getValue: (s: SsvcSettings) => s.tank_mmhg,
 		controlType: 'modal'
 	} satisfies GeneralSettingsFieldSpec,
+	predec: {
+		label: 'Предекремент',
+		field: 'predec',
+		valueDescription: 'число, 0=выкл / 7=0,07 °C / 13=0,13 °C',
+		expectedRequestBody: 13,
+		getValue: (s: SsvcSettings) => s.predec,
+		controlType: 'select'
+	} satisfies GeneralSettingsFieldSpec,
 	tails_temp: {
-		label: 'Температура ТД2 завершения отбора тела',
+		label: 'Температура ТД2 завершения отбора хвостов',
 		field: 'tails_temp',
 		valueDescription: 'число, °С',
 		expectedRequestBody: 85,
 		getValue: (s: SsvcSettings) => s.tails_temp,
+		controlType: 'modal'
+	} satisfies GeneralSettingsFieldSpec,
+	hearts_finish_temp: {
+		label: 'Температура ТД2 завершения отбора тела',
+		field: 'hearts_finish_temp',
+		valueDescription: 'число, °С',
+		expectedRequestBody: 93,
+		getValue: (s: SsvcSettings) => s.hearts_finish_temp,
 		controlType: 'modal'
 	} satisfies GeneralSettingsFieldSpec,
 	formula: {
