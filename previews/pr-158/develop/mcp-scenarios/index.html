@@ -1,0 +1,5099 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Модуль расширения функционала автоматики отбора для ректификации  SSVC0059V2,">
+      
+      
+        <meta name="author" content="thedemoncat">
+      
+      
+        <link rel="canonical" href="https://SSVC0059.github.io/ssvc_open_connect/previews/pr-158/develop/mcp-scenarios/">
+      
+      
+        <link rel="prev" href="../mcp-server-agents/">
+      
+      
+        <link rel="next" href="../mcp-contract-notes/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../media/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>MCP-сервер: пользовательские сценарии - SSVC Open Connect</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#mcp-openconnect" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="SSVC Open Connect" class="md-header__button md-logo" aria-label="SSVC Open Connect" data-md-component="logo">
+      
+  <img src="../../media/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SSVC Open Connect
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              MCP-сервер: пользовательские сценарии
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/SSVC0059/ssvc_open_connect" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SSVC0059/ssvc_open_connect
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Главная
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../preparation/driver/" class="md-tabs__link">
+          
+  
+  
+  Подготовка
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../usage/get_started/" class="md-tabs__link">
+          
+  
+  
+  Первый запуск
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../usage/interfaces/uart/" class="md-tabs__link">
+          
+  
+  
+  Периферия
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../calculator/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Калькулятор ректификации
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../preparation/controller/" class="md-tabs__link">
+          
+  
+  
+  Платы и готовые модули
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../glossary/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Глоссарий
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../info/changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Список изменений
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Для разработчиков
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SSVC Open Connect" class="md-nav__button md-logo" aria-label="SSVC Open Connect" data-md-component="logo">
+      
+  <img src="../../media/logo.png" alt="logo">
+
+    </a>
+    SSVC Open Connect
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/SSVC0059/ssvc_open_connect" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SSVC0059/ssvc_open_connect
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Главная
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подготовка
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Подготовка
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/driver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Прошивка контроллера под OS Windows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Скачивание релиза SSVC Open Connect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/flasher/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Автоматическая установка актуальной версии
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/flasher_manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Автоматическая установка актуальной версии
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/adafruit_webserial_esptool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Прошивка через Adafruit WebSerial ESPTool
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Первый запуск
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Первый запуск
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/get_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Начало работы с контроллером
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/messengers/vk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Уведомления VK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Периферия
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Периферия
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/uart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение к SSVC по UART
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Питание контроллера
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/ds18b20/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Датчик температуры DS18B20
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/bmp581/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Датчик давления BMP581 (I²C)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/interfaces/rgb_led/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение адресного светодиода
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/ds3231-rtc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Часы реального времени DS3231 (I2C)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../calculator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Калькулятор ректификации
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Платы и готовые модули
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Платы и готовые модули
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preparation/controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модули ESP32-S3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    KC868-A6v3
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    KC868-A6v3
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../boards/kc868-a6/KC868-A6v3-KinCony.ru/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Описание (KinCony)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../boards/kc868-a6/GPIO_Pinout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Распиновка GPIO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../boards/kc868-a6/I2C_devices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    I2C устройства
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Готовые модули
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Готовые модули
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ready_made/connect/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Подключение модуля
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ready_made/din_version/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модуль для установки на DIN рейку
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ready_made/inside_version/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Модуль для установки внутри ящика
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Глоссарий
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../info/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Список изменений
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Для разработчиков
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture-manifest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Манифест архитектуры: IoT-проект на базе ESP32SvelteKit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Сборка прошивки
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Тестирование
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docs-previews/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Превью документации из pull request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../i2c_monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Мониторинг I2C и алертинг (прошивка)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reverse-proxy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Удалённый доступ: TLS через reverse-proxy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_10_8" id="__nav_10_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    REST API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Документация по REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Настроек
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Команд
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/sensors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Датчики
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/telegram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Telegram Бота
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/subsystem/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Подсистемы
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/openconnect/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API OpenConnect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Профили
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Файлов
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/logs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Журналов ректификаций
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    События WebSocket (/ws/events)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Безопасности (JWT)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP-сервер (архитектура и план)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-server-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP-сервер: пакеты работ для агентов
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP-сервер: пользовательские сценарии
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP-сервер: пользовательские сценарии
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0. Как читать каталог
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Роли
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Роли">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Типовой день домашнего пользователя
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Опора: что происходит в процессе
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Опора: что происходит в процессе">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Две ветки прошивки — два набора этапов
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Что видно в телеметрии
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Три ловушки, из которых выросли сценарии
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Сценарии: перед запуском
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Сценарии: перед запуском">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A1. «Готов ли контроллер к запуску?»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A2. «Запуск не сработал — почему?»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A3. «Что вообще умеет мой контроллер?»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Сценарии: ведение процесса
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Сценарии: ведение процесса">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#b1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B1. «Поставить с вечера и пойти спать»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B2. «Этапы переключаются вручную»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B3. «Закрыть клапан на время, не останавливая процесс»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B4. «Аварийная остановка»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Сценарии: ночной дозор
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Сценарии: ночной дозор">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#c1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C1. «Следить за событиями и звонить, если что»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C2. «Процесс завис — уже четыре часа одно и то же»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Сценарии: настройка параметров
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Сценарии: настройка параметров">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#d1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D1. «Гистерезис и предекремент: не сломать друг друга»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d2-92" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D2. «Формула или Формула авто 92+?»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d3-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D3. «Сброс и снижение голов» (только 2.3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D4. «Откалибровать пропускную способность клапанов»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D5. «Поправить скорость прямо сейчас, не перезапуская»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Сценарии: профили и калькулятор
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Сценарии: профили и калькулятор">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#e1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E1. «Профиль из расчёта, а не из головы»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E2. «Профиль и контроллер разошлись»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E3. «Профиль на другой аппарат»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Сценарии: разбор после процесса
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Сценарии: разбор после процесса">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#f1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F1. «Что было ночью?»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F2. «План против факта»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F3. «Накопить статистику по сырью»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Сценарии: безопасность, датчики, реле
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Сценарии: безопасность, датчики, реле">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#g1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        G1. «Датчики уровня не дают стартовать»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#g2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        G2. «Тревоги по температуре приёмных ёмкостей»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#g3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        G3. «Реле: включить вентиляцию по стадии и выключить при аварии»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Сценарии: диагностика
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Сценарии: диагностика">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#h1-i2c" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        H1. «Шина I²C подозрительно молчит»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#h2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        H2. «Настройки не применились»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#h3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        H3. «Журнал не скачивается»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Сценарии: интеграции и мелочи с эффектом
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Сценарии: интеграции и мелочи с эффектом">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#i1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I1. «Уведомления туда, где я их увижу»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I2. «Отдать телеметрию в умный дом»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#j1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        J1. «Показать адрес сервера на экране контроллера»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Сводная матрица
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Сводная матрица">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#121-p0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.1 Что даёт первый работающий вариант (P0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Сквозной сценарий: один вечер
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Антисценарии: чего сервер не делает
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15. Известные расхождения документации
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        16. Как проверять сценарии
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        17. Что нужно добавить в каталог инструментов
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        18. Итог
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-contract-notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP-сервер: контракт прошивки (разведка)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ssvc_uart_api_docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UART API SSVC (справка)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ssvc-serial-protocol/develop/Readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Протокол UART — примеры (JSON/TXT)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_10_15" id="__nav_10_15_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Фронтенд
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_15">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Фронтенд
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frontend/frontend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    📑 SCSS Классы и Компоненты Пользовательского Интерфейса
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frontend/styling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Стратегия стилей (Tailwind + DaisyUI)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0. Как читать каталог
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Роли
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Роли">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Типовой день домашнего пользователя
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Опора: что происходит в процессе
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Опора: что происходит в процессе">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Две ветки прошивки — два набора этапов
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Что видно в телеметрии
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Три ловушки, из которых выросли сценарии
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Сценарии: перед запуском
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Сценарии: перед запуском">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A1. «Готов ли контроллер к запуску?»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A2. «Запуск не сработал — почему?»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A3. «Что вообще умеет мой контроллер?»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Сценарии: ведение процесса
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Сценарии: ведение процесса">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#b1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B1. «Поставить с вечера и пойти спать»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B2. «Этапы переключаются вручную»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B3. «Закрыть клапан на время, не останавливая процесс»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B4. «Аварийная остановка»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Сценарии: ночной дозор
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Сценарии: ночной дозор">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#c1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C1. «Следить за событиями и звонить, если что»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C2. «Процесс завис — уже четыре часа одно и то же»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Сценарии: настройка параметров
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Сценарии: настройка параметров">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#d1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D1. «Гистерезис и предекремент: не сломать друг друга»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d2-92" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D2. «Формула или Формула авто 92+?»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d3-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D3. «Сброс и снижение голов» (только 2.3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D4. «Откалибровать пропускную способность клапанов»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D5. «Поправить скорость прямо сейчас, не перезапуская»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Сценарии: профили и калькулятор
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Сценарии: профили и калькулятор">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#e1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E1. «Профиль из расчёта, а не из головы»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E2. «Профиль и контроллер разошлись»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E3. «Профиль на другой аппарат»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Сценарии: разбор после процесса
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Сценарии: разбор после процесса">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#f1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F1. «Что было ночью?»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F2. «План против факта»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F3. «Накопить статистику по сырью»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Сценарии: безопасность, датчики, реле
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Сценарии: безопасность, датчики, реле">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#g1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        G1. «Датчики уровня не дают стартовать»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#g2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        G2. «Тревоги по температуре приёмных ёмкостей»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#g3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        G3. «Реле: включить вентиляцию по стадии и выключить при аварии»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Сценарии: диагностика
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Сценарии: диагностика">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#h1-i2c" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        H1. «Шина I²C подозрительно молчит»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#h2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        H2. «Настройки не применились»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#h3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        H3. «Журнал не скачивается»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Сценарии: интеграции и мелочи с эффектом
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Сценарии: интеграции и мелочи с эффектом">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#i1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I1. «Уведомления туда, где я их увижу»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I2. «Отдать телеметрию в умный дом»
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#j1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        J1. «Показать адрес сервера на экране контроллера»
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Сводная матрица
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Сводная матрица">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#121-p0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.1 Что даёт первый работающий вариант (P0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Сквозной сценарий: один вечер
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Антисценарии: чего сервер не делает
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15. Известные расхождения документации
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        16. Как проверять сценарии
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        17. Что нужно добавить в каталог инструментов
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        18. Итог
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<div><h1 id="mcp-openconnect">Пользовательские сценарии MCP-сервера OpenConnect</h1>
+<blockquote>
+<p><strong>Что это.</strong> Каталог жизненных сценариев, для которых создаётся MCP-сервер: что делает пользователь,
+что делает сервер, какой получается эффект. Документ отвечает на вопрос «зачем это нужно человеку»,
+а не «как это устроено внутри».</p>
+<p><strong>Связанные документы:</strong> архитектура и план — <a href="../mcp-server/">mcp-server.md</a>; пакеты работ для
+агентов — <a href="../mcp-server-agents/">mcp-server-agents.md</a>.</p>
+<p><strong>Источники, на которых построены сценарии:</strong>
+- UART API SSVC0059_V2 (SmartModule) — команды, <code>SET</code>, состав телеметрии, события;
+- руководства пользователя прошивок <strong>2.2.55 (Pro)</strong> и <strong>2.3.28 (Pro.3H)</strong> — алгоритмы этапов,
+  ограничения параметров, формат журнала;
+- калькулятор ректификации и редактор профилей OpenConnect — физика процесса, расчёт фракций,
+  производные настройки SSVC.</p>
+</blockquote>
+<hr>
+<h2 id="0">0. Как читать каталог</h2>
+<p>Каждый сценарий — это паспорт:</p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Смысл</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Кто / когда</strong></td>
+<td>роль пользователя и момент, в который сценарий возникает</td>
+</tr>
+<tr>
+<td><strong>Ситуация</strong></td>
+<td>живое описание проблемы, ради которой всё затевается</td>
+</tr>
+<tr>
+<td><strong>Ход</strong></td>
+<td>последовательность действий сервера (инструменты <code>oc_*</code>)</td>
+</tr>
+<tr>
+<td><strong>Эффект</strong></td>
+<td>что пользователь получает: время, качество, безопасность, деньги</td>
+</tr>
+<tr>
+<td><strong>Требования</strong></td>
+<td>ветка прошивки, версия API, настройки, без которых сценарий не работает</td>
+</tr>
+<tr>
+<td><strong>Если что-то не так</strong></td>
+<td>типовые отказы и что сервер сообщает</td>
+</tr>
+<tr>
+<td><strong>Ограничения</strong></td>
+<td>чего сценарий не гарантирует — чтобы не было ложных ожиданий</td>
+</tr>
+</tbody>
+</table>
+<p>Обозначения приоритета: <strong>P0</strong> — первый работающий вариант (чтение и команды), <strong>P1</strong> — настройки,
+<strong>P2</strong> — датчики/реле/калибровка, <strong>P3</strong> — журналы, профили, анализ.</p>
+<blockquote>
+<p><strong>Чего в этом документе нет.</strong> Здесь не проверялись все сценарии на живом оборудовании — это каталог
+замысла и приёмки. Проверка каждого сценария выполняется по мере готовности соответствующего пакета
+работ (см. §10).</p>
+</blockquote>
+<hr>
+<h2 id="1">1. Роли</h2>
+<table>
+<thead>
+<tr>
+<th>Роль</th>
+<th>Кто это</th>
+<th>Что для него важно</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Домашний ректификатор</strong></td>
+<td>делает спирт для себя, 1–2 перегона в месяц, колонна в гараже</td>
+<td>не сидеть у колонны, не испортить продукт, понять, что пошло не так</td>
+</tr>
+<tr>
+<td><strong>Опытный оператор</strong></td>
+<td>ведёт процесс регулярно, подбирает режимы, ведёт статистику</td>
+<td>тонкая настройка, воспроизводимость, разбор журналов</td>
+</tr>
+<tr>
+<td><strong>Техподдержка продукта</strong></td>
+<td>сопровождает чужие установки</td>
+<td>дистанционная диагностика без выезда</td>
+</tr>
+<tr>
+<td><strong>Разработчик</strong></td>
+<td>делает прошивку/интерфейс</td>
+<td>быстрый доступ к состоянию и логам без ручных curl</td>
+</tr>
+</tbody>
+</table>
+<p>Дальше в сценариях роли указаны коротко: <em>домашний</em>, <em>оператор</em>, <em>поддержка</em>, <em>разработчик</em>.</p>
+<h3 id="11">1.1 Типовой день домашнего пользователя</h3>
+<p>Вечером залил сырец, поставил отбор с отсрочкой, ушёл. Ночью колонна работает. Утром нужно понять:
+прошло ли всё штатно, сколько отобрано, не было ли аварийных остановок. Днём — перегнать хвосты или
+законсервировать. Сервер нужен в трёх точках: <strong>поставить</strong> (правильно), <strong>присмотреть</strong> (не сидя
+рядом), <strong>разобрать</strong> (что было).</p>
+<hr>
+<h2 id="2">2. Опора: что происходит в процессе</h2>
+<h3 id="21">2.1 Две ветки прошивки — два набора этапов</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>2.2.55 (Pro)</strong></th>
+<th><strong>2.3.28 (Pro.3H)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Клапан 1</td>
+<td>ГУО — головы</td>
+<td>ГУО — головы</td>
+</tr>
+<tr>
+<td>Клапан 2</td>
+<td>УО — тело</td>
+<td>УО — тело</td>
+</tr>
+<tr>
+<td>Клапан 3</td>
+<td>СУО — сивушный узел (хвосты)</td>
+<td>УОП — подголовники</td>
+</tr>
+<tr>
+<td>Этапы</td>
+<td>Головы → <strong>Тело</strong> → <strong>Хвосты</strong></td>
+<td>Головы → <strong>Подголовники</strong> → <strong>Тело</strong></td>
+</tr>
+<tr>
+<td>Параллельный отбор</td>
+<td>СУО по 4 диапазонам ТД2 (<code>parallel_v3</code>) и ГУО (<code>parallel_v1</code>)</td>
+<td>УОП фиксированной скоростью (<code>parallel</code>)</td>
+</tr>
+<tr>
+<td>Сброс и снижение голов</td>
+<td>нет</td>
+<td>есть (<code>extended_heads</code>, <code>release_*</code>, <code>heads_final</code>)</td>
+</tr>
+<tr>
+<td>Конец процесса</td>
+<td><code>tails_finished</code></td>
+<td><code>hearts_finished</code></td>
+</tr>
+</tbody>
+</table>
+<p>Это первое, что должен понимать сервер: <strong>один и тот же запрос означает разное</strong> в зависимости от
+ветки. Отсюда — обязательная проверка <code>GET /rest/oc/info</code> перед сценариями, где это важно.</p>
+<h3 id="22">2.2 Что видно в телеметрии</h3>
+<p>Поле <code>type</code> переключается по этапам: <code>waiting</code> (дежурный), <code>settings</code> (экраны настроек),
+<code>tp1_waiting</code> (ждём прогрева ТД1), <code>delayed_start</code> (отсчёт), <code>heads</code>, <code>late_heads</code>, <code>hearts</code>, <code>tails</code>.</p>
+<p>Полезные для сценариев поля:</p>
+<ul>
+<li><code>common.cfg_chgd</code> — настройки меняли <strong>кнопками на контроллере</strong>; нужно перечитать <code>GET_SETTINGS</code>;</li>
+<li><code>common.tts</code> — сколько секунд до сохранения настроек в энергонезависимую память: <strong>если он есть,
+  питание выключать нельзя</strong>;</li>
+<li><code>common.mmhg</code>, <code>tp1</code>, <code>tp2</code> — сырые показания; <code>tp1_sap</code>, <code>tp2_sap</code> — приведённые к 760 мм рт. ст.
+  (именно они участвуют в алгоритме, и они отличаются от <code>tp1</code>);</li>
+<li><code>tp1_target</code> — зафиксированная температура отбора тела; <code>hysteresis</code>, <code>decrement</code> — действующие;</li>
+<li><code>stop</code>, <code>stops</code>, <code>preempt_cnt</code> — была ли остановка отбора, сколько всего, сколько упреждений;</li>
+<li><code>alc</code> — расчётная спиртуозность кипящей смеси в кубе;</li>
+<li><code>v1</code>, <code>v2</code>, <code>v3</code> — накопленное время открытия клапанов, секунды;</li>
+<li><code>event</code> — <code>heads_finished</code>, <code>late_heads_finished</code>, <code>hearts_finished</code>, <code>tails_finished</code>,
+  <code>ds_error</code>, <code>ds_error_stop</code>, <code>stabilization_limit</code>, <code>manually_closed</code>, <code>manually_opened</code>.</li>
+</ul>
+<h3 id="23">2.3 Три ловушки, из которых выросли сценарии</h3>
+<ol>
+<li><strong><code>PAUSE</code> — это не «пауза процесса»</strong>. По API <code>PAUSE</code> = вход в ручное управление клапаном текущего
+   этапа (клапан закрыт), <code>RESUME</code> = выход из этого режима. Пользователь, который просит «поставь на
+   паузу», и API, который делает «ручное управление», — разные вещи. Сервер обязан назвать это честно.</li>
+<li><strong><code>START</code> работает только из дежурного режима</strong>. Если процесс уже идёт, команда не перезапускает
+   его. Молчание в ответ — не повод повторять.</li>
+<li><strong><code>SET</code> ограничен 300 символами</strong>. Полный набор настроек в одну строку не влезает — сервер режет
+   на пакеты и сообщает, что попало в какой.</li>
+</ol>
+<hr>
+<h2 id="3">3. Сценарии: перед запуском</h2>
+<h3 id="a1">A1. «Готов ли контроллер к запуску?»</h3>
+<p><strong>Кто / когда</strong> — домашний, вечером, за десять минут до старта.</p>
+<p><strong>Ситуация.</strong> Сырец залит, колонна собрана, но перед запуском хочется убедиться, что ничего не отвалилось
+за месяц: датчики на месте, шина I²C жива, датчики уровня не в блокирующем состоянии, UART до SSVC есть.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_info</code> — версия прошивки, API, совместимость.
+2. <code>oc_get_hardware_faults</code> — активные сбои и список ответивших адресов I²C.
+3. <code>oc_get_sensors</code> — есть ли показания по зонам, нет ли пропавших датчиков.
+4. <code>oc_get_xkc25_status</code> — <code>block_start</code>, <code>block_reasons</code>, калибровка.
+5. <code>oc_get_process_status</code> — <code>uart_error</code>, стадия <code>waiting</code>.</p>
+<p><strong>Эффект.</strong> Один короткий отчёт вместо пяти вкладок веб-интерфейса. Пользователь видит «всё готово» или
+конкретную причину, по которой лучше не начинать: например, «датчик уровня не калиброван, старт будет
+заблокирован».</p>
+<p><strong>Требования.</strong> Любая ветка, API ≥ 1.7; учётная запись admin (датчики и пороги — только admin).</p>
+<p><strong>Если что-то не так.</strong> <code>forbidden_admin_required</code> — сервер прямо говорит, что нужен admin, а не
+«устройство не поддерживает». <code>device_unreachable</code> — контроллер не отвечает.</p>
+<p><strong>Ограничения.</strong> Не проверяет физику: наличие воды в дефлегматоре, плотность набивки, герметичность.</p>
+<hr>
+<h3 id="a2">A2. «Запуск не сработал — почему?»</h3>
+<p><strong>Кто / когда</strong> — домашний, нажал «Старт» в интерфейсе/у агента, ничего не происходит.</p>
+<p><strong>Ситуация.</strong> Команда ушла, но процесс не начался. Причины бывают четыре, и они лечат по-разному:
+предохранитель датчиков уровня, потеря UART, ожидание прогрева ТД1, отложенный пуск.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_start</code> → если 409 с <code>block_reasons</code>, это предохранитель XKC-25: разбираем и предлагаем калибровку.
+2. Если 200, но стадия не «головы» — <code>oc_get_process_status</code> и <code>oc_get_telemetry</code>:
+   - <code>uartConnectionError: true</code> → связь с SSVC потеряна, команда не дошла;
+   - <code>type: tp1_waiting</code> → контроллер ждёт прогрева колонны (это нормально, не ошибка);
+   - <code>type: delayed_start</code> с <code>countdown</code> → работает отсрочка, всё идёт по плану;
+   - <code>type: waiting</code> при уже отправленном START → процесс не стартовал (START работает только из дежурного
+     режима, либо команда не принята очередью).
+3. <code>oc_wait_for_change</code> на ожидаемую стадию с таймаутом — чтобы не гадать «долго ли ещё».</p>
+<p><strong>Эффект.</strong> Вместо «не работает» пользователь получает диагноз и следующее действие. Это самый частый
+вопрос поддержки, и он закрывается за один вызов.</p>
+<p><strong>Требования.</strong> API ≥ 1.7. Для разбора <code>block_reasons</code> — P2 (датчики уровня).</p>
+<p><strong>Если что-то не так.</strong> <code>queue_full</code> — очередь команд забита, повтор через несколько секунд;
+<code>feature_unsupported</code> — команда не поддерживается прошивкой, повторять бессмысленно.</p>
+<p><strong>Ограничения.</strong> Сервер не «продавливает» запуск: если предохранитель блокирует, он не обходит его.</p>
+<hr>
+<h3 id="a3">A3. «Что вообще умеет мой контроллер?»</h3>
+<p><strong>Кто / когда</strong> — оператор или поддержка, после обновления прошивки SSVC или OpenConnect.</p>
+<p><strong>Ситуация.</strong> В инструкции написано про «Формулу авто 92+» и «Сброс и снижение», а у человека более
+ранняя прошивка. Или наоборот: он купил свежий контроллер и не знает, что теперь доступно.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_info</code> — <code>api</code>, <code>api_code</code>, <code>api_compatibility</code>, <code>is_support_release</code>.
+2. <code>oc_get_capabilities</code> — реестр <code>api_features</code> (<code>predec</code>, <code>extended_heads</code>, <code>formula_auto92</code>,
+   <code>tank_mmhg_act</code>, <code>hearts_preempt_cnt</code>, <code>get_log</code>) с <code>available</code>.
+3. Сервер объясняет разницу словами: что заработает, а что нет.</p>
+<p><strong>Эффект.</strong> Человек не тратит вечер на настройку функции, которой на его прошивке нет. Поддержка не
+выясняет это перепиской.</p>
+<p><strong>Требования.</strong> API ≥ 1.7.</p>
+<p><strong>Ограничения.</strong> <code>api_features</code> описывает UART API, а не маркетинговые возможности прошивки: наличие
+<code>extended_heads</code> в реестре означает «параметры принимаются», а не «опция включена».</p>
+<hr>
+<h2 id="4">4. Сценарии: ведение процесса</h2>
+<h3 id="b1">B1. «Поставить с вечера и пойти спать»</h3>
+<p><strong>Кто / когда</strong> — домашний, вечер, процесс на 6–10 часов.</p>
+<p><strong>Ситуация.</strong> Нужно: применить профиль, поставить отсрочку, дождаться стабилизации, отобрать головы,
+перейти к телу. Человек не хочет сидеть рядом, но хочет знать, что старт состоялся.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_profile_get</code> + <code>oc_get_settings</code> — показать, что именно изменится в контроллере.
+2. <code>oc_profile_apply</code> (с подтверждением) — применить настройки профиля.
+3. <code>oc_update_settings</code> — точечно поправить то, что зависит от сегодняшнего сырца (например,
+   <code>heads_timer</code>, <code>start_delay</code>, <code>hearts_finish_temp</code>).
+4. <code>oc_start</code> (<code>confirm: true</code>) — старт.
+5. <code>oc_wait_for_change</code> — последовательно: <code>tp1_waiting</code> → <code>delayed_start</code> → <code>heads</code> с общим бюджетом
+   времени; на каждом шаге короткий отчёт.
+6. По достижении <code>heads</code> — сообщить «процесс идёт, головы, ориентировочно до HH:MM» (оценка по
+   <code>countdown</code>).</p>
+<p><strong>Эффект.</strong> Пользователь уходит спать, будучи уверенным, что старт произошёл и головы идут. Без сервера
+он проверяет это вручную через приложение и всё равно сомневается.</p>
+<p><strong>Требования.</strong> API ≥ 1.7; <code>auto_mode</code> (автопереходы) включён на контроллере — иначе этапы придётся
+переключать вручную (см. B2).</p>
+<p><strong>Если что-то не так.</strong> <code>guard_blocked</code> — старт не состоялся, данные в <code>block_reasons</code>;
+<code>partial_apply</code> при настройках — часть SET не принята, процесс <strong>не</strong> запускается автоматически.</p>
+<p><strong>Ограничения.</strong> Оценка времени по <code>countdown</code> — это то, что показывает контроллер; она не учитывает
+остановки отбора по температуре, поэтому реальное время обычно больше.</p>
+<hr>
+<h3 id="b2">B2. «Этапы переключаются вручную»</h3>
+<p><strong>Кто / когда</strong> — оператор, у которого <code>auto_mode = 0</code> (переходы «вручную»).</p>
+<p><strong>Ситуация.</strong> Контроллер по завершении голов подаёт сигнал и ждёт. Нужно, чтобы кто-то (или что-то)
+сказал «дальше» — но без доступа к кнопкам.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_wait_for_change</code> на событие завершения этапа (<code>heads_finished</code> в <code>event</code>, либо смена <code>type</code>).
+2. Сообщение пользователю: «головы отобраны, отбор остановлен контроллером, жду команды».
+3. По решению — <code>oc_next</code> (<code>confirm: true</code>), затем <code>oc_wait_for_change</code> на следующий <code>type</code>.
+4. Для ветки 2.3 то же самое между <code>late_heads</code> и <code>hearts</code>.</p>
+<p><strong>Эффект.</strong> Ручной режим перестаёт требовать физического присутствия: человек подтверждает шаг из
+любого места, а не стоит у колонны.</p>
+<p><strong>Требования.</strong> API ≥ 1.7; <code>auto_mode = 0</code>; для ветки 2.3 — <code>late_heads</code> в поддерживаемых этапах.</p>
+<p><strong>Ограничения.</strong> <code>next</code> не «перезапускает» этап и не отменяет его — это аналог кнопки «Далее».</p>
+<hr>
+<h3 id="b3">B3. «Закрыть клапан на время, не останавливая процесс»</h3>
+<p><strong>Кто / когда</strong> — оператор, заметил, что приёмная ёмкость почти полна, или нужно срочно отлучиться.</p>
+<p><strong>Ситуация.</strong> Нужно прекратить отбор, но не останавливать процесс: колонна продолжает работать «на
+себя», температура стабилизируется.</p>
+<p><strong>Ход.</strong>
+1. Сервер объясняет <strong>до</strong> действия: <code>PAUSE</code> — это вход в ручное управление клапаном текущего этапа с
+   закрытым клапаном; <code>RESUME</code> — выход, процесс продолжается с теми же настройками.
+2. <code>oc_pause</code> (<code>confirm: true</code>) → <code>oc_get_process_status</code> подтверждает, что стадия прежняя.
+3. По готовности — <code>oc_resume</code> (<code>confirm: true</code>).</p>
+<p><strong>Эффект.</strong> Человек получает именно то, что просил, и не пугается, что «процесс остановился». Отдельный
+плюс: в логе событий появятся <code>manually_closed</code> / <code>manually_opened</code>, и это потом видно в разборе.</p>
+<p><strong>Требования.</strong> API ≥ 1.7.</p>
+<p><strong>Если что-то не так.</strong> <code>oc_pause</code> вне этапа отбора (в <code>waiting</code>/<code>delayed_start</code>) не имеет смысла —
+сервер предупреждает, а не отправляет команду вслепую.</p>
+<p><strong>Ограничения.</strong> Это не «пауза стабилизации» и не отмена декремента: скорость отбора после <code>RESUME</code>
+остаётся той, что была.</p>
+<hr>
+<h3 id="b4">B4. «Аварийная остановка»</h3>
+<p><strong>Кто / когда</strong> — любой, при запахе, шуме, переполнении, скачке температуры.</p>
+<p><strong>Ситуация.</strong> Нужно остановить отбор немедленно, не дожидаясь, пока очередь команд разберётся с
+накопленным.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_emergency_stop</code> — без подтверждения (защитное действие), приоритетная очередь контроллера.
+2. <code>oc_get_process_status</code> — подтвердить, что стадия сменилась.
+3. Если связи нет — сервер честно говорит <code>device_unreachable</code> и предлагает физические действия
+   (кнопка на контроллере, питание ТЭНа), а не изображает успех.</p>
+<p><strong>Эффект.</strong> Единственная команда, которая не требует подтверждения, — та, которая спасает.</p>
+<p><strong>Требования.</strong> API ≥ 1.7; <code>emergency_stop</code> поддерживается прошивкой OpenConnect (передаётся как
+приоритетная команда).</p>
+<p><strong>Ограничения.</strong> Останавливает <strong>отбор</strong>, а не нагрев. Питание ТЭНа и воду сервер не контролирует.</p>
+<hr>
+<h2 id="5">5. Сценарии: ночной дозор</h2>
+<h3 id="c1">C1. «Следить за событиями и звонить, если что»</h3>
+<p><strong>Кто / когда</strong> — домашний, ночью, телефон рядом.</p>
+<p><strong>Ситуация.</strong> Ночью важно не «всё время видеть график», а получить сообщение в трёх случаях: этап
+закончился, датчик отказал, превышен лимит стабилизации. И не получать сообщений об остальном.</p>
+<p><strong>Ход.</strong>
+1. Фоновый цикл: опрос телеметрии <code>SSVC_POLL_HZ</code> (1 Гц), сравнение снимка с предыдущим.
+2. На <code>event</code> или смену <code>type</code> — уведомление нужного уровня:
+   - <code>heads_finished</code> / <code>late_heads_finished</code> / <code>hearts_finished</code> / <code>tails_finished</code> — «этап завершён»;
+   - <code>ds_error</code> — «ошибка датчика»; <code>ds_error_stop</code> — «оборудование отключено по ошибке датчика»
+     (<strong>критично</strong>: контроллер снял реле через 180 с, если ошибка не ушла);
+   - <code>stabilization_limit</code> — «температура не возвращается, лимит стабилизации превышен».
+3. Эскалация: при критическом событии — не только push, но и <code>oc_get_hardware_faults</code> +
+   <code>oc_get_process_status</code> в том же сообщении, чтобы человек не бегал по вкладкам.</p>
+<p><strong>Эффект.</strong> Человек спит, но узнаёт о проблеме в ту минуту, когда она возникла. Раньше — только если
+случайно откроет приложение.</p>
+<p><strong>Требования.</strong> API ≥ 1.7; настроенные уведомления (MCP-клиент или OpenConnect → VK/Telegram).</p>
+<p><strong>Ограничения.</strong> Доставка push зависит от клиента; сервер гарантирует обнаружение события, а не то, что
+телефон его покажет.</p>
+<hr>
+<h3 id="c2">C2. «Процесс завис — уже четыре часа одно и то же»</h3>
+<p><strong>Кто / когда</strong> — оператор, вернулся через несколько часов.</p>
+<p><strong>Ситуация.</strong> <code>type</code> не меняется, <code>time</code> растёт, но отбор фактически не идёт: клапан закрыт после
+остановки по температуре, и возврата нет. Такое бывает при переохлаждении дефлегматора или
+недостаточной мощности.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_process_status</code> + <code>oc_get_telemetry</code> — <code>stop: 1</code>, <code>stops</code>, <code>preempt_cnt</code>, <code>tp1</code> против
+   <code>tp1_target</code>.
+2. Сервер считает: сколько времени в состоянии <code>stop</code>, как далеко температура от <code>tp1_target</code>.
+3. Диагноз словами: «отбор остановлен, температура выше цели на X °C, число стопов N; похоже на …».
+4. Предложение действий: поднять мощность/подачу воды, либо <code>oc_next</code>, либо <code>oc_stop</code>.</p>
+<p><strong>Эффект.</strong> Пользователь узнаёт о застое через час, а не через сутки, и понимает причину.</p>
+<p><strong>Требования.</strong> API ≥ 1.7.</p>
+<p><strong>Ограничения.</strong> Сервер не управляет нагревом и водой, поэтому «лечит» только советами и командами
+контроллера.</p>
+<hr>
+<h2 id="6">6. Сценарии: настройка параметров</h2>
+<h3 id="d1">D1. «Гистерезис и предекремент: не сломать друг друга»</h3>
+<p><strong>Кто / когда</strong> — оператор, впервые включает предекремент.</p>
+<p><strong>Ситуация.</strong> Предекремент заранее снижает скорость отбора, не доводя до остановки. Но у него есть
+жёсткое условие: он работает только при достаточном гистерезисе.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_settings</code> — текущие <code>hyst</code>, <code>predec</code>, <code>decrement</code>.
+2. Сервер проверяет правило: <code>predec = 7</code> требует <code>hyst ≥ 0.12</code>; <code>predec = 13</code> требует <code>hyst ≥ 0.18</code>.
+3. Если правило нарушено — <strong>не отправляет</strong> <code>SET</code>, а объясняет: «предекремент будет автоматически
+   отключён контроллером, поднимите гистерезис или уменьшите предекремент».
+4. Если всё согласовано — <code>oc_update_settings</code> с обоими полями в одном пакете.
+5. Напоминание про «Сдвиг Т.отбора»: при включённом сдвиге (+0.07 °C) гистерезис ставят на 0.07 меньше.</p>
+<p><strong>Эффект.</strong> Убирает самую обидную ошибку начинающих: функция включена в интерфейсе, но не работает в
+контроллере, и человек не понимает почему.</p>
+<p><strong>Требования.</strong> <code>predec</code> — API ≥ 1.9. Сдвиг отбора входит в базовый набор 1.7.</p>
+<p><strong>Ограничения.</strong> Правила взяты из руководства изготовителя; если прошивка их изменит, сервер должен
+брать значения из <code>api_features</code>/валидации устройства.</p>
+<hr>
+<h3 id="d2-92">D2. «Формула или Формула авто 92+?»</h3>
+<p><strong>Кто / когда</strong> — оператор, подбирающий режим на новом сырье.</p>
+<p><strong>Ситуация.</strong> Обычная «Формула» начинает снижать скорость строго с <code>formula_start_temp</code> (по умолчанию
+92 °C в кубе), даже если колонна ещё держит максимум. «Формула авто 92+» ждёт ещё и признака подъёма
+температуры в колонне.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_capabilities</code> — доступна ли <code>formula_auto92</code> (API ≥ 1.9).
+2. <code>oc_get_settings</code> — что включено сейчас (<code>formula</code>: 0 / 1 / 2) и <code>formula_start_temp</code>.
+3. Объяснение разницы и цены: «авто 92+» экономит время, но требует включённого предекремента, потому
+   что опирается на его срабатывание.
+4. <code>oc_update_settings</code> — включить один из режимов (взаимоисключающе) + согласованные <code>predec</code>/<code>hyst</code>.</p>
+<p><strong>Эффект.</strong> Пользователь выбирает режим осознанно, а не «как в видео». На практике это десятки минут
+на перегоне и меньше остановок.</p>
+<p><strong>Требования.</strong> <code>formula = 2</code> — API ≥ 1.9; на более старых доступно только <code>formula=1</code>.</p>
+<p><strong>Ограничения.</strong> Формула не заменяет декремент: они работают совместно, и итоговая скорость — минимум
+из двух.</p>
+<hr>
+<h3 id="d3-23">D3. «Сброс и снижение голов» (только 2.3)</h3>
+<p><strong>Кто / когда</strong> — оператор на прошивке 2.3, хочет ускорить вывод голов, не теряя качество.</p>
+<p><strong>Ситуация.</strong> В начале голов концентрация примесей высокая — их можно отбирать быстрее, а к концу
+скорость нужно снизить, иначе потащит тело.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_capabilities</code> — <code>extended_heads</code> доступна (API ≥ 1.8).
+2. <code>oc_get_settings</code> — <code>release_speed</code>, <code>release_timer</code>, <code>heads_final</code>, <code>valve_bw[0]</code>.
+3. Расчёт объёма сброса: <code>release_speed / период_голов × valve_bw[0] × release_timer / 3600</code> — сервер
+   показывает ожидаемый объём в мл, чтобы человек не «сбросил» половину голов в канал.
+4. <code>oc_update_settings</code> с <code>extended_heads=1</code> и тремя параметрами.
+5. Проверка, что <code>heads_final</code> меньше периода голов, а <code>release_speed</code> — меньше периода (иначе клапан
+   не закроется и скорость станет 100 %).</p>
+<p><strong>Эффект.</strong> Экономия времени на головах без риска «протащить» примеси в тело.</p>
+<p><strong>Требования.</strong> Ветка 2.3.x, API ≥ 1.8, заданные <code>valve_bw</code>.</p>
+<p><strong>Ограничения.</strong> На 2.2.x параметров нет — сервер отвечает <code>feature_unsupported</code> с пояснением, а не
+молча игнорирует.</p>
+<hr>
+<h3 id="d4">D4. «Откалибровать пропускную способность клапанов»</h3>
+<p><strong>Кто / когда</strong> — любой, кто хочет видеть скорость в мл/ч, а не «открыт 2.0 с из 4».</p>
+<p><strong>Ситуация.</strong> Пока <code>valve_bw</code> не заданы, все скорости — в относительных единицах. С ними — в мл/ч,
+и калькулятор может считать объёмы и время.</p>
+<p><strong>Ход.</strong>
+1. Сервер объясняет измерение: собрать жидкость при полностью открытом клапане за известное время,
+   пересчитать в мл/ч, повторить в реальных условиях (высота, вязкость, температура).
+2. <code>oc_get_settings</code> — текущие значения.
+3. <code>oc_update_settings</code> с <code>valve_bw=[...]</code> (каждое ≤ 20000 мл/ч).
+4. Проверка эффекта: <code>oc_get_telemetry</code> — в телеметрии появляются осмысленные <code>alc</code>, объёмы;
+   в следующих отчётах скорость уже в мл/ч.</p>
+<p><strong>Эффект.</strong> Все последующие сценарии (расчёт профиля, оценка «сколько осталось», разбор журнала)
+становятся количественными, а не «на глаз».</p>
+<p><strong>Требования.</strong> API ≥ 1.7.</p>
+<p><strong>Ограничения.</strong> Пропускная способность зависит от условий; одно измерение — не истина навсегда.</p>
+<hr>
+<h3 id="d5">D5. «Поправить скорость прямо сейчас, не перезапуская»</h3>
+<p><strong>Кто / когда</strong> — оператор в середине тела.</p>
+<p><strong>Ситуация.</strong> Видно, что отбор идёт быстрее, чем колонна держит: температура ползёт. Или наоборот —
+явно медленно, время поджимает.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_telemetry</code> — текущие <code>open</code>, <code>period</code>, <code>stop</code>, <code>stops</code>, <code>tp1</code> против <code>tp1_target</code>.
+2. <code>oc_update_settings</code> с оперативными параметрами текущего этапа: <code>s_speed</code> (скорость), <code>s_hyst</code>
+   (гистерезис), <code>s_decrement</code>, <code>s_timer</code>, <code>s_temp</code>.
+3. <code>oc_get_telemetry</code> — подтверждение новых значений.</p>
+<p><strong>Эффект.</strong> Правка «на ходу» без остановки процесса и без перезаписи постоянных настроек этапа.</p>
+<p><strong>Требования.</strong> API ≥ 1.7 (оперативные <code>s_*</code> — базовый набор).</p>
+<p><strong>Ограничения.</strong> <code>s_*</code> действуют на текущий этап; после перехода они не сохраняются как постоянные.</p>
+<hr>
+<h2 id="7">7. Сценарии: профили и калькулятор</h2>
+<h3 id="e1">E1. «Профиль из расчёта, а не из головы»</h3>
+<p><strong>Кто / когда</strong> — домашний впервые и оператор на новом сырье.</p>
+<p><strong>Ситуация.</strong> Есть 18 л сырца 40 %, колонна 2 кВт, насадка СПН. Сколько голов, сколько тела, с какой
+скоростью, сколько это займёт? Считать вручную — полчаса и ошибки.</p>
+<p><strong>Ход.</strong>
+1. Пользователь даёт входные данные: мощность, объём, крепость, стабилизация, доли фракций.
+2. <code>oc_calculate_plan</code> (расчёт без обращения к контроллеру) — сервер считает: общий АС, температуру
+   кипения, объёмы фракций, скорости, длительности, коэффициент паровой нагрузки (КПН), остаток в кубе.
+3. Сервер показывает план и его допущения: «КПН тела 3.4 — в норме (2–5); головы 216 мл при 3 % от АС».
+4. <code>oc_profile_create</code> — создать профиль с этими параметрами.
+5. По желанию — <code>oc_profile_apply</code>.</p>
+<p><strong>Пример расчёта.</strong> 18 л × 40 % → <strong>7200 мл абсолютного спирта</strong>. Головы 3 % → 216 мл, подголовники
+7 % → 504 мл, тело 75 % → 5400 мл, хвосты 5 % → 360 мл. Это те числа, которые человек иначе считает
+калькулятором вручную.</p>
+<p><strong>Эффект.</strong> Профиль перестаёт быть набором угаданных цифр. Плюс сразу видно, укладывается ли процесс в
+ночь: расчётное общее время против available.</p>
+<p><strong>Требования.</strong> Расчёт — только сервер; для применения — API ≥ 1.7 и заданные <code>valve_bw</code>.</p>
+<p><strong>Ограничения.</strong> Расчёт идеализирован: не учитывает теплопотери, качество насадки, реальную мощность.
+Он даёт порядок величин и согласованность параметров, а не гарантию.</p>
+<hr>
+<h3 id="e2">E2. «Профиль и контроллер разошлись»</h3>
+<p><strong>Кто / когда</strong> — оператор, вернулся к установке после того, как кто-то «покрутил кнопки».</p>
+<p><strong>Ситуация.</strong> На контроллере правили настройки вручную (например, подняли скорость тела). Профиль в
+OpenConnect остался прежним. При следующем применении профиля правки молча исчезнут.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_telemetry</code> — флаг <code>cfg_chgd</code> (настройки менялись кнопками).
+2. <code>oc_get_settings</code> — перечитать фактические значения.
+3. <code>oc_profile_get</code> — содержимое профиля.
+4. Сервер строит <strong>diff</strong> по слою SSVC и показывает, что разошлось: «в профиле <code>hearts=[2.5,5]</code>, на
+   контроллере <code>[3.2,5]</code>».
+5. Решение пользователя: <code>oc_profile_save_current</code> (сохранить факт в профиль) или <code>oc_profile_apply</code>
+   (вернуть профиль на контроллер).</p>
+<p><strong>Эффект.</strong> Правки, сделанные руками у колонны, не теряются; расхождение видно до запуска, а не после
+испорченного перегона.</p>
+<p><strong>Требования.</strong> <code>cfg_chgd</code> — API ≥ 1.7.</p>
+<p><strong>Ограничения.</strong> Diff строится по полям <code>ssvcSettings</code>; поля профиля, не относящиеся к контроллеру
+(аналитика, правила реле), сравниваются отдельно.</p>
+<hr>
+<h3 id="e3">E3. «Профиль на другой аппарат»</h3>
+<p><strong>Кто / когда</strong> — оператор, у которого две установки или который делится режимом с товарищем.</p>
+<p><strong>Ситуация.</strong> Профиль проверен на одной колонне; нужно перенести на другую, с другими клапанами и
+мощностью.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_profiles_list</code> + <code>oc_profile_get</code> — взять исходный профиль.
+2. <code>oc_calculate_plan</code> — пересчитать под новые мощность/объём (скорости и таймеры изменятся).
+3. <code>oc_profile_copy</code> — копия с новым именем.
+4. <code>oc_profile_update_content</code> — записать пересчитанные значения.
+5. <code>oc_profile_apply</code> — применить (с подтверждением).</p>
+<p><strong>Эффект.</strong> Перенос — это пересчёт, а не копирование цифр, которые на другом железе значат другое.</p>
+<p><strong>Требования.</strong> API ≥ 1.7.</p>
+<p><strong>Ограничения.</strong> Профиль не содержит физики аппарата; сервер не знает реальную разделяющую способность.</p>
+<hr>
+<h2 id="8">8. Сценарии: разбор после процесса</h2>
+<h3 id="f1">F1. «Что было ночью?»</h3>
+<p><strong>Кто / когда</strong> — домашний, утром.</p>
+<p><strong>Ситуация.</strong> Процесс закончился, но непонятно: были ли остановки, сколько, на каком этапе, не ушло ли
+что-то не так.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_logs_list</code> — список журналов, взять последний <code>process_id</code>.
+2. <code>oc_logs_download</code> — скачать CSV в файл (в контекст модели он не попадает целиком).
+3. <code>oc_logs_analyze</code> — разбор: по этапам, число остановок и упреждений, суммарное время в остановке,
+   диапазон температур, спиртуозность в начале и конце тела.
+4. Короткая сводка словами + 3–5 самых показательных строк.</p>
+<p><strong>Эффект.</strong> Вместо «открыл CSV в Excel и глазами искал аномалии» — готовый вывод за минуту. Особенно
+важно ночью: журнал пишется раз в минуту <strong>и</strong> в моменты событий (стоп, упреждение, возврат), поэтому
+все ключевые моменты в файле есть.</p>
+<p><strong>Требования.</strong> Команда <code>GET_LOG</code> — API ≥ 1.10. На более старых — <code>feature_unsupported</code> с подсказкой.</p>
+<p><strong>Ограничения.</strong> Журнал не содержит причин событий — только факты (стоп, температура, скорость).
+Интерпретация остаётся за человеком.</p>
+<hr>
+<h3 id="f2">F2. «План против факта»</h3>
+<p><strong>Кто / когда</strong> — оператор, после каждого перегона.</p>
+<p><strong>Ситуация.</strong> Расчёт обещал одно, реальность дала другое. Важно понять, где расхождение: в расчёте, в
+настройках или в физике колонны.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_profile_get</code> — расчётная аналитика профиля (таймеры, объёмы, скорости).
+2. <code>oc_logs_download</code> + <code>oc_logs_analyze</code> — фактические: длительность этапов, объёмы по <code>v1/v2/v3</code>,
+   число остановок.
+3. Сопоставление по этапам: где именно разошлось и насколько.
+4. Вывод: «тело шло на 40 % дольше расчёта при 6 остановках — вероятно, занижена мощность или завышена
+   начальная скорость».</p>
+<p><strong>Эффект.</strong> Появляется обратная связь: профиль улучшается от перегона к перегону, а не остаётся
+застывшим.</p>
+<p><strong>Требования.</strong> API ≥ 1.10 для журнала; расчёт — на сервере.</p>
+<p><strong>Ограничения.</strong> Сравнение корректно, только если профиль не менялся по ходу процесса.</p>
+<hr>
+<h3 id="f3">F3. «Накопить статистику по сырью»</h3>
+<p><strong>Кто / когда</strong> — оператор, ведёт журнал по разным партиям.</p>
+<p><strong>Ситуация.</strong> Одно и то же сырьё ведёт себя по-разному. Хочется понять закономерность и подобрать
+стартовую скорость тела.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_logs_list</code> → <code>oc_logs_download</code> для нескольких процессов.
+2. <code>oc_logs_analyze</code> по каждому → нормализованная сводка (этап, время, остановки, температуры).
+3. Сведение: таблица «партия → параметры → результат».
+4. Рекомендация по стартовой скорости для следующего раза.</p>
+<p><strong>Эффект.</strong> Опыт перестаёт быть «в голове»: есть данные, на которые можно опереться. Изготовитель прямо
+пишет, что журнал полезен для подбора оптимальной начальной скорости на одном и том же сырье.</p>
+<p><strong>Требования.</strong> API ≥ 1.10.</p>
+<p><strong>Ограничения.</strong> Нужны однотипные постановки (та же колонна, та же мощность), иначе сравнение бессмысленно.</p>
+<hr>
+<h2 id="9">9. Сценарии: безопасность, датчики, реле</h2>
+<h3 id="g1">G1. «Датчики уровня не дают стартовать»</h3>
+<p><strong>Кто / когда</strong> — домашний, купил датчики XKC-25, но старт блокируется.</p>
+<p><strong>Ситуация.</strong> В режиме <code>block</code> контроллер не запускает процесс при некалиброванных датчиках. Это
+правильно, но пользователю непонятно, что делать.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_xkc25_status</code> — <code>start_guard_mode</code>, <code>block_start</code>, <code>block_reasons</code>, состояние каждого слота.
+2. Сервер переводит причины в действия: «датчик 2 не калиброван → выполнить калибровку».
+3. <code>oc_xkc25_calibrate</code> шаг <code>without_liquid</code> → <code>with_liquid</code> → (опционально) <code>verify_return</code>
+   с ожиданием <code>oc_xkc25_verify_status</code>.
+4. Повторная проверка: <code>block_start: false</code>.</p>
+<p><strong>Эффект.</strong> Блокировка перестаёт быть препятствием и становится подсказкой.</p>
+<p><strong>Требования.</strong> Подсистема XKC-25 включена; после изменения конфигурации может требоваться перезагрузка.</p>
+<p><strong>Ограничения.</strong> Если датчик нестабилен (<code>unstable_signal</code>, <code>not_reacted</code>), сервер честно скажет, что
+калибровка не прошла, и предложит проверить монтаж, а не будет «дожимать» шаги.</p>
+<hr>
+<h3 id="g2">G2. «Тревоги по температуре приёмных ёмкостей»</h3>
+<p><strong>Кто / когда</strong> — любой, у кого есть датчики в ёмкостях.</p>
+<p><strong>Ситуация.</strong> Порогов три уровня (<code>min</code>, <code>dangerous</code>, <code>critical</code>), и их нужно согласовать с реальностью,
+а не оставить заводские 80/100.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_alarms</code> + <code>oc_get_sensors</code> — какие датчики есть, какие пороги стоят.
+2. Обсуждение с пользователем: что для этой ёмкости «опасно».
+3. <code>oc_set_alarm_thresholds</code> — точечно по адресам.
+4. Проверка: <code>oc_get_alarms</code> — перечитанные значения.</p>
+<p><strong>Эффект.</strong> Тревоги перестают «орать зря» или, наоборот, молчать до аварии.</p>
+<p><strong>Требования.</strong> Датчики в зонах, admin-доступ, P2.</p>
+<p><strong>Ограничения.</strong> Пороги — это сигнализация, а не автоматика: сами по себе они ничего не отключают.</p>
+<hr>
+<h3 id="g3">G3. «Реле: включить вентиляцию по стадии и выключить при аварии»</h3>
+<p><strong>Кто / когда</strong> — оператор с расширителем PCF8574.</p>
+<p><strong>Ситуация.</strong> Хочется, чтобы вытяжка включалась на этапе тела, а при аппаратном сбое — включалась
+аварийная сигнализация.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_relay_metadata</code> — какие линии доступны (<code>editable</code>), какие зарезервированы под аварии.
+2. Правило в профиле: условие <code>rectification</code> со <code>stageEquals: hearts</code> → линия N, <code>actionEnergize: true</code>;
+   отдельно условие <code>hardware_fault</code> → линия M.
+3. <code>oc_profile_update_content</code> — сохранить правила в профиль, <code>oc_profile_apply</code> — применить.
+4. Проверка <code>oc_get_relay_state</code> — битовые маски.
+5. Ручная проверка конкретной линии: <code>oc_relay_override</code> с <strong>явными</strong> <code>enable</code> и <code>energized</code>.</p>
+<p><strong>Эффект.</strong> Автоматика покрывает то, чего нет в контроллере SSVC: вентиляцию, свет, сигнализацию.</p>
+<p><strong>Требования.</strong> PCF8574-сборка (<code>PINOUT_USE_GPIO=0</code>), P2. На GPIO-сборке — <code>feature_unsupported</code>.</p>
+<p><strong>Ограничения.</strong> Реле не управляет нагревом и клапанами отбора: это отдельная линия, не замена SSVC.</p>
+<hr>
+<h2 id="10">10. Сценарии: диагностика</h2>
+<h3 id="h1-i2c">H1. «Шина I²C подозрительно молчит»</h3>
+<p><strong>Кто / когда</strong> — поддержка или оператор после «странных» показаний.</p>
+<p><strong>Ситуация.</strong> Датчики то есть, то нет; дисплей мигает. Классика: просадка питания, плохой контакт,
+обрыв на линии.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_hardware_faults</code> — коды (<code>i2c_nack</code>, <code>i2c_bus_down</code>, <code>device_not_present</code>), адреса, роли,
+   <code>i2c_scan</code> — кто реально ответил.
+2. <code>oc_get_hardware_config</code> — адреса устройств, результаты проб (<code>bmp581ProbeOk</code>, <code>ds3231ProbeOk</code>…).
+3. Вывод: «адрес 0x27 (дисплей) не отвечает, остальные на месте — проблема в конкретном модуле, не в шине».</p>
+<p><strong>Эффект.</strong> Пользователь не разбирает всю установку, а идёт к конкретному разъёму. Поддержка не едет
+на объект ради «посмотрите, что там».</p>
+<p><strong>Требования.</strong> P2.</p>
+<p><strong>Ограничения.</strong> Проба I²C подтверждает только факт ответа, не качество связи.</p>
+<hr>
+<h3 id="h2">H2. «Настройки не применились»</h3>
+<p><strong>Кто / когда</strong> — любой после сохранения.</p>
+<p><strong>Ситуация.</strong> Интерфейс сказал «сохранено», а контроллер работает по-старому. Причин три: поле не
+поддерживается версией API (<code>skipped</code>), поле неизвестно прошивке (<code>ignored</code>), пакет не встал в очередь
+(<code>partial</code>).</p>
+<p><strong>Ход.</strong>
+1. Сервер разбирает ответ <code>PUT /rest/settings</code>: <code>accepted</code>, <code>ignored</code>, <code>skipped</code>, <code>partial</code>.
+2. <code>oc_get_settings</code> — перечитать фактические значения.
+3. Объяснение: «<code>predec</code> пропущен: требуется API 1.9, устройство сообщает 1.7».
+4. При <code>partial_apply</code> — <strong>никакого автоматического повтора</strong>; только перечитывание и решение.</p>
+<p><strong>Эффект.</strong> «Сохранено» перестаёт быть ложью. Человек видит, что именно не доехало и почему.</p>
+<p><strong>Требования.</strong> API ≥ 1.7.</p>
+<p><strong>Ограничения.</strong> Часть полей может применяться асинхронно (через очередь команд), поэтому перечитывание
+делается с небольшой паузой.</p>
+<hr>
+<h3 id="h3">H3. «Журнал не скачивается»</h3>
+<p><strong>Кто / когда</strong> — оператор после первого включения журналов.</p>
+<p><strong>Ситуация.</strong> Три типовые причины: старая прошивка (нет <code>GET_LOG</code>), занятая сессия передачи
+(<code>log_transfer_busy</code>), нехватка памяти на контроллере (<code>log_heap_low</code>).</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_capabilities</code> — есть ли <code>get_log</code> (API ≥ 1.10).
+2. <code>oc_logs_list</code> — статус сессии; при <code>busy</code> — сообщить «идёт другая передача», а не ретраить вслепую.
+3. <code>oc_logs_download</code> — при <code>503 log_heap_low</code> объяснить причину и предложить повторить позже или
+   освободить память контроллера.</p>
+<p><strong>Эффект.</strong> Вместо «не работает» — конкретная причина и что делать.</p>
+<p><strong>Требования.</strong> API ≥ 1.10.</p>
+<p><strong>Ограничения.</strong> Сервер не может «ускорить» передачу: скорость задаёт контроллер.</p>
+<hr>
+<h2 id="11_1">11. Сценарии: интеграции и мелочи с эффектом</h2>
+<h3 id="i1">I1. «Уведомления туда, где я их увижу»</h3>
+<p><strong>Кто / когда</strong> — домашний, который не сидит в веб-интерфейсе.</p>
+<p><strong>Ситуация.</strong> OpenConnect умеет Telegram и VK, но по умолчанию выключен.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_subsystems</code> — состояние <code>telegram_bot</code>, <code>vk_bot</code>.
+2. <code>oc_set_subsystem</code> (<code>enabled: true</code>) — включить (таймаут до 120 с: подсистема поднимается долго).
+3. Проверка: <code>oc_get_subsystems</code> снова.</p>
+<p><strong>Эффект.</strong> События процесса приходят в мессенджер, а не «куда-то в приложение».</p>
+<p><strong>Требования.</strong> P2; настроенные токены в OpenConnect.</p>
+<p><strong>Ограничения.</strong> Доставка — на стороне OpenConnect и мессенджера.</p>
+<hr>
+<h3 id="i2">I2. «Отдать телеметрию в умный дом»</h3>
+<p><strong>Кто / когда</strong> — оператор с Home Assistant.</p>
+<p><strong>Ситуация.</strong> Хочется видеть стадию и температуры на общем дашборде, рядом с остальными приборами.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_get_subsystems</code> — включён ли MQTT.
+2. <code>oc_set_subsystem</code> при необходимости.
+3. Проверка топиков: <code>openconnect/telemetry</code>, <code>openconnect/sensor/state</code>.</p>
+<p><strong>Эффект.</strong> Ректификация встроена в общий дом, без отдельного приложения.</p>
+<p><strong>Требования.</strong> P2; настроенный брокер.</p>
+<p><strong>Ограничения.</strong> MQTT публикует состояние, но не заменяет журналы и профили.</p>
+<hr>
+<h3 id="j1">J1. «Показать адрес сервера на экране контроллера»</h3>
+<p><strong>Кто / когда</strong> — поддержка при настройке чужой установки.</p>
+<p><strong>Ситуация.</strong> Нужно, чтобы человек у колонны видел, куда подключаться, не открывая телефон.</p>
+<p><strong>Ход.</strong>
+1. <code>oc_send_command</code> с <code>command: status</code>, <code>parameters: "MCP 192.168.1.10"</code> (строка до 15 символов).
+2. Контроллер показывает строку на дежурном экране.</p>
+<p><strong>Эффект.</strong> Мелочь, которая экономит звонок: адрес виден на самом устройстве.</p>
+<p><strong>Требования.</strong> API ≥ 1.7; контроллер в дежурном режиме.</p>
+<p><strong>Ограничения.</strong> Строка перезаписывается следующей командой <code>STATUS</code>.</p>
+<hr>
+<h2 id="12">12. Сводная матрица</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Сценарий</th>
+<th>Ключевые инструменты</th>
+<th>Пакеты</th>
+<th>Приоритет</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A1</td>
+<td>Готовность к запуску</td>
+<td>info, hardware_faults, sensors, xkc25_status, process_status</td>
+<td>WP1, WP4, WP5, WP6</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>A2</td>
+<td>Запуск не сработал</td>
+<td>start, process_status, telemetry, wait_for_change</td>
+<td>WP1, WP2</td>
+<td><strong>P0</strong></td>
+</tr>
+<tr>
+<td>A3</td>
+<td>Что умеет контроллер</td>
+<td>info, capabilities</td>
+<td>WP1</td>
+<td><strong>P0</strong></td>
+</tr>
+<tr>
+<td>B1</td>
+<td>Поставить с вечера</td>
+<td>profile_get/apply, update_settings, start, wait_for_change</td>
+<td>WP2, WP3, WP8</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>B2</td>
+<td>Ручные переходы</td>
+<td>wait_for_change, next</td>
+<td>WP2</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>B3</td>
+<td>Закрыть клапан</td>
+<td>pause, resume, process_status</td>
+<td>WP2</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>B4</td>
+<td>Аварийная остановка</td>
+<td>emergency_stop</td>
+<td>WP2</td>
+<td><strong>P0</strong></td>
+</tr>
+<tr>
+<td>C1</td>
+<td>Ночной дозор</td>
+<td>telemetry-цикл, wait_for_change</td>
+<td>WP1, WP2</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>C2</td>
+<td>Процесс завис</td>
+<td>process_status, telemetry</td>
+<td>WP1</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>D1</td>
+<td>Гистерезис + предекремент</td>
+<td>get_settings, update_settings</td>
+<td>WP3</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>D2</td>
+<td>Формула / авто 92+</td>
+<td>capabilities, get_settings, update_settings</td>
+<td>WP1, WP3</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>D3</td>
+<td>Сброс и снижение</td>
+<td>capabilities, get_settings, update_settings</td>
+<td>WP1, WP3</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>D4</td>
+<td>Калибровка valve_bw</td>
+<td>get_settings, update_settings, telemetry</td>
+<td>WP3</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>D5</td>
+<td>Правка на ходу</td>
+<td>telemetry, update_settings (<code>s_*</code>)</td>
+<td>WP3</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>E1</td>
+<td>Профиль из расчёта</td>
+<td>calculate_plan, profile_create/apply</td>
+<td>WP8 + расчёт</td>
+<td>P3</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>Профиль ≠ контроллер</td>
+<td>telemetry (<code>cfg_chgd</code>), diff, save_current/apply</td>
+<td>WP1, WP3, WP8</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>E3</td>
+<td>Профиль на другой аппарат</td>
+<td>profile_get/copy/update_content/apply, calculate_plan</td>
+<td>WP8</td>
+<td>P3</td>
+</tr>
+<tr>
+<td>F1</td>
+<td>Разбор ночи</td>
+<td>logs_list/download/analyze</td>
+<td>WP7 + разбор</td>
+<td>P3</td>
+</tr>
+<tr>
+<td>F2</td>
+<td>План против факта</td>
+<td>profile_get, logs, analyze</td>
+<td>WP7, WP8</td>
+<td>P3</td>
+</tr>
+<tr>
+<td>F3</td>
+<td>Статистика по сырью</td>
+<td>logs, analyze</td>
+<td>WP7</td>
+<td>P3</td>
+</tr>
+<tr>
+<td>G1</td>
+<td>Датчики не дают старт</td>
+<td>xkc25_status/calibrate/verify_status</td>
+<td>WP6</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>G2</td>
+<td>Пороги тревог</td>
+<td>alarms, sensors</td>
+<td>WP4</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>G3</td>
+<td>Реле по стадии</td>
+<td>relay_metadata/state/override, profile rules</td>
+<td>WP5, WP8</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>H1</td>
+<td>Шина I²C</td>
+<td>hardware_faults, hardware_config</td>
+<td>WP5</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>H2</td>
+<td>Настройки не применились</td>
+<td>update_settings (отчёт), get_settings</td>
+<td>WP3</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>H3</td>
+<td>Журнал не качается</td>
+<td>capabilities, logs_list/download</td>
+<td>WP1, WP7</td>
+<td>P3</td>
+</tr>
+<tr>
+<td>I1</td>
+<td>Уведомления</td>
+<td>subsystems</td>
+<td>WP9</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>I2</td>
+<td>Умный дом</td>
+<td>subsystems</td>
+<td>WP9</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>J1</td>
+<td>Адрес на экране</td>
+<td>send_command (<code>status</code>)</td>
+<td>WP2</td>
+<td>P1</td>
+</tr>
+</tbody>
+</table>
+<h3 id="121-p0">12.1 Что даёт первый работающий вариант (P0)</h3>
+<p>Всего три сценария — но они закрывают самые частые вопросы: <strong>что умеет устройство</strong>, <strong>почему не
+стартует</strong>, <strong>как остановить</strong>. Это ~60 % обращений к поддержке и почти весь «вход» нового пользователя.</p>
+<hr>
+<h2 id="13">13. Сквозной сценарий: один вечер</h2>
+<p>Чтобы увидеть систему целиком — как её пройдёт домашний пользователь.</p>
+<ol>
+<li><strong>18:40. Проверка.</strong> A1: сбоев нет, датчики на месте, датчик уровня калиброван.</li>
+<li><strong>18:45. План.</strong> E1: 18 л × 40 % → 7200 мл АС; головы 216 мл, подголовники 504 мл, тело 5400 мл.
+   Расчётное время ~7 ч 20 мин. КПН тела 3.4 — в норме.</li>
+<li><strong>18:50. Профиль.</strong> E1: профиль создан и применён. E2: расхождений с контроллером нет.</li>
+<li><strong>18:55. Правка под сегодняшнее сырьё.</strong> D5/D1: <code>hearts_finish_temp</code> 93.0, <code>hyst</code> 0.19, <code>predec</code> 13
+   (правило 0.19 ≥ 0.18 соблюдено).</li>
+<li><strong>19:00. Старт.</strong> B1: <code>start</code> → <code>tp1_waiting</code> → <code>delayed_start</code> (отсрочка 20 мин) → <code>heads</code>.</li>
+<li><strong>23:30. Головы закончились.</strong> C1: уведомление <code>heads_finished</code>; контроллер по <code>auto_mode</code>
+   переходит к подголовникам, затем к телу.</li>
+<li><strong>02:10. Стоп по температуре.</strong> C1/C2: <code>stop: 1</code>, <code>predec</code> сработал 3 раза; сообщение «тело идёт с
+   упреждениями, скорость снижена автоматически» — вмешательство не нужно.</li>
+<li><strong>08:15. Финал.</strong> C1: <code>hearts_finished</code>. B4 не понадобился.</li>
+<li><strong>08:20. Разбор.</strong> F1: журнал скачан, 2 остановки, 3 упреждения, суммарно 46 мин в остановке.
+   F2: тело шло на 12 % дольше расчёта — в пределах нормы для этого сырца.</li>
+<li><strong>08:30. Итог.</strong> E2: правки, сделанные ночью кнопками (если были), зафиксированы в профиль
+    <code>oc_profile_save_current</code>.</li>
+</ol>
+<p>Эффект вечера: пользователь спал, знал о каждом значимом событии, утром получил разбор и улучшенный
+профиль. Ни одного ручного curl, ни одной поездки к колонне.</p>
+<hr>
+<h2 id="14">14. Антисценарии: чего сервер не делает</h2>
+<p>Это так же важно, как список возможностей: именно здесь пользователь теряет доверие, если ожидания
+не совпадут.</p>
+<table>
+<thead>
+<tr>
+<th>Не делает</th>
+<th>Почему</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Не «ведёт» ректификацию автономно</td>
+<td>решение о переходе фракции — за человеком; сервер даёт наблюдение и команды</td>
+</tr>
+<tr>
+<td>Не обходит предохранители (XKC-25, guard старта)</td>
+<td>это защита оборудования и продукта</td>
+</tr>
+<tr>
+<td>Не повторяет <code>PUT /rest/settings</code> при <code>partial</code></td>
+<td>часть настроек уже применена, повтор исказит состояние</td>
+</tr>
+<tr>
+<td>Не ретраит <code>POST</code> команды</td>
+<td>команда не идемпотентна</td>
+</tr>
+<tr>
+<td>Не меняет <code>hyst</code>/<code>decrement</code> «наугад» без запроса</td>
+<td>это вмешательство в качество продукта</td>
+</tr>
+<tr>
+<td>Не управляет нагревом, водой, давлением</td>
+<td>вне зоны контроллера SSVC и OpenConnect</td>
+</tr>
+<tr>
+<td>Не гарантирует доставку push</td>
+<td>зависит от клиента и мессенджера</td>
+</tr>
+<tr>
+<td>Не выдаёт «сертификат качества» спирта</td>
+<td>расчёты косвенные, лабораторный анализ не заменяются</td>
+</tr>
+<tr>
+<td>Не работает с двумя контроллерами одновременно</td>
+<td>решение v1: один контроллер</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="15">15. Известные расхождения документации</h2>
+<p>Пригодится и пользователям, и разработчикам: там, где источники не согласны, сервер должен опираться
+на валидацию устройства, а не на документ.</p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>API-документация</th>
+<th>Руководство 2.2.55</th>
+<th>Руководство 2.3.28</th>
+<th>Как поступать</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hyst</code></td>
+<td>не более 50.0</td>
+<td>0.06…5.0</td>
+<td>0.06…2.0</td>
+<td>доверять ответу устройства; предупреждать о диапазоне руководства</td>
+</tr>
+<tr>
+<td><code>late_heads_timer</code></td>
+<td>до 86400 с, кратно 300</td>
+<td>—</td>
+<td>0…240 мин</td>
+<td>доверять устройству</td>
+</tr>
+<tr>
+<td><code>release_timer</code></td>
+<td>до 1200 с</td>
+<td>—</td>
+<td>до 20 мин</td>
+<td>согласовано</td>
+</tr>
+<tr>
+<td>Версия API в README</td>
+<td>1.9</td>
+<td>—</td>
+<td>—</td>
+<td>прошивка OpenConnect целится в 1.10 (<code>GET_LOG</code>)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="16">16. Как проверять сценарии</h2>
+<p>Сценарии не нужно проверять все сразу. Порядок — по приоритету и по готовности пакетов.</p>
+<table>
+<thead>
+<tr>
+<th>Этап</th>
+<th>Сценарии</th>
+<th>Критерий приёмки</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>после WP0–WP1</td>
+<td>A3, C2, H2 (частично)</td>
+<td>отчёт формируется, ошибки понятны, нет ложных «всё хорошо»</td>
+</tr>
+<tr>
+<td>после WP2</td>
+<td>A2, B4, J1</td>
+<td>«почему не стартует» закрывается одним вызовом; аварийная остановка срабатывает без подтверждения</td>
+</tr>
+<tr>
+<td>после WP3</td>
+<td>D1, D2, D5, H2</td>
+<td>правило <code>predec</code>/<code>hyst</code> не даёт отправить заведомо нерабочую пару; <code>partial</code> не повторяется</td>
+</tr>
+<tr>
+<td>после WP4–WP6</td>
+<td>A1, G1, G2, H1</td>
+<td>причины блокировки старта переводятся в действия</td>
+</tr>
+<tr>
+<td>после WP7–WP8</td>
+<td>E1, E2, F1, F2</td>
+<td>diff профиля и разбор журнала дают вывод, а не дамп данных</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Метрики полезности</strong> (по ним видно, что сценарий действительно нужен):</p>
+<ul>
+<li><strong>время до ответа</strong>: «почему не стартует» — меньше минуты вместо переписки с поддержкой;</li>
+<li><strong>предотвращённые потери</strong>: несохранённые правки (E2), испорченная фракция (D3), ночной застой (C2);</li>
+<li><strong>сокращение цикла</strong>: разбор журнала — минуты вместо ручного Excel (F1);</li>
+<li><strong>снижение обращений</strong>: A2, A3, H1, H2 закрывают типовые вопросы без человека.</li>
+</ul>
+<hr>
+<h2 id="17">17. Что нужно добавить в каталог инструментов</h2>
+<p>Три сценария потребовали инструментов, которых нет в базовом каталоге. Их стоит добавить отдельным
+пакетом (расчёт и разбор — чистые функции, без обращения к контроллеру):</p>
+<table>
+<thead>
+<tr>
+<th>Инструмент</th>
+<th>Риск</th>
+<th>Назначение</th>
+<th>Сценарии</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>oc_calculate_plan</code></td>
+<td>0</td>
+<td>расчёт процесса по входным данным (мощность, объём, крепость, доли фракций): АС, температуры, объёмы, скорости, таймеры, КПН</td>
+<td>E1, E3, F2</td>
+</tr>
+<tr>
+<td><code>oc_logs_analyze</code></td>
+<td>0</td>
+<td>разбор скачанного CSV: события, остановки, упреждения, время по этапам, температуры</td>
+<td>F1, F2, F3</td>
+</tr>
+<tr>
+<td><code>oc_profile_diff</code></td>
+<td>0</td>
+<td>сравнение профиля с фактическими настройками контроллера</td>
+<td>E2</td>
+</tr>
+</tbody>
+</table>
+<p>Первые два — перенос уже существующей логики OpenConnect (<code>DistillationCycleModel</code> и разбор журнала) на
+сторону сервера; они не требуют новых данных с устройства.</p>
+<hr>
+<h2 id="18">18. Итог</h2>
+<p>Каталог даёт <strong>29 сценариев</strong> в девяти группах: от «готов ли контроллер» до «что было ночью». Три из них
+закрываются в первом же работающем варианте и снимают основную массу вопросов; остальные добавляются
+вместе с пакетами работ.</p>
+<p>Главная мысль, которая проходит через все сценарии: сервер ценен не тем, что «умеет вызывать REST», а
+тем, что <strong>переводит состояние контроллера в понятное действие и понятный вывод</strong> — с учётом ветки
+прошивки, ограничений параметров и реальной физики процесса.</p></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 by <a href="https://github.com/thedemoncat"  target="_blank" rel="noopener">elims</a> -
+<a href="#__consent">Изменить настройки файлов cookie</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/thedemoncat" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+
+  
+
+<h4>Cookie consent</h4>
+<p>Сайт использует cookie-файлы, чтобы сделать ваше пребывание на нём максимально удобным.  Оставаясь на сайте, вы даёте своё согласие на использование cookie-файлов.</p>
+<input class="md-toggle" type="checkbox" id="__settings" checked>
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+    
+      
+    
+    
+      
+        
+  
+  
+    
+    
+  
+  <li class="task-list-item">
+    <label class="task-list-control">
+      <input type="checkbox" name="github" checked>
+      <span class="task-list-indicator"></span>
+      GitHub
+    </label>
+  </li>
+
+      
+    
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout((function(){document.querySelector("[data-md-component=consent]").hidden=!1}),250);var form=document.forms.consent;for(var action of["submit","reset"])form.addEventListener(action,(function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map((function(e){return[e,!0]})))),location.hash="",location.reload()}))</script>
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "toc.follow", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../../calculator/rectification_calculator.js"></script>
+      
+        <script src="../../javascripts/docs-previews-list.js"></script>
+      
+    
+  </body>
+</html>
