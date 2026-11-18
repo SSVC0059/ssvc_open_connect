@@ -21,7 +21,14 @@ void FileHandler::registerHandlers(AsyncWebServer& server, SecurityManager* secu
         serializeJson(doc, jsonResponse);
         request->send(200, "application/json", jsonResponse.c_str());
     };
-    server.on("/rest/files", HTTP_GET, securityManager->wrapRequest(listFilesHandler, AuthenticationPredicates::IS_AUTHENTICATED));
+    // Точный матчер обязателен. Обычная строка даёт BackwardCompatible-матчер
+    // (`_value == path || path.startsWith(_value + "/")`), а этот обработчик
+    // регистрируется раньше "/rest/files/*". Тогда GET /rest/files/config/zones.json
+    // попадал бы сюда и вместо файла возвращал дерево (200 + JSON), из-за чего
+    // скачивание файла было невозможно. С exact-матчером специфичный путь
+    // /rest/files/<path> достаётся обработчику скачивания ниже.
+    server.on(AsyncURIMatcher::exact("/rest/files"), HTTP_GET,
+              securityManager->wrapRequest(listFilesHandler, AuthenticationPredicates::IS_AUTHENTICATED));
 
     auto downloadFileHandler = [this](AsyncWebServerRequest* request) {
         const String path = request->url();

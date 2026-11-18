@@ -113,8 +113,8 @@
 | 64 | POST | `/rest/profiles/save` | `IS_AUTHENTICATED` | сохранить текущие настройки (`HandlerRegistrator.cpp:288-291`) |
 | 65 | PUT | `/rest/profiles/meta` | `IS_AUTHENTICATED` | переименование (`HandlerRegistrator.cpp:300-303`) |
 | 66 | DELETE | `/rest/profiles/delete` | `IS_AUTHENTICATED` | удаление, **тело JSON в DELETE** (`HandlerRegistrator.cpp:306-309`) |
-| 67 | GET | `/rest/files` | `IS_AUTHENTICATED` | дерево LittleFS (`FileHandler.cpp:24`) |
-| 68 | GET | `/rest/files/*` | `IS_AUTHENTICATED` | скачивание файла — **перекрыт маршрутом 67**, см. § 8.1 (`FileHandler.cpp:48`) |
+| 67 | GET | `/rest/files` | `IS_AUTHENTICATED` | дерево LittleFS, **exact-матчер** (`FileHandler.cpp:24`) — исправление перекрытия, см. § 8.1 |
+| 68 | GET | `/rest/files/*` | `IS_AUTHENTICATED` | скачивание файла (`FileHandler.cpp:48`); работает после исправления маршрута 67 |
 | 69 | DELETE | `/rest/files/*` | `IS_AUTHENTICATED` | удаление файла (`FileHandler.cpp:68`) |
 | 70 | POST | `/rest/files/copy` | `IS_AUTHENTICATED` | `{source,destination}` (`FileHandler.cpp:106`) |
 | 71 | GET | `/rest/logs` | `IS_AUTHENTICATED` | сессия журналов, exact-матчер (`HandlerRegistrator.cpp:347`) |
@@ -487,8 +487,9 @@ subsystem is not active"}`.
 
 - GET `/rest/files` → массив дерева: элемент `{"name":string,"type":"directory","children":[…]}` или
   `{"name":string,"type":"file","size":int}` (`FileHandler.cpp:109-128`).
-- GET `/rest/files/<path>` — задумано как `application/octet-stream` с `request->send(*_fs, path, …)`
-  (`:26-47`), но фактически перекрыт (см. § 8.1). Пустой путь — 400 `text/plain`
+- GET `/rest/files/<path>` — `application/octet-stream` с `request->send(*_fs, path, …)`
+  (`:26-47`); **работает после исправления перекрытия** (дерево переведено на `AsyncURIMatcher::exact`,
+  см. § 8.1). Пустой путь — 400 `text/plain`
   `"File path cannot be empty"`, отсутствует — 404 `text/plain` `"File not found or is a directory"`.
 - POST `/rest/files/copy` `{source,destination}` → **201 без тела** (`:104`); нет полей → 400
   `text/plain "Missing 'source' or 'destination' fields"`; нет источника → 404 `text/plain
@@ -1425,9 +1426,10 @@ GET: 200 `{"ssvcSettings":{…}}`, 401 пусто.
    `path == value || path.startsWith(value + "/")` (`WebServer.cpp:216-232,336` в
    `.pio/libdeps/.../ESPAsyncWebServer/src`). Матчится **первый** подходящий обработчик
    (`WebServer.cpp:142-151`), поэтому порядок регистрации = приоритет.
-2. `GET /rest/files` (маршрут 67) зарегистрирован **раньше** `GET /rest/files/*` (68) и перекрывает
-   его: любой `GET /rest/files/<path>` уходит в обработчик дерева. Скачивание файла в этой ревизии
-   недостижимо (см. § N — проверить на живом устройстве).
+2. `GET /rest/files` (маршрут 67) был зарегистрирован **раньше** `GET /rest/files/*` (68) строковым
+   путём и перекрывал его: любой `GET /rest/files/<path>` уходил в обработчик дерева. **Исправлено**
+   в ветке: маршрут 67 переведён на `AsyncURIMatcher::exact`, скачивание проверено на устройстве
+   (200 + октеты, 404 на каталог/отсутствующий файл).
 3. `GET /rest/logs` намеренно зарегистрирован через `AsyncURIMatcher::exact`
    (`HandlerRegistrator.cpp:341-347`) — иначе он перекрывал бы `/rest/logs/{id}`. Это же правило
    придётся соблюдать в мок-устройстве.
