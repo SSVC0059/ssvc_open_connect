@@ -249,9 +249,10 @@ class DistillationCycleModel {
    * явное приближение: точная кривая контроллера неизвестна. Для `formula=2`
    * до первого предекремента держим полную скорость, затем прыгаем на линию.
    */
-  formulaSpeedFactor(td2, mode, formulaStart, firstPredecTd2) {
+  formulaSpeedFactor(td2, mode, formulaStart, firstPredecTd2, predecWorks) {
     if (mode !== 1 && mode !== 2) return 1;
-    if (formulaStart >= FORMULA_END_TEMP) return td2 < FORMULA_END_TEMP ? 1 : 0;
+    if (mode === 2 && !predecWorks) return 1;
+    if (formulaStart >= FORMULA_END_TEMP) return 1;
     const holdUntil = mode === 2 ? Math.max(formulaStart, firstPredecTd2) : formulaStart;
     if (td2 <= holdUntil) return 1;
     const factor = (FORMULA_END_TEMP - td2) / (FORMULA_END_TEMP - formulaStart);
@@ -265,13 +266,14 @@ class DistillationCycleModel {
     const productMl = Math.max(0, params.productMl);
     const initialSpeed = Math.max(0, params.initialSpeedMlh);
     if (productMl <= 0 || initialSpeed <= 0) {
-      return { timerSec: 0, averageSpeed: initialSpeed, finalSpeed: initialSpeed };
+      return { timerSec: 0, averageSpeed: initialSpeed, finalSpeed: initialSpeed, drawnMl: 0 };
     }
     if (params.formulaMode !== 1 && params.formulaMode !== 2) {
       return {
         timerSec: productMl / initialSpeed * 3600,
         averageSpeed: initialSpeed,
-        finalSpeed: initialSpeed
+        finalSpeed: initialSpeed,
+        drawnMl: productMl
       };
     }
     const steps = 240;
@@ -290,7 +292,8 @@ class DistillationCycleModel {
         td2,
         params.formulaMode,
         params.formulaStart,
-        params.firstPredecTd2
+        params.firstPredecTd2,
+        params.predecWorks
       );
       const speed = initialSpeed * factor;
       if (speed <= 0) break;
@@ -302,18 +305,26 @@ class DistillationCycleModel {
       if (params.finishTd2 > 0 && td2 >= params.finishTd2) break;
     }
     const averageSpeed = timerSec > 0 ? drawnMl / timerSec * 3600 : initialSpeed;
-    return { timerSec, averageSpeed, finalSpeed };
+    return { timerSec, averageSpeed, finalSpeed, drawnMl };
   }
-  buildFormulaAnalytics(mode, formulaStart, firstPredecTd2, initialSpeed, averageSpeed) {
+  buildFormulaAnalytics(mode, formulaStart, firstPredecTd2, initialSpeed, averageSpeed, predecWorks) {
     if (mode !== 1 && mode !== 2) return void 0;
+    const active = mode === 1 || mode === 2 && predecWorks;
     const holdUntil = mode === 2 ? Math.max(formulaStart, firstPredecTd2) : formulaStart;
-    const factorAtHold = mode === 2 && holdUntil < FORMULA_END_TEMP ? (FORMULA_END_TEMP - holdUntil) / (FORMULA_END_TEMP - formulaStart) : 1;
+    let initialDropPct = 0;
+    if (mode === 2 && active && formulaStart < FORMULA_END_TEMP) {
+      const factorAtHold = Math.min(
+        Math.max((FORMULA_END_TEMP - holdUntil) / (FORMULA_END_TEMP - formulaStart), 0),
+        1
+      );
+      initialDropPct = Number(((1 - factorAtHold) * 100).toFixed(1));
+    }
     const avgFactor = initialSpeed > 0 ? averageSpeed / initialSpeed : 1;
     return {
       start: formulaStart,
       end: FORMULA_END_TEMP,
-      firstPredec: mode === 2 ? firstPredecTd2 : null,
-      initialDropPct: Number((Math.max(0, 1 - factorAtHold) * 100).toFixed(1)),
+      firstPredec: mode === 2 && active ? firstPredecTd2 : null,
+      initialDropPct,
       avgFactor: Number(Math.min(1, Math.max(0, avgFactor)).toFixed(3)),
       assumption: "linear"
     };
@@ -402,9 +413,6 @@ class DistillationCycleModel {
       const remainingAS = currentVolumeL * 1e3 * (targetCubeStrength / 100);
       const availableAS = Math.max(0, totalAS_ml - remainingAS);
       heartsProductMl = availableAS / 0.96;
-      calculatedHeartsPercent = Number(
-        (heartsProductMl * 0.96 / initialTotalAS * 100).toFixed(1)
-      );
     } else {
       heartsProductMl = initialTotalAS * (profile.hearts.percent / 100) / 0.96;
     }
@@ -419,6 +427,7 @@ class DistillationCycleModel {
       formulaStart
     );
     const heartsFinishTemp = Number(profile.ssvcSettings.hearts_finish_temp ?? 0);
+    const predecWorks = predecState(profile.ssvcSettings.predec, profile.ssvcSettings.hyst) === "ok";
     const heartsSimulation = this.simulateHearts({
       productMl: heartsProductMl,
       startVolumeL: currentVolumeL,
@@ -427,8 +436,15 @@ class DistillationCycleModel {
       formulaMode,
       formulaStart,
       firstPredecTd2,
+      predecWorks,
       finishTd2: heartsFinishTemp
     });
+    const heartsDrawnMl = heartsSimulation.drawnMl;
+    if (heartsFinishTemp > 0) {
+      calculatedHeartsPercent = Number(
+        (heartsDrawnMl * 0.96 / initialTotalAS * 100).toFixed(1)
+      );
+    }
     const heartsAverageSpeed = heartsSimulation.averageSpeed;
     const heartsFinalSpeed = heartsSimulation.finalSpeed;
     const heartsTimerSec = heartsSimulation.timerSec;
@@ -442,10 +458,11 @@ class DistillationCycleModel {
       formulaStart,
       firstPredecTd2,
       heartsInitialSpeed,
-      heartsAverageSpeed
+      heartsAverageSpeed,
+      predecWorks
     );
-    totalAS_ml -= heartsProductMl * 0.96;
-    currentVolumeL -= heartsProductMl / 1e3;
+    totalAS_ml -= heartsDrawnMl * 0.96;
+    currentVolumeL -= heartsDrawnMl / 1e3;
     currentStrengthVol = Math.max(0.1, totalAS_ml / (currentVolumeL * 1e3) * 100);
     const physicsTails = this.getVaporPhysics(currentStrengthVol, netPowerWatts);
     const tailsVol = tailsEnabled ? initialTotalAS * (profile.tails.percent / 100) : 0;
@@ -500,7 +517,7 @@ class DistillationCycleModel {
           releaseMl: Number(releaseMl.toFixed(2)),
           headsMl: Math.round(totalHeadsVolMl),
           lateHeadsMl: Math.round(lateHeadsVol),
-          heartsMl: Math.round(heartsProductMl),
+          heartsMl: Math.round(heartsDrawnMl),
           tailsMl: Math.round(tailsVol)
         },
         timers: {
@@ -612,6 +629,8 @@ function initCalculator() {
   if (!root) return;
   delete root.dataset.calcReady;
   activeDefaultParams = buildFreshDefaults();
+  const resetFormulaStart = root.querySelector('[data-path="ssvcSettings.formula_start_temp"]');
+  if (resetFormulaStart) delete resetFormulaStart.dataset.auto92;
   const formatResultText = (path, value) => {
     if (path.startsWith("analytics.formula")) {
       if (path.endsWith("initialDropPct")) return `${Math.round(value)} %`;
@@ -628,8 +647,23 @@ function initCalculator() {
     return Math.round(value) + unit;
   };
   function updateUI() {
+    var _a, _b;
     const r = getCalcRoot();
     if (!r || !activeDefaultParams) return;
+    const formulaSelect = r.querySelector('[data-path="ssvcSettings.formula"]');
+    const formulaStartInput = r.querySelector('[data-path="ssvcSettings.formula_start_temp"]');
+    const auto92 = formulaSelect ? Number(formulaSelect.value) === 2 : false;
+    if (formulaStartInput) {
+      if (auto92) {
+        if (formulaStartInput.dataset.auto92 === void 0) {
+          formulaStartInput.dataset.auto92 = formulaStartInput.value;
+        }
+        formulaStartInput.value = "92";
+      } else if (formulaStartInput.dataset.auto92 !== void 0) {
+        formulaStartInput.value = formulaStartInput.dataset.auto92;
+        delete formulaStartInput.dataset.auto92;
+      }
+    }
     const currentParams = deepClone(activeDefaultParams);
     r.querySelectorAll("[data-path]").forEach((el) => {
       let val = el.type === "checkbox" ? el.checked : parseFloat(el.value);
@@ -639,28 +673,22 @@ function initCalculator() {
       setValueByPath(currentParams, el.dataset.path, val);
     });
     try {
-      const auto92 = currentParams.ssvcSettings.formula === 2;
       if (auto92) {
         currentParams.ssvcSettings.formula_start_temp = 92;
       }
       const profile = model.calculateProcess(currentParams);
-      const formulaStartInput = r.querySelector('[data-path="ssvcSettings.formula_start_temp"]');
       if (formulaStartInput) {
-        if (auto92) {
-          if (!formulaStartInput.dataset.auto92) {
-            formulaStartInput.dataset.auto92 = formulaStartInput.value;
-          }
-          formulaStartInput.value = "92";
-        } else if (formulaStartInput.dataset.auto92) {
-          formulaStartInput.value = formulaStartInput.dataset.auto92;
-          delete formulaStartInput.dataset.auto92;
-        }
         formulaStartInput.disabled = auto92;
         formulaStartInput.title = auto92 ? "В режиме «Авто 92+» начало формулы — 92 °C" : "";
       }
       const firstPredecInput = r.querySelector('[data-path="planning.firstPredecTd2"]');
       if (firstPredecInput) {
         firstPredecInput.disabled = currentParams.ssvcSettings.formula !== 2;
+      }
+      const dropRow = r.querySelector("#an-formula-drop");
+      if (dropRow) {
+        const firstPredec = (_b = (_a = profile.analytics) == null ? void 0 : _a.formula) == null ? void 0 : _b.firstPredec;
+        dropRow.style.display = firstPredec == null ? "none" : "";
       }
       r.querySelectorAll("[data-result]").forEach((el) => {
         const path = el.dataset.result;
@@ -697,7 +725,6 @@ function initCalculator() {
         } else if (currentParams.ssvcSettings.formula === 2 && predec === 0) {
           message = "«Авто 92+» не сработает без предекремента: включите предекремент или выберите обычную формулу.";
         }
-        protectionWarning.style.display = message ? "block" : "none";
         protectionWarning.textContent = message;
       }
     } catch (e) {
