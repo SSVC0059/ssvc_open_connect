@@ -25,11 +25,12 @@ import {
 import type { ToolDef } from '../src/mcp/types.js';
 import { probeDestructiveTools } from './riskProbe.js';
 
-/** Инструментов в каталоге v1: 50 (mcp-server.md §4, §15). */
-const EXPECTED_TOOL_COUNT = 50;
+/** Инструментов в каталоге v1: 51 (mcp-server.md §4, §15). */
+const EXPECTED_TOOL_COUNT = 51;
 
 /** Домены WP1–WP9: по группе на файл `src/tools/<домен>.tools.ts`. */
 const EXPECTED_DOMAINS = [
+  'calc',
   'commands',
   'files',
   'hardware',
@@ -44,7 +45,7 @@ const EXPECTED_DOMAINS = [
   'xkc25',
 ];
 
-test('каталог: ровно 50 инструментов, имена уникальны', () => {
+test('каталог: ровно 51 инструмент, имена уникальны', () => {
   assert.equal(allTools.length, EXPECTED_TOOL_COUNT);
   assert.equal(new Set(uniqueToolNames).size, allTools.length);
   assert.equal(uniqueToolNames.length, allTools.length);

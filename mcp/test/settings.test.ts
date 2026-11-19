@@ -314,6 +314,113 @@ test('SPA-заглушка 200 text/html → feature_unsupported, а не пус
   assert.equal('settings' in payload, false);
 });
 
+/**
+ * Калиброванные клапаны и пары, как на живой сессии «18 л / 40 % / 2 кВт»:
+ * derived обязан дать те же мл/ч, что считает модель `@ssvc/rectification`.
+ */
+const CALIBRATED = {
+  heads: [1.7, 120],
+  late_heads: [1, 60],
+  hearts: [1, 10],
+  tails: [2, 2],
+  valve_bw: [7000, 12000, 7000],
+  heads_timer: 7800,
+  late_heads_timer: 15600,
+};
+
+test('oc_get_settings: derived — мл/ч, скважность и объёмы по таймерам', async (t) => {
+  const testCtx = await makeTestContext([signInRoute(), getRoute(() => CALIBRATED)]);
+  t.after(() => testCtx.cleanup());
+
+  const payload = payloadOf(await runTool(tool('oc_get_settings'), testCtx.ctx, {}));
+
+  assert.equal(payload.derived.heads.flow_mlh, 99.2, '7000 × 1.7 / 120');
+  assert.equal(payload.derived.heads.duty_pct, 1.42);
+  assert.equal(payload.derived.heads.period_s, 120);
+  assert.match(String(payload.derived.method), /flow_mlh = valve_bw\[i\] \* opening_s \/ period_s/);
+  assert.equal(payload.derived.units.flow_mlh, 'мл/ч');
+  assert.equal(payload.derived.valve_index.late_heads, 2, 'подголовники идут через клапан 3');
+  assert.equal(payload.derived.late_heads.flow_mlh, 116.7, '7000 × 1 / 60');
+  assert.equal(payload.derived.hearts.flow_mlh, 1200, '12000 × 1 / 10');
+  assert.equal(payload.volumes_ml.heads, 215, '99.2 мл/ч × 7800 с');
+  assert.equal(payload.volumes_ml.late_heads, 506, '116.7 мл/ч × 15600 с');
+});
+
+test('oc_get_settings: без valve_bw скорости не определены, есть предупреждение', async (t) => {
+  const testCtx = await makeTestContext([
+    signInRoute(),
+    getRoute(() => ({ heads: [1.7, 120], heads_timer: 7800 })),
+  ]);
+  t.after(() => testCtx.cleanup());
+
+  const payload = payloadOf(await runTool(tool('oc_get_settings'), testCtx.ctx, {}));
+
+  assert.equal(payload.derived.heads.flow_mlh, 0);
+  assert.equal(payload.derived.heads.duty_pct, 1.42, 'скважность считается и без valve_bw');
+  const codes = payload.warnings.map((entry: { code: string }) => entry.code);
+  assert.ok(codes.includes('valve_bw_missing'));
+});
+
+test('oc_get_settings: tails на ветке late_heads помечен ignored с причиной', async (t) => {
+  const testCtx = await makeTestContext([signInRoute(), getRoute(() => CALIBRATED)]);
+  t.after(() => testCtx.cleanup());
+
+  const payload = payloadOf(await runTool(tool('oc_get_settings'), testCtx.ctx, {}));
+
+  assert.equal(payload.derived.tails.ignored, true, 'на 2.3 этапа хвостов нет');
+  const tailsWarning = payload.warnings.find(
+    (entry: { field: string }) => entry.field === 'tails',
+  );
+  assert.ok(tailsWarning !== undefined, 'должно быть объяснение, почему tails не работает');
+  assert.equal(tailsWarning.code, 'field_ignored_by_firmware');
+});
+
+test('oc_get_settings: predec=13 при hyst=0.06 — предупреждение о совместности', async (t) => {
+  const testCtx = await makeTestContext([
+    signInRoute(),
+    getRoute(() => ({ ...CALIBRATED, predec: 13, hyst: 0.06 })),
+  ]);
+  t.after(() => testCtx.cleanup());
+
+  const payload = payloadOf(await runTool(tool('oc_get_settings'), testCtx.ctx, {}));
+
+  const warning = payload.warnings.find(
+    (entry: { code: string }) => entry.code === 'predec_hyst_incompatible',
+  );
+  assert.ok(warning !== undefined, 'несовместимость predec/hyst должна быть видна агенту');
+  assert.equal(warning.field, 'predec');
+});
+
+test('oc_update_settings: ignored объясняется как read-only, warnings — по применённому', async (t) => {
+  let current: Record<string, unknown> = { ...SETTINGS, auto_mode: false };
+  const testCtx = await makeTestContext([
+    signInRoute(),
+    getRoute(() => current),
+    putRoute((call) => {
+      const body = call.body as Record<string, unknown>;
+      const { auto_mode: _dropped, ...applied } = body;
+      current = { ...current, ...applied };
+      return {
+        body: { success: true, accepted: Object.keys(applied).length, ignored: ['auto_mode'], skipped: [] },
+      };
+    }),
+  ]);
+  t.after(() => testCtx.cleanup());
+
+  const payload = payloadOf(
+    await runTool(tool('oc_update_settings'), testCtx.ctx, {
+      settings: { hyst: 0.06, predec: 13, auto_mode: true },
+    }),
+  );
+
+  assert.deepEqual(payload.ignored, ['auto_mode']);
+  assert.match(payload.ignored_reasons.auto_mode, /read-only/);
+  const warning = payload.warnings.find(
+    (entry: { code: string }) => entry.code === 'predec_hyst_incompatible',
+  );
+  assert.ok(warning !== undefined, 'после записи видно, что комбинация несовместима');
+});
+
 test('registerSettingsTools: оба инструмента видны в tools/list с нужными аннотациями', async (t) => {
   const testCtx = await makeTestContext([signInRoute()]);
   t.after(() => testCtx.cleanup());

@@ -4,7 +4,7 @@
  * Что это доказывает (и чего не доказывают доменные тесты):
  *  - транспорт Streamable HTTP, Bearer-токен, сессии и `tools/list` работают по сети,
  *    а не только в памяти (`test/http.test.ts` смотрит HTTP-слой, доменные тесты — handlers);
- *  - весь каталог реально зарегистрирован: 50 инструментов и 5 промптов видны клиенту;
+ *  - весь каталог реально зарегистрирован: 51 инструмент и 5 промптов видны клиенту;
  *  - основные READ-ONLY инструменты проходят путь до устройства и обратно;
  *  - `oc_wait_for_change` действительно ЖДЁТ изменения стадии, которое мок меняет
  *    в процессе ожидания;
@@ -154,7 +154,7 @@ test('e2e: initialize → tools/list → prompts/list → чтения → ож�
   // --- 3. tools/list: весь каталог виден клиенту --------------------------
   const listed = await client.listTools();
   const listedNames = listed.tools.map((tool) => tool.name).sort();
-  assert.equal(listedNames.length, 50, 'tools/list обязан отдать 50 инструментов');
+  assert.equal(listedNames.length, 51, 'tools/list обязан отдать 51 инструмент');
   assert.deepEqual(listedNames, [...uniqueToolNames]);
   for (const tool of listed.tools) {
     assert.ok(tool.title !== undefined && tool.title !== '', `${tool.name}: клиент не увидел title`);
@@ -185,6 +185,14 @@ test('e2e: initialize → tools/list → prompts/list → чтения → ож�
   const capabilities = await callTool(client, 'oc_get_capabilities');
   assert.equal(capabilities.ok, true);
   assert.deepEqual(capabilities.unavailable, ['predec'], 'недоступная возможность видна агенту');
+
+  // Чистый расчёт: инструмент зарегистрирован в живом сервере и не ходит в устройство.
+  const calculated = await callTool(client, 'oc_calculate_plan', {
+    volume_l: 20,
+    strength_pct: 40,
+  });
+  assert.equal(calculated.ok, true);
+  assert.equal(calculated.plan.total_as_ml, 8000, '20 л × 40 % = 8000 мл АС');
 
   const state = await callTool(client, 'oc_get_state');
   assert.equal(state.ok, true);

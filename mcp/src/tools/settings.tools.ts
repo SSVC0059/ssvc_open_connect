@@ -13,8 +13,18 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { KNOWN_SETTING_KEYS } from '../device/schemas/settings.js';
-import { getSettings, PARTIAL_HINT, updateSettings } from '../domain/settings.js';
+import {
+  KNOWN_SETTING_KEYS,
+  READ_ONLY_SETTING_KEYS,
+  type SsvcSettings,
+} from '../device/schemas/settings.js';
+import {
+  analyzeSettings,
+  getSettings,
+  lintSettings,
+  PARTIAL_HINT,
+  updateSettings,
+} from '../domain/settings.js';
 import { OcError } from '../errors.js';
 import { registerTools } from '../mcp/registry.js';
 import { defineTool, type ToolContext, type ToolDef, type ToolResult } from '../mcp/types.js';
@@ -29,14 +39,26 @@ export const ocGetSettings = defineTool({
   title: 'Действующие настройки SSVC',
   description:
     'Возвращает текущие настройки контроллера SSVC: фракции, таймеры, гистерезис, декремент, ' +
-    'формулу и прочее. Значения читаются из последнего ответа контроллера.',
+    'формулу и прочее. Дополнительно считает производные значения (мл/ч и скважность по ' +
+    'каждой стадии, объёмы по таймерам) и предупреждения о несовместимых комбинациях. ' +
+    'Значения читаются из последнего ответа контроллера.',
   inputSchema: {},
   annotations: annotationsForRisk(READ_RISK),
   handler: async (_args, ctx) => {
     const snapshot = await getSettings(ctx.client);
+    const analysis = analyzeSettings(snapshot.settings);
     return {
       ok: true,
       settings: snapshot.settings,
+      // Метод и единицы — рядом с числами: агент их цитирует, а не изобретает.
+      derived: {
+        method: analysis.method,
+        units: analysis.units,
+        valve_index: analysis.valve_index,
+        ...analysis.stages,
+      },
+      volumes_ml: analysis.volumes_ml,
+      warnings: analysis.warnings,
       observed_at: snapshot.observed_at,
     } as ToolResult;
   },
@@ -48,7 +70,8 @@ export const ocUpdateSettings = defineTool({
   description:
     'Отправляет частичное обновление настроек: в теле только изменяемые поля, плоским ' +
     'объектом. Возвращает отчёт контроллера: что принято, что проигнорировано и что ' +
-    'отброшено из-за версии API, а также перечитанные настройки. При частичном применении ' +
+    'отброшено из-за версии API, объясняет причину отказа (ignored_reasons), предупреждает ' +
+    'о несовместимых комбинациях и перечитывает настройки. При частичном применении ' +
     'повторять весь запрос нельзя.',
   inputSchema: {
     settings: z
@@ -109,6 +132,8 @@ export const ocUpdateSettings = defineTool({
         accepted: outcome.accepted,
         ignored: outcome.ignored,
         skipped: outcome.skipped,
+        ignored_reasons: explainIgnored([...outcome.ignored, ...outcome.skipped]),
+        warnings: lintSettings(outcome.applied ?? (settings as SsvcSettings)),
         applied: outcome.applied,
         partial: outcome.partial,
       };
@@ -128,6 +153,34 @@ export const ocUpdateSettings = defineTool({
     }
   },
 });
+
+/**
+ * Объясняет, почему прошивка отбросила ключ: `ignored`/`skipped` приходят без причины,
+ * а read-only ключ (есть в GET, отсутствует в `PARAM_HANDLERS`) внешне неотличим
+ * от опечатки в имени. Причина не влияет на факт записи — только на понимание агентом.
+ */
+function explainIgnored(keys: readonly string[]): Record<string, string> {
+  const reasons: Record<string, string> = {};
+  for (const key of keys) {
+    if (Object.prototype.hasOwnProperty.call(reasons, key)) continue;
+    const equals = key.indexOf('=');
+    reasons[key] = reasonFor(equals > 0 ? key.slice(0, equals) : key);
+  }
+  return reasons;
+}
+
+function reasonFor(name: string): string {
+  if (READ_ONLY_SETTING_KEYS.includes(name)) {
+    return (
+      'read-only: ключ есть в GET, но отсутствует в PARAM_HANDLERS прошивки (API ≤ 1.10) — ' +
+      'значение не записывается; такую настройку меняют кнопками на контроллере'
+    );
+  }
+  if (!KNOWN_SETTING_KEYS.includes(name)) {
+    return 'неизвестный ключ: прошивка его не знает — сверьте имя со списком известных';
+  }
+  return 'прошивка отбросила ключ: возможно, он не поддерживается этой версией API';
+}
 
 /** Инструменты домена: и для `registerSettingsTools`, и для сборки в `src/index.ts`. */
 export function settingsTools(): ToolDef[] {

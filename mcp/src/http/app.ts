@@ -180,7 +180,16 @@ export async function createApp(opts: AppOptions): Promise<AppHandle> {
     // Контекст инструментов — на сессию (§2.2): свой журнал аудита, чтобы поле `session`
     // в записи указывало, чей это вызов. Клиент устройства и кэш — общие: контроллер один.
     const sessionAudit = new AuditLog({ path: cfg.auditPath, session: 'pending', log });
-    const sessionCtx: ToolContext = { ...ctx, audit: sessionAudit };
+    const sessionCtx: ToolContext = {
+      ...ctx,
+      audit: sessionAudit,
+      // Диагностике нужен снимок HTTP-сессий: сам инструмент до менеджера не достаёт.
+      sessions: () => ({
+        active: sessions.size,
+        max: cfg.mcp.maxSessions,
+        entries: sessions.list(),
+      }),
+    };
     const server = createMcpServer({ ctx: sessionCtx, tools: opts.tools ?? [] });
     // Промпты-сценарии (WP10) и ресурсы openconnect://… (WP1): одна точка входа —
     // `registerSessionCatalog` из каталога инструментов. Промпты здесь больше не

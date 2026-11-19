@@ -19,3 +19,12 @@ logs
 docs
 mkdocs.yml
 site
+mcp/node_modules
+mcp/.test-dist
+mcp/dist
+mcp/logs
+mcp/.env
+mcp/.npm-cache
+packages/**/node_modules
+.agents
+browser-screenshots

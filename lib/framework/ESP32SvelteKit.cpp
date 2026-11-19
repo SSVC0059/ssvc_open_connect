@@ -28,7 +28,10 @@ ESP32SvelteKit::ESP32SvelteKit(AsyncWebServer *server) : _server(server),
                                                                                           _ethernetSettingsService(server, &ESPFS, &_securitySettingsService, &_socket),
                                                                                           _ethernetStatus(server, &_securitySettingsService),
 #endif
-                                                                                          _socket(server, &_securitySettingsService, AuthenticationPredicates::IS_AUTHENTICATED),
+// /ws/events отдаёт те же данные, что admin-only REST: telemetry (GET /rest/telemetry),
+// stage и alarm. Фильтр IS_AUTHENTICATED пускал туда гостя и обходил границу прав,
+// поэтому канал закрыт администратором: гость получает 401 на рукопожатии, как и на REST.
+                                                                                          _socket(server, &_securitySettingsService, AuthenticationPredicates::IS_ADMIN),
                                                                                           _notificationService(&_socket),
 #if FT_ENABLED(FT_NTP)
                                                                                           _ntpSettingsService(server, &ESPFS, &_securitySettingsService),

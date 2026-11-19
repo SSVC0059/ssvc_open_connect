@@ -1,17 +1,15 @@
 # MCP-сервер OpenConnect (SSVC)
 
 HTTP-сервис, который открывает контроллер **OpenConnect (SSVC)** MCP-клиентам: один процесс —
-один контроллер, транспорт **Streamable HTTP** на `/mcp`, Bearer-токен, управление сессиями,
-политика риска с подтверждениями, клиент устройства с авторизацией/ретраями, мок-устройство
-и Docker-образ.
+один контроллер. Транспорты: **Streamable HTTP** на `/mcp` с Bearer-токеном и **stdio**
+(`node dist/index.js --stdio`) для DSH/IDE/Claude Desktop. Есть управление сессиями,
+политика риска с подтверждениями, клиент устройства с авторизацией и ретраями, Docker-образ.
 
-**Состояние: v1 собран (WP0–WP11).** В каталоге **50 инструментов**, **5 промптов-сценариев**,
-2 ресурса (`openconnect://info`, `openconnect://telemetry`), **230 тестов** (`npm test`), включая
-e2e «настоящий MCP-клиент → HTTP → сервис → мок-устройство».
+В каталоге **51 инструмент**, **5 промптов-сценариев** и 2 ресурса
+(`openconnect://info`, `openconnect://telemetry`).
 
-Требования задания и контракты: [docs/develop/mcp-server.md](../../docs/develop/mcp-server.md),
-разбивка на пакеты: [docs/develop/mcp-server-agents.md](../../docs/develop/mcp-server-agents.md),
-проверенный контракт прошивки: [docs/develop/mcp-contract-notes.md](../../docs/develop/mcp-contract-notes.md).
+Пользовательская документация: [docs/mcp](../docs/mcp/index.md) — установка, подключение клиентов,
+настройка, инструменты, диагностика.
 
 ---
 
@@ -35,27 +33,32 @@ e2e «настоящий MCP-клиент → HTTP → сервис → мок-�
 - Зависимости зафиксированы: `@modelcontextprotocol/sdk@1.32.2`, `zod@3.25`.
 - Docker — только если нужен контейнер (см. §7).
 
+### Из GitHub Release (без клонирования)
+
+```bash
+npm install -g https://github.com/SSVC0059/ssvc_open_connect/releases/download/mcp-v1.0.0/ssvc-openconnect-mcp-1.0.0.tgz
+ssvc-mcp          # бинарь; читает .env из рабочего каталога или переменные окружения
+```
+
+Tarball и `.sha256` прикладываются к каждому релизу `mcp-v*`; ручные сборки с рабочих веток — prerelease.
+
+### Docker
+
+```bash
+docker run -d --name ssvc-mcp -p 127.0.0.1:8080:8080 --env-file .env \
+  -v "$PWD/logs:/app/logs" ghcr.io/ssvc0059/ssvc_open_connect/mcp:1.0.0
+```
+
+### Из исходников
+
 ```bash
 cd mcp
 npm ci --ignore-scripts --cache .npm-cache   # установка без lifecycle-скриптов
 cp .env.example .env                          # Windows PowerShell: Copy-Item .env.example .env
 # заполнить .env (см. §4), сгенерировать SSVC_MCP_TOKEN
-npm run build                                 # tsc → dist/
+npm run build                                 # esbuild → dist/
 node dist/index.js
 ```
-
-Проверки (то же делает CI, §13):
-
-```bash
-npm run typecheck   # tsc по src/ и test/, 0 ошибок
-npm test            # 230 тестов node:test, включая e2e
-npm run build       # dist/
-```
-
-`npm test` сначала компилирует `src/`, `test/` и `mock/` в `.test-dist/`, затем запускает
-`node --test` по шаблонам `.test-dist/test/*.test.js` и `.test-dist/test/e2e/*.test.js`.
-Тестовый раннер — только `node:test`: vitest/esbuild в этой среде не работают (песочница
-блокирует spawn с пайпами).
 
 ---
 
@@ -89,8 +92,8 @@ curl -H "Authorization: Bearer <токен>" http://127.0.0.1:8080/readyz   # {"
 |---|---|
 | `SSVC_DEVICE_URL` | Базовый URL контроллера без завершающего `/`, например `http://192.168.1.42`. Прошивка слушает только HTTP, порт 80 |
 | `SSVC_USER` | Логин контроллера; нужен пользователь **admin**: `/rest/telemetry`, `/rest/sensor`, `/rest/settings` отдают данные только администратору (иначе `forbidden_admin_required`) |
-| `SSVC_PASSWORD` | Пароль контроллера. Несекретная сборка (security off) работает и с пустым паролем |
-| `SSVC_MCP_TOKEN` | Bearer-токен MCP-клиентов. Без него сервер **не стартует**: открытый порт без аутентификации недопустим |
+| `SSVC_PASSWORD` | Пароль контроллера. Несекретная сборка (security off) работает и с пустым паролем; в stdio-режиме переменная необязательна |
+| `SSVC_MCP_TOKEN` | Bearer-токен MCP-клиентов для HTTP. Без него HTTP-сервер **не стартует**: открытый порт без аутентификации недопустим. В stdio-режиме не нужен — клиент сам запускает процесс |
 
 Генерация токена:
 
@@ -105,16 +108,14 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | Переменная | По умолчанию | Назначение |
 |---|---|---|
 | `SSVC_DEVICE_TIMEOUT_MS` | `10000` | Таймаут одного HTTP-запроса к контроллеру, мс (100…600000). Скачивание журнала/файла имеет свой бюджет (45/60 с) и этой переменной не режется |
-| `SSVC_POLL_HZ` | `1` | Частота фонового опроса состояния, Гц (0.1…10). Выше 2 Гц бессмысленно: прошивка обновляет снимок примерно раз в две секунды |
-| `SSVC_MCP_BIND` | `0.0.0.0` | Адрес прослушивания. `127.0.0.1` — только локально (рекомендуется при работе за прокси) |
+| `SSVC_MCP_BIND` | `127.0.0.1` | Адрес прослушивания. `127.0.0.1` — только локально (безопасное умолчание); `0.0.0.0` нужен для доступа из сети или из контейнера — в образе и compose он задан явно |
 | `SSVC_MCP_PORT` | `8080` | Порт сервиса (1…65535) |
 | `SSVC_MCP_ALLOWED_HOSTS` | пусто | Разрешённые значения `Host` через запятую (защита от DNS-rebinding). Пусто = localhost/127.0.0.1/[::1] + адрес из `SSVC_MCP_BIND`. При `0.0.0.0` укажите явно, например `192.168.1.10,openconnect.local` |
 | `SSVC_MCP_ALLOWED_CIDRS` | `private` | Кто может подключаться: `private` = RFC1918 (10/8, 172.16/12, 192.168/16) + петлевые адреса, либо список CIDR |
 | `SSVC_MCP_MAX_SESSIONS` | `32` | Лимит одновременных MCP-сессий (при исчерпании `initialize` отвечает 503) |
 | `SSVC_MCP_IDLE_MS` | `1800000` | Закрытие простаивающей сессии, мс (30 мин) |
 | `SSVC_MCP_TLS_CERT` / `SSVC_MCP_TLS_KEY` | пусто | Встроенный TLS (нужны оба файла). По умолчанию TLS нет — наружу только через reverse-proxy (§7) |
-| `SSVC_ALLOW_DESTRUCTIVE` | `0` | Разрушительные операции (риск 3/4). `0` — инструменты отвечают `disabled_by_policy` (§10) |
-| `SSVC_ALLOW_DEBUG` | `0` | Разрешить `debug:true` в вызовах (в ответ добавляется блок `raw`) |
+| `SSVC_ALLOW_DESTRUCTIVE` | `0` | Разрушительные операции (риск 3/4). `0` — инструменты отвечают `disabled_by_policy` (§9) |
 | `SSVC_RAW_LOG` | `off` | Сырые обмены с устройством: `off` / `errors` (только ≥400 и таймауты) / `all` |
 | `SSVC_RAW_LOG_DIR` | `./logs/raw` | Каталог сырых логов (JSONL по дням, лимит объёма) |
 | `SSVC_RAW_LOG_MAX_MB` | `50` | Предел объёма каталога сырых логов, МБ |
@@ -129,7 +130,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ## 5. Запуск и эндпоинты
 
 ```bash
-node dist/index.js          # или npm start, или npm run mock для мока-устройства (§8)
+node dist/index.js          # или npm start
 ```
 
 | Маршрут | Назначение |
@@ -151,6 +152,24 @@ node dist/index.js          # или npm start, или npm run mock для мо�
 
 ## 6. Подключение клиентов
 
+### DSH, IDE и Claude Desktop: stdio
+
+Клиент сам запускает процесс; порт и Bearer-токен не нужны, лог пишется в stderr:
+
+```bash
+cd mcp
+npm run build
+node dist/index.js --stdio
+```
+
+Обязательна только `SSVC_DEVICE_URL`; `SSVC_MCP_TOKEN` не нужен, `SSVC_PASSWORD` — только
+при включённой на прошивке авторизации.
+
+Для DSH сервер добавляется как stdio-клиент (**Plugins → Add plugin**): команда
+`node dist/index.js --stdio`, рабочий каталог `mcp/`; инструменты видны как
+`mcp__openconnect__oc_*` в новой сессии. Рабочий каталог нужен, чтобы сервер прочитал
+`mcp/.env` с адресом и учётными данными контроллера.
+
 ### curl: полный цикл вручную
 
 ```bash
@@ -169,7 +188,7 @@ curl -X POST "$BASE/mcp" -H "Authorization: Bearer $TOKEN" -H "Content-Type: app
   -H "Accept: application/json, text/event-stream" -H "Mcp-Session-Id: <ID>" \
   -d '{"jsonrpc":"2.0","method":"notifications/initialized"}'
 
-# 3) список инструментов (50) и промптов (5)
+# 3) список инструментов (51) и промптов (5)
 curl -X POST "$BASE/mcp" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" -H "Mcp-Session-Id: <ID>" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
@@ -217,7 +236,7 @@ Claude Desktop не умеет Streamable HTTP напрямую — нужен �
 ```
 
 Другие клиенты: любой, поддерживающий Streamable HTTP + статический Bearer-заголовок
-(Cursor, Continue, собственный SDK-клиент). Пример SDK-клиента — `test/e2e/http.e2e.test.ts`.
+(Cursor, Continue, собственный SDK-клиент).
 
 ---
 
@@ -226,6 +245,10 @@ Claude Desktop не умеет Streamable HTTP напрямую — нужен �
 Образ **multi-stage** (`Dockerfile`): сборка в `node:22-alpine` → runtime-слой только с
 `dist/`, production-зависимостями и non-root пользователем `mcp`. `HEALTHCHECK` дергает
 `GET /healthz` (без curl/wget — через встроенный `fetch`), `EXPOSE 8080`.
+
+Контекст сборки — **корень репозитория**: сервер собирается с общим пакетом
+`packages/rectification` (та же модель, что у интерфейса и документации). Compose уже
+настроен на `context: ..`, поэтому команды ниже работают из `mcp/`.
 
 ```bash
 cd mcp
@@ -246,9 +269,10 @@ curl http://127.0.0.1:8080/healthz
 Ручная сборка без compose:
 
 ```bash
-docker build -t ssvc-openconnect-mcp:0.1.0 .
-docker run --rm -p 127.0.0.1:8080:8080 --env-file .env \
-  -e SSVC_MCP_BIND=0.0.0.0 -v "${PWD}/logs:/app/logs" ssvc-openconnect-mcp:0.1.0
+cd ..   # корень репозитория: контексту нужен packages/rectification
+docker build -f mcp/Dockerfile -t ssvc-openconnect-mcp:0.1.0 .
+docker run --rm -p 127.0.0.1:8080:8080 --env-file mcp/.env \
+  -e SSVC_MCP_BIND=0.0.0.0 -v "${PWD}/mcp/logs:/app/logs" ssvc-openconnect-mcp:0.1.0
 ```
 
 **TLS.** Встроенного TLS по умолчанию нет (в контейнере — тем более). Наружу сервис
@@ -266,50 +290,15 @@ Caddy сам получит сертификат и будет проксиро�
 
 ---
 
-## 8. Мок-устройство
-
-`mock/deviceServer.ts` — HTTP-двойник прошивки на `node:http` (без новых зависимостей):
-те же маршруты, что в §2.4 `mcp-server.md`, правдоподобные данные, журнал команд с
-`commandId`, сессия передачи журнала (первый ответ `202`, второй — CSV).
-
-```bash
-npm run mock        # соберёт mock в .test-dist и запустит на 127.0.0.1:8099
-# в другом терминале: тот же сервис, но смотрит на мок
-# .env: SSVC_DEVICE_URL=http://127.0.0.1:8099, SSVC_USER=admin, SSVC_PASSWORD=admin
-node dist/index.js
-```
-
-Переменные мока:
-
-| Переменная | По умолчанию | Назначение |
-|---|---|---|
-| `MOCK_HOST` / `MOCK_PORT` | `127.0.0.1` / `8099` | Где слушать (`MOCK_PORT=0` — свободный порт) |
-| `MOCK_SECURITY` | `on` | `off` — не-secure сборка: `/rest/signIn` отвечает `404`, клиент работает анонимно |
-| `MOCK_USER` / `MOCK_PASSWORD` | — | Если заданы, `signIn` проверяет учётные данные |
-| `MOCK_STAGE_SWITCH_MS` | `1500` | Через сколько мс стадия сменится `waiting` → `heads` (`0` — не менять; так делает e2e) |
-
-Что покрыто: `/rest/signIn`, `/rest/verifyAuthorization`, `/rest/oc/info`, `/rest/oc/snapshot`,
-`/rest/features`, `/rest/telemetry`, `/rest/sensor`, `/rest/zones` (GET/POST),
-`/rest/sensors/zone`, `/rest/alarms` (GET/POST), `/rest/settings` (GET/PUT),
-`/rest/commands` (+`/{id}`), `/rest/oc/xkc25/{status,verify-status,calibrate}`,
-`/rest/oc/relay/{capabilities,metadata,state,override}` (GPIO-сборка: `supported:false`),
-`/rest/oc/hardware-config` (GET/PUT), `/rest/oc/hardware-faults`, `/rest/files` (+файл, copy,
-delete), `/rest/subsystem` (GET/PUT), `/rest/systemStatus`, `/rest/restart`, `/rest/logs`
-(+`/{id}`, DELETE), `/rest/profiles` (+`/active`, `/content`), `/healthz`.
-
-Мок — инструмент разработки и тестов: в Docker-образ он не попадает (`.dockerignore`).
-
----
-
-## 9. Каталог инструментов (50)
+## 8. Каталог инструментов (51)
 
 Риск: **0** — чтение, **1** — обратимая запись, **2** — влияет на процесс (`confirm`),
 **3** — разрушительное (`confirm` + `reason` + `SSVC_ALLOW_DESTRUCTIVE=1`), **4** — то же +
-отдельный allowlist (сейчас пуст). Имена и аннотации собирает `src/tools/index.ts`;
-`tools/list` показывает ровно этот каталог.
+отдельный allowlist (сейчас пуст). `tools/list` показывает ровно этот каталог.
 
 | Домен | Инструмент | Что делает | Риск |
 |---|---|---|---|
+| calc | `oc_calculate_plan` | План ректификации по входным данным (общая модель с интерфейсом) | 0 |
 | info | `oc_get_info` | Версии прошивки и UART API, совместимость, реестр возможностей | 0 |
 | info | `oc_get_capabilities` | Возможности API + рантайм-флаги сборки (`/rest/features`) | 0 |
 | info | `oc_diagnostics` | Самодиагностика сервера: конфиг без секретов, авторизация, счётчики | 0 |
@@ -367,18 +356,16 @@ delete), `/rest/subsystem` (GET/PUT), `/rest/systemStatus`, `/rest/restart`, `/r
 Промпты (5): `start_rectification` («Запустить ректификацию»), `troubleshoot_start_blocked`
 («Разобрать блокировку старта»), `calibrate_xkc25` («Откалибровать датчик XKC-25»),
 `analyze_last_run` («Разобрать последний прогон»), `apply_profile` («Применить профиль») —
-готовые последовательности шагов для агента (тексты — в `src/prompts/prompts.ts`).
-Ресурсы: `openconnect://info`, `openconnect://telemetry`.
+готовые последовательности шагов для агента. Ресурсы: `openconnect://info`, `openconnect://telemetry`.
 
 ---
 
-## 10. Разрушительные операции: как включить осознанно
+## 9. Разрушительные операции: как включить осознанно
 
 По умолчанию (`SSVC_ALLOW_DESTRUCTIVE=0`) инструменты риска 3 отвечают `disabled_by_policy`
-**до любого запроса к контроллеру**. Это проверяется тестом `test/release.test.ts` для
-каждого такого инструмента (список вычисляется по поведению политики, а не хардкодится).
+**до любого запроса к контроллеру**.
 
-Порядок проверок (см. `src/policy/confirmation.ts`):
+Порядок проверок:
 
 1. `confirm: true` — иначе `confirmation_required`;
 2. `reason` не короче 10 символов — иначе `validation_failed` (причина попадает в аудит);
@@ -402,34 +389,15 @@ SSVC_ALLOW_DESTRUCTIVE=1
 
 ---
 
-## 11. Решение по `outputSchema`
-
-Инструменты **не объявляют `outputSchema`** (кроме тех, где схема реально полезна).
-Причины и следствия:
-
-- без `outputSchema` SDK не проверяет `structuredContent`, поэтому конверт ошибки
-  (`{ok:false,error:{...}}`) можно отдавать и в `structuredContent`, и в текстовой части;
-- с `outputSchema` сервер пропускает проверку при `isError:true`, а **клиент SDK — нет**:
-  конверт ошибки не соответствует успешной схеме и был бы отвергнут. Поэтому у инструментов
-  со схемой код ошибки остаётся только в `content[0].text` (тот же JSON);
-- ответы прошивки версионны (`API 1.7`…`1.10`), закрытая схема вывода ломалась бы на
-  расхождениях. Вход валидируется строго (`inputSchema`), выход — на уровне домена (zod-схемы
-  ответов + `device_error` с телом при расхождении).
-
-Итог: клиент получает и текст (JSON), и `structuredContent`; при ошибке — `isError:true`,
-чтобы «отказ» не был принят за данные. Подробности — `src/mcp/registry.ts`.
-
----
-
-## 12. Ограничения и известные особенности прошивки
+## 10. Ограничения и известные особенности прошивки
 
 | Ограничение | Что это значит в работе |
 |---|---|
 | **Один контроллер** | `SSVC_DEVICE_URL` — единственный адрес; параметра `device` в инструментах нет |
 | **HTTP до устройства без TLS** | Трафик MCP-сервер → контроллер идёт по локальной сети открытым. Пароль читается только из `.env`, JWT живёт в памяти. Это ограничение прошивки, а не сервера |
 | **Нет встроенного TLS для клиентов** | По умолчанию сервис слушает HTTP. Наружу — только через reverse-proxy с сертификатом (§7). `SSVC_MCP_TLS_CERT`/`_KEY` включают встроенный TLS, если прокси не нужен |
-| **SPA-заглушка** | Неизвестный GET прошивка отдаёт как `200 text/html`. Сервер распознаёт это (`src/domain/readJson.ts`) и отвечает `feature_unsupported` с подсказкой «обновите прошивку», а не пустыми данными |
-| **`/rest/files` — исправлено в ветке** | На старых прошивках `GET /rest/files/*` перехватывался обработчиком дерева, и `oc_file_download` отвечал `feature_unsupported`. В этой ветке прошивка исправлена (точный matcher для дерева), скачивание работает и проверено на устройстве. Проверка в MCP осталась как защита от старых прошивок: вместо файла не сохраняется JSON-дерево |
+| **SPA-заглушка** | Неизвестный GET прошивка отдаёт как `200 text/html`. Сервер распознаёт это и отвечает `feature_unsupported` с подсказкой «обновите прошивку», а не пустыми данными |
+| **`oc_file_download` на старых прошивках** | Если `GET /rest/files/*` отвечает деревом файлов, сервер не сохраняет JSON вместо файла, а возвращает `feature_unsupported`. Обновите прошивку OpenConnect |
 | **Журналы без SD** | Если SD-карты нет, передача журнала завершается кодом `err_mnt` — сервер отдаёт `device_error` с русским объяснением (`oc_logs_download`) |
 | **Реле на GPIO-сборке** | `oc_get_relay_metadata`/`oc_get_relay_state`/`oc_relay_override` отвечают `feature_unsupported` («Реле на PCF8574 недоступны в этой сборке прошивки») — это данные, а не сбой |
 | **Одна передача журнала** | Вторая одновременная попытка получает `busy`/`log_transfer_busy`; `oc_logs_cancel` освобождает сессию |
@@ -440,26 +408,7 @@ SSVC_ALLOW_DESTRUCTIVE=1
 
 ---
 
-## 13. Тесты, мок и CI
-
-| Уровень | Что покрывает |
-|---|---|
-| Юнит/контракт (`test/*.test.ts`) | Домены и инфраструктура (215 тестов): политика риска, реестр, HTTP-слой, схемы, промпты, ресурсы |
-| Каталог (`test/toolsIndex.test.ts`) | 50 уникальных имён, обязательные поля `ToolDef`, согласованность аннотаций, защита от дубликатов, наличие помеченных разрушительных инструментов |
-| Релизная закалка (`test/release.test.ts`) | Безопасные значения `.env.example` и умолчаний кода; каждый инструмент риска ≥3 отвечает `disabled_by_policy`, а с флагом — доходит до устройства; без `reason` — `validation_failed` |
-| E2E (`test/e2e/http.e2e.test.ts`) | Настоящий SDK-клиент: `initialize` → `tools/list` (50) → `prompts/list` (5) → чтения → `oc_wait_for_change` (мок меняет стадию) → 401 без токена → `disabled_by_policy` → закрытие сессии. Порты только 0 |
-
-CI (`.github/workflows/mcp.yaml`): `ubuntu-latest`, `node 22`, `npm ci --ignore-scripts`,
-`npm run typecheck`, `npm test`, `npm run build`.
-
-Ручная проверка на живом контроллере: чтения (`oc_get_info`, `oc_get_state`, `oc_get_settings`,
-`oc_get_sensors`, `oc_get_alarms`, `oc_get_xkc25_status`, `oc_get_hardware_faults`,
-`oc_get_relay_metadata`, `oc_get_subsystems`, `oc_system_status`, `oc_logs_list`,
-`oc_files_list`) — на GPIO-сборке реле честно отвечает `feature_unsupported`.
-
----
-
-## 14. Диагностика
+## 11. Диагностика
 
 | Симптом | Что проверить |
 |---|---|
@@ -469,7 +418,7 @@ CI (`.github/workflows/mcp.yaml`): `ubuntu-latest`, `node 22`, `npm ci --ignore-
 | `auth_failed` | Неверный `SSVC_USER`/`SSVC_PASSWORD`; на не-secure сборке пароль лучше не задавать лишним |
 | `device_unreachable` / `device_timeout` | Контроллер в сети? `curl http://<ip>/rest/oc/info`. Увеличьте `SSVC_DEVICE_TIMEOUT_MS` |
 | `feature_unsupported` | Маршрута нет в этой прошивке (SPA-заглушка/404) — обновите OpenConnect или не используйте инструмент |
-| `disabled_by_policy` | Разрушительная операция при `SSVC_ALLOW_DESTRUCTIVE=0` (§10) |
+| `disabled_by_policy` | Разрушительная операция при `SSVC_ALLOW_DESTRUCTIVE=0` (§9) |
 | `confirmation_required` | Нужен `confirm:true` (риск 2/3) |
 | `guard_blocked` | Предохранитель SSVC: причины в `error.details.block_reasons` (уровень XKC-25, сбои) |
 | `busy`/`queue_full` | Контроллер занят: повторите позже или отмените передачу журнала (`oc_logs_cancel`) |
@@ -479,31 +428,8 @@ CI (`.github/workflows/mcp.yaml`): `ubuntu-latest`, `node 22`, `npm ci --ignore-
 
 ---
 
-## 15. Структура пакета
+## 12. Ссылки
 
-```
-mcp/
-├── Dockerfile / docker-compose.yml / .dockerignore   # образ: multi-stage, non-root, healthcheck
-├── .env.example                                      # безопасные релизные значения
-├── src/
-│   ├── index.ts                 # запуск: конфиг → зависимости → HTTP
-│   ├── config.ts, logging.ts, errors.ts, audit.ts, rawlog.ts
-│   ├── http/                    # app.ts (маршруты /mcp /healthz /readyz), auth, sessions, tls
-│   ├── mcp/                     # server.ts (на сессию), registry.ts (ToolDef → MCP), types.ts
-│   ├── device/                  # DeviceClient, AuthSession, CapabilityCache, WriteQueue, schemas/
-│   ├── domain/                  # доменные сервисы + readJson.ts (единый разбор JSON/SPA)
-│   ├── tools/                   # *.tools.ts по доменам + index.ts (единый каталог)
-│   ├── resources/, prompts/     # openconnect://… и 5 промптов-сценариев
-│   └── policy/                  # risk.ts (классы), confirmation.ts (confirm/reason/флаг)
-├── mock/deviceServer.ts         # HTTP-двойник прошивки (npm run mock)
-└── test/                        # доменные, транспортные, каталог, релизные, e2e/
-```
-
----
-
-## 16. Ссылки
-
-- [Архитектура и план MCP-сервера](../../docs/develop/mcp-server.md)
-- [Разбивка на пакеты работ](../../docs/develop/mcp-server-agents.md)
-- [Контракт прошивки (mcp-contract-notes.md)](../../docs/develop/mcp-contract-notes.md)
+- [Пользовательская документация MCP](../docs/mcp/index.md) — установка, подключение клиентов,
+  настройка, инструменты, диагностика
 - [MCP: Streamable HTTP транспорт](https://modelcontextprotocol.io/specification)

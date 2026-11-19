@@ -424,9 +424,17 @@ export interface StateView {
  * Превращает ответ `/rest/oc/snapshot` в модель состояния.
  * Отсутствие `telemetry` — ошибка устройства: снимок без телеметрии бессмысленен,
  * а отдавать «нули» вместо данных нельзя (контракт §5, «Обновление после §9»).
+ *
+ * `requireTelemetry:false` — вызывающий явно запросил только другие компоненты
+ * (`oc_get_state` с include без telemetry): отсутствие блока не должно ломать ответ.
  */
-export function buildStateView(snapshot: SnapshotRaw, tracker: StalenessTracker): StateView {
-  if (snapshot.telemetry === undefined) {
+export function buildStateView(
+  snapshot: SnapshotRaw,
+  tracker: StalenessTracker,
+  opts: { requireTelemetry?: boolean } = {},
+): StateView {
+  const requireTelemetry = opts.requireTelemetry ?? true;
+  if (requireTelemetry && snapshot.telemetry === undefined) {
     throw new OcError('device_error', 'Снимок состояния не содержит телеметрии', {
       hint:
         'Контроллер вернул /rest/oc/snapshot без блока telemetry. Проверьте partial: ' +
@@ -451,7 +459,7 @@ export function buildStateView(snapshot: SnapshotRaw, tracker: StalenessTracker)
     stale: freshness.stale,
     freshness_age_ms: freshness.age_ms,
     info: snapshot.info === undefined ? null : mapInfo(snapshot.info),
-    telemetry: normalizeTelemetryTree(snapshot.telemetry),
+    telemetry: snapshot.telemetry === undefined ? null : normalizeTelemetryTree(snapshot.telemetry),
     status: normalizeStatus(snapshot.status),
     sensor: snapshot.sensor === undefined ? null : normalizeSensorMap(snapshot.sensor),
     faults: snapshot.faults === undefined ? null : normalizeFaults(snapshot.faults),

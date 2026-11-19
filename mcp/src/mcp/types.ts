@@ -17,6 +17,13 @@ import type { AuditLog } from '../audit.js';
 import type { ErrorEnvelope } from '../errors.js';
 
 /** Всё, что нужно обработчику инструмента. Создаётся на сессию. */
+/** Снимок активных HTTP-сессий для диагностики (без секретов). */
+export interface SessionsSnapshot {
+  active: number;
+  max: number;
+  entries: Array<{ id: string; created_at: string; last_seen_at: string; requests: number }>;
+}
+
 export interface ToolContext {
   cfg: Config;
   client: DeviceClient;
@@ -24,6 +31,8 @@ export interface ToolContext {
   log: Logger;
   audit: AuditLog;
   raw: RawLogger;
+  /** Есть только в HTTP-транспорте: в stdio сессий нет. */
+  sessions?: () => SessionsSnapshot;
 }
 
 /** Паспорт подключённого контроллера — без секретов. */

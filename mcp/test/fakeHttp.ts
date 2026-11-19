@@ -188,12 +188,12 @@ export type TestConfigPatch = Partial<Omit<Config, 'device' | 'mcp' | 'raw'>> & 
 /** Конфиг для тестов: обязательные поля заполнены, сеть и диск не используются. */
 export function testConfig(patch: TestConfigPatch = {}): Config {
   const base: Config = {
+    transport: 'http',
     device: {
       url: 'http://device.test',
       user: 'admin',
       password: 'test-password',
       timeoutMs: 1_000,
-      pollHz: 1,
     },
     mcp: {
       host: '127.0.0.1',
@@ -207,7 +207,6 @@ export function testConfig(patch: TestConfigPatch = {}): Config {
     },
     raw: { mode: 'off', dir: './logs/raw', maxMb: 1 },
     allowDestructive: false,
-    allowDebug: false,
     auditPath: './logs/audit.jsonl',
     logLevel: 'silent',
   };

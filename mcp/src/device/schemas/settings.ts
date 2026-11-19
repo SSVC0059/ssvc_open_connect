@@ -96,3 +96,36 @@ export const KNOWN_SETTING_KEYS: readonly string[] = [
   'predec',
   'extended_heads',
 ];
+
+/**
+ * Ключи, которые `GET /rest/settings` отдаёт, но `PUT` молча игнорирует:
+ * их нет в `PARAM_HANDLERS` прошивки (mcp-contract-notes.md §C.3).
+ *
+ * Знание не выводится из устройства: `ignored` в ответе PUT приходит без причины,
+ * поэтому список зафиксирован здесь и используется в `ignored_reasons`
+ * (`oc_update_settings`) и в `settings.readonly` (`oc_get_capabilities`).
+ */
+export const READ_ONLY_SETTING_KEYS: readonly string[] = [
+  'sound',
+  'pressure',
+  'relay_inverted',
+  'relay_autostart',
+  'autoresume',
+  'auto_mode',
+  'hearts_temp_shift',
+  'hearts_pause',
+  'tp2_shift',
+  'tp_filter',
+  'signal_tp1_control',
+  'signal_inverted',
+  'tp1_control_temp',
+  'tp1_control_start',
+  'stab_limit_time',
+  'stab_limit_finish',
+  'backlight',
+];
+
+/** Ключи, которые прошивка принимает в `PUT /rest/settings` (подсказка и `settings.writable`). */
+export const WRITABLE_SETTING_KEYS: readonly string[] = KNOWN_SETTING_KEYS.filter(
+  (key) => !READ_ONLY_SETTING_KEYS.includes(key),
+);

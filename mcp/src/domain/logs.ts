@@ -584,6 +584,15 @@ function resolveSaveDir(saveDir: string | undefined, baseDir: string): string {
       details: { save_dir: saveDir ?? null },
     });
   }
+  // Та же проверка, что в files.resolveSaveDir: путь не должен нести управляющие
+  // символы — иначе ОС/терминал получают неожиданные последовательности.
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f]/.test(requested)) {
+    throw new OcError('validation_failed', 'Каталог сохранения содержит управляющие символы', {
+      hint: 'Уберите из save_dir управляющие коды.',
+      details: { save_dir: requested },
+    });
+  }
   if (isAbsolute(requested)) {
     throw new OcError('validation_failed', 'save_dir должен быть относительным путём', {
       hint:

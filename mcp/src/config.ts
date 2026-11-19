@@ -13,7 +13,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { parseLogLevel, type LogLevel } from './logging.js';
 
 export interface Config {
-  device: { url: string; user: string; password: string; timeoutMs: number; pollHz: number };
+  /** Транспорт, под который собрана конфигурация (см. `LoadConfigOptions.transport`). */
+  transport: 'http' | 'stdio';
+  device: { url: string; user: string; password: string; timeoutMs: number };
   mcp: {
     host: string;
     port: number;
@@ -26,7 +28,6 @@ export interface Config {
   };
   raw: { mode: 'off' | 'errors' | 'all'; dir: string; maxMb: number };
   allowDestructive: boolean;
-  allowDebug: boolean;
   auditPath: string;
   logLevel: LogLevel;
 }
@@ -41,8 +42,10 @@ export class ConfigError extends Error {
 
 export const DEFAULTS = {
   deviceTimeoutMs: 10_000,
-  pollHz: 1,
-  host: '0.0.0.0',
+  // Безопасное умолчание: сервис слушает только петлевой адрес. Для доступа из
+  // сети (или из контейнера) адрес задаётся явно — SSVC_MCP_BIND, Dockerfile и
+  // compose выставляют 0.0.0.0, потому что иначе проброс порта не работает.
+  host: '127.0.0.1',
   port: 8080,
   maxSessions: 32,
   idleMs: 30 * 60 * 1000,
@@ -185,17 +188,35 @@ export const PRIVATE_CIDRS: readonly string[] = [
 /** Значение по умолчанию для allowlist: «вся частная сеть». */
 export const DEFAULT_ALLOWED_CIDRS: readonly string[] = ['private'];
 
+export interface LoadConfigOptions {
+  /**
+   * Транспорт. В `stdio` нет ни порта, ни Bearer-токена: процесс запускает сам
+   * клиент, поэтому `SSVC_MCP_TOKEN` не обязателен. Пароль контроллера тоже
+   * можно не задавать: при выключенной на прошивке авторизации запросы идут
+   * анонимно (DeviceClient.AuthSession → security off).
+   */
+  transport?: 'http' | 'stdio';
+}
+
 /**
  * Загружает конфигурацию из окружения.
  * @throws ConfigError с русским сообщением, если обязательные значения отсутствуют/некорректны.
  */
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const token = required(
-    env,
-    'SSVC_MCP_TOKEN',
-    'Сервер не запускается без токена MCP-клиентов: открытый порт без аутентификации недопустим. ' +
-      'Сгенерируйте токен командой «openssl rand -hex 32» и запишите его в .env как SSVC_MCP_TOKEN.',
-  );
+export function loadConfig(
+  env: NodeJS.ProcessEnv = process.env,
+  opts: LoadConfigOptions = {},
+): Config {
+  const transport = opts.transport ?? 'http';
+  const stdio = transport === 'stdio';
+
+  const token = stdio
+    ? (readString(env, 'SSVC_MCP_TOKEN') ?? '')
+    : required(
+        env,
+        'SSVC_MCP_TOKEN',
+        'Сервер не запускается без токена MCP-клиентов: открытый порт без аутентификации недопустим. ' +
+          'Сгенерируйте токен командой «openssl rand -hex 32» и запишите его в .env как SSVC_MCP_TOKEN.',
+      );
 
   const url = normalizeBaseUrl(
     required(
@@ -205,12 +226,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     ),
   );
 
-  const password = required(
-    env,
-    'SSVC_PASSWORD',
-    'Укажите пароль учётной записи контроллера (SSVC_PASSWORD). Обычно нужна учётка admin: ' +
-      'телеметрия и датчики на прошивке доступны только администратору.',
-  );
+  const password = stdio
+    ? (readString(env, 'SSVC_PASSWORD') ?? '')
+    : required(
+        env,
+        'SSVC_PASSWORD',
+        'Укажите пароль учётной записи контроллера (SSVC_PASSWORD). Обычно нужна учётка admin: ' +
+          'телеметрия и датчики на прошивке доступны только администратору.',
+      );
 
   const host = readString(env, 'SSVC_MCP_BIND') ?? DEFAULTS.host;
   const allowedHosts = readList(env, 'SSVC_MCP_ALLOWED_HOSTS');
@@ -228,6 +251,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   }
 
   return {
+    transport,
     device: {
       url,
       user: readString(env, 'SSVC_USER') ?? 'admin',
@@ -236,7 +260,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         min: 100,
         max: 600_000,
       }),
-      pollHz: readFloat(env, 'SSVC_POLL_HZ', DEFAULTS.pollHz, { min: 0.1, max: 10 }),
     },
     mcp: {
       host,
@@ -260,7 +283,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       maxMb: readFloat(env, 'SSVC_RAW_LOG_MAX_MB', DEFAULTS.rawMaxMb, { min: 0.001, max: 100_000 }),
     },
     allowDestructive: readBool(env, 'SSVC_ALLOW_DESTRUCTIVE', false),
-    allowDebug: readBool(env, 'SSVC_ALLOW_DEBUG', false),
     auditPath: readString(env, 'SSVC_AUDIT_PATH') ?? DEFAULTS.auditPath,
     logLevel: parseLogLevel(readString(env, 'SSVC_LOG_LEVEL'), DEFAULTS.logLevel),
   };

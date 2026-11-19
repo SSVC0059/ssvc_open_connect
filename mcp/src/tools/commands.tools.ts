@@ -202,7 +202,7 @@ export const ocEmergencyStop = defineTool({
     // confirm не требуется по контракту §2.6.
     enforceRisk(ctx, 'oc_emergency_stop', PROCESS_RISK, {});
     try {
-      const dispatch = await sendCommand(ctx.client, 'emergency_stop');
+      const dispatch = await sendCommand(ctx.client, 'emergency_stop', { urgent: true });
       auditAction(ctx, {
         tool: 'oc_emergency_stop',
         risk: PROCESS_RISK,

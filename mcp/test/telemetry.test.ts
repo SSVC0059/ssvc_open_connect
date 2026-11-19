@@ -229,6 +229,19 @@ test('oc_get_state: отсутствие telemetry в снимке → device_er
   assert.match(payload.error.message, /телеметри/i);
 });
 
+test('oc_get_state: include без telemetry не требует этот блок в снимке', async (t) => {
+  const snapshot = { ...SNAPSHOT, telemetry: undefined };
+  const testCtx = await makeTestContext([signInRoute(), snapshotRoute(() => snapshot)]);
+  t.after(() => testCtx.cleanup());
+
+  const result = await runTool(tool('oc_get_state'), testCtx.ctx, { include: ['info', 'faults'] });
+  assert.equal(result.isError, undefined, 'info/faults доступны и без блока telemetry');
+  const payload = payloadOf(result);
+  assert.equal(payload.ok, true);
+  assert.equal(payload.telemetry, undefined);
+  assert.ok(payload.info !== undefined || payload.partial.includes('info'));
+});
+
 test('oc_get_state: старая прошивка (SPA 200 text/html) → feature_unsupported с подсказкой', async (t) => {
   const spa: FakeRoute = {
     method: 'GET',

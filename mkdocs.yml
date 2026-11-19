@@ -80,6 +80,13 @@ nav:
   - "FAQ": faq/faq.md
   - "Глоссарий": glossary.md
   - "Список изменений": info/changelog.md
+  - "MCP-сервер":
+      - "Обзор": mcp/index.md
+      - "Установка и обновление": mcp/install.md
+      - "Подключение клиентов": mcp/connect.md
+      - "Настройка": mcp/configuration.md
+      - "Инструменты": mcp/tools.md
+      - "Диагностика": mcp/troubleshooting.md
   - "Для разработчиков":
       - develop/index.md
       - develop/architecture-manifest.md
@@ -101,10 +108,6 @@ nav:
           - develop/api/logs.md
           - develop/api/events.md
           - develop/api/security.md
-      - "MCP-сервер: состояние и план (входная точка)": develop/mcp-server.md
-      - "MCP-сервер: пакеты работ для агентов": develop/mcp-server-agents.md
-      - "MCP-сервер: пользовательские сценарии": develop/mcp-scenarios.md
-      - "MCP-сервер: контракт прошивки (разведка)": develop/mcp-contract-notes.md
       - "UART API SSVC (справка)": ssvc_uart_api_docs.md
       - "Протокол UART — примеры (JSON/TXT)": ssvc-serial-protocol/develop/Readme.md
       - "Фронтенд":

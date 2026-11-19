@@ -78,6 +78,8 @@ export interface DeviceClientStats {
   retries: number;
   authRetries: number;
   writeOperations: number;
+  /** Сколько записей прошло аварийной дорожкой (`withUrgent`). */
+  urgentOperations: number;
   errors: number;
   lastStatus: number | null;
   lastRequestAt: string | null;
@@ -104,12 +106,22 @@ export class DeviceClient {
   private readonly retryMaxDelayMs: number;
   private readonly defaultTimeoutMs: number;
   private readonly writeQueue: WriteQueue;
+  /**
+   * Аварийная дорожка: не ждёт общую очередь записей. Нужна защитным действиям
+   * (EMERGENCY_STOP), которые не должны стоять за 45-секундным скачиванием
+   * журнала или длинной записью настроек. Записи внутри дорожки сериализуются
+   * между собой, но не с общей очередью — это осознанное отступление от правила
+   * «один писатель»: прошивка обрабатывает EMERGENCY_STOP в отдельной
+   * приоритетной очереди команд, а цена ожидания здесь выше риска пересечения.
+   */
+  private readonly urgentQueue: WriteQueue;
   private readonly inflight = new Map<string, Promise<HttpResponse>>();
   private statsValue: DeviceClientStats = {
     requests: 0,
     retries: 0,
     authRetries: 0,
     writeOperations: 0,
+    urgentOperations: 0,
     errors: 0,
     lastStatus: null,
     lastRequestAt: null,
@@ -125,6 +137,7 @@ export class DeviceClient {
     this.retryMaxDelayMs = Math.max(this.retryBaseDelayMs, opts.retry?.maxDelayMs ?? 2_000);
     this.defaultTimeoutMs = opts.cfg.device.timeoutMs;
     this.writeQueue = new WriteQueue(opts.log);
+    this.urgentQueue = new WriteQueue(opts.log);
     const http = opts.http ?? createNodeHttp({ log: opts.log });
     this.http = http;
     this.auth =
@@ -142,11 +155,18 @@ export class DeviceClient {
       });
   }
 
-  getStats(): DeviceClientStats & { auth: AuthStats; writes: { size: number; completed: number } } {
+  getStats(): DeviceClientStats & {
+    auth: AuthStats;
+    writes: { size: number; completed: number; urgent: number };
+  } {
     return {
       ...this.statsValue,
       auth: this.auth.stats(),
-      writes: { size: this.writeQueue.size, completed: this.writeQueue.completedCount },
+      writes: {
+        size: this.writeQueue.size,
+        completed: this.writeQueue.completedCount,
+        urgent: this.urgentQueue.size + this.urgentQueue.completedCount,
+      },
     };
   }
 
@@ -293,6 +313,21 @@ export class DeviceClient {
   }
 
   /**
+   * Запись вне общей очереди — только для защитных действий (EMERGENCY_STOP).
+   *
+   * Не ждёт `withWrite`: иначе аварийная остановка могла бы простоять до 45 с,
+   * пока другое действие скачивает журнал. Внутри дорожки операции по-прежнему
+   * сериализуются, чтобы два защитных действия не ушли в UART одновременно.
+   */
+  async withUrgent<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    return this.urgentQueue.run(key, async () => {
+      this.statsValue.writeOperations += 1;
+      this.statsValue.urgentOperations += 1;
+      return fn();
+    });
+  }
+
+  /**
    * Сырой запрос — для CSV, 202-поллинга и нестандартных случаев.
    * Не бросает на HTTP-статусах: возвращает их как есть (кроме сетевых ошибок).
    */
@@ -354,7 +389,7 @@ export class DeviceClient {
               });
         this.statsValue.errors += 1;
         this.recordRaw({ method: upper, path, request: payload, error: failure, started });
-        if (canRetry && attempt < attempts && isNetworkError(error)) {
+        if (canRetry && attempt < attempts && this.isRetryableFailure(error)) {
           this.statsValue.retries += 1;
           this.log?.warn('Повтор GET после сетевой ошибки', {
             path,
@@ -406,6 +441,37 @@ export class DeviceClient {
         }
       }
 
+      // 401 после успешного повторного входа: токен свежий, значит дело не в
+      // пароле, а в роли. Прошивка отвечает 401 (а не 403) на admin-маршрутах,
+      // поэтому переводим это в контрактный `forbidden_admin_required`.
+      if (result.status === 401 && authRetried && opts.anonymous !== true) {
+        this.recordRaw({
+          method: upper,
+          path,
+          status: result.status,
+          response: result.body,
+          request: payload,
+          started,
+        });
+        this.statsValue.errors += 1;
+        throw new OcError(
+          'forbidden_admin_required',
+          'Контроллер отклонил запрос: нужна учётная запись администратора',
+          {
+            hint:
+              'Проверьте SSVC_USER: телеметрия, датчики и снимок состояния доступны только admin. ' +
+              'Гость получает 401 так же, как клиент без токена.',
+            httpStatus: 401,
+            details: {
+              method: upper,
+              path,
+              status: 401,
+              body: truncateBody(result.body),
+            },
+          },
+        );
+      }
+
       this.recordRaw({
         method: upper,
         path,
@@ -438,9 +504,9 @@ export class DeviceClient {
     });
   }
 
-  /** Закрывает клиент: сбрасывает single-flight и ждёт очередь записей. */
+  /** Закрывает клиент: сбрасывает single-flight и ждёт обе очереди записей. */
   async close(): Promise<void> {
-    await this.writeQueue.drain();
+    await Promise.all([this.writeQueue.drain(), this.urgentQueue.drain()]);
     this.inflight.clear();
   }
 
@@ -456,6 +522,18 @@ export class DeviceClient {
   private isRetryableStatus(status: number): boolean {
     // 503 у устройства — это либо queue_full, либо занятость; GET безопасно повторить.
     return status === 502 || status === 503 || status === 504;
+  }
+
+  /**
+   * Сетевая ошибка, которую безопасно повторить для GET.
+   *
+   * Транспорт (`http.toTransportError`) уже заворачивает сбои в `OcError` с
+   * `retryable:true`, поэтому проверять только `isNetworkError(error)` нельзя:
+   * у обёртки нет `code` Node, и ретраи молча не срабатывали.
+   */
+  private isRetryableFailure(error: unknown): boolean {
+    if (error instanceof OcError) return error.retryable;
+    return isNetworkError(error);
   }
 
   /**

@@ -71,9 +71,12 @@ export const ocGetState = defineTool({
   annotations: annotationsForRisk(RISK),
   handler: async (args: Record<string, any>, ctx: ToolContext) => {
     const tracker = stalenessTrackerFor(ctx.client);
-    const snapshot = await fetchSnapshot(ctx.client);
-    const state = buildStateView(snapshot, tracker);
     const include = parseInclude(args.include);
+    const snapshot = await fetchSnapshot(ctx.client);
+    // Телеметрия обязательна только если её же и просили вернуть.
+    const state = buildStateView(snapshot, tracker, {
+      requireTelemetry: include.has('telemetry'),
+    });
 
     const partial = new Set(state.partial);
     const result: Record<string, unknown> = {
@@ -91,9 +94,8 @@ export const ocGetState = defineTool({
       else result.info = state.info;
     }
     if (include.has('telemetry')) {
-      // Снимок без телеметрии — уже ошибка устройства в buildStateView;
-      // здесь значение всегда есть.
-      result.telemetry = state.telemetry;
+      if (state.telemetry === null) partial.add('telemetry');
+      else result.telemetry = state.telemetry;
     }
     if (include.has('sensors')) {
       if (state.sensor === null) partial.add('sensor');

@@ -308,3 +308,286 @@ function describeFieldValue(value: unknown): string {
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
+
+/* ──────────────────────── Производные значения и проверки ──────────────────────── */
+
+/**
+ * Стадии, у которых есть пара `[время_открытия_с, период_с]`
+ * (`docs/ssvc_uart_api_docs.md`, §`heads`, `late_heads`, `hearts`, `tails`).
+ */
+export type SettingsStage = 'heads' | 'late_heads' | 'hearts' | 'tails';
+
+/**
+ * Стадия → индекс `valve_bw`. Порядок повторяет расчёт `@ssvc/rectification`
+ * (`packages/rectification/src/index.js`, блок «Клапан…`): головы — 1-й клапан,
+ * тело — 2-й, подголовники и хвосты — 3-й. Держим один порядок на весь проект,
+ * иначе `derived.flow_mlh` разойдётся с `oc_calculate_plan`.
+ */
+const STAGE_VALVE_INDEX: Record<SettingsStage, number> = {
+  heads: 0,
+  late_heads: 2,
+  hearts: 1,
+  tails: 2,
+};
+
+const STAGES: readonly SettingsStage[] = ['heads', 'late_heads', 'hearts', 'tails'];
+
+/** Стадии, у которых таймер задаёт объём: остальные живут до температуры/процента. */
+const STAGE_TIMER_KEY: Partial<Record<SettingsStage, string>> = {
+  heads: 'heads_timer',
+  late_heads: 'late_heads_timer',
+};
+
+export interface StageFlow {
+  /** Расход стадии в мл/ч при текущих `valve_bw` и паре. */
+  flow_mlh: number;
+  /** Скважность: доля периода, когда клапан открыт, %. */
+  duty_pct: number;
+  period_s: number;
+  /** Поле присутствует, но эта ветка прошивки его не использует (хвосты в 2.3). */
+  ignored?: true;
+}
+
+export interface SettingWarning {
+  code: string;
+  field: string;
+  hint: string;
+}
+
+/**
+ * Метод пересчёта. Едет вместе с числами, а не живёт только в коде: иначе агент,
+ * изолированный от репозитория, объясняет `flow_mlh` придуманной формулой
+ * (в одном прогоне так появился лишний множитель ×60).
+ */
+export const FLOW_METHOD = 'flow_mlh = valve_bw[i] * opening_s / period_s';
+
+/** Единицы производных значений: `valve_bw` — мл/ч, пара — секунды. */
+export const DERIVED_UNITS: Readonly<Record<string, string>> = {
+  flow_mlh: 'мл/ч',
+  duty_pct: '%',
+  period_s: 'с',
+  volume_ml: 'мл',
+};
+
+export interface DerivedSettings {
+  /** Формула, которой получены `flow_mlh`. */
+  method: string;
+  /** Единицы полей `derived` и `volumes_ml`. */
+  units: Record<string, string>;
+  /** Какой клапан (`valve_bw[i]`) использует каждая стадия. */
+  valve_index: Record<SettingsStage, number>;
+  stages: Record<SettingsStage, StageFlow | null>;
+  volumes_ml: Partial<Record<SettingsStage, number>>;
+  warnings: SettingWarning[];
+}
+
+/**
+ * Считает производные значения из уже полученных настроек: мл/ч на стадию,
+ * скважность, объёмы по таймерам и предупреждения. Обращений к устройству нет —
+ * функция чистая и используется и чтением, и записью.
+ */
+export function analyzeSettings(settings: SsvcSettings): DerivedSettings {
+  const warnings: SettingWarning[] = [];
+  const valves = readValveBw(settings);
+  const hasLateHeads = isPair(settings.late_heads);
+  const isLateHeadsBranch = hasLateHeads;
+
+  if (valves === null) {
+    warnings.push({
+      code: 'valve_bw_missing',
+      field: 'valve_bw',
+      hint:
+        'Пропускные способности клапанов не заданы или неполные: мл/ч не определить. ' +
+        'Задайте valve_bw=[<головы>,<тело>,<хвосты>] в мл/ч (калибровка клапанов).',
+    });
+  }
+
+  const stages = {} as Record<SettingsStage, StageFlow | null>;
+  const volumes: Partial<Record<SettingsStage, number>> = {};
+
+  for (const stage of STAGES) {
+    const pair = readPair(settings[stage]);
+    if (pair === null) {
+      stages[stage] = null;
+      continue;
+    }
+    const ignored = stage === 'tails' && isLateHeadsBranch;
+    const duty = (pair.opening / pair.period) * 100;
+    const valve = valves === null ? null : valves[STAGE_VALVE_INDEX[stage]];
+    const flow =
+      valve === null || valve === undefined || valve <= 0
+        ? null
+        : (valve * pair.opening) / pair.period;
+
+    if (valve !== null && valve !== undefined && valve <= 0) {
+      warnings.push({
+        code: 'valve_bw_zero',
+        field: 'valve_bw',
+        hint:
+          'Пропускная способность клапана этой стадии равна 0: скорость и объём будут нулевыми. ' +
+          'Проверьте калибровку valve_bw.',
+      });
+    }
+
+    stages[stage] = {
+      flow_mlh: flow === null ? 0 : round(flow, 1),
+      duty_pct: round(duty, 2),
+      period_s: pair.period,
+      ...(ignored ? { ignored: true as const } : {}),
+    };
+
+    const timerKey = STAGE_TIMER_KEY[stage];
+    const timer = timerKey === undefined ? null : readNumber(settings[timerKey]);
+    if (flow !== null && timer !== null && timer > 0) {
+      volumes[stage] = Math.round((flow * timer) / 3600);
+    }
+  }
+
+  if (isLateHeadsBranch && 'tails' in settings) {
+    warnings.push({
+      code: 'field_ignored_by_firmware',
+      field: 'tails',
+      hint:
+        'Этап хвостов есть только в прошивке 2.2.*; на 2.3 (есть late_heads) поле tails ' +
+        'не используется.',
+    });
+  }
+
+  // Совместность проверяем здесь же: чтение и запись должны показывать один набор предупреждений.
+  for (const warning of lintSettings(settings)) {
+    const duplicate = warnings.some(
+      (entry) => entry.code === warning.code && entry.field === warning.field,
+    );
+    if (!duplicate) warnings.push(warning);
+  }
+
+  return {
+    method: FLOW_METHOD,
+    units: { ...DERIVED_UNITS },
+    valve_index: { ...STAGE_VALVE_INDEX },
+    stages,
+    volumes_ml: volumes,
+    warnings,
+  };
+}
+
+/**
+ * Проверяет совместность настроек: формально валидная комбинация может быть
+ * неработающей (например `predec` без достаточного `hyst` прошивка отключает молча).
+ *
+ * Правила — руководство изготовителя и `mcp-scenarios.md` §6 (D1/D2/D3).
+ */
+export function lintSettings(settings: SsvcSettings): SettingWarning[] {
+  const warnings: SettingWarning[] = [];
+  const hyst = readNumber(settings.hyst);
+  const predec = readNumber(settings.predec);
+  const formula = readNumber(settings.formula);
+  const extendedHeads = readNumber(settings.extended_heads);
+
+  if (predec === 13 && hyst !== null && hyst < 0.18) {
+    warnings.push({
+      code: 'predec_hyst_incompatible',
+      field: 'predec',
+      hint:
+        'predec=13 требует hyst ≥ 0.18: иначе прошивка отключит предекремент и раннего ' +
+        'снижения скорости не будет. Поднимите hyst или уменьшите predec.',
+    });
+  } else if (predec === 7 && hyst !== null && hyst < 0.12) {
+    warnings.push({
+      code: 'predec_hyst_incompatible',
+      field: 'predec',
+      hint:
+        'predec=7 требует hyst ≥ 0.12: иначе прошивка отключит предекремент. ' +
+        'Поднимите hyst или уменьшите predec.',
+    });
+  } else if (predec !== null && predec > 0 && hyst === null) {
+    warnings.push({
+      code: 'predec_without_hyst',
+      field: 'predec',
+      hint: 'Предекремент включён, но hyst не задан: условие «hyst ≥ predec» не проверить.',
+    });
+  }
+
+  if (formula === 2 && (predec === null || predec <= 0)) {
+    warnings.push({
+      code: 'formula_without_predec',
+      field: 'formula',
+      hint:
+        '«Формула авто 92+» опирается на срабатывание предекремента: без predec она ' +
+        'не заработает так, как задумано.',
+    });
+  }
+
+  const releaseTimer = readNumber(settings.release_timer);
+  const headsFinal = readNumber(settings.heads_final);
+  if (
+    extendedHeads === 1 &&
+    (releaseTimer === null || releaseTimer <= 0) &&
+    (headsFinal === null || headsFinal <= 0)
+  ) {
+    warnings.push({
+      code: 'extended_heads_no_params',
+      field: 'extended_heads',
+      hint:
+        '«Сброс и снижение» включён, но release_timer и heads_final нулевые: поведение ' +
+        'этапа голов не определено. Задайте параметры сброса или выключите опцию.',
+    });
+  }
+
+  if (hyst !== null && (hyst < 0.06 || hyst > 2.0)) {
+    warnings.push({
+      code: 'hyst_out_of_range',
+      field: 'hyst',
+      hint:
+        'Гистерезис вне рекомендуемого руководством 2.3.x диапазона 0.06…2.0 °C: ' +
+        'поведение термостата может быть нестабильным.',
+    });
+  }
+
+  const finishTemp = readNumber(settings.hearts_finish_temp);
+  if (finishTemp !== null && finishTemp > 0) {
+    warnings.push({
+      code: 'hearts_finish_temp_unverified',
+      field: 'hearts_finish_temp',
+      hint:
+        'Отсечка тела по температуре ТД2: убедитесь, что датчик ТД2 стоит в кубе и реально ' +
+        'достигает этой температуры — иначе отбор тела не завершится сам.',
+    });
+  }
+
+  return warnings;
+}
+
+/** Разбор `[время_открытия, период]`; `null`, если форма не та или период некорректен. */
+function readPair(value: unknown): { opening: number; period: number } | null {
+  if (!Array.isArray(value) || value.length < 2) return null;
+  const opening = readNumber(value[0]);
+  const period = readNumber(value[1]);
+  if (opening === null || period === null || period <= 0) return null;
+  return { opening, period };
+}
+
+function isPair(value: unknown): boolean {
+  return readPair(value) !== null;
+}
+
+function readValveBw(settings: SsvcSettings): number[] | null {
+  const raw = settings.valve_bw;
+  if (!Array.isArray(raw) || raw.length < 3) return null;
+  const values: number[] = [];
+  for (let index = 0; index < 3; index += 1) {
+    const value = readNumber(raw[index]);
+    if (value === null) return null;
+    values.push(value);
+  }
+  return values;
+}
+
+function readNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function round(value: number, digits: number): number {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+}

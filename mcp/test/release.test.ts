@@ -41,11 +41,10 @@ test('.env.example: релизные значения опасных флаго�
 
   assert.equal(values.SSVC_ALLOW_DESTRUCTIVE, '0', 'разрушительные операции выключены в примере');
   assert.equal(values.SSVC_RAW_LOG, 'off', 'сырые логи не пишутся в примере');
-  assert.equal(values.SSVC_ALLOW_DEBUG, '0', 'debug-блок выключен в примере');
 
   // Переменные, которые читает config.ts, должны быть в примере: иначе человек
   // не узнает о них из шаблона и будет править код.
-  for (const name of ['SSVC_DEVICE_TIMEOUT_MS', 'SSVC_POLL_HZ']) {
+  for (const name of ['SSVC_DEVICE_TIMEOUT_MS']) {
     assert.match(text, new RegExp(`^${name}=`, 'm'), `в .env.example нет ${name}`);
     assert.notEqual(values[name] ?? '', '', `${name} в примере пустая`);
     assert.ok(
@@ -58,7 +57,6 @@ test('.env.example: релизные значения опасных флаго�
 test('умолчания кода безопасны: пустое окружение не включает опасное', () => {
   const cfg = loadConfig({ ...MINIMAL_ENV });
   assert.equal(cfg.allowDestructive, false, 'SSVC_ALLOW_DESTRUCTIVE по умолчанию выключен');
-  assert.equal(cfg.allowDebug, false, 'SSVC_ALLOW_DEBUG по умолчанию выключен');
   assert.equal(cfg.raw.mode, 'off', 'SSVC_RAW_LOG по умолчанию off');
   // Явный 0 в окружении тоже выключает: значение флага, а не его отсутствие.
   const explicit = loadConfig({ ...MINIMAL_ENV, SSVC_ALLOW_DESTRUCTIVE: '0' });

@@ -1,17 +1,33 @@
 {
   "name": "ssvc-openconnect-mcp",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "MCP-сервер для контроллера OpenConnect (SSVC): HTTP-транспорт, клиент устройства, политика риска",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SSVC0059/ssvc_open_connect.git",
+    "directory": "mcp"
+  },
+  "homepage": "https://github.com/SSVC0059/ssvc_open_connect/tree/main/mcp#readme",
+  "bugs": {
+    "url": "https://github.com/SSVC0059/ssvc_open_connect/issues"
+  },
   "engines": {
     "node": ">=22"
   },
   "bin": {
-    "ssvc-openconnect-mcp": "dist/index.js"
+    "ssvc-openconnect-mcp": "dist/index.js",
+    "ssvc-mcp": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    ".env.example"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node scripts/build.mjs",
+    "prepack": "npm run build",
     "start": "node dist/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "build:test": "tsc -p tsconfig.test.json",
@@ -23,7 +39,9 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@ssvc/rectification": "file:../packages/rectification",
     "@types/node": "^24.0.0",
+    "esbuild": "^0.25.0",
     "typescript": "^5.7.3"
   }
 }

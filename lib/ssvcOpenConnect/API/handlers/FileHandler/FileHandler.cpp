@@ -1,6 +1,29 @@
 #include "FileHandler.h"
 #include <ArduinoJson.h>
 
+namespace {
+/**
+ * Проверка пути внутри LittleFS: только абсолютный путь без «.», «..», «\\»,
+ * двойных слэшей и управляющих символов.
+ *
+ * MCP-сервер валидирует пути сам, но `/rest/files*` открыт любому
+ * аутентифицированному клиенту (интерфейс, curl), поэтому проверка нужна и в
+ * прошивке: delete/copy иначе полагаются на чужую дисциплину.
+ */
+bool isSafeFsPath(const String& path) {
+    if (path.isEmpty() || path[0] != '/') return false;
+    for (size_t i = 0; i < path.length(); i++) {
+        const auto c = static_cast<unsigned char>(path[i]);
+        if (c < 0x20 || c == 0x7f) return false;
+        if (path[i] == '\\') return false;
+    }
+    if (path.indexOf("//") >= 0) return false;
+    if (path.indexOf("/../") >= 0 || path.endsWith("/..")) return false;
+    if (path.indexOf("/./") >= 0 || path.endsWith("/.")) return false;
+    return true;
+}
+}  // namespace
+
 FileHandler::FileHandler(FS* fs) : _fs(fs) {}
 
 void FileHandler::registerHandlers(AsyncWebServer& server, SecurityManager* securityManager) {
@@ -29,6 +52,11 @@ void FileHandler::registerHandlers(AsyncWebServer& server, SecurityManager* secu
     // /rest/files/<path> достаётся обработчику скачивания ниже.
     server.on(AsyncURIMatcher::exact("/rest/files"), HTTP_GET,
               securityManager->wrapRequest(listFilesHandler, AuthenticationPredicates::IS_AUTHENTICATED));
+    // Слэш на конце — исторически тоже «дерево»: старые клиенты и примеры
+    // обращались к `/rest/files/`. Без этого обработчика путь уходил в download
+    // и превращался в 400 «путь не может быть пустым».
+    server.on(AsyncURIMatcher::exact("/rest/files/"), HTTP_GET,
+              securityManager->wrapRequest(listFilesHandler, AuthenticationPredicates::IS_AUTHENTICATED));
 
     auto downloadFileHandler = [this](AsyncWebServerRequest* request) {
         const String path = request->url();
@@ -37,6 +65,10 @@ void FileHandler::registerHandlers(AsyncWebServer& server, SecurityManager* secu
             String filePath = path.substring(prefix.length());
             if (filePath.isEmpty() || filePath == "/") {
                 request->send(400, "text/plain", "File path cannot be empty");
+                return;
+            }
+            if (!isSafeFsPath(filePath)) {
+                request->send(400, "text/plain", "Invalid file path");
                 return;
             }
 
@@ -63,6 +95,10 @@ void FileHandler::registerHandlers(AsyncWebServer& server, SecurityManager* secu
                 request->send(400, "text/plain", "File path cannot be empty");
                 return;
             }
+            if (!isSafeFsPath(filePath)) {
+                request->send(400, "text/plain", "Invalid file path");
+                return;
+            }
             if (_fs->remove(filePath)) {
                 request->send(204);
             } else {
@@ -84,6 +120,16 @@ void FileHandler::registerHandlers(AsyncWebServer& server, SecurityManager* secu
 
         if (sourcePath.isEmpty() || destPath.isEmpty()) {
             request->send(400, "text/plain", "Missing 'source' or 'destination' fields");
+            return;
+        }
+        if (!isSafeFsPath(sourcePath) || !isSafeFsPath(destPath)) {
+            request->send(400, "text/plain", "Invalid 'source' or 'destination' path");
+            return;
+        }
+        // Копирование «в себя» обнулило бы файл: destination открывается на запись
+        // раньше, чем source дочитан.
+        if (sourcePath == destPath) {
+            request->send(400, "text/plain", "'source' and 'destination' must differ");
             return;
         }
 

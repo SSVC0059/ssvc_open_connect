@@ -423,8 +423,13 @@ function looksLikeFileTree(headers: Record<string, string>, bytes: Buffer): bool
 /**
  * Копирует файл внутри контроллера: `POST /rest/files/copy` → `201` без тела.
  *
- * @throws OcError `validation_failed` (пути), `not_found` (источника нет),
- *         `device_error` (не удалось создать назначение), `feature_unsupported`.
+ * Копирование «в себя» запрещено на клиенте: прошивка открывает destination на
+ * запись раньше, чем дочитает source, и файл может обнулиться. Сравнение путей
+ * — точное, без нормализации регистра: LittleFS различает регистр.
+ *
+ * @throws OcError `validation_failed` (пути, source == destination), `not_found`
+ *         (источника нет), `device_error` (не удалось создать назначение),
+ *         `feature_unsupported`.
  */
 export async function copyFile(
   client: DeviceClient,
@@ -432,6 +437,18 @@ export async function copyFile(
 ): Promise<CopyFileResult> {
   const source = validateFilePath(input.source, 'source');
   const destination = validateFilePath(input.destination, 'destination');
+  if (source === destination) {
+    throw new OcError(
+      'validation_failed',
+      'Источник и назначение совпадают: копирование файла «в себя» запрещено',
+      {
+        hint:
+          'Укажите другой destination. Прошивка открывает назначение на запись до чтения ' +
+          'источника, поэтому такой вызов может обнулить файл.',
+        details: { reason: 'invalid_argument', source, destination },
+      },
+    );
+  }
 
   return client.withWrite('files', async () => {
     const response = await client.request('POST', FILES_COPY_PATH, { source, destination }, {

@@ -74,6 +74,11 @@ export interface CommandDispatch {
 export interface SendCommandOptions {
   /** Параметры команды (для SET/AT/GET_LOG); по умолчанию пустая строка. */
   parameters?: string;
+  /**
+   * Защитное действие: отправить вне общей очереди записей (`withUrgent`).
+   * Нужно только EMERGENCY_STOP — ожидание за скачиванием журнала недопустимо.
+   */
+  urgent?: boolean;
 }
 
 function commandDetails(name: string, response: HttpResponse): Record<string, unknown> {
@@ -286,7 +291,8 @@ function parseCommandResponse(name: string, response: HttpResponse): CommandDisp
 
 /**
  * Ставит команду в очередь контроллера. Все записи идут через `withWrite`,
- * чтобы не пересекаться с другими изменяющими вызовами.
+ * чтобы не пересекаться с другими изменяющими вызовами; защитные команды
+ * (`urgent`) идут отдельной дорожкой и общую очередь не ждут.
  *
  * Бросает `OcError` по контракту §2.1; 200/accepted — не исключение.
  */
@@ -296,7 +302,7 @@ export async function sendCommand(
   options: SendCommandOptions = {},
 ): Promise<CommandDispatch> {
   const parameters = options.parameters ?? '';
-  return client.withWrite('commands', async () => {
+  const send = async (): Promise<CommandDispatch> => {
     const payload = { commands: name, parameters };
     // ESPAsyncWebServer не разбирает chunked-body: Node без Content-Length шлёт
     // Transfer-Encoding: chunked, и контроллер рвёт соединение (ECONNRESET).
@@ -306,7 +312,10 @@ export async function sendCommand(
       headers: { 'content-length': String(bodyLength) },
     });
     return parseCommandResponse(name, response);
-  });
+  };
+  return options.urgent === true
+    ? client.withUrgent('commands', send)
+    : client.withWrite('commands', send);
 }
 
 // ---------------------------------------------------------------------------
@@ -707,7 +716,9 @@ export async function waitForChange(
     check = checkExpectation(observed, expect);
 
     // Потеря UART делает состояние недостоверным: не выдаём ложное ожидание.
-    if (observed.uart_error && expect.uart_error !== true) {
+    // Исключение — вызывающий явно ждёт `uart_error:false`: это и есть ожидание
+    // восстановления связи, поэтому продолжаем опрос, а не выходим сразу.
+    if (observed.uart_error && expect.uart_error === undefined) {
       return {
         matched: false,
         timeout: false,

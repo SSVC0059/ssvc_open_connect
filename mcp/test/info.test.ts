@@ -148,6 +148,28 @@ test('oc_get_capabilities: include_runtime:false не читает /rest/feature
   );
 });
 
+test('oc_get_capabilities: реестр ключей настроек отделяет writable от readonly', async (t) => {
+  const testCtx = await makeTestContext([signInRoute(), infoRoute(), featuresRoute()]);
+  t.after(() => testCtx.cleanup());
+
+  const payload = payloadOf(await runTool(tool('oc_get_capabilities'), testCtx.ctx, {}));
+
+  assert.ok(payload.settings.writable.includes('heads'));
+  assert.ok(payload.settings.writable.includes('predec'));
+  assert.equal(
+    payload.settings.writable.includes('auto_mode'),
+    false,
+    'auto_mode прошивка читает, но не записывает',
+  );
+  assert.ok(payload.settings.readonly.includes('auto_mode'));
+  assert.equal(payload.settings.readonly.includes('hyst'), false);
+  assert.equal(
+    payload.settings.writable.some((key: string) => payload.settings.readonly.includes(key)),
+    false,
+    'ключ не может быть одновременно записываемым и read-only',
+  );
+});
+
 test('oc_diagnostics не делает сетевых вызовов и не содержит секретов', async (t) => {
   const testCtx = await makeTestContext([signInRoute(), infoRoute()]);
   t.after(() => testCtx.cleanup());

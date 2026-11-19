@@ -14,10 +14,12 @@ on:
   push:
     paths:
       - 'mcp/**'
+      - 'packages/rectification/**'
       - '.github/workflows/mcp.yaml'
   pull_request:
     paths:
       - 'mcp/**'
+      - 'packages/rectification/**'
       - '.github/workflows/mcp.yaml'
   workflow_dispatch:
 
@@ -51,6 +53,11 @@ jobs:
       # --ignore-scripts: build-скрипты зависимостей в CI не нужны.
       - name: Установка зависимостей
         run: npm ci --ignore-scripts
+
+      # Единые тесты математики: тот же файл, что используют интерфейс и документация.
+      - name: Тесты общей модели
+        working-directory: .
+        run: node --test packages/rectification/test/model.test.js
 
       - name: Проверка типов
         run: npm run typecheck

@@ -278,3 +278,30 @@ test('features() переживает метаданные в /rest/features и 
   const payload = await caps.featuresPayload();
   assert.equal(payload.firmware_version, '0.2.9.2', 'метаданные доступны отдельно');
 });
+
+test('withUrgent не ждёт общую очередь записей: аварийная остановка уходит сразу', async () => {
+  const { client } = makeClient([]);
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let slowFinished = false;
+
+  // Долгая запись занимает общую очередь (в жизни — скачивание журнала до 45 с).
+  const slow = client.withWrite('logs', async () => {
+    await gate;
+    slowFinished = true;
+    return 'slow';
+  });
+
+  // Аварийная команда не должна стоять за ней в очереди.
+  const urgent = await client.withUrgent('commands', async () => 'sent');
+  assert.equal(urgent, 'sent');
+  assert.equal(slowFinished, false, 'аварийная запись прошла, пока общая очередь занята');
+
+  release();
+  assert.equal(await slow, 'slow');
+  assert.equal(slowFinished, true);
+  assert.equal(client.getStats().urgentOperations, 1);
+  await client.close();
+});

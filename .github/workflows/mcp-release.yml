@@ -1,0 +1,357 @@
+# Релиз MCP-сервера: GitHub Release (tarball для `npm install -g <ссылка>`) + образ в GHCR.
+#
+# Способы запуска:
+#   1. Тег `mcp-v<версия>` в любой ветке — релиз этой ветки, версия из тега.
+#      Пример: git tag mcp-v1.0.0 && git push origin mcp-v1.0.0
+#   2. Ручной запуск (workflow_dispatch) с выбором ветки/тега:
+#      версия по умолчанию — `0.0.0-<ветка>.<номер запуска>`, релиз помечается prerelease.
+#      Для main можно указать версию явно (например 1.0.0) — получится обычный релиз.
+#
+# Что публикуется:
+#   - GitHub Release `mcp-v<версия>` с `ssvc-openconnect-mcp-<версия>.tgz` и `.sha256`:
+#     ставится как `npm install -g https://github.com/<owner>/<repo>/releases/download/mcp-v<версия>/<файл>`;
+#   - образ `ghcr.io/<owner>/<repo>/mcp:<версия>` (+ `sha-<commit>`, `latest` для не-prerelease).
+#
+# Секреты не нужны: используется встроенный GITHUB_TOKEN (contents/packages: write).
+
+name: mcp-release
+
+on:
+  push:
+    tags:
+      - 'mcp-v*'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Ветка или тег, из которого собирать релиз'
+        required: false
+        default: 'main'
+        type: string
+      version:
+        description: 'Версия без префикса mcp-v (например 1.0.0). Пусто — вычислить автоматически'
+        required: false
+        default: ''
+        type: string
+      prerelease:
+        description: 'Пометить релиз как prerelease'
+        required: false
+        default: false
+        type: boolean
+      publish_image:
+        description: 'Публиковать Docker-образ в GHCR'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mcp-release-${{ github.ref || inputs.ref }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    name: Версия и тег релиза
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      tag: ${{ steps.resolve.outputs.tag }}
+      prerelease: ${{ steps.resolve.outputs.prerelease }}
+      ref: ${{ steps.resolve.outputs.ref }}
+      sha: ${{ steps.resolve.outputs.sha }}
+    steps:
+      - name: Checkout для точного SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 1
+
+      - name: Вычислить версию
+        id: resolve
+        env:
+          EVENT: ${{ github.event_name }}
+          REF_INPUT: ${{ inputs.ref }}
+          VERSION_INPUT: ${{ inputs.version }}
+          PRERELEASE_INPUT: ${{ inputs.prerelease }}
+          TAG_REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT" == "push" && "$TAG_REF" == refs/tags/mcp-v* ]]; then
+            VERSION="${TAG_REF#refs/tags/mcp-v}"
+            TAG="${TAG_REF#refs/tags/}"
+            REF="$TAG_REF"
+            PRERELEASE="false"
+          else
+            REF="${REF_INPUT:-main}"
+            # Ручной запуск может указывать и ветку, и тег mcp-v*.
+            if [[ "$REF" == refs/tags/mcp-v* ]]; then
+              VERSION="${REF#refs/tags/mcp-v}"
+              TAG="${REF#refs/tags/}"
+              REF="$TAG"
+              PRERELEASE="false"
+            elif [[ "$REF" == mcp-v* ]]; then
+              VERSION="${REF#mcp-v}"
+              TAG="$REF"
+              PRERELEASE="false"
+            elif [[ -n "${VERSION_INPUT:-}" ]]; then
+              VERSION="$VERSION_INPUT"
+              TAG="mcp-v${VERSION}"
+              PRERELEASE="${PRERELEASE_INPUT:-false}"
+              # Явная версия с рабочей ветки — всё равно prerelease.
+              if [[ "$REF" != "main" && "$REF" != "refs/heads/main" ]]; then
+                PRERELEASE="true"
+              fi
+            else
+              # Версия не задана: это сборочная (prerelease) сборка, latest не трогаем.
+              SLUG="$(printf '%s' "$REF" | sed -e 's#refs/heads/##' -e 's#refs/tags/##' -e 's#[^A-Za-z0-9.-]#-#g' | cut -c1-40)"
+              VERSION="0.0.0-${SLUG}.${GITHUB_RUN_NUMBER}"
+              TAG="mcp-v${VERSION}"
+              PRERELEASE="true"
+            fi
+          fi
+
+          # Версия используется и в теге образа, и в semver пакета — проверяем формат.
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Некорректная версия '$VERSION': ожидается semver, например 1.0.0 или 1.0.0-beta.1"
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "Релиз: $TAG (версия $VERSION, prerelease=$PRERELEASE, ref=$REF)"
+
+  verify:
+    name: Проверки пакета
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mcp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 1
+
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+
+      - name: Установка зависимостей
+        run: npm ci --ignore-scripts
+
+      - name: Тесты общей модели
+        working-directory: .
+        run: node --test packages/rectification/test/model.test.js
+
+      - name: Проверка типов
+        run: npm run typecheck
+
+      - name: Тесты
+        run: npm test
+
+      - name: Сборка
+        run: npm run build
+
+  package:
+    name: Tarball для GitHub Release
+    needs: [resolve, verify]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+
+      - name: Установка зависимостей
+        run: npm ci --ignore-scripts
+
+      # `npm pack` запускает prepack → сборку dist, а `files` в package.json
+      # ограничивает содержимое: dist, README.md, .env.example, package.json.
+      # Версия берётся из релиза: иначе prerelease-сборка ставилась бы как 1.0.0.
+      - name: Собрать tarball
+        run: |
+          set -euo pipefail
+          npm version "${{ needs.resolve.outputs.version }}" --no-git-tag-version --allow-same-version
+          npm pack
+          mv ./*.tgz "ssvc-openconnect-mcp-${{ needs.resolve.outputs.version }}.tgz"
+          sha256sum "ssvc-openconnect-mcp-${{ needs.resolve.outputs.version }}.tgz" \
+            > "ssvc-openconnect-mcp-${{ needs.resolve.outputs.version }}.tgz.sha256"
+
+      - name: Проверить содержимое tarball
+        run: |
+          set -euo pipefail
+          tar -tzf "ssvc-openconnect-mcp-${{ needs.resolve.outputs.version }}.tgz" \
+            | grep -q '^package/dist/index.js$'
+          tar -tzf "ssvc-openconnect-mcp-${{ needs.resolve.outputs.version }}.tgz" \
+            | grep -q '^package/README.md$'
+
+      - name: Сохранить артефакты
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-release-${{ needs.resolve.outputs.version }}
+          path: |
+            mcp/ssvc-openconnect-mcp-${{ needs.resolve.outputs.version }}.tgz
+            mcp/ssvc-openconnect-mcp-${{ needs.resolve.outputs.version }}.tgz.sha256
+          if-no-files-found: error
+
+  docker:
+    name: Образ в GHCR
+    needs: [resolve, verify]
+    if: ${{ github.event_name == 'push' || inputs.publish_image }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+
+      - name: QEMU (arm64 для Raspberry Pi)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Вход в GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Теги образа
+        id: tags
+        env:
+          VERSION: ${{ needs.resolve.outputs.version }}
+          PRERELEASE: ${{ needs.resolve.outputs.prerelease }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}/mcp"
+          {
+            echo "image=$IMAGE"
+            echo "tags<<EOF"
+            echo "$IMAGE:${VERSION}"
+            echo "$IMAGE:sha-${SHA}"
+            if [[ "$PRERELEASE" != "true" ]]; then echo "$IMAGE:latest"; fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Сборка и публикация
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: mcp/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            VERSION=${{ needs.resolve.outputs.version }}
+          labels: |
+            org.opencontainers.image.version=${{ needs.resolve.outputs.version }}
+            org.opencontainers.image.revision=${{ needs.resolve.outputs.sha }}
+
+  release:
+    name: GitHub Release
+    needs: [resolve, package, docker]
+    if: ${{ always() && needs.resolve.result == 'success' && needs.package.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Скачать артефакты
+        uses: actions/download-artifact@v4
+        with:
+          name: mcp-release-${{ needs.resolve.outputs.version }}
+          path: dist
+
+      - name: Опубликовать релиз
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.resolve.outputs.version }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+          PRERELEASE: ${{ needs.resolve.outputs.prerelease }}
+          DOCKER: ${{ needs.docker.result }}
+        run: |
+          set -euo pipefail
+
+          ASSET="ssvc-openconnect-mcp-${VERSION}.tgz"
+          cat > notes.md <<EOF
+          MCP-сервер OpenConnect ${VERSION}.
+
+          ## Установка из этого релиза
+
+          \`\`\`bash
+          npm install -g https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${ASSET}
+          ssvc-mcp
+          \`\`\`
+
+          Документация: https://github.com/${GITHUB_REPOSITORY}/tree/main/docs/mcp
+          EOF
+
+          if [[ "$DOCKER" == "success" ]]; then
+            cat >> notes.md <<EOF
+
+          ## Docker-образ
+
+          \`\`\`bash
+          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/mcp:${VERSION}
+          docker run -d --name ssvc-mcp -p 8080:8080 --env-file .env ghcr.io/${GITHUB_REPOSITORY,,}/mcp:${VERSION}
+          \`\`\`
+          EOF
+          fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "dist/${ASSET}" "dist/${ASSET}.sha256" --clobber
+          else
+            ARGS=(--title "MCP-сервер ${VERSION}" --notes-file notes.md)
+            if [[ "$PRERELEASE" == "true" ]]; then ARGS+=(--prerelease); fi
+            # Тег мог быть создан пушем, а мог отсутствовать (ручной запуск с ветки).
+            if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+              gh release create "$TAG" "dist/${ASSET}" "dist/${ASSET}.sha256" "${ARGS[@]}"
+            else
+              gh release create "$TAG" "dist/${ASSET}" "dist/${ASSET}.sha256" "${ARGS[@]}" --target "${{ needs.resolve.outputs.sha }}"
+            fi
+          fi
+
+      - name: Итог
+        run: |
+          {
+            echo "## MCP ${VERSION}"
+            echo "- Релиз: \`${TAG}\` (prerelease: ${PRERELEASE})"
+            echo "- Tarball: \`ssvc-openconnect-mcp-${VERSION}.tgz\`"
+            if [[ "$DOCKER" == "success" ]]; then
+              echo "- Образ: \`ghcr.io/${GITHUB_REPOSITORY,,}/mcp:${VERSION}\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          VERSION: ${{ needs.resolve.outputs.version }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+          PRERELEASE: ${{ needs.resolve.outputs.prerelease }}
+          DOCKER: ${{ needs.docker.result }}
+

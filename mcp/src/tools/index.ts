@@ -25,6 +25,7 @@ import type { ToolContext, ToolDef } from '../mcp/types.js';
 import { registerPrompts } from '../prompts/prompts.js';
 import { registerInfoResource } from '../resources/info.resource.js';
 import { registerTelemetryResource } from '../resources/telemetry.resource.js';
+import { calcTools } from './calc.tools.js';
 import { commandsTools } from './commands.tools.js';
 import { filesTools } from './files.tools.js';
 import { hardwareTools } from './hardware.tools.js';
@@ -40,6 +41,7 @@ import { xkc25Tools } from './xkc25.tools.js';
 
 /** Группы по доменам: по одной на файл `src/tools/<домен>.tools.ts`. */
 export const toolGroups: ReadonlyArray<{ domain: string; tools: () => ToolDef[] }> = [
+  { domain: 'calc', tools: calcTools },
   { domain: 'info', tools: infoTools },
   { domain: 'telemetry', tools: telemetryTools },
   { domain: 'commands', tools: commandsTools },

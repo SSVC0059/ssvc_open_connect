@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * Точка входа сервиса: конфиг → зависимости → HTTP → ожидание сигналов.
  *
@@ -11,14 +12,13 @@
  * список определений, а не готовый `McpServer`.
  */
 
-import { pathToFileURL } from 'node:url';
-import { AuditLog } from './audit.js';
-import { applyDotEnv, ConfigError, loadConfig, type Config } from './config.js';
-import { DeviceClient } from './device/DeviceClient.js';
-import { CapabilityCache } from './device/CapabilityCache.js';
-import { RawLogger } from './device/RawLogger.js';
+import { realpathSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { ConfigError, type Config } from './config.js';
 import { createApp, type AppHandle } from './http/app.js';
-import { createLogger, type Logger } from './logging.js';
+import type { Logger } from './logging.js';
+import { createRuntime } from './runtime.js';
+import { startStdioService } from './stdio.js';
 import type { ToolContext, ToolDef } from './mcp/types.js';
 import { allTools } from './tools/index.js';
 
@@ -46,37 +46,17 @@ export interface StartedService {
  * если конфигурация неполная.
  */
 export async function startService(opts: StartServiceOptions = {}): Promise<StartedService> {
-  const env = opts.env ?? process.env;
-  // Окружение приоритетнее файла: контейнер задаёт значения через env_file/variables.
-  const envFile = opts.envFile ?? '.env';
-  const applied = applyDotEnv(env, envFile);
-  const cfg = loadConfig(env);
+  const runtime = createRuntime({ env: opts.env, envFile: opts.envFile });
+  const { cfg, log, ctx } = runtime;
 
-  const log = createLogger({ level: cfg.logLevel });
-  if (applied.applied.length > 0) {
-    // Имена переменных безопасны; значения (секреты) не логируем.
-    log.debug('Прочитан файл конфигурации', { file: envFile, keys: applied.applied });
-  }
   log.info('Запуск MCP-сервера OpenConnect', {
     device: cfg.device.url,
     bind: cfg.mcp.host,
     port: cfg.mcp.port,
     raw_log: cfg.raw.mode,
     allow_destructive: cfg.allowDestructive,
-    allow_debug: cfg.allowDebug,
   });
 
-  const audit = new AuditLog({ path: cfg.auditPath, log });
-  const raw = new RawLogger({
-    mode: cfg.raw.mode,
-    dir: cfg.raw.dir,
-    maxMb: cfg.raw.maxMb,
-    log,
-  });
-  const client = new DeviceClient({ cfg, raw, log });
-  const caps = new CapabilityCache(client, { log });
-
-  const ctx: ToolContext = { cfg, client, caps, log, audit, raw };
   const app = await createApp({ cfg, ctx, tools: opts.tools ?? [] });
   const address = await app.listen();
 
@@ -89,11 +69,46 @@ export async function startService(opts: StartServiceOptions = {}): Promise<Star
     async stop(): Promise<void> {
       log.info('Остановка MCP-сервера');
       await app.close();
-      await client.close();
-      await raw.close();
-      await audit.close();
+      await runtime.close();
     },
   };
+}
+
+/** Запускает stdio-режим для клиентов, которые сами спавнят процесс (DSH, IDE). */
+async function mainStdio(): Promise<void> {
+  let service: Awaited<ReturnType<typeof startStdioService>>;
+  try {
+    service = await startStdioService();
+  } catch (error) {
+    if (error instanceof ConfigError) {
+      process.stderr.write(`[ssvc-openconnect-mcp] Ошибка конфигурации: ${error.message}\n`);
+    } else {
+      const message = error instanceof Error ? error.message : String(error);
+      process.stderr.write(`[ssvc-openconnect-mcp] Не удалось запустить stdio-сервис: ${message}\n`);
+    }
+    process.exitCode = 1;
+    return;
+  }
+
+  let stopping = false;
+  const shutdown = (reason: string): void => {
+    if (stopping) return;
+    stopping = true;
+    service.runtime.log.info('Завершение stdio-сервиса', { reason });
+    void service
+      .stop()
+      .then(() => process.exit(0))
+      .catch((error: unknown) => {
+        service.runtime.log.error('Ошибка при остановке stdio-сервиса', { error });
+        process.exit(1);
+      });
+  };
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  // DSH/IDE закрывают stdin, когда сессия завершена: не оставляем висящий процесс.
+  process.stdin.on('end', () => shutdown('stdin closed'));
+
+  service.runtime.log.info('Сервис готов', { transport: 'stdio' });
 }
 
 async function main(): Promise<void> {
@@ -137,8 +152,20 @@ async function main(): Promise<void> {
 }
 
 // Запускаем только при прямом вызове (`node dist/index.js`), не при импорте в тестах.
-const invokedDirectly =
-  process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
-if (invokedDirectly) {
-  void main();
+// Сравниваем реальные пути: при установке через symlink (`/usr/local/bin/ssvc-mcp`)
+// `process.argv[1]` — это ссылка, а `import.meta.url` уже указывает на цель.
+function isInvokedDirectly(): boolean {
+  const entry = process.argv[1];
+  if (entry === undefined) return false;
+  try {
+    return realpathSync(entry) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return import.meta.url === pathToFileURL(entry).href;
+  }
+}
+
+if (isInvokedDirectly()) {
+  const useStdio =
+    process.argv.includes('--stdio') || process.env.SSVC_MCP_TRANSPORT === 'stdio';
+  void (useStdio ? mainStdio() : main());
 }

@@ -12,9 +12,9 @@
 services:
   mcp:
     build:
-      context: .
-      dockerfile: Dockerfile
-    image: ssvc-openconnect-mcp:0.1.0
+      context: ..
+      dockerfile: mcp/Dockerfile
+    image: ssvc-openconnect-mcp:1.0.0
     container_name: ssvc-openconnect-mcp
     # Секреты и настройки — из .env (в git не попадает, монтируется как env-файл).
     env_file:

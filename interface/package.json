@@ -56,6 +56,7 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@ssvc/rectification": "file:../packages/rectification",
 		"@fortawesome/free-brands-svg-icons": "^7.1.0",
 		"@fortawesome/free-solid-svg-icons": "^7.1.0",
 		"chart.js": "^4.5.0",

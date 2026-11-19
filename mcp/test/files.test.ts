@@ -448,6 +448,22 @@ test('oc_file_copy: относительный путь → validation_failed б
   assert.equal(testCtx.calls.length, 0);
 });
 
+test('oc_file_copy: source == destination → validation_failed без сети', async (t) => {
+  const testCtx = await makeTestContext([signInRoute()]);
+  t.after(() => testCtx.cleanup());
+
+  const result = await runTool(tool('oc_file_copy'), testCtx.ctx, {
+    source: '/config/app.json',
+    destination: '/config/app.json',
+  });
+
+  assert.equal(result.isError, true);
+  const error = payloadOf(result).error;
+  assert.equal(error.code, 'validation_failed');
+  assert.equal(error.details.reason, 'invalid_argument');
+  assert.equal(callsFor(testCtx.calls, 'POST', '/rest/files/copy').length, 0);
+});
+
 test('oc_file_delete без reason → validation_failed без сетевых вызовов', async (t) => {
   const testCtx = await makeTestContext([signInRoute()], { allowDestructive: true });
   t.after(() => testCtx.cleanup());

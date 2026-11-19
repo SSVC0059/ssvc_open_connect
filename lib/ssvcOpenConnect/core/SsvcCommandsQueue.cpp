@@ -263,6 +263,16 @@ bool SsvcCommandsQueue::begin() {
 }
 
 bool SsvcCommandsQueue::emergencyStop(uint32_t *commandIdOut) {
+  // Готовность проверяется до всего остального: если воркер не поднят (begin() не
+  // вызывался или упал), ставить STOP некуда, и «принято» без отправки — ложное
+  // подтверждение защитного действия. Вызывающий получит 503, а не 200.
+  if (!_ready || safety_queue == nullptr) {
+    ESP_LOGE(TAG, "emergencyStop: очередь команд не готова (ready=%d), STOP не поставлен",
+             _ready ? 1 : 0);
+    rememberRejection("not_ready", "emergency_stop", "", "");
+    return false;
+  }
+
   // Аварийная команда идёт приоритетным путём: отдельная очередь (воркер берёт
   // её первой) и новое поколение safety, чтобы неотправленные START/NEXT/RESUME
   // не «догнали» остановку. Поколение применяется только после успешной

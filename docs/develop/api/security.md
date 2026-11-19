@@ -30,7 +30,8 @@ admin-маршруту, получает ровно тот же ответ, чт
     `/rest/wifiSettings`, `/rest/apSettings`, `/rest/ntpSettings`, `/rest/mqttSettings`),
     `POST /rest/restart`, `POST /rest/factoryReset`, `POST /rest/uploadFirmware`,
     `GET /rest/downloadUpdate`, `GET /rest/scanNetworks`, `GET /rest/listNetworks`,
-    `POST /rest/time`, а также `/rest/telemetry`, `/rest/sensor`, `/rest/zones`, `/rest/alarms`.
+    `POST /rest/time`, а также `/rest/telemetry`, `/rest/sensor`, `/rest/zones`, `/rest/alarms`
+    и WebSocket `/ws/events` (он отдаёт те же admin-данные: `telemetry`, `stage`, `alarm`).
 *   **Любой вошедший:** `/rest/systemStatus`, `/rest/wifiStatus`, `/rest/apStatus`,
     `/rest/ntpStatus`, `/rest/mqttStatus`, `/rest/settings`, `/rest/commands`,
     `/rest/subsystem`, конфигурация Telegram/VK, `/rest/oc/*`, `/rest/profiles*`,

@@ -224,30 +224,34 @@ export async function restartController(
   client: DeviceClient,
   opts: { timeoutMs?: number } = {},
 ): Promise<RestartResult> {
-  const response = await client.request('POST', RESTART_PATH, undefined, {
-    headers: { accept: 'application/json, text/plain, */*' },
-    timeoutMs: opts.timeoutMs ?? RESTART_TIMEOUT_MS,
-  });
-
-  if (response.status >= 200 && response.status < 300) {
-    return { ok: true, hint: RESTART_HINT, observed_at: new Date().toISOString() };
-  }
-  if (response.status === 404) {
-    throw new OcError('feature_unsupported', 'Прошивка не отдаёт POST /rest/restart', {
-      hint:
-        'Маршрут перезагрузки регистрируется только в сборке с сервисом перезагрузки. ' +
-        'Проверьте версию OpenConnect; повтор запроса не поможет.',
-      details: {
-        status: response.status,
-        body: truncateBody(response.body),
-      },
+  // Как и остальные записи, перезагрузка идёт через общую очередь: она не должна
+  // пересекаться с записью настроек или профиля, идущей параллельно.
+  return client.withWrite('restart', async () => {
+    const response = await client.request('POST', RESTART_PATH, undefined, {
+      headers: { accept: 'application/json, text/plain, */*' },
+      timeoutMs: opts.timeoutMs ?? RESTART_TIMEOUT_MS,
     });
-  }
-  throw httpError({
-    status: response.status,
-    body: response.body,
-    method: 'POST',
-    path: RESTART_PATH,
+
+    if (response.status >= 200 && response.status < 300) {
+      return { ok: true, hint: RESTART_HINT, observed_at: new Date().toISOString() };
+    }
+    if (response.status === 404) {
+      throw new OcError('feature_unsupported', 'Прошивка не отдаёт POST /rest/restart', {
+        hint:
+          'Маршрут перезагрузки регистрируется только в сборке с сервисом перезагрузки. ' +
+          'Проверьте версию OpenConnect; повтор запроса не поможет.',
+        details: {
+          status: response.status,
+          body: truncateBody(response.body),
+        },
+      });
+    }
+    throw httpError({
+      status: response.status,
+      body: response.body,
+      method: 'POST',
+      path: RESTART_PATH,
+    });
   });
 }
 

@@ -16,6 +16,10 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { CAPABILITY_TTL_MS } from '../device/CapabilityCache.js';
 import {
+  READ_ONLY_SETTING_KEYS,
+  WRITABLE_SETTING_KEYS,
+} from '../device/schemas/settings.js';
+import {
   buildCapabilities,
   loadRuntimeFeatures,
   mapInfo,
@@ -50,8 +54,9 @@ export const ocGetCapabilities = defineTool({
   name: 'oc_get_capabilities',
   title: 'Доступные функции устройства',
   description:
-    'Возвращает реестр возможностей UART API (predec, extended_heads, get_log и другие) и ' +
-    'рантайм-флаги прошивки. Показывает, что именно поддерживает подключённый контроллер; ' +
+    'Возвращает реестр возможностей UART API (predec, extended_heads, get_log и другие), ' +
+    'рантайм-флаги прошивки и реестр ключей настроек: какие записываются, а какие доступны ' +
+    'только на чтение. Показывает, что именно поддерживает подключённый контроллер; ' +
     'недоступные функции перечислены явно.',
   inputSchema: {
     include_runtime: z
@@ -72,6 +77,10 @@ export const ocGetCapabilities = defineTool({
       unavailable: view.unavailable,
       features: view.features,
       features_meta: view.features_meta,
+      settings: {
+        writable: [...WRITABLE_SETTING_KEYS],
+        readonly: [...READ_ONLY_SETTING_KEYS],
+      },
     };
   },
 });
@@ -101,7 +110,6 @@ export const ocDiagnostics = defineTool({
           url: ctx.cfg.device.url,
           user: ctx.cfg.device.user,
           timeout_ms: ctx.cfg.device.timeoutMs,
-          poll_hz: ctx.cfg.device.pollHz,
         },
         mcp: {
           host: ctx.cfg.mcp.host,
@@ -118,7 +126,6 @@ export const ocDiagnostics = defineTool({
           max_mb: ctx.cfg.raw.maxMb,
         },
         allow_destructive: ctx.cfg.allowDestructive,
-        allow_debug: ctx.cfg.allowDebug,
         audit_path: ctx.cfg.auditPath,
         log_level: ctx.cfg.logLevel,
       },
@@ -149,14 +156,21 @@ export const ocDiagnostics = defineTool({
         last_request_at: stats.lastRequestAt,
         writes: { pending: stats.writes.size, completed: stats.writes.completed },
       },
-      sessions: {
-        current: ctx.audit.session,
-        // Учёт активных сессий ведёт HTTP-слой, а не инструмент: честно пишем null,
-        // а не выдуманное число. Сессии из журнала аудита — ниже.
-        active: null,
-        seen_in_audit: sessionsSeen.size,
-        note: 'Активные MCP-сессии учитывает HTTP-слой; oc_diagnostics видит текущую сессию и журнал аудита.',
-      },
+      sessions: (() => {
+        const snapshot = ctx.sessions?.();
+        return {
+          current: ctx.audit.session,
+          // В stdio HTTP-сессий нет вовсе: null означает «неприменимо», а не «неизвестно».
+          active: snapshot?.active ?? null,
+          max: snapshot?.max ?? null,
+          entries: snapshot?.entries ?? [],
+          seen_in_audit: sessionsSeen.size,
+          note:
+            snapshot === undefined
+              ? 'Транспорт stdio: HTTP-сессий нет, счётчик active неприменим.'
+              : 'Активные MCP-сессии HTTP-слоя; entries — снимок без секретов.',
+        };
+      })(),
       last_audit: lastAudit,
     };
   },

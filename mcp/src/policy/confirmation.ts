@@ -43,6 +43,7 @@ export function enforceRisk(ctx: ToolContext, tool: string, risk: RiskClass, arg
   const label = RISK_LABELS[risk];
 
   if (policy.requireConfirm && args.confirm !== true) {
+    auditDenial(ctx, tool, risk, args, 'confirmation_required');
     throw new OcError(
       'confirmation_required',
       `Действие «${tool}» (${label}) требует явного подтверждения`,
@@ -58,6 +59,7 @@ export function enforceRisk(ctx: ToolContext, tool: string, risk: RiskClass, arg
   if (policy.requireReason) {
     const reason = typeof args.reason === 'string' ? args.reason.trim() : '';
     if (reason.length < MIN_REASON_LENGTH) {
+      auditDenial(ctx, tool, risk, args, 'validation_failed');
       throw new OcError(
         'validation_failed',
         `Для действия «${tool}» нужна причина: не короче ${MIN_REASON_LENGTH} символов`,
@@ -72,6 +74,7 @@ export function enforceRisk(ctx: ToolContext, tool: string, risk: RiskClass, arg
   }
 
   if (policy.requireDestructiveFlag && !ctx.cfg.allowDestructive) {
+    auditDenial(ctx, tool, risk, args, 'disabled_by_policy');
     throw new OcError(
       'disabled_by_policy',
       `Действие «${tool}» (${label}) выключено настройкой сервера`,
@@ -85,6 +88,7 @@ export function enforceRisk(ctx: ToolContext, tool: string, risk: RiskClass, arg
   }
 
   if (policy.requireAllowlist && !isRisk4Allowed(tool)) {
+    auditDenial(ctx, tool, risk, args, 'disabled_by_policy');
     throw new OcError(
       'disabled_by_policy',
       `Действие «${tool}» (${label}) не входит в список разрешённых операций`,
@@ -101,6 +105,28 @@ export function enforceRisk(ctx: ToolContext, tool: string, risk: RiskClass, arg
     // Риск 1 разрешён свободно, но изменение должно быть видно в логе.
     ctx.log.info('Обратимая запись разрешена политикой', { tool, risk });
   }
+}
+
+/**
+ * Отказ политики тоже пишется в аудит: иначе «отклонено» — единственный класс
+ * событий, которого в журнале нет, хотя именно он интересен при разборе попыток
+ * выполнить разрушительное действие без прав.
+ */
+function auditDenial(
+  ctx: ToolContext,
+  tool: string,
+  risk: RiskClass,
+  args: RiskArgs,
+  code: string,
+): void {
+  auditAction(ctx, {
+    tool,
+    risk,
+    confirm: args.confirm === true ? true : undefined,
+    reason: typeof args.reason === 'string' ? args.reason : undefined,
+    result: code,
+    details: { denied: true, code, required: code === 'confirmation_required' ? 'confirm' : null },
+  });
 }
 
 export interface AuditActionEntry {

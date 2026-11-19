@@ -40,6 +40,16 @@ export interface VerifyResult {
 /** Что делать DeviceClient после 401. */
 export type UnauthorizedOutcome = 'retry' | 'security_off' | 'no_retry';
 
+/**
+ * Сколько «security выключена» считается свежим выводом.
+ *
+ * Прошивка отвечает 404 на `signIn`/`verifyAuthorization`, когда security
+ * выключена. Если администратор включит её на работающем устройстве, сервис не
+ * должен до перезапуска ходить анонимно: устаревший вывод перепроверяется не
+ * чаще, чем раз в этот интервал.
+ */
+const SECURITY_OFF_RECHECK_MS = 60_000;
+
 export interface AuthStats {
   authenticated: boolean;
   securityOff: boolean;
@@ -68,6 +78,7 @@ export class AuthSession {
   private token: string | null = null;
   private tokenAt: number | null = null;
   private securityOff = false;
+  private securityOffAt: number | null = null;
   private inflight: Promise<string | null> | null = null;
   private signInCount = 0;
   private reloginCount = 0;
@@ -90,13 +101,32 @@ export class AuthSession {
   }
 
   get isSecurityOff(): boolean {
-    return this.securityOff;
+    return this.securityOffActive();
+  }
+
+  /** Вывод «security выключена» ещё свежий (см. `SECURITY_OFF_RECHECK_MS`). */
+  private securityOffActive(): boolean {
+    if (!this.securityOff) return false;
+    if (this.securityOffAt === null) return true;
+    return this.now() - this.securityOffAt < SECURITY_OFF_RECHECK_MS;
+  }
+
+  private markSecurityOff(): void {
+    this.securityOff = true;
+    this.securityOffAt = this.now();
+    this.token = null;
+    this.tokenAt = null;
+  }
+
+  private clearSecurityOff(): void {
+    this.securityOff = false;
+    this.securityOffAt = null;
   }
 
   stats(): AuthStats {
     return {
       authenticated: this.token !== null,
-      securityOff: this.securityOff,
+      securityOff: this.securityOffActive(),
       signIns: this.signInCount,
       relogins: this.reloginCount,
       tokenAgeMs: this.tokenAt === null ? null : Math.max(0, this.now() - this.tokenAt),
@@ -110,7 +140,10 @@ export class AuthSession {
    */
   async ensureToken(): Promise<string | null> {
     if (this.token !== null) return this.token;
-    if (this.securityOff) return null;
+    if (this.securityOffActive()) return null;
+    // Вывод устарел: пробуем войти снова. Если security по-прежнему выключена,
+    // signIn снова получит 404 и отметит флаг на следующие 60 с.
+    if (this.securityOff) this.clearSecurityOff();
     if (this.inflight === null) {
       this.inflight = this.signIn().finally(() => {
         this.inflight = null;
@@ -151,9 +184,7 @@ export class AuthSession {
 
     if (result.status === 404) {
       // На не-secure сборке прошивки эндпоинта логина нет: работаем анонимно.
-      this.securityOff = true;
-      this.token = null;
-      this.tokenAt = null;
+      this.markSecurityOff();
       this.log?.warn('Прошивка без аутентификации: работаем без токена', { path });
       return null;
     }
@@ -189,7 +220,7 @@ export class AuthSession {
 
     this.token = token;
     this.tokenAt = this.now();
-    this.securityOff = false;
+    this.clearSecurityOff();
     this.signInCount += 1;
     this.log?.info('Вход на контроллер выполнен', { user: this.user });
     return this.token;
@@ -229,9 +260,7 @@ export class AuthSession {
     });
 
     if (result.status === 404) {
-      this.securityOff = true;
-      this.token = null;
-      this.tokenAt = null;
+      this.markSecurityOff();
       this.log?.warn('verifyAuthorization вернул 404: security на прошивке выключена');
       return { status: 'security_off', httpStatus: 404 };
     }
@@ -253,7 +282,7 @@ export class AuthSession {
   /** Полный сброс состояния: например, после смены пароля или рестарта контроллера. */
   reset(): void {
     this.invalidate();
-    this.securityOff = false;
+    this.clearSecurityOff();
   }
 
   /**
@@ -261,7 +290,11 @@ export class AuthSession {
    * Возвращает решение для DeviceClient.
    */
   async handleUnauthorized(): Promise<UnauthorizedOutcome> {
-    if (this.securityOff) return 'security_off';
+    if (this.securityOffActive()) return 'security_off';
+    if (this.securityOff) {
+      // Вывод устарел (см. SECURITY_OFF_RECHECK_MS): security могли включить.
+      this.clearSecurityOff();
+    }
     const verdict = await this.verify();
     if (verdict.status === 'security_off') return 'security_off';
     if (verdict.status === 'invalid') {
