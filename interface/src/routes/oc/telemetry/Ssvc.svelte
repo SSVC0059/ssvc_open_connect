@@ -28,7 +28,9 @@
 		let prevPreemptCnt = $state<number | null>(null);
 		let predecEvents = $state<PredecEvent[]>([]);
 		let predecEventIndex = $state(0);
-		let predecStageType = $state<string | null>(null);
+		let predecRunKey = $state<string | null>(null);
+		// Опрос телеметрии не должен выполняться параллельно сам с собой.
+		let telemetryInFlight = false;
 
 		let telemetry = $derived(data?.telemetry)
 		let status = $derived(data?.status)
@@ -98,6 +100,10 @@
 		};
 
 		async function loadTelemetry(): Promise<void> {
+			// Не запускаем новый опрос, пока не вернулся предыдущий: поздний ответ
+			// откатил бы baseline preempt_cnt и продублировал событие.
+			if (telemetryInFlight) return;
+			telemetryInFlight = true;
 			try {
 				const shouldGetTelemetry = telemetryCounter % (TELEMETRY_INTERVAL / BASE_INTERVAL) === 0;
 				const shouldGetStatus = statusCounter % (STATUS_INTERVAL / BASE_INTERVAL) === 0;
@@ -130,8 +136,11 @@
 					// Новый этап: счётчик preempt_cnt мог сброситься — начинаем заново,
 					// чтобы сам сброс не выглядел как событие предекремента.
 					const nextTelemetry = merged.telemetry;
-					if (predecStageType !== nextTelemetry.type) {
-						predecStageType = nextTelemetry.type;
+					// pid различает прогоны с одинаковым этапом: после перезапуска счётчик
+					// сбрасывается, и старый baseline дал бы ложное событие.
+					const runKey = `${nextTelemetry.type ?? ''}:${nextTelemetry.pid ?? ''}`;
+					if (predecRunKey !== runKey) {
+						predecRunKey = runKey;
 						prevPreemptCnt = null;
 						predecEvents = [];
 						predecEventIndex = 0;
@@ -161,6 +170,8 @@
 				statusCounter++;
 			} catch (err: any) {
 
+			} finally {
+				telemetryInFlight = false;
 			}
 		}
 
@@ -553,6 +564,9 @@
 			.parameters-readings {
 				@include parameter-container;
 				margin-top: auto; // Гарантированно прижимает к низу
+				flex: 0 1 auto;
+				min-height: 0;
+				overflow-y: auto; // строки событий должны прокручиваться, а не обрезаться
 				/* Override mixin color so theme text is readable in dark mode */
 				.section-title,
 				.readings-list .reading-item .reading-label,

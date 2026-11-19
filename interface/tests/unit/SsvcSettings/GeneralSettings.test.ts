@@ -208,8 +208,9 @@ describe('GeneralSettings (Общие)', () => {
 		expect(
 			within(item as HTMLElement).getByText('В «Авто 92+» начало формулы — 92 °C')
 		).toBeInTheDocument();
-		expect(item?.textContent).toContain('92');
-		expect(item?.textContent).not.toContain('90');
+		const value = (item as HTMLElement).querySelector('.settings-value');
+		expect(value?.textContent?.trim()).toBe('92 °С');
+		expect(value?.textContent).not.toContain('90');
 	});
 
 	it('показывает tails_temp, даже если прошивка не прислала поле при нуле', () => {

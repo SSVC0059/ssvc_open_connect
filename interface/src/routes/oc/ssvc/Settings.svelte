@@ -32,6 +32,9 @@
 	// Текущая целевая ТД1 из телеметрии: по ней панель «Защита от стопа»
 	// показывает реальные пороги. null — данных нет, панель покажет формулу.
 	let tp1Target = $state<number | null>(null);
+	// Номер последнего запроса телеметрии: ответы прошлых запросов не должны
+	// перетирать более новый target, иначе пороги считаются по старым данным.
+	let tp1RequestId = 0;
 
 	let activeTab = $state(0);
 
@@ -57,11 +60,14 @@
 	// Одно чтение телеметрии: только Т отбора для панели защиты. Ошибку чтения
 	// не показываем — панель в этом случае объясняет пороги формулой.
 	const loadTp1Target = async () => {
+		const requestId = ++tp1RequestId;
 		try {
 			const response = await fetchTelemetry();
-			tp1Target = response?.telemetry?.tp1_target ?? null;
+			if (requestId === tp1RequestId) {
+				tp1Target = response?.telemetry?.tp1_target ?? null;
+			}
 		} catch {
-			tp1Target = null;
+			if (requestId === tp1RequestId) tp1Target = null;
 		}
 	};
 
@@ -180,6 +186,9 @@
 		// Сброс кеша /rest/oc/info (переподключение) должен перечитать гейты
 		// возможностей API, иначе они останутся от прошлого подключения.
 		void $infoCacheVersion;
+		// Новое поколение контроллера: старый target к новым порогам не применять.
+		tp1Target = null;
+		tp1RequestId += 1;
 		loadSsvcSettings();
 		// Возможности API и признак ветки прошивки нужны для гейта полей,
 		// появившихся в новых версиях API (см. GeneralSettings).
@@ -188,7 +197,11 @@
 		// Т отбора для панели защиты могла измениться после запуска процесса:
 		// обновляем её, не дожидаясь ручного «Обновить».
 		const tp1Interval = setInterval(() => loadTp1Target(), 5000);
-		return () => clearInterval(tp1Interval);
+		return () => {
+			clearInterval(tp1Interval);
+			// Незавершённое чтение не должно применить target после ухода со страницы.
+			tp1RequestId += 1;
+		};
 	});
 
 	$effect(() => {

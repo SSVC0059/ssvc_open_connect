@@ -65,7 +65,8 @@ test.describe('Калькулятор: предекремент и формул�
 
 		await expect(page.locator('[data-result="analytics.formula.start"]')).toContainText('92');
 		await expect(page.locator('[data-result="analytics.formula.end"]')).toContainText('99');
-		await expect(page.locator('[data-result="analytics.formula.initialDropPct"]')).not.toHaveText('');
+		// 92→99 с первым предекрементом на 96 °C: (99−96)/(99−92) = 3/7 → снижение 57 %.
+		await expect(page.locator('[data-result="analytics.formula.initialDropPct"]')).toHaveText('57 %');
 		await expect(page.locator('[data-result="analytics.flows.hearts_avg"]')).not.toHaveText('');
 		await expect(page.locator('#protection-warning')).toBeHidden();
 	});

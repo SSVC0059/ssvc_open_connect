@@ -10,6 +10,7 @@
 		FORMULA_START_TEMP_MIN,
 		PREDEC_VALUES,
 		formulaModeHint,
+		formulaStartTempForMode,
 		minHysteresisFor,
 		normalizeFormulaStartTemp,
 		predecLabel,
@@ -183,6 +184,13 @@
 			console.error('Сумма фракций превышает 100%');
 			return;
 		}
+		// Превью считает по нормализованному значению: в «Авто 92+» это 92 °C,
+		// в остальных режимах — кламп 84…100. Сохраняем ровно то же значение,
+		// иначе в профиль могло уйти 101 °C или пустая строка.
+		sourceProfile.ssvcSettings.formula_start_temp = formulaStartTempForMode(
+			sourceProfile.ssvcSettings.formula,
+			sourceProfile.ssvcSettings.formula_start_temp
+		);
 		// Снимок + JSON: убираем прокси; удаляем артефакты {0,1,...} от прошлых битых загрузок (spread массива в объект)
 		const cloned = JSON.parse(JSON.stringify(profile)) as Profile & Record<string, unknown>;
 		const payload = stripNumericKeysAtRoot(cloned) as Profile;
@@ -524,17 +532,28 @@
 											Авто 92+
 										</option>
 									</select>
-									<div class="formula-inputs" class:disabled={sourceProfile.ssvcSettings.formula === 0}>
+									<div class="formula-inputs">
 										<div class="input-group">
 											<span class="input-label">Начало, °C</span>
-											<input
-												class="input-field"
-												type="number"
-												min={FORMULA_START_TEMP_MIN}
-												max={FORMULA_START_TEMP_MAX}
-												step="0.1"
-												bind:value={sourceProfile.ssvcSettings.formula_start_temp}
-											/>
+											{#if sourceProfile.ssvcSettings.formula === 2}
+												<input
+													class="input-field"
+													type="number"
+													value={92}
+													disabled
+													title="В «Авто 92+» начало формулы — 92 °C"
+												/>
+											{:else}
+												<input
+													class="input-field"
+													type="number"
+													min={FORMULA_START_TEMP_MIN}
+													max={FORMULA_START_TEMP_MAX}
+													step="0.1"
+													disabled={sourceProfile.ssvcSettings.formula === 0}
+													bind:value={sourceProfile.ssvcSettings.formula_start_temp}
+												/>
+											{/if}
 										</div>
 										<div class="input-group">
 											<span class="input-label">Гист.</span>
@@ -1000,12 +1019,6 @@
 		.input-field {
 			min-width: 4.5em; /* запас под дробную часть */
 			box-sizing: border-box;
-		}
-
-		&.disabled {
-			opacity: 0.3;
-			pointer-events: none;
-			filter: grayscale(1); /* Визуальный эффект отключения */
 		}
 	}
 

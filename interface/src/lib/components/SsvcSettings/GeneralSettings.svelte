@@ -57,7 +57,7 @@
 </script>
 
 {#if settings}
-	<ProcessProtectionPanel {settings} {onSave} {tp1Target} />
+	<ProcessProtectionPanel {settings} {onSave} {tp1Target} {predecAvailable} />
 
 	<div class="settings-grid">
 		<div class="settings-panel">

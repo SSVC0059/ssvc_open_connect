@@ -58,7 +58,7 @@ describe('DistillationCycleModel Process Logic', () => {
 	it('должен снижать скорость по кривой формулы (без отдельного decrement)', () => {
 		const profile = createDefaultProfile();
 		profile.ssvcSettings.formula = 1;
-		profile.ssvcSettings.decrement = 10; // 10%
+		profile.ssvcSettings.decrement = 0; // декремент не должен участвовать в формуле
 		profile.ssvcSettings.hearts_finish_temp = 95;
 		profile.hearts.targetFlowMlh = 2000;
 
@@ -123,6 +123,8 @@ describe('DistillationCycleModel Process Logic', () => {
 			profile.ssvcSettings.hearts_finish_temp = 97;
 			profile.ssvcSettings.formula = formula;
 			profile.ssvcSettings.formula_start_temp = 92;
+			profile.ssvcSettings.predec = 7;
+			profile.ssvcSettings.hyst = 0.12;
 			profile.hearts.targetFlowMlh = 1000;
 			profile.planning = { firstPredecTd2: 96 };
 			return model.calculateProcess(profile);
@@ -135,6 +137,44 @@ describe('DistillationCycleModel Process Logic', () => {
 		expect(auto.analytics.timers.hearts).toBeLessThan(plain.analytics.timers.hearts);
 		expect(auto.analytics.formula?.firstPredec).toBe(96);
 		expect(auto.analytics.formula?.initialDropPct).toBeGreaterThan(0);
+	});
+
+	it('«Авто 92+» без работающего предекремента не снижает скорость', () => {
+		const model = new DistillationCycleModel();
+		const profile = createDefaultProfile();
+		profile.volumeL = 10;
+		profile.strengthVol = 40;
+		profile.ssvcSettings.hearts_finish_temp = 97;
+		profile.ssvcSettings.formula = 2;
+		profile.ssvcSettings.predec = 0;
+		profile.ssvcSettings.hyst = 0.06;
+		profile.hearts.targetFlowMlh = 1000;
+		profile.planning = { firstPredecTd2: 96 };
+
+		const result = model.calculateProcess(profile);
+
+		expect(result.analytics.formula?.firstPredec).toBeNull();
+		expect(result.analytics.formula?.initialDropPct).toBe(0);
+		expect(result.analytics.flows.hearts_avg).toBe(profile.hearts.targetFlowMlh);
+	});
+
+	it('первый предекремент на 99 °C даёт полное снижение скорости', () => {
+		const model = new DistillationCycleModel();
+		const profile = createDefaultProfile();
+		profile.volumeL = 10;
+		profile.strengthVol = 40;
+		profile.ssvcSettings.hearts_finish_temp = 97;
+		profile.ssvcSettings.formula = 2;
+		profile.ssvcSettings.formula_start_temp = 92;
+		profile.ssvcSettings.predec = 7;
+		profile.ssvcSettings.hyst = 0.12;
+		profile.hearts.targetFlowMlh = 1000;
+		profile.planning = { firstPredecTd2: 99 };
+
+		const result = model.calculateProcess(profile);
+
+		expect(result.analytics.formula?.firstPredec).toBe(99);
+		expect(result.analytics.formula?.initialDropPct).toBe(100);
 	});
 
 	it('более позднее начало формулы снижает скорость меньше', () => {

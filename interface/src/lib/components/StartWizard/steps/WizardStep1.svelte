@@ -17,17 +17,32 @@
 	// Режим «Авто 92+» появился в API 1.9. Возможность запрашиваем у контроллера:
 	// при отсутствии метаданных считаем её недоступной, иначе на API 1.7/1.8 поле
 	// молча отбросит очередь, а визард покажет сохранение.
+	type ApiCheckState = 'checking' | 'ok' | 'failed';
 	let apiFeatures = $state<OcApiFeature[]>([]);
+	// Состояние проверки /rest/oc/info: отличаем «ещё проверяем» и «не удалось»
+	// от подтверждённого отсутствия возможности в API.
+	let apiCheckState = $state<ApiCheckState>('checking');
 
 	$effect(() => {
 		// Перечитываем при сбросе кеша /rest/oc/info (переподключение): контроллер
 		// мог быть заменён или перепрошит, и набор возможностей API изменился.
 		void $infoCacheVersion;
 		let cancelled = false;
+		// Пока ответа нет, контролы прошлого подключения не показываем.
+		apiFeatures = [];
+		apiCheckState = 'checking';
 		void (async () => {
-			const info = await getInfo();
-			if (!cancelled) {
-				apiFeatures = info?.oc.api_features ?? [];
+			try {
+				const info = await getInfo();
+				if (!cancelled) {
+					apiFeatures = info?.oc.api_features ?? [];
+					apiCheckState = 'ok';
+				}
+			} catch {
+				if (!cancelled) {
+					apiFeatures = [];
+					apiCheckState = 'failed';
+				}
 			}
 		})();
 		return () => {
@@ -43,6 +58,14 @@
 	// отбросится очередью, а мастер покажет сохранение.
 	const predecAvailable = $derived(
 		apiFeatures.find((feature) => feature.name === 'predec')?.available ?? false
+	);
+
+	const capabilityTitle = $derived(
+		apiCheckState === 'checking'
+			? 'Проверка возможностей API…'
+			: apiCheckState === 'failed'
+				? 'Не удалось проверить возможности API'
+				: 'Требуется API 1.9'
 	);
 
 	/** 0,12 → «0,12»: подписи и предупреждения в русской десятичной записи. */
@@ -102,7 +125,7 @@
 						<option
 							value={2}
 							disabled={!formulaAuto92Available}
-							title={formulaAuto92Available ? undefined : 'Требуется API 1.9'}
+							title={formulaAuto92Available ? undefined : capabilityTitle}
 						>
 							Авто 92+
 						</option>
@@ -110,17 +133,34 @@
 				</div>
 
 				<div class="formula-input-wrapper" class:active={settings.formula > 0}>
-					<NumberInput
-						bind:value={settings.formula_start_temp}
-						min={84}
-						max={100}
-						unit="°С"
-						placeholder="Начальная температура"
-					/>
+					{#if settings.formula === 2}
+						<NumberInput
+							value={92}
+							disabled
+							min={84}
+							max={100}
+							unit="°С"
+							placeholder="Начальная температура"
+						/>
+					{:else}
+						<NumberInput
+							bind:value={settings.formula_start_temp}
+							min={84}
+							max={100}
+							unit="°С"
+							placeholder="Начальная температура"
+						/>
+					{/if}
 				</div>
 			</div>
 			<!-- Пояснение режима: без него «Авто 92+» выглядит как обычная формула. -->
 			<p class="formula-hint">{formulaModeHint(settings.formula)}</p>
+			{#if apiCheckState === 'failed'}
+				<p class="formula-hint">
+					Не удалось проверить возможности API — закройте и откройте мастер, чтобы
+					повторить.
+				</p>
+			{/if}
 		</div>
 
 		<div class="settings-item">
@@ -130,7 +170,7 @@
 				class="settings-checkbox"
 				id="predecMode"
 				disabled={!predecAvailable}
-				title={predecAvailable ? undefined : 'Требуется API 1.9'}
+				title={predecAvailable ? undefined : capabilityTitle}
 			>
 				{#each PREDEC_VALUES as value}
 					<option {value}>{predecLabel(value)}</option>
@@ -148,9 +188,11 @@
 						предекремент выключен. Включите предекремент ({predecLabel(7)} или
 						{predecLabel(13)}) или выберите обычную формулу.
 					</p>
-					<button type="button" class="formula-warning-action" onclick={enablePredec}>
-						Включить предекремент {predecLabel(7)}
-					</button>
+					{#if predecAvailable}
+						<button type="button" class="formula-warning-action" onclick={enablePredec}>
+							Включить предекремент {predecLabel(7)}
+						</button>
+					{/if}
 				{/if}
 				{#if hysteresisTooSmall && predecMinHyst !== null}
 					<p>
@@ -158,9 +200,11 @@
 						{formatNumber(settings.hyst)} °C не сработает — контроллер отключит его. Нужен
 						гистерезис не меньше {formatNumber(predecMinHyst)} °C.
 					</p>
-					<button type="button" class="formula-warning-action" onclick={raiseHysteresis}>
-						Поднять гистерезис до {formatNumber(predecMinHyst)} °C
-					</button>
+					{#if predecAvailable}
+						<button type="button" class="formula-warning-action" onclick={raiseHysteresis}>
+							Поднять гистерезис до {formatNumber(predecMinHyst)} °C
+						</button>
+					{/if}
 				{/if}
 			</div>
 		{/if}

@@ -185,6 +185,14 @@
   outline-offset: 1px;
 }
 
+/* В режиме высокой контрастности системная стрелка важнее собственного шеврона. */
+@media (forced-colors: active) {
+  .settings-item .settings-select {
+    appearance: auto;
+    background-image: none;
+  }
+}
+
 .settings-item .settings-select:disabled {
   opacity: 0.6;
   cursor: not-allowed;

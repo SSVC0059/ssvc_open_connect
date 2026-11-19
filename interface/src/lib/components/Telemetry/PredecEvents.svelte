@@ -44,7 +44,7 @@
 				<div class="predec-events-hint">{predecVerdictHint(verdict)}</div>
 			{/if}
 		{/each}
-		{#if events.length > 1}
+		{#if events.length > 1 && events.some((event) => event.index === 1)}
 			<p class="predec-events-caption">
 				Оценка 92–94 °C относится к первому зафиксированному предекременту; для следующих показана
 				только температура.

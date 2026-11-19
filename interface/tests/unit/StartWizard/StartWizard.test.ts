@@ -272,14 +272,29 @@ describe('WizardStep1: предекремент и формула', () => {
 	});
 
 	it('блокирует предекремент и «Авто 92+» на контроллере без API 1.9', async () => {
-		vi.mocked(getInfo).mockResolvedValue(API_INFO_1_7);
+		let resolveInfo: (value: SsvcOpenConnectInfo) => void = () => {};
+		vi.mocked(getInfo).mockReturnValue(
+			new Promise<SsvcOpenConnectInfo>((resolve) => {
+				resolveInfo = resolve;
+			})
+		);
 		await renderStep1(createMockSsvcSettings());
 
 		const predecSelect = screen.getByLabelText('Предекремент');
-		await waitFor(() =>
-			expect(predecSelect).toHaveAttribute('title', 'Требуется API 1.9')
-		);
+		// До ответа показываем безопасный дефолт, а не «нужен API 1.9».
+		expect(predecSelect).toHaveAttribute('title', 'Проверка возможностей API…');
+
+		resolveInfo(API_INFO_1_7);
+		await waitFor(() => expect(predecSelect).toHaveAttribute('title', 'Требуется API 1.9'));
 		expect(predecSelect).toBeDisabled();
 		expect(screen.getByRole('option', { name: 'Авто 92+' })).toBeDisabled();
+	});
+
+	it('отличает неудачную проверку возможностей от старого контроллера', async () => {
+		vi.mocked(getInfo).mockRejectedValue(new Error('network'));
+		await renderStep1(createMockSsvcSettings());
+
+		expect(await screen.findByText(/Не удалось проверить возможности API/)).toBeInTheDocument();
+		expect(screen.getByLabelText('Предекремент')).toBeDisabled();
 	});
 });

@@ -93,6 +93,11 @@ function initCalculator() {
 	delete root.dataset.calcReady;
 	activeDefaultParams = buildFreshDefaults();
 
+	// «Сбросить всё» пересобирает дефолты на том же DOM: сохранённое значение
+	// обычного режима из прошлой сессии не должно вернуться после сброса.
+	const resetFormulaStart = root.querySelector('[data-path="ssvcSettings.formula_start_temp"]');
+	if (resetFormulaStart) delete resetFormulaStart.dataset.auto92;
+
 	const formatResultText = (path, value) => {
 		if (path.startsWith('analytics.formula')) {
 			if (path.endsWith('initialDropPct')) return `${Math.round(value)} %`;
@@ -125,6 +130,27 @@ function initCalculator() {
 		const r = getCalcRoot();
 		if (!r || !activeDefaultParams) return;
 
+		// Режим читаем из поля до сбора параметров: при выходе из «Авто 92+» в поле
+		// ещё стоит подставленное 92 °C, и модель получила бы его вместо сохранённого
+		// пользователем значения.
+		const formulaSelect = r.querySelector('[data-path="ssvcSettings.formula"]');
+		const formulaStartInput = r.querySelector('[data-path="ssvcSettings.formula_start_temp"]');
+		const auto92 = formulaSelect ? Number(formulaSelect.value) === 2 : false;
+
+		if (formulaStartInput) {
+			if (auto92) {
+				// Пустая строка — тоже пользовательское значение, поэтому проверяем
+				// наличие сохранённого значения, а не его истинность.
+				if (formulaStartInput.dataset.auto92 === undefined) {
+					formulaStartInput.dataset.auto92 = formulaStartInput.value;
+				}
+				formulaStartInput.value = '92';
+			} else if (formulaStartInput.dataset.auto92 !== undefined) {
+				formulaStartInput.value = formulaStartInput.dataset.auto92;
+				delete formulaStartInput.dataset.auto92;
+			}
+		}
+
 		const currentParams = deepClone(activeDefaultParams);
 
 		r.querySelectorAll('[data-path]').forEach((el) => {
@@ -138,7 +164,6 @@ function initCalculator() {
 		try {
 			// В «Авто 92+» начало формулы фиксировано на 92 °C. Переопределяем
 			// значение до расчёта, чтобы модель и видимое поле не расходились.
-			const auto92 = currentParams.ssvcSettings.formula === 2;
 			if (auto92) {
 				currentParams.ssvcSettings.formula_start_temp = 92;
 			}
@@ -147,17 +172,7 @@ function initCalculator() {
 
 			// В «Авто 92+» начало формулы фиксировано на 92 °C, а первая Т
 			// предекремента нужна только этому режиму — показываем зависимость.
-			const formulaStartInput = r.querySelector('[data-path="ssvcSettings.formula_start_temp"]');
 			if (formulaStartInput) {
-				if (auto92) {
-					if (!formulaStartInput.dataset.auto92) {
-						formulaStartInput.dataset.auto92 = formulaStartInput.value;
-					}
-					formulaStartInput.value = '92';
-				} else if (formulaStartInput.dataset.auto92) {
-					formulaStartInput.value = formulaStartInput.dataset.auto92;
-					delete formulaStartInput.dataset.auto92;
-				}
 				formulaStartInput.disabled = auto92;
 				formulaStartInput.title = auto92
 					? 'В режиме «Авто 92+» начало формулы — 92 °C'
@@ -166,6 +181,14 @@ function initCalculator() {
 			const firstPredecInput = r.querySelector('[data-path="planning.firstPredecTd2"]');
 			if (firstPredecInput) {
 				firstPredecInput.disabled = currentParams.ssvcSettings.formula !== 2;
+			}
+
+			// Строку «Снижение на предекременте» показываем, только когда модель
+			// действительно планирует первый предекремент: иначе там ложный «0 %».
+			const dropRow = r.querySelector('#an-formula-drop');
+			if (dropRow) {
+				const firstPredec = profile.analytics?.formula?.firstPredec;
+				dropRow.style.display = firstPredec == null ? 'none' : '';
 			}
 
 			r.querySelectorAll('[data-result]').forEach((el) => {
@@ -219,7 +242,8 @@ function initCalculator() {
 					message =
 						'«Авто 92+» не сработает без предекремента: включите предекремент или выберите обычную формулу.';
 				}
-				protectionWarning.style.display = message ? 'block' : 'none';
+				// Живой регион остаётся в DOM: пустой блок скрыт стилем :empty, поэтому
+				// появление текста объявляется скринридером без перевода фокуса.
 				protectionWarning.textContent = message;
 			}
 		} catch (e) {

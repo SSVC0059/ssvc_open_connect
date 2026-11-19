@@ -121,6 +121,15 @@ hide:
             border-radius: var(--border-radius);
             font-size: 0.85rem;
         }
+        /* Живой регион остаётся в DOM даже пустым (его нельзя прятать через
+           display:none, иначе скринридер не объявит предупреждение), но не
+           занимает места и не рисует рамку, пока текста нет. */
+        .protection-warning:empty {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            background: transparent;
+        }
         .fraction-details {
             border-bottom: 1px solid var(--border-color);
         }
@@ -295,7 +304,13 @@ hide:
         </div>
     </div>
 
-    <div id="protection-warning" class="protection-warning" style="display: none;"></div>
+    <div
+        id="protection-warning"
+        class="protection-warning"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+    ></div>
 
     <!-- ======================================================================= -->
     <!-- НАСТРОЙКИ ФРАКЦИЙ                                                       -->
@@ -392,7 +407,7 @@ hide:
                     <h4 class="col-title">Параметры отбора</h4>
                     <div class="input-group"><span class="input-label">% от АС</span><input data-path="hearts.percent" class="input-field" type="number" /></div>
                     <div class="input-group"><span class="input-label">T завершения, °C</span><input data-path="ssvcSettings.hearts_finish_temp" class="input-field" type="number" step="0.1" placeholder="0 = по %" /></div>
-                    <div class="input-group"><span class="input-label">Снижение при стопе, %</span><input data-path="ssvcSettings.decrement" class="input-field" type="number" /></div>
+                    <div class="input-group"><label class="input-label" for="calcHeartsDecrement">Снижение при стопе, %</label><input id="calcHeartsDecrement" data-path="ssvcSettings.decrement" class="input-field" type="number" /></div>
                     <p class="input-hint">Применяется при предекременте/стопе; время стопов не моделируется.</p>
                     <div class="input-group"><span class="input-label">Клапан, мл/ч</span><input data-path="ssvcSettings.valve_bw.1" class="input-field" type="number" /></div>
                     <div class="sub-settings-grid">
@@ -409,22 +424,22 @@ hide:
                     <div class="sub-settings-grid">
                         <div class="sub-settings-group">
                             <h5 class="sub-settings-title">Снижение (Формула)</h5>
-                            <div class="input-group"><span class="input-label">Режим</span>
-                                <select data-path="ssvcSettings.formula" class="input-field">
+                            <div class="input-group"><label class="input-label" for="calcFormulaMode">Режим</label>
+                                <select id="calcFormulaMode" data-path="ssvcSettings.formula" class="input-field">
                                     <option value="0">Выкл</option>
                                     <option value="1">Формула</option>
                                     <option value="2">Авто 92+</option>
                                 </select>
                             </div>
-                            <div class="input-group"><span class="input-label">Начало формулы, °C</span><input data-path="ssvcSettings.formula_start_temp" class="input-field" type="number" step="0.1" min="84" max="100" /></div>
-                            <div class="input-group"><span class="input-label">Ожидаемая Т первого предекремента, °C</span><input data-path="planning.firstPredecTd2" class="input-field" type="number" step="0.1" min="92" max="99" /></div>
-                            <p class="input-hint">Оценка: линейное снижение 92→99 °C; первая Т — только для «Авто 92+»; стопы не моделируются.</p>
+                            <div class="input-group"><label class="input-label" for="calcFormulaStart">Начало формулы, °C</label><input id="calcFormulaStart" data-path="ssvcSettings.formula_start_temp" class="input-field" type="number" step="0.1" min="84" max="100" /></div>
+                            <div class="input-group"><label class="input-label" for="calcFirstPredecTd2">Ожидаемая Т первого предекремента, °C</label><input id="calcFirstPredecTd2" data-path="planning.firstPredecTd2" class="input-field" type="number" step="0.1" min="92" max="99" /></div>
+                            <p class="input-hint">Оценка: линейное снижение от начала формулы до 99 °C; в «Авто 92+» начало фиксировано на 92 °C. Первая Т — только для «Авто 92+»; стопы не моделируются.</p>
                         </div>
                         <div class="sub-settings-group">
                             <h5 class="sub-settings-title">Гистерезис и предекремент</h5>
-                            <div class="input-group"><span class="input-label">Гистерезис, °C</span><input data-path="ssvcSettings.hyst" class="input-field" type="number" step="0.01" min="0" max="50" /></div>
-                            <div class="input-group"><span class="input-label">Предекремент</span>
-                                <select data-path="ssvcSettings.predec" class="input-field">
+                            <div class="input-group"><label class="input-label" for="calcHyst">Гистерезис, °C</label><input id="calcHyst" data-path="ssvcSettings.hyst" class="input-field" type="number" step="0.01" min="0" max="50" /></div>
+                            <div class="input-group"><label class="input-label" for="calcPredec">Предекремент</label>
+                                <select id="calcPredec" data-path="ssvcSettings.predec" class="input-field">
                                     <option value="0">Выкл</option>
                                     <option value="7">0,07 °C</option>
                                     <option value="13">0,13 °C</option>

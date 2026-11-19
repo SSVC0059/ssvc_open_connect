@@ -49,7 +49,7 @@
 
 import type { Analytics, OpenConnectRelayRules, Profile, SsvcSettings } from '$lib/types/ssvc';
 import { stripNumericKeysAtRoot } from '$lib/utils/profileSanitize';
-import { FORMULA_END_TEMP, formulaStartTempForMode } from './rectificationRules';
+import { FORMULA_END_TEMP, formulaStartTempForMode, predecState } from './rectificationRules';
 
 /** Полный объект SSVC по умолчанию для редактора профилей и normalizeProfile (без «дыр» в ключах). */
 function defaultSsvcSettingsForProfile(): SsvcSettings & { valve_bw_tails?: number } {
@@ -317,10 +317,16 @@ export class DistillationCycleModel {
 		td2: number,
 		mode: number,
 		formulaStart: number,
-		firstPredecTd2: number
+		firstPredecTd2: number,
+		predecWorks: boolean
 	): number {
 		if (mode !== 1 && mode !== 2) return 1;
-		if (formulaStart >= FORMULA_END_TEMP) return td2 < FORMULA_END_TEMP ? 1 : 0;
+		// «Авто 92+» включается только после реально сработавшего предекремента:
+		// без него контроллер не снижает скорость, значит и моделировать нечего.
+		if (mode === 2 && !predecWorks) return 1;
+		// Старт на конце кривой (≥99 °C) линейная оценка не описывает: раньше
+		// модель молча обрезала отбор на 99 °C, хотя полка должна тянуться до старта.
+		if (formulaStart >= FORMULA_END_TEMP) return 1;
 
 		const holdUntil = mode === 2 ? Math.max(formulaStart, firstPredecTd2) : formulaStart;
 		if (td2 <= holdUntil) return 1;
@@ -341,20 +347,22 @@ export class DistillationCycleModel {
 		formulaMode: number;
 		formulaStart: number;
 		firstPredecTd2: number;
+		predecWorks: boolean;
 		finishTd2: number;
-	}): { timerSec: number; averageSpeed: number; finalSpeed: number } {
+	}): { timerSec: number; averageSpeed: number; finalSpeed: number; drawnMl: number } {
 		const productMl = Math.max(0, params.productMl);
 		const initialSpeed = Math.max(0, params.initialSpeedMlh);
 
 		if (productMl <= 0 || initialSpeed <= 0) {
-			return { timerSec: 0, averageSpeed: initialSpeed, finalSpeed: initialSpeed };
+			return { timerSec: 0, averageSpeed: initialSpeed, finalSpeed: initialSpeed, drawnMl: 0 };
 		}
 
 		if (params.formulaMode !== 1 && params.formulaMode !== 2) {
 			return {
 				timerSec: (productMl / initialSpeed) * 3600,
 				averageSpeed: initialSpeed,
-				finalSpeed: initialSpeed
+				finalSpeed: initialSpeed,
+				drawnMl: productMl
 			};
 		}
 
@@ -376,7 +384,8 @@ export class DistillationCycleModel {
 				td2,
 				params.formulaMode,
 				params.formulaStart,
-				params.firstPredecTd2
+				params.firstPredecTd2,
+				params.predecWorks
 			);
 			const speed = initialSpeed * factor;
 			if (speed <= 0) break;
@@ -391,7 +400,7 @@ export class DistillationCycleModel {
 		}
 
 		const averageSpeed = timerSec > 0 ? (drawnMl / timerSec) * 3600 : initialSpeed;
-		return { timerSec, averageSpeed, finalSpeed };
+		return { timerSec, averageSpeed, finalSpeed, drawnMl };
 	}
 
 	private buildFormulaAnalytics(
@@ -399,22 +408,32 @@ export class DistillationCycleModel {
 		formulaStart: number,
 		firstPredecTd2: number,
 		initialSpeed: number,
-		averageSpeed: number
+		averageSpeed: number,
+		predecWorks: boolean
 	): Analytics['formula'] | undefined {
 		if (mode !== 1 && mode !== 2) return undefined;
 
+		// Ступенька «Авто 92+» существует только при работающем предекременте:
+		// без него режим не активируется, и обещать снижение нельзя.
+		const active = mode === 1 || (mode === 2 && predecWorks);
 		const holdUntil = mode === 2 ? Math.max(formulaStart, firstPredecTd2) : formulaStart;
-		const factorAtHold =
-			mode === 2 && holdUntil < FORMULA_END_TEMP
-				? (FORMULA_END_TEMP - holdUntil) / (FORMULA_END_TEMP - formulaStart)
-				: 1;
+		// Фактор сразу после события: при первом предекременте 99 °C он равен нулю,
+		// то есть снижение 100 %, а не 0 % (граница раньше обрабатывалась как полка).
+		let initialDropPct = 0;
+		if (mode === 2 && active && formulaStart < FORMULA_END_TEMP) {
+			const factorAtHold = Math.min(
+				Math.max((FORMULA_END_TEMP - holdUntil) / (FORMULA_END_TEMP - formulaStart), 0),
+				1
+			);
+			initialDropPct = Number(((1 - factorAtHold) * 100).toFixed(1));
+		}
 		const avgFactor = initialSpeed > 0 ? averageSpeed / initialSpeed : 1;
 
 		return {
 			start: formulaStart,
 			end: FORMULA_END_TEMP,
-			firstPredec: mode === 2 ? firstPredecTd2 : null,
-			initialDropPct: Number((Math.max(0, 1 - factorAtHold) * 100).toFixed(1)),
+			firstPredec: mode === 2 && active ? firstPredecTd2 : null,
+			initialDropPct,
 			avgFactor: Number(Math.min(1, Math.max(0, avgFactor)).toFixed(3)),
 			assumption: 'linear'
 		};
@@ -571,12 +590,6 @@ export class DistillationCycleModel {
 			// 3. Объем тела в мл (с учетом крепости отбора 96%)
 			const availableAS = Math.max(0, totalAS_ml - remainingAS);
 			heartsProductMl = availableAS / 0.96;
-
-			// Для обратной связи обновляем процент в аналитике
-			// Вместо этого вычислите локальную переменную:
-			calculatedHeartsPercent = Number(
-				(((heartsProductMl * 0.96) / initialTotalAS) * 100).toFixed(1)
-			);
 		} else {
 			// Обратная совместимость: расчет по проценту
 			heartsProductMl = (initialTotalAS * (profile.hearts.percent / 100)) / 0.96;
@@ -593,6 +606,10 @@ export class DistillationCycleModel {
 			formulaStart
 		);
 		const heartsFinishTemp = Number(profile.ssvcSettings.hearts_finish_temp ?? 0);
+		// «Авто 92+» работает только при предекременте с достаточным гистерезисом:
+		// прошивка иначе отключит предекремент и никакого снижения не будет.
+		const predecWorks =
+			predecState(profile.ssvcSettings.predec, profile.ssvcSettings.hyst) === 'ok';
 
 		// Формула и «Авто 92+» меняют скорость по мере роста ТД2, поэтому время
 		// тела считается интегрированием по объёму, а не делением на среднюю
@@ -606,8 +623,18 @@ export class DistillationCycleModel {
 			formulaMode,
 			formulaStart,
 			firstPredecTd2,
+			predecWorks,
 			finishTd2: heartsFinishTemp
 		});
+
+		// Объём и баланс считаем по фактически отобранному объёму: при формуле
+		// скорость может упасть до нуля раньше планового объёма тела.
+		const heartsDrawnMl = heartsSimulation.drawnMl;
+		if (heartsFinishTemp > 0) {
+			calculatedHeartsPercent = Number(
+				(((heartsDrawnMl * 0.96) / initialTotalAS) * 100).toFixed(1)
+			);
+		}
 
 		const heartsAverageSpeed = heartsSimulation.averageSpeed;
 		const heartsFinalSpeed = heartsSimulation.finalSpeed;
@@ -623,12 +650,13 @@ export class DistillationCycleModel {
 			formulaStart,
 			firstPredecTd2,
 			heartsInitialSpeed,
-			heartsAverageSpeed
+			heartsAverageSpeed,
+			predecWorks
 		);
 
 		// Обновление состояния куба после тела
-		totalAS_ml -= heartsProductMl * 0.96;
-		currentVolumeL -= heartsProductMl / 1000;
+		totalAS_ml -= heartsDrawnMl * 0.96;
+		currentVolumeL -= heartsDrawnMl / 1000;
 		currentStrengthVol = Math.max(0.1, (totalAS_ml / (currentVolumeL * 1000)) * 100);
 
 		// --- 4. РАСЧЕТ ХВОСТОВ ---
@@ -695,7 +723,7 @@ export class DistillationCycleModel {
 					releaseMl: Number(releaseMl.toFixed(2)),
 					headsMl: Math.round(totalHeadsVolMl),
 					lateHeadsMl: Math.round(lateHeadsVol),
-					heartsMl: Math.round(heartsProductMl),
+					heartsMl: Math.round(heartsDrawnMl),
 					tailsMl: Math.round(tailsVol)
 				},
 				timers: {

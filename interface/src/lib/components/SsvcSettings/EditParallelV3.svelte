@@ -150,7 +150,7 @@
 		</button>
 	{:else}
 		<button
-			class="text-blue-500 hover:text-blue-700 flex-shrink-0"
+			class="text-blue-500 hover:text-blue-700 flex-shrink-0 p-1"
 			onclick={openModal}
 		>
 			<Pencil class="h-5 w-5" />

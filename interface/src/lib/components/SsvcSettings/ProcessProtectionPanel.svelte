@@ -11,12 +11,15 @@
 	const {
 		settings,
 		onSave,
-		tp1Target = null
+		tp1Target = null,
+		predecAvailable = true
 	} = $props<{
 		settings: SsvcSettings;
 		onSave: (field: string, value: unknown) => void;
 		/** Текущая целевая ТД1 из телеметрии; null/undefined — данных нет. */
 		tp1Target?: number | null;
+		/** Подтверждена ли поддержка предекремента прошивкой (и API 1.9). */
+		predecAvailable?: boolean;
 	}>();
 
 	/** 0.12 → «0,12»; 92 → «92»; 78.65 → «78,65». */
@@ -120,9 +123,11 @@
 				Предекремент не сработает: гистерезис {formatTemp(settings.hyst)} меньше минимального
 				{formatTemp(minHyst)} — контроллер отключит предекремент.
 			</p>
-			<button type="button" class="btn btn-warning btn-sm" onclick={raiseHysteresis}>
-				Поднять гистерезис до {formatTemp(minHyst)}
-			</button>
+			{#if predecAvailable}
+				<button type="button" class="btn btn-warning btn-sm" onclick={raiseHysteresis}>
+					Поднять гистерезис до {formatTemp(minHyst)}
+				</button>
+			{/if}
 		</div>
 	{/if}
 
@@ -132,9 +137,11 @@
 				Авто 92+ не сработает без предекремента: режим включается после первого
 				предекремента.
 			</p>
-			<button type="button" class="btn btn-warning btn-sm" onclick={enablePredec}>
-				Включить предекремент 0,07
-			</button>
+			{#if predecAvailable}
+				<button type="button" class="btn btn-warning btn-sm" onclick={enablePredec}>
+					Включить предекремент 0,07
+				</button>
+			{/if}
 		</div>
 	{/if}
 </section>
