@@ -4,7 +4,19 @@
 	import { slide } from 'svelte/transition';
 	import AnalyticsValue from './AnalyticsValue.svelte';
 	import { getProfileContent } from '$lib/api/Profiles';
-	import type { Profile } from '$lib/types/ssvc';
+	import { getInfo, infoCacheVersion } from '$lib/api/ssvcApi';
+	import {
+		FORMULA_START_TEMP_MAX,
+		FORMULA_START_TEMP_MIN,
+		PREDEC_VALUES,
+		formulaModeHint,
+		formulaStartTempForMode,
+		minHysteresisFor,
+		normalizeFormulaStartTemp,
+		predecLabel,
+		predecState
+	} from '$lib/actions/rectificationRules';
+	import type { OcApiFeature, Profile } from '$lib/types/ssvc';
 	import { stripNumericKeysAtRoot } from '$lib/utils/profileSanitize';
 	import KpnPopover from '$lib/components/profiles/KpnPopover.svelte'; // Опционально для иконки
 	import { page } from '$app/state';
@@ -41,6 +53,51 @@
 
 	let isLoading = $state(true);
 
+	// Возможности UART API: `predec` и режим «Авто 92+» появились в 1.9.
+	// Запрашиваем /rest/oc/info по образцу WizardStep1 и блокируем контролы на
+	// старом контроллере: иначе SET молча отбросится очередью, а профиль
+	// сохранится «как будто применился».
+	let apiFeatures = $state<OcApiFeature[]>([]);
+
+	$effect(() => {
+		void $infoCacheVersion;
+		let cancelled = false;
+		void (async () => {
+			try {
+				const info = await getInfo();
+				if (!cancelled) {
+					apiFeatures = info?.oc.api_features ?? [];
+				}
+			} catch {
+				// Нет связи с контроллером: считаем возможности недоступными, но
+				// редактор профиля продолжает работать с остальными полями.
+				if (!cancelled) apiFeatures = [];
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	});
+
+	const formulaAuto92Available = $derived(
+		apiFeatures.find((feature) => feature.name === 'formula_auto92')?.available ?? false
+	);
+	const predecAvailable = $derived(
+		apiFeatures.find((feature) => feature.name === 'predec')?.available ?? false
+	);
+
+	/** 0,12 → «0,12»: подписи и предупреждения в русской десятичной записи. */
+	const formatNumber = (value: number): string => value.toFixed(2).replace('.', ',');
+
+	const predecMinHyst = $derived(minHysteresisFor(sourceProfile.ssvcSettings.predec));
+	const hysteresisTooSmall = $derived(
+		predecState(sourceProfile.ssvcSettings.predec, sourceProfile.ssvcSettings.hyst) ===
+			'hysteresis-too-small'
+	);
+	const auto92WithoutPredec = $derived(
+		sourceProfile.ssvcSettings.formula === 2 && sourceProfile.ssvcSettings.predec === 0
+	);
+
 	// Вычисляем сумму процентов всех фракций
 	const totalFractionPercent = $derived.by(() => {
 		let total = 0;
@@ -66,6 +123,12 @@
 			const rawProfile = await getProfileContent(id);
 			if (rawProfile) {
 				// getProfileContent уже возвращает normalizeProfile(...)
+				// Старые профили хранят formula_start_temp = 0: прошивка зажала бы
+				// его в 84 °C. Показываем и сохраняем 92 °C, чтобы 0 не уходил
+				// обратно в профиль.
+				rawProfile.ssvcSettings.formula_start_temp = normalizeFormulaStartTemp(
+					rawProfile.ssvcSettings.formula_start_temp
+				);
 				sourceProfile = rawProfile;
 			} else {
 				console.error('Профиль не найден или пустой ответ для id:', id);
@@ -121,6 +184,13 @@
 			console.error('Сумма фракций превышает 100%');
 			return;
 		}
+		// Превью считает по нормализованному значению: в «Авто 92+» это 92 °C,
+		// в остальных режимах — кламп 84…100. Сохраняем ровно то же значение,
+		// иначе в профиль могло уйти 101 °C или пустая строка.
+		sourceProfile.ssvcSettings.formula_start_temp = formulaStartTempForMode(
+			sourceProfile.ssvcSettings.formula,
+			sourceProfile.ssvcSettings.formula_start_temp
+		);
 		// Снимок + JSON: убираем прокси; удаляем артефакты {0,1,...} от прошлых битых загрузок (spread массива в объект)
 		const cloned = JSON.parse(JSON.stringify(profile)) as Profile & Record<string, unknown>;
 		const payload = stripNumericKeysAtRoot(cloned) as Profile;
@@ -448,15 +518,43 @@
 								<h5 class="sub-settings-title">Снижение (Формула)</h5>
 								<div class="formula-controls">
 									<label class="input-label" for="formulaMode">Режим</label>
-								<select
-											id="formulaMode"
-											bind:value={sourceProfile.ssvcSettings.formula}
+									<select
+										id="formulaMode"
+										bind:value={sourceProfile.ssvcSettings.formula}
+									>
+										<option value={0}>Выкл</option>
+										<option value={1}>Вкл</option>
+										<option
+											value={2}
+											disabled={!formulaAuto92Available}
+											title={formulaAuto92Available ? undefined : 'Требуется API 1.9'}
 										>
-											<option value={0}>Выкл</option>
-											<option value={1}>Вкл</option>
-											<option value={2}>Авто 92+</option>
-										</select>
-									<div class="formula-inputs" class:disabled={sourceProfile.ssvcSettings.formula === 0}>
+											Авто 92+
+										</option>
+									</select>
+									<div class="formula-inputs">
+										<div class="input-group">
+											<span class="input-label">Начало, °C</span>
+											{#if sourceProfile.ssvcSettings.formula === 2}
+												<input
+													class="input-field"
+													type="number"
+													value={92}
+													disabled
+													title="В «Авто 92+» начало формулы — 92 °C"
+												/>
+											{:else}
+												<input
+													class="input-field"
+													type="number"
+													min={FORMULA_START_TEMP_MIN}
+													max={FORMULA_START_TEMP_MAX}
+													step="0.1"
+													disabled={sourceProfile.ssvcSettings.formula === 0}
+													bind:value={sourceProfile.ssvcSettings.formula_start_temp}
+												/>
+											{/if}
+										</div>
 										<div class="input-group">
 											<span class="input-label">Гист.</span>
 											<input class="input-field" type="number" step="0.01" bind:value={sourceProfile.ssvcSettings.hyst} />
@@ -467,6 +565,46 @@
 										</div>
 									</div>
 								</div>
+
+								<div class="formula-controls">
+									<label class="input-label" for="predecMode">Предекремент</label>
+									<select
+										id="predecMode"
+										bind:value={sourceProfile.ssvcSettings.predec}
+										disabled={!predecAvailable}
+										title={predecAvailable ? undefined : 'Требуется API 1.9'}
+									>
+										{#each PREDEC_VALUES as value}
+											<option {value}>{predecLabel(value)}</option>
+										{/each}
+									</select>
+								</div>
+
+								<!-- Пояснение режима и предупреждения о несовместимых сочетаниях.
+								     Сохранение не блокируем: профиль можно сохранить, но «молча
+								     нерабочее» сочетание должно быть видно. -->
+								<p class="formula-hint">{formulaModeHint(sourceProfile.ssvcSettings.formula)}</p>
+
+								{#if auto92WithoutPredec || hysteresisTooSmall}
+									<div class="formula-warning" role="status">
+										{#if auto92WithoutPredec}
+											<p>
+												«Авто 92+» не сработает: режим включается после первого
+												предекремента, а предекремент выключен. Включите предекремент
+												({predecLabel(7)} или {predecLabel(13)}) или выберите обычную
+												формулу.
+											</p>
+										{/if}
+										{#if hysteresisTooSmall && predecMinHyst !== null}
+											<p>
+												Предекремент {predecLabel(sourceProfile.ssvcSettings.predec)} при
+												гистерезисе {formatNumber(sourceProfile.ssvcSettings.hyst)} °C не
+												сработает — контроллер отключит его. Нужен гистерезис не меньше
+												{formatNumber(predecMinHyst)} °C.
+											</p>
+										{/if}
+									</div>
+								{/if}
 							</div>
 						</div>
 
@@ -882,17 +1020,38 @@
 			min-width: 4.5em; /* запас под дробную часть */
 			box-sizing: border-box;
 		}
-
-		&.disabled {
-			opacity: 0.3;
-			pointer-events: none;
-			filter: grayscale(1); /* Визуальный эффект отключения */
-		}
 	}
 
 	.final-analytics-card {
 		border-color: var(--blue-300);
 		background-color: var(--primary-100);
+	}
+
+	/* Пояснение режима формулы и предупреждения о несовместимых сочетаниях */
+	.formula-hint {
+		margin: 0;
+		font-size: 0.8rem;
+		line-height: 1.35;
+		opacity: 0.8;
+	}
+
+	.formula-warning {
+		margin-top: 0.25rem;
+		padding: 0.5rem 0.75rem;
+		border-left: 3px solid var(--yellow-500);
+		border-radius: var(--border-radius);
+		background-color: var(--yellow-100);
+		color: var(--yellow-800);
+
+		p {
+			margin: 0;
+			font-size: 0.8rem;
+			line-height: 1.35;
+		}
+
+		p + p {
+			margin-top: 0.25rem;
+		}
 	}
 
 	.final-analytics-grid {
@@ -991,6 +1150,10 @@
 			background-color: rgba(185, 28, 28, 0.25);
 			color: var(--red-300);
 			border-color: var(--red-600);
+		}
+		.formula-warning {
+			background-color: rgba(245, 158, 11, 0.16);
+			color: var(--text-color);
 		}
 		.final-analytics-card {
 			background-color: var(--secondary-bg);

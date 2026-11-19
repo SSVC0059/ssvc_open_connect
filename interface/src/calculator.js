@@ -2,6 +2,11 @@
 // @ts-nocheck
 import { deepClone } from '$lib/utils/deepMerge.ts';
 import { DistillationCycleModel, createDefaultProfile } from '$lib/actions/DistillationCycleModel.ts';
+import {
+	minHysteresisFor,
+	predecLabel,
+	predecState
+} from '$lib/actions/rectificationRules.ts';
 
 const CALC_ROOT_SELECTOR = '.editor-layout#app';
 
@@ -85,9 +90,20 @@ function initCalculator() {
 	const root = getCalcRoot();
 	if (!root) return;
 
+	delete root.dataset.calcReady;
 	activeDefaultParams = buildFreshDefaults();
 
+	// «Сбросить всё» пересобирает дефолты на том же DOM: сохранённое значение
+	// обычного режима из прошлой сессии не должно вернуться после сброса.
+	const resetFormulaStart = root.querySelector('[data-path="ssvcSettings.formula_start_temp"]');
+	if (resetFormulaStart) delete resetFormulaStart.dataset.auto92;
+
 	const formatResultText = (path, value) => {
+		if (path.startsWith('analytics.formula')) {
+			if (path.endsWith('initialDropPct')) return `${Math.round(value)} %`;
+			if (path.endsWith('avgFactor')) return `${Math.round(value * 100)} %`;
+			return `${value.toFixed(1)} °C`;
+		}
 		if (path.includes('timer') || path.includes('Time') || path.includes('process')) {
 			return formatTime(value);
 		}
@@ -114,6 +130,27 @@ function initCalculator() {
 		const r = getCalcRoot();
 		if (!r || !activeDefaultParams) return;
 
+		// Режим читаем из поля до сбора параметров: при выходе из «Авто 92+» в поле
+		// ещё стоит подставленное 92 °C, и модель получила бы его вместо сохранённого
+		// пользователем значения.
+		const formulaSelect = r.querySelector('[data-path="ssvcSettings.formula"]');
+		const formulaStartInput = r.querySelector('[data-path="ssvcSettings.formula_start_temp"]');
+		const auto92 = formulaSelect ? Number(formulaSelect.value) === 2 : false;
+
+		if (formulaStartInput) {
+			if (auto92) {
+				// Пустая строка — тоже пользовательское значение, поэтому проверяем
+				// наличие сохранённого значения, а не его истинность.
+				if (formulaStartInput.dataset.auto92 === undefined) {
+					formulaStartInput.dataset.auto92 = formulaStartInput.value;
+				}
+				formulaStartInput.value = '92';
+			} else if (formulaStartInput.dataset.auto92 !== undefined) {
+				formulaStartInput.value = formulaStartInput.dataset.auto92;
+				delete formulaStartInput.dataset.auto92;
+			}
+		}
+
 		const currentParams = deepClone(activeDefaultParams);
 
 		r.querySelectorAll('[data-path]').forEach((el) => {
@@ -125,7 +162,34 @@ function initCalculator() {
 		});
 
 		try {
+			// В «Авто 92+» начало формулы фиксировано на 92 °C. Переопределяем
+			// значение до расчёта, чтобы модель и видимое поле не расходились.
+			if (auto92) {
+				currentParams.ssvcSettings.formula_start_temp = 92;
+			}
+
 			const profile = model.calculateProcess(currentParams);
+
+			// В «Авто 92+» начало формулы фиксировано на 92 °C, а первая Т
+			// предекремента нужна только этому режиму — показываем зависимость.
+			if (formulaStartInput) {
+				formulaStartInput.disabled = auto92;
+				formulaStartInput.title = auto92
+					? 'В режиме «Авто 92+» начало формулы — 92 °C'
+					: '';
+			}
+			const firstPredecInput = r.querySelector('[data-path="planning.firstPredecTd2"]');
+			if (firstPredecInput) {
+				firstPredecInput.disabled = currentParams.ssvcSettings.formula !== 2;
+			}
+
+			// Строку «Снижение на предекременте» показываем, только когда модель
+			// действительно планирует первый предекремент: иначе там ложный «0 %».
+			const dropRow = r.querySelector('#an-formula-drop');
+			if (dropRow) {
+				const firstPredec = profile.analytics?.formula?.firstPredec;
+				dropRow.style.display = firstPredec == null ? 'none' : '';
+			}
 
 			r.querySelectorAll('[data-result]').forEach((el) => {
 				const path = el.dataset.result;
@@ -162,6 +226,26 @@ function initCalculator() {
 				warningDiv.style.display = totalPercent > 100 ? 'block' : 'none';
 				warningDiv.textContent = `Сумма фракций: ${totalPercent.toFixed(1)}% > 100%`;
 			}
+
+			const protectionWarning = document.getElementById('protection-warning');
+			if (protectionWarning) {
+				const predec = currentParams.ssvcSettings.predec;
+				const hyst = currentParams.ssvcSettings.hyst;
+				const state = predecState(predec, hyst);
+				let message = '';
+				if (state === 'hysteresis-too-small') {
+					const min = minHysteresisFor(predec);
+					const minText =
+						min === null ? '—' : min.toFixed(2).replace('.', ',');
+					message = `Предекремент не сработает: при ${predecLabel(predec)} нужен гистерезис не меньше ${minText} °C.`;
+				} else if (currentParams.ssvcSettings.formula === 2 && predec === 0) {
+					message =
+						'«Авто 92+» не сработает без предекремента: включите предекремент или выберите обычную формулу.';
+				}
+				// Живой регион остаётся в DOM: пустой блок скрыт стилем :empty, поэтому
+				// появление текста объявляется скринридером без перевода фокуса.
+				protectionWarning.textContent = message;
+			}
 		} catch (e) {
 			console.error('Ошибка расчета:', e);
 		}
@@ -178,6 +262,9 @@ function initCalculator() {
 	});
 
 	updateUI();
+
+	// Сигнал для e2e и для отладки: поля уже привязаны к модели.
+	root.dataset.calcReady = '1';
 }
 
 let delegatedInputBound = false;

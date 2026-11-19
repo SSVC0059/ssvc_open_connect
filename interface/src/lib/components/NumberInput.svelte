@@ -5,7 +5,8 @@
 		min = -Infinity,
 		max = Infinity,
 		unit = '',
-		placeholder = ''
+		placeholder = '',
+		disabled = false
 	} = $props<{
 		value: number;
 		step?: number;
@@ -13,6 +14,7 @@
 		max?: number;
 		unit?: string;
 		placeholder?: string;
+		disabled?: boolean;
 	}>();
 
 	function increment() {
@@ -31,7 +33,7 @@
 </script>
 
 <div class="number-input-wrapper">
-	<button class="control-button" onclick={decrement}>-</button>
+	<button class="control-button" onclick={decrement} {disabled}>-</button>
 	<div class="input-unit-container">
 		<input
 			bind:value
@@ -40,13 +42,14 @@
 			{max}
 			{step}
 			{placeholder}
+			{disabled}
 			class="input-field"
 		/>
 		{#if unit}
 			<span class="unit-label">{unit}</span>
 		{/if}
 	</div>
-	<button class="control-button" onclick={increment}>+</button>
+	<button class="control-button" onclick={increment} {disabled}>+</button>
 </div>
 
 <style>

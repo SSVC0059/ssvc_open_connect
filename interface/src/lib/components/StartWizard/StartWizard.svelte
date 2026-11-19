@@ -15,6 +15,7 @@
 	import type { SsvcSettings } from '$lib/types/ssvc';
 	import { fetchSettings, saveSettings, sendCommand } from '$lib/api/ssvcApi';
 	import { normalizeSettingsForWizard } from '$lib/components/StartWizard/wizardDefaults';
+	import { formulaStartTempForMode } from '$lib/actions/rectificationRules';
 	import { deepDiff } from '$lib/utils/deepDiff';
 	import { notifications } from '$lib/components/toasts/notifications';
 
@@ -167,6 +168,15 @@
 			// которых нет в PARAM_HANDLERS, отклоняли весь запрос.
 			const payload =
 				settings && originalSettings ? deepDiff(settings, originalSettings) : {};
+			// Начало формулы приводим к тому же значению, которое видел пользователь:
+			// в «Авто 92+» это 92 °C, в остальных режимах — кламп 84…100 °C. Поле
+			// уходит на контроллер, только если пользователь его действительно менял.
+			if (settings && typeof payload.formula_start_temp === 'number') {
+				payload.formula_start_temp = formulaStartTempForMode(
+					settings.formula,
+					payload.formula_start_temp
+				);
+			}
 
 			if (Object.keys(payload).length > 0) {
 				const saved = await saveSettings(payload);

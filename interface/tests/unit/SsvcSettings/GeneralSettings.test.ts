@@ -7,8 +7,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import GeneralSettings from '$lib/components/SsvcSettings/GeneralSettings.svelte';
+import type { OcApiFeature } from '$lib/types/ssvc';
 import { createMockSsvcSettings } from '../../lib/createMockSsvcSettings';
 import { GENERAL_SETTINGS_EXPECTED_REQUESTS } from '../../lib/generalSettingsExpectedRequests';
+
+/** Возможности API 1.9: предекремент и «Авто 92+» доступны. */
+const API_FEATURES_19: OcApiFeature[] = [
+	{ name: 'predec', min_api: '1.9', available: true },
+	{ name: 'formula_auto92', min_api: '1.9', available: true }
+];
 
 /** Открыть модалку по подписи поля, нажать «Сохранить». */
 async function saveModalByLabel(label: string) {
@@ -63,6 +70,55 @@ describe('GeneralSettings (Общие)', () => {
 		});
 	});
 
+	it('декремент допускает 100 % — предел из API, а не 20 %', async () => {
+		const settings = createMockSsvcSettings({ decrement: 2 });
+		render(GeneralSettings, { props: { settings, onSave: mockOnSave } });
+		const item = screen.getByText('Декремент при отборе тела').closest('.settings-item');
+		await userEvent.setup().click(item!.querySelector('button.edit-button')!);
+		await waitFor(() => {
+			expect(screen.getByRole('dialog', { hidden: true })).toBeInTheDocument();
+		});
+		const dialog = screen.getByRole('dialog', { hidden: true });
+		const input = within(dialog).getByRole('spinbutton', { hidden: true });
+		await userEvent.setup().clear(input);
+		await userEvent.setup().type(input, '100');
+		const saveBtn = within(dialog).getByRole('button', { name: /Сохранить/i, hidden: true });
+		await waitFor(() => {
+			expect(saveBtn).not.toBeDisabled();
+		});
+		await userEvent.setup().click(saveBtn);
+		await waitFor(() => {
+			expect(mockOnSave).toHaveBeenCalledWith('decrement', 100);
+		});
+	});
+
+	it('при выборе предекремента 0,13 вызывает onSave с полем predec', async () => {
+		const spec = GENERAL_SETTINGS_EXPECTED_REQUESTS.predec;
+		const settings = createMockSsvcSettings({ predec: 0 });
+		render(GeneralSettings, {
+			props: { settings, onSave: mockOnSave, apiFeatures: API_FEATURES_19 }
+		});
+		const item = screen
+			.getByText(spec.label, { selector: '.input-label' })
+			.closest('.settings-item');
+		const select = item?.querySelector('select');
+		expect(select).toBeTruthy();
+		expect(select).not.toBeDisabled();
+		await userEvent.setup().selectOptions(select!, String(spec.expectedRequestBody));
+		await waitFor(() => {
+			expect(mockOnSave).toHaveBeenCalledWith(spec.field, spec.expectedRequestBody);
+		});
+	});
+
+	it('без возможности predec в apiFeatures селект «Предекремент» заблокирован', () => {
+		const settings = createMockSsvcSettings({ predec: 0 });
+		render(GeneralSettings, { props: { settings, onSave: mockOnSave, apiFeatures: [] } });
+		const item = screen.getByText('Предекремент', { selector: '.input-label' }).closest('.settings-item');
+		const select = item?.querySelector('select');
+		expect(select).toBeDisabled();
+		expect(select).toHaveAttribute('title', 'Требуется API 1.9');
+	});
+
 	it('при сохранении времени отбора голов вызывает onSave согласно реестру (heads_timer)', async () => {
 		const spec = GENERAL_SETTINGS_EXPECTED_REQUESTS.heads_timer;
 		const settings = createMockSsvcSettings({ heads_timer: spec.expectedRequestBody as number });
@@ -93,9 +149,21 @@ describe('GeneralSettings (Общие)', () => {
 		});
 	});
 
-	it('при сохранении температуры завершения тела вызывает onSave согласно реестру (tails_temp)', async () => {
+	it('при сохранении температуры завершения отбора хвостов вызывает onSave согласно реестру (tails_temp)', async () => {
 		const spec = GENERAL_SETTINGS_EXPECTED_REQUESTS.tails_temp;
 		const settings = createMockSsvcSettings({ tails_temp: spec.expectedRequestBody as number });
+		render(GeneralSettings, { props: { settings, onSave: mockOnSave } });
+		await saveModalByLabel(spec.label);
+		await waitFor(() => {
+			expect(mockOnSave).toHaveBeenCalledWith(spec.field, spec.expectedRequestBody);
+		});
+	});
+
+	it('при сохранении температуры завершения отбора тела вызывает onSave согласно реестру (hearts_finish_temp)', async () => {
+		const spec = GENERAL_SETTINGS_EXPECTED_REQUESTS.hearts_finish_temp;
+		const settings = createMockSsvcSettings({
+			hearts_finish_temp: spec.expectedRequestBody as number
+		});
 		render(GeneralSettings, { props: { settings, onSave: mockOnSave } });
 		await saveModalByLabel(spec.label);
 		await waitFor(() => {
@@ -107,7 +175,10 @@ describe('GeneralSettings (Общие)', () => {
 		const spec = GENERAL_SETTINGS_EXPECTED_REQUESTS.formula;
 		const settings = createMockSsvcSettings({ formula: 0 });
 		render(GeneralSettings, { props: { settings, onSave: mockOnSave } });
-		const item = screen.getByText(spec.label).closest('.settings-item');
+		// В селекте есть option «Формула», поэтому ищем именно подпись поля.
+		const item = screen
+			.getByText(spec.label, { selector: '.input-label' })
+			.closest('.settings-item');
 		const select = item?.querySelector('select');
 		expect(select).toBeTruthy();
 		await userEvent.setup().selectOptions(select!, String(spec.expectedRequestBody));
@@ -124,6 +195,32 @@ describe('GeneralSettings (Общие)', () => {
 		await waitFor(() => {
 			expect(mockOnSave).toHaveBeenCalledWith(spec.field, spec.expectedRequestBody);
 		});
+	});
+
+	it('в режиме «Авто 92+» температура начала формулы заблокирована с пояснением', () => {
+		const settings = createMockSsvcSettings({ formula: 2, formula_start_temp: 90 });
+		render(GeneralSettings, {
+			props: { settings, onSave: mockOnSave, apiFeatures: API_FEATURES_19 }
+		});
+		const item = screen.getByText('Температура начала формулы').closest('.settings-item');
+		expect(item).toBeTruthy();
+		expect(item?.querySelector('button.edit-button')).toBeNull();
+		expect(
+			within(item as HTMLElement).getByText('В «Авто 92+» начало формулы — 92 °C')
+		).toBeInTheDocument();
+		const value = (item as HTMLElement).querySelector('.settings-value');
+		expect(value?.textContent?.trim()).toBe('92 °С');
+		expect(value?.textContent).not.toContain('90');
+	});
+
+	it('показывает tails_temp, даже если прошивка не прислала поле при нуле', () => {
+		const settings = createMockSsvcSettings();
+		delete (settings as Record<string, unknown>).tails_temp;
+		render(GeneralSettings, { props: { settings, onSave: mockOnSave } });
+
+		expect(
+			screen.getByText('Температура ТД2 завершения отбора хвостов')
+		).toBeInTheDocument();
 	});
 
 	it('при сохранении времени сброса вызывает onSave согласно реестру (секция «Сброс и снижение»)', async () => {
@@ -188,7 +285,9 @@ describe('GeneralSettings (Общие)', () => {
 		const spec = GENERAL_SETTINGS_EXPECTED_REQUESTS.hyst;
 		const settings = createMockSsvcSettings({ hyst: 1 });
 		render(GeneralSettings, { props: { settings, onSave: mockOnSave } });
-		const item = screen.getByText(spec.label).closest('.settings-item');
+		const item = screen
+			.getByText(spec.label, { selector: '.input-label' })
+			.closest('.settings-item');
 		await userEvent.setup().click(item!.querySelector('button.edit-button')!);
 		await waitFor(() => {
 			expect(screen.getByRole('dialog', { hidden: true })).toBeInTheDocument();

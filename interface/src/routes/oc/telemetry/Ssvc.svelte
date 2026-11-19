@@ -8,6 +8,9 @@
 			fetchXkc25Status
 		} from '$lib/api/ssvcApi';
 		import Control from '$lib/components/Telemetry/Control.svelte';
+		import PredecEvents from '$lib/components/Telemetry/PredecEvents.svelte';
+		import { appendPredecEvents, type PredecEvent } from '$lib/components/Telemetry/predecEvents';
+		import { predecEventDelta } from '$lib/actions/rectificationRules';
 		import ValveParameters from '$lib/components/Telemetry/ValveParameters.svelte';
 		import { getDescriptionStage, getStageDescription } from '$lib/utils/ssvcHelper';
 		import ThermalSensors from '$lib/components/Telemetry/ThermalSensors.svelte';
@@ -18,6 +21,16 @@
 		let temperatureResponse = $state<TemperatureResponse | null>();
 		let alarmThresholds = $state<AlarmThresholdsState | null>();
 		let xkc25Status = $state<Xkc25StatusResponse | null>(null);
+
+		// События предекремента: preempt_cnt опрашивается раз в 2 с, поэтому
+		// фиксируем только прирост между опросами. Сбрасываем при смене типа
+		// телеметрии — это новый этап со своим счётчиком.
+		let prevPreemptCnt = $state<number | null>(null);
+		let predecEvents = $state<PredecEvent[]>([]);
+		let predecEventIndex = $state(0);
+		let predecRunKey = $state<string | null>(null);
+		// Опрос телеметрии не должен выполняться параллельно сам с собой.
+		let telemetryInFlight = false;
 
 		let telemetry = $derived(data?.telemetry)
 		let status = $derived(data?.status)
@@ -87,6 +100,10 @@
 		};
 
 		async function loadTelemetry(): Promise<void> {
+			// Не запускаем новый опрос, пока не вернулся предыдущий: поздний ответ
+			// откатил бы baseline preempt_cnt и продублировал событие.
+			if (telemetryInFlight) return;
+			telemetryInFlight = true;
 			try {
 				const shouldGetTelemetry = telemetryCounter % (TELEMETRY_INTERVAL / BASE_INTERVAL) === 0;
 				const shouldGetStatus = statusCounter % (STATUS_INTERVAL / BASE_INTERVAL) === 0;
@@ -116,6 +133,36 @@
 						merged.status = base.status;
 					}
 
+					// Новый этап: счётчик preempt_cnt мог сброситься — начинаем заново,
+					// чтобы сам сброс не выглядел как событие предекремента.
+					const nextTelemetry = merged.telemetry;
+					// pid различает прогоны с одинаковым этапом: после перезапуска счётчик
+					// сбрасывается, и старый baseline дал бы ложное событие.
+					const runKey = `${nextTelemetry.type ?? ''}:${nextTelemetry.pid ?? ''}`;
+					if (predecRunKey !== runKey) {
+						predecRunKey = runKey;
+						prevPreemptCnt = null;
+						predecEvents = [];
+						predecEventIndex = 0;
+					}
+
+					const nextPreemptCnt = nextTelemetry.preempt_cnt;
+					if (typeof nextPreemptCnt === 'number') {
+						const delta = predecEventDelta(prevPreemptCnt, nextPreemptCnt);
+						if (delta > 0) {
+							predecEventIndex += 1;
+							predecEvents = appendPredecEvents(predecEvents, {
+								index: predecEventIndex,
+								count: delta,
+								td1: nextTelemetry.common?.tp1,
+								td2: nextTelemetry.common?.tp2,
+								decrement: nextTelemetry.decrement,
+								at: nextTelemetry.time
+							});
+						}
+						prevPreemptCnt = nextPreemptCnt;
+					}
+
 					data = merged;
 				}
 
@@ -123,6 +170,8 @@
 				statusCounter++;
 			} catch (err: any) {
 
+			} finally {
+				telemetryInFlight = false;
 			}
 		}
 
@@ -278,6 +327,9 @@
 										<span class="reading-label">Упреждающие снижения:</span>
 										<span class="reading-value">{telemetry.preempt_cnt}</span>
 									</span>
+								{/if}
+								{#if telemetry?.type === 'hearts' && predecEvents.length > 0}
+									<PredecEvents events={predecEvents} />
 								{/if}
 								{#if telemetry?.common.cfg_chgd}
 									<span class="reading-item">
@@ -512,6 +564,9 @@
 			.parameters-readings {
 				@include parameter-container;
 				margin-top: auto; // Гарантированно прижимает к низу
+				flex: 0 1 auto;
+				min-height: 0;
+				overflow-y: auto; // строки событий должны прокручиваться, а не обрезаться
 				/* Override mixin color so theme text is readable in dark mode */
 				.section-title,
 				.readings-list .reading-item .reading-label,

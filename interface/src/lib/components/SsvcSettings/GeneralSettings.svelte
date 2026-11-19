@@ -1,7 +1,15 @@
 <script lang="ts">
 	import EditNumbersModal from '$lib/components/SsvcSettings/EditNumbersModal.svelte';
 	import EditTimeModal from '$lib/components/SsvcSettings/EditTimeModal.svelte';
+	import ProcessProtectionPanel from '$lib/components/SsvcSettings/ProcessProtectionPanel.svelte';
 	import Toggle from '$lib/components/Toggle.svelte';
+	import {
+		PREDEC_VALUES,
+		formulaModeHint,
+		formulaModeLabel,
+		formulaStartTempForMode,
+		predecLabel
+	} from '$lib/actions/rectificationRules';
 
 	import type { OcApiFeature, SsvcSettings } from '$lib/types/ssvc';
 
@@ -9,7 +17,8 @@
 		settings,
 		onSave,
 		apiFeatures = [],
-		isSupportRelease
+		isSupportRelease,
+		tp1Target = null
 	} = $props<{
 		settings: SsvcSettings;
 		onSave: (field: string, value: unknown) => void;
@@ -19,6 +28,8 @@
 		 * с подголовниками. undefined — старая прошивка openConnect, поле не отдаёт.
 		 */
 		isSupportRelease?: boolean;
+		/** Текущая целевая ТД1 из телеметрии: панель защиты показывает реальные пороги. */
+		tp1Target?: number | null;
 	}>();
 
 	// Секция «Сброс и снижение»: явный признак ветки прошивки, а не значение
@@ -39,10 +50,15 @@
 	const formulaStartTempAvailable = $derived(
 		apiFeatures.find((feature: OcApiFeature) => feature.name === 'formula')?.available ?? true
 	);
+	const predecAvailable = $derived(
+		apiFeatures.find((feature: OcApiFeature) => feature.name === 'predec')?.available ?? false
+	);
 
 </script>
 
 {#if settings}
+	<ProcessProtectionPanel {settings} {onSave} {tp1Target} {predecAvailable} />
+
 	<div class="settings-grid">
 		<div class="settings-panel">
 			<div class="settings-section">
@@ -69,6 +85,24 @@
 				</div>
 
 				<div class="settings-item">
+					<span class="input-label">Предекремент</span>
+					<span class="settings-value">
+						<select
+							class="settings-select"
+							aria-label="Предекремент"
+							disabled={!predecAvailable}
+							title={predecAvailable ? '' : 'Требуется API 1.9'}
+							value={settings.predec}
+							onchange={(e) => onSave('predec', Number(e.currentTarget.value))}
+						>
+							{#each PREDEC_VALUES as value}
+								<option {value}>{predecLabel(value)}</option>
+							{/each}
+						</select>
+					</span>
+				</div>
+
+				<div class="settings-item">
 					<span class="input-label">Декремент при отборе тела</span>
 					<EditNumbersModal
 						onSave={(newValues) => {
@@ -80,7 +114,7 @@
 									value: settings.decrement,
 									unit: '%',
 									min: 0,
-									max: 20
+									max: 100
 								}
 							]}
 					/>
@@ -179,7 +213,7 @@
 							}}
 						values={[
 								{
-									name: 'Декремент при отборе тела',
+									name: 'Поправка давления в кубе',
 									value: settings.tank_mmhg,
 									unit: 'мм рт. ст.',
 									min: 0,
@@ -206,12 +240,12 @@
 				<h3 class="settings-section-title">Температурные настройки</h3>
 
 				<div class="settings-item">
-					<span class="input-label">Температура ТД2 завершения отбора тела</span>
+					<span class="input-label">Температура ТД2 завершения отбора хвостов</span>
 					<EditNumbersModal
 						values={[
 									{
-										name: 'Температура завершения отбора хвостов',
-										value: settings.tails_temp,
+										name: 'Температура ТД2 завершения отбора хвостов',
+										value: settings.tails_temp ?? 0,
 										unit: '°С',
 										min: 0,
 										max: 110.0,
@@ -219,8 +253,26 @@
 									}
 								]}
 						onSave={(newValues) => {
-									// Используйте полный тип объекта как в компоненте
 									onSave('tails_temp', newValues[0].value);
+								}}
+					/>
+				</div>
+
+				<div class="settings-item">
+					<span class="input-label">Температура ТД2 завершения отбора тела</span>
+					<EditNumbersModal
+						values={[
+									{
+										name: 'Температура ТД2 завершения отбора тела',
+										value: settings.hearts_finish_temp,
+										unit: '°С',
+										min: 0,
+										max: 110.0,
+										step: 0.1
+									}
+								]}
+						onSave={(newValues) => {
+									onSave('hearts_finish_temp', newValues[0].value);
 								}}
 					/>
 				</div>
@@ -235,33 +287,56 @@
 					<Toggle checked={settings.hearts_pause} disabled />
 				</div>
 
-				<div class="settings-item">
-					<span class="input-label">Формула</span>
-					<span class="settings-value">
-						<select
-							class="settings-select"
-							value={settings.formula}
-							onchange={(e) => onSave('formula', Number(e.currentTarget.value))}
-						>
-							<option value={0}>Выкл</option>
-							<option value={1}>Вкл</option>
-							<option
-								value={2}
-								disabled={!formulaAuto92Available}
-								title={formulaAuto92Available ? '' : 'Требуется API 1.9'}
+				<div class="settings-item settings-item--with-hint">
+					<div class="settings-row">
+						<span class="input-label">Формула</span>
+						<span class="settings-value">
+							<select
+								class="settings-select"
+								aria-label="Формула"
+								value={settings.formula}
+								onchange={(e) => onSave('formula', Number(e.currentTarget.value))}
 							>
-								Авто 92+
-							</option>
-						</select>
-					</span>
+								{#each [0, 1, 2] as mode}
+									<option
+										value={mode}
+										disabled={mode === 2 && !formulaAuto92Available}
+										title={mode === 2 && !formulaAuto92Available ? 'Требуется API 1.9' : ''}
+									>
+										{formulaModeLabel(mode)}
+									</option>
+								{/each}
+							</select>
+						</span>
+					</div>
+					<span class="settings-hint">{formulaModeHint(settings.formula)}</span>
 				</div>
 
-				<div class="settings-item">
-					<span class="input-label">Температура начала формулы</span>
-					{#if formulaStartTempAvailable}
+				{#if !formulaStartTempAvailable}
+					<div class="settings-item settings-item--with-hint">
+						<div class="settings-row">
+							<span class="input-label">Температура начала формулы</span>
+							<span class="settings-value settings-value--disabled">
+								{settings.formula_start_temp} °С
+							</span>
+						</div>
+						<span class="settings-hint">требуется API 1.9</span>
+					</div>
+				{:else if settings.formula === 2}
+					<div class="settings-item settings-item--with-hint">
+						<div class="settings-row">
+							<span class="input-label">Температура начала формулы</span>
+							<span class="settings-value settings-value--disabled">
+								{formulaStartTempForMode(2, settings.formula_start_temp)} °С
+							</span>
+						</div>
+						<span class="settings-hint">В «Авто 92+» начало формулы — 92 °C</span>
+					</div>
+				{:else}
+					<div class="settings-item">
+						<span class="input-label">Температура начала формулы</span>
 						<EditNumbersModal
 							onSave={(newValues) => {
-									// Используйте полный тип объекта как в компоненте
 									onSave('formula_start_temp', newValues[0].value);
 								}}
 							values={[
@@ -275,13 +350,8 @@
 									}
 								]}
 						/>
-					{:else}
-						<span class="settings-value settings-value--disabled">
-							{settings.formula_start_temp} °С
-							<span class="settings-hint">требуется API 1.9</span>
-						</span>
-					{/if}
-				</div>
+					</div>
+				{/if}
 
 				<div class="settings-item">
 					<span class="input-label">Лимит стабилизации</span>
@@ -384,4 +454,34 @@
 		</div>
 	</div>
 {/if}
+
+<style lang="scss">
+	/* Строка с пояснением под ней: подпись и значение остаются в общей сетке,
+	   пояснение идёт отдельной строкой на всю ширину, а не второй колонкой. */
+	.settings-item--with-hint {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0.3rem;
+	}
+
+	.settings-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		width: 100%;
+	}
+
+	.settings-row > .input-label {
+		flex-grow: 1;
+		min-width: 0;
+	}
+
+	.settings-hint {
+		display: block;
+		font-size: 0.8125rem;
+		line-height: 1.35;
+		opacity: 0.8;
+	}
+</style>
 

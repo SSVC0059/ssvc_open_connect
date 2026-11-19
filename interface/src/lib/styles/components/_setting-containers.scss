@@ -38,6 +38,8 @@
   & > .input-label,
   & > .settings-label {
     flex-grow: 1;
+    min-width: 0;
+    padding-right: 0.75rem;
   }
 
   .settings-label {
@@ -46,6 +48,7 @@
   }
 
   .settings-value {
+    flex-shrink: 0;
     color: oklch(var(--bc));
     font-weight: 500;
   }
@@ -148,6 +151,51 @@
 .settings-item textarea {
   width: 100%;
   max-width: none;
+}
+
+/* Компактный селект строки: тот же вид у «Формулы» и «Предекремента».
+   appearance: none + собственный шеврон, чтобы не выглядеть чужим
+   нативным контролом среди обычных строк настроек. */
+.settings-item .settings-select {
+  width: auto;
+  min-width: 8rem;
+  max-width: 100%;
+  appearance: none;
+  padding: 0.3rem 1.6rem 0.3rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--color-base-content) 18%, transparent);
+  border-radius: 0.5rem;
+  background-color: transparent;
+  color: var(--color-base-content);
+  font: inherit;
+  cursor: pointer;
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 0.95rem) 50%,
+    calc(100% - 0.65rem) 50%;
+  background-size:
+    0.3rem 0.3rem,
+    0.3rem 0.3rem;
+  background-repeat: no-repeat;
+}
+
+.settings-item .settings-select:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary-500) 45%, transparent);
+  outline-offset: 1px;
+}
+
+/* В режиме высокой контрастности системная стрелка важнее собственного шеврона. */
+@media (forced-colors: active) {
+  .settings-item .settings-select {
+    appearance: auto;
+    background-image: none;
+  }
+}
+
+.settings-item .settings-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 // Глобальный класс для принудительной блокировки всех вложенных элементов

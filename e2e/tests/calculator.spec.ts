@@ -14,13 +14,25 @@ async function dismissConsentIfAny(page: import('@playwright/test').Page) {
 	}
 }
 
+/** Дождаться инициализации калькулятора: до неё поля ещё не связаны с моделью. */
+async function waitForCalculator(page: import('@playwright/test').Page) {
+	await expect(page.locator('#app')).toBeVisible();
+	await expect(page.locator('#app')).toHaveAttribute('data-calc-ready', '1', { timeout: 15_000 });
+}
+
 test.describe('Калькулятор в собранной документации', () => {
+	// Статический сервер документации (python http.server) не выдерживает
+	// шесть параллельных браузеров: часть запросов получает ERR_CONNECTION_REFUSED.
+	// Для этого файла запускаем тесты последовательно.
+	test.describe.configure({ mode: 'serial' });
+
 	test('прямой заход: поля и общий АС заполняются', async ({ page }) => {
 		await page.goto('/calculator/');
 		await dismissConsentIfAny(page);
 
 		const root = page.locator('#app');
 		await expect(root).toBeVisible();
+		await expect(root).toHaveAttribute('data-calc-ready', '1', { timeout: 15_000 });
 
 		await expect(root.locator('[data-path="volumeL"]')).toHaveValue('18');
 		await expect(root.locator('[data-path="strengthVol"]')).toHaveValue('40');
@@ -33,6 +45,7 @@ test.describe('Калькулятор в собранной документац
 	test('изменение объёма пересчитывает общий АС', async ({ page }) => {
 		await page.goto('/calculator/');
 		await dismissConsentIfAny(page);
+		await waitForCalculator(page);
 
 		await page.locator('#app [data-path="volumeL"]').fill('25');
 		await expect(page.locator('[data-result="analytics.totalAS"]')).toContainText('10000', {
@@ -46,6 +59,7 @@ test.describe('Калькулятор в собранной документац
 
 		await page.locator('a[href*="calculator"]').first().click();
 		await expect(page).toHaveURL(/calculator/i, { timeout: 15_000 });
+		await waitForCalculator(page);
 
 		await expect(page.locator('[data-result="analytics.totalAS"]')).not.toHaveText('', {
 			timeout: 15_000

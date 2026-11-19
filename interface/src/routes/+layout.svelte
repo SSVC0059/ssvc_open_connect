@@ -272,22 +272,26 @@
 		display: flex;
 		gap: 0.5rem;
 		align-items: center;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
+		flex-shrink: 0;
 	}
 
 	:global(.value-item) {
 		display: flex;
 		align-items: baseline;
 		gap: 0.25rem;
+		white-space: nowrap;
 	}
 
 	:global(.value-text) {
 		font: inherit;
+		white-space: nowrap;
 		@include m.dark-theme-color;
 	}
 
 	:global(.value-unit) {
 		font-size: 0.875rem;
+		white-space: nowrap;
 		opacity: 0.75;
 		@include m.dark-theme-color;
 	}
