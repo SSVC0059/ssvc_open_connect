@@ -101,8 +101,10 @@ class DistillationCycleModel {
     __publicField(this, "RHO_ETHANOL", 0.7893);
   }
   calculateVaporStrength(b) {
-    if (b <= 0) return 0;
-    if (b >= 97.17) return 97.17;
+    if (b <= 0)
+      return 0;
+    if (b >= 97.17)
+      return 97.17;
     const part1 = 1.04749494522173 * b;
     const part2 = 0.018725730342732 * Math.pow(b, 2);
     const part3 = 11082005414225e-17 * Math.pow(b, 3);
@@ -111,8 +113,10 @@ class DistillationCycleModel {
     return part1 - part2 + part3 + expPart1 * expPart2;
   }
   calculateBoilingTemp(b) {
-    if (b <= 0) return 99.97;
-    if (b >= 97.17) return 78.15;
+    if (b <= 0)
+      return 99.97;
+    if (b >= 97.17)
+      return 78.15;
     const term1 = 99.974;
     const term2 = 0.93136 * b;
     const term3 = 0.02395 * Math.pow(b, 2);
@@ -133,7 +137,8 @@ class DistillationCycleModel {
    * Используется для расчета теплоты испарения смеси.
    */
   volToMassFraction(volFraction) {
-    if (volFraction <= 0) return 0;
+    if (volFraction <= 0)
+      return 0;
     const rhoEth = 0.7893;
     const rhoWater = 1;
     const mEth = volFraction * rhoEth;
@@ -144,7 +149,8 @@ class DistillationCycleModel {
    * Расчет Флегмового Числа (ФЧ)
    */
   calculateRefluxRatio(volVaporPerHour, drawRateMlH) {
-    if (drawRateMlH <= 0) return 999;
+    if (drawRateMlH <= 0)
+      return 999;
     const drawRateLH = drawRateMlH / 1e3;
     const refluxRatio = volVaporPerHour / drawRateLH - 1;
     return Math.max(0, refluxRatio);
@@ -155,7 +161,8 @@ class DistillationCycleModel {
    * @param drawRateMlh Скорость отбора в мл/ч (например, 2500)
    */
   calculatePhlegmatic(powerWatts, drawRateMlh) {
-    if (drawRateMlh <= 0) return 99.9;
+    if (drawRateMlh <= 0)
+      return 99.9;
     const volAlc = powerWatts * 3.6 / 857 / 0.789 * 1e3;
     const volReturn = volAlc - drawRateMlh;
     const f = volReturn / drawRateMlh;
@@ -179,15 +186,18 @@ class DistillationCycleModel {
    * Использует итерационный поиск (метод бисекции).
    */
   findStrengthByTemp(targetTemp) {
-    if (targetTemp >= 100) return 0;
-    if (targetTemp <= 78.15) return 97.17;
+    if (targetTemp >= 100)
+      return 0;
+    if (targetTemp <= 78.15)
+      return 97.17;
     let min = 0;
     let max = 97.17;
     let iterations = 0;
     while (iterations < 20) {
       let mid = (min + max) / 2;
       let temp = this.calculateBoilingTemp(mid);
-      if (Math.abs(temp - targetTemp) < 0.01) return mid;
+      if (Math.abs(temp - targetTemp) < 0.01)
+        return mid;
       if (temp > targetTemp) {
         min = mid;
       } else {
@@ -214,9 +224,7 @@ class DistillationCycleModel {
     const physicsHeads = this.getVaporPhysics(currentStrengthVol, netPowerWatts);
     const totalHeadsVolMl = initialTotalAS * profile.heads.percent / 100;
     const rawReleaseTimer = profile.ssvcSettings.release_timer;
-    const rTimer = Number(
-      rawReleaseTimer != null && rawReleaseTimer >= 0 ? rawReleaseTimer : 0
-    );
+    const rTimer = Number(rawReleaseTimer != null && rawReleaseTimer >= 0 ? rawReleaseTimer : 0);
     const rawReleaseSpeed = profile.ssvcSettings.release_speed;
     const rOpen = Number(rawReleaseSpeed != null && rawReleaseSpeed >= 0 ? rawReleaseSpeed : 0);
     const rawHeadsFinal = profile.ssvcSettings.heads_final;
@@ -254,10 +262,7 @@ class DistillationCycleModel {
     }
     const headsTimerSec = rTimer + mainHeadsTimerSec + stabSec;
     const headsOpenTime = headsStartFlowMlh / bw_heads * headsCyclePeriod;
-    const headRefluxRatio = this.calculateRefluxRatio(
-      physicsHeads.volVaporPerHour,
-      headsStartFlowMlh
-    );
+    const headRefluxRatio = this.calculateRefluxRatio(physicsHeads.volVaporPerHour, headsStartFlowMlh);
     totalAS_ml -= totalHeadsVolMl * 0.96;
     currentVolumeL -= totalHeadsVolMl / 1e3;
     currentStrengthVol = Math.max(0.1, totalAS_ml / (currentVolumeL * 1e3) * 100);
@@ -281,9 +286,7 @@ class DistillationCycleModel {
       const remainingAS = currentVolumeL * 1e3 * (targetCubeStrength / 100);
       const availableAS = Math.max(0, totalAS_ml - remainingAS);
       heartsProductMl = availableAS / 0.96;
-      calculatedHeartsPercent = Number(
-        (heartsProductMl * 0.96 / initialTotalAS * 100).toFixed(1)
-      );
+      calculatedHeartsPercent = Number((heartsProductMl * 0.96 / initialTotalAS * 100).toFixed(1));
     } else {
       heartsProductMl = initialTotalAS * (profile.hearts.percent / 100) / 0.96;
     }
@@ -303,10 +306,7 @@ class DistillationCycleModel {
     }
     const heartsTimerSec = heartsAverageSpeed > 0 ? heartsProductMl / heartsAverageSpeed * 3600 : 0;
     const heartsOpenTime = heartsInitialSpeed / bw_valve3 * profile.ssvcSettings.hearts[1];
-    const heartsRefluxRatio = this.calculateRefluxRatio(
-      physicsHearts.volVaporPerHour,
-      heartsInitialSpeed
-    );
+    const heartsRefluxRatio = this.calculateRefluxRatio(physicsHearts.volVaporPerHour, heartsInitialSpeed);
     totalAS_ml -= heartsProductMl * 0.96;
     currentVolumeL -= heartsProductMl / 1e3;
     currentStrengthVol = Math.max(0.1, totalAS_ml / (currentVolumeL * 1e3) * 100);
@@ -320,7 +320,7 @@ class DistillationCycleModel {
       totalAS_ml -= tailsVol * 0.96;
       currentVolumeL -= tailsVol / 1e3;
     }
-    const totalProcessSec = stabSec + headsTimerSec + lateHeadsTimerSec + heartsTimerSec + tailsTimerSec;
+    const totalProcessSec = headsTimerSec + lateHeadsTimerSec + heartsTimerSec + tailsTimerSec;
     const phlegmaticHeads = this.calculatePhlegmatic(netPowerWatts, headsStartFlowMlh);
     const phlegmaticLateHeads = this.calculatePhlegmatic(netPowerWatts, lateHeadsFlow);
     const phlegmaticHearts = this.calculatePhlegmatic(netPowerWatts, heartsInitialSpeed);
