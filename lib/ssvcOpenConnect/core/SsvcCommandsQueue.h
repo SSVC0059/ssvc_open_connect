@@ -24,10 +24,13 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include <Arduino.h>
+#include <cstdint>
+#include <functional>
 #include <mutex>
 #include <string>
 #include <unordered_map>
 #include <map>
+#include <utility>
 #include <vector>
 
 #define ATTEMPT_COUNT 3
@@ -65,6 +68,43 @@ struct SsvcCommand
   /// неидемпотентная команда с устаревшим поколением отбрасывается после
   /// аварийной остановки.
   unsigned long safetyEpoch = 0;
+  /// Запись журнала попыток (0 — команда не журналируется: дубль GET_LOG и т.п.).
+  uint32_t journalId = 0;
+};
+
+/**
+ * @brief Состояние команды в журнале попыток.
+ *
+ * Имена состояний — часть REST-контракта (GET /rest/commands/{id}), менять их
+ * нельзя без смены контракта.
+ */
+enum class SsvcCommandState : uint8_t
+{
+  Queued,   ///< принята и лежит в очереди
+  Running,  ///< воркер забрал команду
+  Sent,     ///< байты ушли в UART; ответа может не быть вовсе
+  Done,     ///< пришёл бит успеха
+  Rejected, ///< отказ: на постановке, от устройства или UART
+  Timeout   ///< попытки исчерпаны без ответа
+};
+
+/**
+ * @brief Копия записи журнала для REST-слоя.
+ *
+ * Строки command/reason — статические (литералы), поэтому снимок можно
+ * сериализовать уже без мьютекса журнала.
+ */
+struct SsvcCommandStatus
+{
+  uint32_t id{0};
+  const char* command{nullptr};
+  SsvcCommandState state{SsvcCommandState::Queued};
+  uint32_t queuedAt{0};
+  uint32_t startedAt{0};
+  uint32_t finishedAt{0};
+  /// -1 — исход неизвестен, 0 — неуспех, 1 — пришёл бит успеха.
+  int8_t ok{-1};
+  const char* reason{nullptr};
 };
 
 class MutexLock
@@ -101,38 +141,62 @@ public:
   /// Аварийная остановка: приоритетный путь вне общего FIFO.
   /// Ставится в отдельную safety-очередь, которую воркер забирает первой, и не
   /// ждёт накопленных обычных команд. @return true, если STOP принят к отправке.
-  bool emergencyStop();
+  /// commandIdOut — id записи журнала попыток (тот же, что вернёт REST).
+  bool emergencyStop(uint32_t* commandIdOut = nullptr);
 
   /// @return true, если команда поставлена в очередь.
-  bool getSettings(int attempt_count = ATTEMPT_COUNT,
-                   TickType_t timeout = TIMEOUT) const;
+  /// commandIdOut — id записи журнала попыток, назначенный этой постановке.
+  bool getSettings(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT,
+                   uint32_t* commandIdOut = nullptr) const;
 
-  bool next(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool next(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT,
+            uint32_t* commandIdOut = nullptr) const;
 
-  bool stop(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool stop(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT,
+            uint32_t* commandIdOut = nullptr) const;
 
-  bool start(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool start(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT,
+             uint32_t* commandIdOut = nullptr) const;
 
-  bool pause(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool pause(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT,
+             uint32_t* commandIdOut = nullptr) const;
 
-  bool resume(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool resume(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT,
+              uint32_t* commandIdOut = nullptr) const;
 
-  bool version(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool version(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT,
+               uint32_t* commandIdOut = nullptr) const;
 
-  bool at(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool at(int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT,
+          uint32_t* commandIdOut = nullptr) const;
 
   /// @return true, если команда поставлена в очередь; false — отброшена по версии API.
   bool set(const std::string& parameters, int attempt_count = ATTEMPT_COUNT,
            TickType_t timeout = TIMEOUT,
-           std::vector<std::string>* skippedOut = nullptr) const;
+           std::vector<std::string>* skippedOut = nullptr,
+           uint32_t* commandIdOut = nullptr) const;
 
-  bool status(const std::string& parameters, int attempt_count = ATTEMPT_COUNT, TickType_t timeout = TIMEOUT) const;
+  bool status(const std::string& parameters, int attempt_count = ATTEMPT_COUNT,
+              TickType_t timeout = TIMEOUT, uint32_t* commandIdOut = nullptr) const;
 
   /// @return true, если команда поставлена в очередь; false — функция недоступна на устройстве.
   /// generation — номер сессии, зарезервированной через Transfer::reserve*;
   /// команда с устаревшим generation отбрасывается воркером до отправки.
   bool getLog(const std::string& parameters = "", unsigned long generation = 0,
-              int attempt_count = 1, TickType_t timeout = TIMEOUT) const;
+              int attempt_count = 1, TickType_t timeout = TIMEOUT,
+              uint32_t* commandIdOut = nullptr) const;
+
+  /**
+   * @brief Судьба команды по id из POST /rest/commands.
+   *
+   * @param commandId id, выданный этой постановке (0 — служебное «нет записи»).
+   * @param out снимок записи; при @return false не изменяется.
+   * @return true, если запись есть и не истекла по TTL.
+   */
+  bool getCommandStatus(uint32_t commandId, SsvcCommandStatus& out) const;
+
+  /// Имя состояния для REST ("queued", "running", "sent", "done", "rejected", "timeout").
+  static const char* commandStateName(SsvcCommandState state);
 
   UBaseType_t availableCommands() const
   {
@@ -183,9 +247,41 @@ public:
     }
   }
 
+  /**
+   * @brief Обёртка команды в COMMAND_MAP.
+   *
+   * Вызов без id (MQTT, внутренние триггеры) не журналирует ответ вызывающему;
+   * вызов с id отдаёт id записи журнала, выданный именно этой постановке.
+   * Две перегрузки operator() сохраняют прежний способ вызова `it->second(params)`.
+   */
+  struct CommandEntry
+  {
+    std::function<bool(const std::string&, uint32_t*)> dispatch;
+
+    /// Шаблонный конструктор, а не агрегат: std::map инициализируется парами
+    /// {"имя", лямбда}. Обычный конструктор от std::function потребовал бы двух
+    /// пользовательских преобразований (лямбда -> std::function -> CommandEntry),
+    /// что std::pair не допускает; здесь преобразование одно.
+    template <typename Handler>
+    CommandEntry(Handler&& handler)
+        : dispatch(std::forward<Handler>(handler))
+    {
+    }
+
+    bool operator()(const std::string& parameters) const
+    {
+      return dispatch(parameters, nullptr);
+    }
+
+    bool operator()(const std::string& parameters, uint32_t* commandIdOut) const
+    {
+      return dispatch(parameters, commandIdOut);
+    }
+  };
+
   /// Команда возвращает результат постановки в очередь: REST отвечает ошибкой
   /// при отказе, а не «accepted» независимо от фактической отправки.
-  static const std::map<std::string, std::function<bool(const std::string&)>> COMMAND_MAP;
+  static const std::map<std::string, CommandEntry> COMMAND_MAP;
 
 private:
   QueueHandle_t command_queue;
@@ -282,11 +378,67 @@ private:
   bool pushCommandInQueue(SsvcCommandType type, const std::string& parameters,
                           int attempt_count, TickType_t timeout,
                           unsigned long generation = 0,
-                          std::vector<std::string>* skippedOut = nullptr) const;
+                          std::vector<std::string>* skippedOut = nullptr,
+                          uint32_t* commandIdOut = nullptr) const;
 
   /// Диагностика последней отбраковки; читается REST-слоем при отказе.
   void rememberRejection(const std::string& reason, const std::string& feature,
                          const std::string& requiredApi, const std::string& deviceApi) const;
+
+  // ==================== Журнал попыток (commandId) ==================== //
+  //
+  // Кольцо фиксированного размера, статический массив: ни одной аллокации на
+  // команду. Запись живёт до перезаписи слотом кольца или до истечения TTL —
+  // GET /rest/commands/{id} после этого отвечает 404, а не чужой командой.
+
+  static constexpr uint8_t JOURNAL_SIZE = 16;
+  /// Сколько запись считается актуальной (10 минут).
+  static constexpr uint32_t JOURNAL_TTL_MS = 10UL * 60UL * 1000UL;
+  static constexpr uint8_t JOURNAL_PARAMS_MAX = 64;
+
+  struct CommandRecord
+  {
+    uint32_t id{0};
+    uint32_t queuedAt{0};
+    uint32_t startedAt{0};
+    uint32_t finishedAt{0};
+    SsvcCommandState state{SsvcCommandState::Queued};
+    int8_t ok{-1};
+    /// Имя команды и причина — статические строки (литералы), не std::string.
+    const char* command{nullptr};
+    const char* reason{nullptr};
+    /// Усечённые параметры (SET/STATUS/GET_LOG) — для диагностики; в REST не отдаются.
+    char parameters[JOURNAL_PARAMS_MAX]{};
+  };
+
+  /// Отдельный мьютекс: журнал не смешивается с _rejectionMutex и не держится
+  /// во время UART-операций. mutable — пишется из const-методов постановки.
+  mutable std::mutex _journalMutex;
+  /// Само кольцо. Размер ~1.5 КБ .bss, куча не используется.
+  mutable CommandRecord _journal[JOURNAL_SIZE]{};
+  mutable uint8_t _journalNext{0};
+  /// Монотонный счётчик id: 0 зарезервирован под «записи нет».
+  mutable uint32_t _journalLastId{0};
+
+  /// Вызывается только под _journalMutex.
+  uint32_t nextJournalIdLocked() const;
+  /// Занимает слот кольца под новую запись (под _journalMutex).
+  CommandRecord& beginRecordLocked(const char* command, const std::string& parameters,
+                                   uint32_t now) const;
+  /// Поиск по id (под _journalMutex); nullptr — запись перезаписана.
+  CommandRecord* findRecordLocked(uint32_t id) const;
+
+  /// Отказ на постановке: запись сразу терминальная (id клиенту не выдаётся —
+  /// тела 4xx/5xx не менялись, запись остаётся для диагностики).
+  void journalRejected(const char* command, const std::string& parameters,
+                       const char* reason) const;
+  /// Воркер забрал команду.
+  void journalMarkRunning(uint32_t id) const;
+  /// Байты ушли в UART (не терминальное состояние).
+  void journalMarkSent(uint32_t id) const;
+  /// Терминальное состояние: done/rejected/timeout/sent-как-итог.
+  void journalFinish(uint32_t id, SsvcCommandState state, int8_t ok,
+                     const char* reason) const;
 
   mutable std::mutex _rejectionMutex;
   mutable std::string _lastRejectionReason;

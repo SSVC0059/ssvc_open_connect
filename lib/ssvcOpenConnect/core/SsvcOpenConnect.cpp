@@ -51,6 +51,14 @@ void SsvcOpenConnect::begin(AsyncWebServer& server,
     _securityManager = securityManager;
     _mqttClient = _esp32sveltekit->getMqttClient();
 
+    // Канал /ws/events для push-событий. Сокет уже запущен внутри
+    // ESP32SvelteKit::begin() (там _socket.begin() идёт раньше сервисов),
+    // поэтому компоненты могут регистрировать имена в своих begin()/
+    // initialize() ниже. nullptr допустим: события тогда просто не эмитятся,
+    // REST и опрос датчиков ведут себя как раньше.
+    rProcess.setEventSocket(_socket);
+    AlarmMonitor::getInstance().setEventSocket(_socket);
+
     // Явная инициализация UART-тракта и очереди команд: раньше драйвер поднимался
     // из конструктора Connector, то есть до готовности зависимостей. Теперь
     // неудачная инициализация видна как Failed, а команды не идут через

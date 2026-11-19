@@ -76,6 +76,18 @@ void HandlerRegistrator::registerCommandHandlers() const
                       CommandHandler::handleCommand(request, json);
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // GET /rest/commands/{id}: судьба команды по commandId из ответа POST.
+    // Путь заканчивается на "/*" — матчер Prefix с базой "/rest/commands/",
+    // поэтому POST /rest/commands не задевается (к тому же canHandle сверяет
+    // метод), а GET /rest/commands/ попадает сюда с пустым id и получает 400.
+    // Завершающего слеша в базе нет — иначе поведение разошлось бы (§ H.1.6).
+    _server.on("/rest/commands/*", HTTP_GET,
+              _securityManager->wrapRequest(
+                  [](AsyncWebServerRequest* request) {
+                      CommandHandler::getCommand(request);
+                  },
+                  AuthenticationPredicates::IS_AUTHENTICATED));
 }
 
 void HandlerRegistrator::registerSensorHandlers() const
@@ -162,6 +174,17 @@ void HandlerRegistrator::registerTelegramBotHandler() const
                       OpenConnectHandler::getInfo(request);
                   },
                   AuthenticationPredicates::IS_AUTHENTICATED));
+
+    // Агрегированный снимок состояния (info + telemetry + status + sensor + faults).
+    // Путь без завершающего слеша: клиент обращается ровно к /rest/oc/snapshot.
+    // Только IS_ADMIN: /rest/telemetry и /rest/sensor в прошивке admin-only, иначе
+    // снимок стал бы обходом прав для гостя.
+    _server.on("/rest/oc/snapshot", HTTP_GET,
+              _securityManager->wrapRequest(
+                  [](AsyncWebServerRequest* request) {
+                      OpenConnectHandler::getSnapshot(request);
+                  },
+                  AuthenticationPredicates::IS_ADMIN));
 
     _server.on("/rest/oc/hardware-config", HTTP_GET,
               _securityManager->wrapRequest(

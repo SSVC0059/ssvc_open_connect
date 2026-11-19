@@ -8,12 +8,19 @@
 #include "commons/JsonMemoryLogger.h"
 #include "core/SsvcConnector.h"
 
+// Только ради события `telemetry`; в заголовке сокет объявлен forward.
+#include <EventSocket.h>
+
 // Интервал обновления телеметрии (2 секунды)
 #define TELEMETRY_UPDATE_INTERVAL_MS 2000
 
 #define TELEMETRY_REST_PATH "/rest/telemetry"
 
 static JsonMemoryLogger s_readMemLogger("TelemetryRead", 20);  // лог раз в 20 вызовов
+
+// Регистрируется конструктором: сервис создаётся как обычно в
+// SsvcOpenConnect::begin(), поэтому владельцу не нужен отдельный setInstance.
+TelemetryService* TelemetryService::_instance = nullptr;
 
 void TelemetryService::readStateToJson(TelemetryState& state, JsonObject& root)
 {
@@ -69,6 +76,20 @@ TelemetryService::TelemetryService(AsyncWebServer *server,
                false)
 
 {
+    // Снимок должен видеть именно работающий сервис, а не его отсутствие.
+    _instance = this;
+
+    // Сокет берём у ESP32SvelteKit: getSocket() всегда возвращает адрес
+    // встроенного объекта, а начинать его раньше времени не нужно — begin()
+    // сокета вызывается до создания сервисов (ESP32SvelteKit.cpp).
+    _eventSocket = sveltekit->getSocket();
+
+    // Эмиссия привязана к факту изменения: updateTelemetryState() вызывает
+    // callUpdateHandlers("InternalTimer") только когда сериализованный снимок
+    // отличается от предыдущего. Периодической эмиссии «раз в 2 с» нет —
+    // клиент получает кадр ровно на переход, а при подписке — догоняющий снимок.
+    addUpdateHandler([this](const String&) { publishTelemetryState(); }, false);
+
     // Создание FreeRTOS Timer
     _updateTimer = xTimerCreate(
         "TelemetryUpdateTimer",
@@ -86,6 +107,12 @@ TelemetryService::TelemetryService(AsyncWebServer *server,
 
 TelemetryService::~TelemetryService()
 {
+    // Ссылка снимается только если она указывает на этот экземпляр: следующий
+    // сервис не должен потерять регистрацию из-за удаления предыдущего.
+    if (_instance == this) {
+        _instance = nullptr;
+    }
+
     // Остановка и удаление таймера (для корректной очистки памяти)
     if (_updateTimer != nullptr) {
         if (xTimerIsTimerActive(_updateTimer) != pdFALSE) {
@@ -96,8 +123,19 @@ TelemetryService::~TelemetryService()
     }
 }
 
-void TelemetryService::begin() const
+void TelemetryService::begin()
 {
+    if (_eventSocket != nullptr)
+    {
+        _eventSocket->registerEvent("telemetry");
+        // Догоняющая отправка: подписка не должна ждать следующего изменения
+        // (снимок может не меняться минутами). Кадр уходит только подписчику,
+        // иначе одна подписка рассылала бы полную телеметрию всем клиентам.
+        _eventSocket->onSubscribe("telemetry", [this](const String& originId) {
+            publishTelemetryState(originId.c_str(), true);
+        });
+    }
+
     if (_updateTimer != nullptr) {
         if (xTimerStart(_updateTimer, 0) != pdPASS) {
             ESP_LOGE(TAG, "Failed to start FreeRTOS Telemetry timer!");
@@ -107,6 +145,56 @@ void TelemetryService::begin() const
         }
     } else
         ESP_LOGE(TAG, "TelemetryService: Timer not initialized!");
+}
+
+void TelemetryService::publishTelemetryState(const char* originId,
+                                             const bool onlyToSameOrigin)
+{
+    if (_eventSocket == nullptr) {
+        // Штатный режим «без сокета»: REST-поведение и таймер не меняются.
+        return;
+    }
+
+    // Подписка живёт в сокете, поэтому при нуле подключённых клиентов
+    // подписчиков заведомо нет. emitEvent в этом случае всё равно сериализует
+    // кадр целиком (EventSocket.cpp), а нам это не нужно.
+    if (_eventSocket->getConnectedClients() == 0) {
+        return;
+    }
+
+    // Отдельный PSRAM-аллокатор на вызов: readStateToJson() работает на
+    // _jsonAllocator, который делят REST-читатель и таймер, а здесь нужен
+    // независимый буфер. Документ живёт до конца emitEvent и освобождается.
+    JsonSpiRamAllocator allocator;
+    allocator.setTag("TelemetryEvent");
+    JsonDocument document(&allocator);
+    JsonObject root = document.to<JsonObject>();
+
+    // Снимок читаем под мьютексом StatefulService: строка состояния может
+    // меняться таймером. Форма та же, что у REST: {telemetry, status, lastUpdate}.
+    bool built = false;
+    read([this, &root, &built, &allocator](TelemetryState& state) {
+        JsonDocument snapshot(&allocator);
+        const DeserializationError error = deserializeJson(snapshot, state.telemetryJson);
+        if (error || !snapshot.is<JsonObject>()) {
+            ESP_LOGW(TAG, "telemetry event skipped: state is empty or corrupted (%s)",
+                     error.c_str());
+            return;
+        }
+        root.set(snapshot.as<JsonObject>());
+        root["lastUpdate"] = state.lastUpdateTime;
+        built = true;
+    });
+
+    if (!built) {
+        return;
+    }
+
+    // Известное ограничение: вызов идёт из задачи таймера (или WS-задачи при
+    // подписке), а не из loop-задачи. Подписки в EventSocket защищены мьютексом,
+    // но AsyncWebSocket::binary() из чужой задачи на живом устройстве надо
+    // проверить под нагрузкой — переделка задач в этом изменении не планируется.
+    _eventSocket->emitEvent("telemetry", root, originId, onlyToSameOrigin);
 }
 
 static JsonMemoryLogger s_updateMemLogger("TelemetryUpdate", 0);  // лог при каждом обновлении

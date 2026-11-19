@@ -12,6 +12,73 @@ pio run
 pio run -e esp32-s3-devkitc-1-8m -e esp32-s3-devkitc-1-8m-secure -e esp32-s3-devkitc-1-16m -e esp32-s3-devkitc-1-16m-secure
 ```
 
+## CORS: когда включать
+
+CORS (Cross-Origin Resource Sharing) нужен только доверенному стороннему
+браузерному клиенту — странице на другом origin, которой нужно читать `/rest/*`
+устройства напрямую. Веб-интерфейс прошивки работает с того же origin, поэтому по
+умолчанию CORS **выключен**: заголовок `Access-Control-Allow-Origin` разрешает
+любой открытой в браузере странице обращаться к API устройства, и это ослабляет
+защиту от вредоносных страниц. Обычные сборки CORS не включают.
+
+Включение — разовая осознанная правка сборки, без изменения `platformio.ini`:
+
+```bash
+PLATFORMIO_BUILD_FLAGS="-DENABLE_CORS" pio run -e esp32-s3-devkitc-1-8m
+```
+
+Отдельных `*-cors` сред в `platformio.ini` намеренно нет: ни веб-интерфейсу (тот
+же origin), ни MCP-серверу (это процесс, а не браузер) CORS не нужен, а лишняя
+среда в списке сборок провоцирует «включить на всякий случай». Флаг добавляется
+только на конкретный прогон, поэтому в обычных сборках кода CORS нет вовсе.
+
+### Какие заголовки отдаются
+
+При `ENABLE_CORS` заголовки добавляются к каждому ответу:
+
+| Заголовок | Значение |
+|-----------|----------|
+| `Access-Control-Allow-Origin` | `CORS_ORIGIN` (по умолчанию `*`) |
+| `Access-Control-Allow-Methods` | `GET, POST, PUT, DELETE, OPTIONS` |
+| `Access-Control-Allow-Headers` | `Accept, Content-Type, Authorization` |
+| `Access-Control-Allow-Credentials` | `true` только при явном `CORS_ORIGIN`; при `*` не отдаётся |
+
+`Access-Control-Allow-Origin: *` и `Access-Control-Allow-Credentials: true`
+несовместимы по Fetch-спеке — браузер отклоняет такой ответ. Поэтому при
+дефолтном `*` credentials отключены. Клиенту с Bearer-токеном в заголовке
+`Authorization` этого достаточно; cookies (или HTTP-auth) требуют явного origin:
+
+```ini
+; в build_flags своей среды, например вместо дефолтного "*"
+-D CORS_ORIGIN=\"https://app.example\"
+```
+
+### Preflight и проверка
+
+OPTIONS на `/rest/*` обрабатывается одним обработчиком: `204 No Content` без тела
+и без аутентификации (preflight браузера не несёт `Authorization`, иначе он не
+смог бы пройти). Заголовки CORS при этом добавляются как обычно. Проверка
+preflight вручную:
+
+```bash
+curl -i -X OPTIONS http://DEVICE_IP/rest/oc/snapshot
+```
+
+Ожидается `HTTP/1.1 204 No Content` и заголовки `Access-Control-Allow-Origin`,
+`Access-Control-Allow-Methods`, `Access-Control-Allow-Headers`. Обычный запрос:
+
+```bash
+curl -i http://DEVICE_IP/rest/oc/info -H "Authorization: Bearer TOKEN"
+```
+
+В его ответе должны быть те же CORS-заголовки.
+
+!!! note "CORS не открывает API в интернет"
+    CORS — только браузерная политика. Доступ к API из интернета по-прежнему
+    требует TLS-прокси (reverse proxy) и токена: `-cors` не делает устройство
+    доступным снаружи и не заменяет аутентификацию. Не включайте CORS в обычных
+    сборках.
+
 ## Скрипты обновления docs/firmware
 
 Скрипты копируют `*_webflash.bin` в `docs/firmware/`, создают JSON-манифесты и обновляют `manifest_index.json` для страницы флешера.

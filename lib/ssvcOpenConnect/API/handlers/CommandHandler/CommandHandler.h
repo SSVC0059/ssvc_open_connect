@@ -25,7 +25,11 @@ class CommandHandler {
 public:
     CommandHandler();
 
+    /// POST /rest/commands: постановка команды в очередь.
     static void handleCommand(AsyncWebServerRequest* request, JsonVariant& json);
+
+    /// GET /rest/commands/{id}: судьба команды по commandId из ответа POST.
+    static void getCommand(AsyncWebServerRequest* request);
 
 private:
     static const std::map<std::string, std::function<void()>> COMMAND_MAP;

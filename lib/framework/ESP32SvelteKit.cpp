@@ -14,6 +14,8 @@
 
 #include <ESP32SvelteKit.h>
 
+#include <cstring>
+
 ESP32SvelteKit::ESP32SvelteKit(AsyncWebServer *server) : _server(server),
                                                          _featureService(server, &_socket),
                                                                                           _securitySettingsService(server, &ESPFS),
@@ -26,7 +28,10 @@ ESP32SvelteKit::ESP32SvelteKit(AsyncWebServer *server) : _server(server),
                                                                                           _ethernetSettingsService(server, &ESPFS, &_securitySettingsService, &_socket),
                                                                                           _ethernetStatus(server, &_securitySettingsService),
 #endif
-                                                                                          _socket(server, &_securitySettingsService, AuthenticationPredicates::IS_AUTHENTICATED),
+// /ws/events отдаёт те же данные, что admin-only REST: telemetry (GET /rest/telemetry),
+// stage и alarm. Фильтр IS_AUTHENTICATED пускал туда гостя и обходил границу прав,
+// поэтому канал закрыт администратором: гость получает 401 на рукопожатии, как и на REST.
+                                                                                          _socket(server, &_securitySettingsService, AuthenticationPredicates::IS_ADMIN),
                                                                                           _notificationService(&_socket),
 #if FT_ENABLED(FT_NTP)
                                                                                           _ntpSettingsService(server, &ESPFS, &_securitySettingsService),
@@ -121,10 +126,34 @@ void ESP32SvelteKit::begin()
 #endif
 
 #if defined(ENABLE_CORS)
+    // CORS — осознанный opt-in (сборки с суффиксом -cors). Набор заголовков полный:
+    // без Allow-Methods браузер отклоняет preflight, даже если Allow-Headers есть.
     ESP_LOGV(SVK_TAG, "Enabling CORS headers");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", CORS_ORIGIN);
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Accept, Content-Type, Authorization");
-    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
+    // Fetch-спека запрещает сочетать Allow-Origin "*" с Allow-Credentials: true —
+    // браузер отклоняет такой ответ целиком. Прошивка ходит с Bearer-токеном в
+    // заголовке, cookies не нужны, поэтому при "*" credentials не отдаются. Если
+    // клиенту нужны cookies/HTTP-auth, задайте конкретный origin:
+    // -D CORS_ORIGIN=\"https://host\" — только тогда включается Allow-Credentials.
+    if (strcmp(CORS_ORIGIN, "*") != 0) {
+        DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
+    } else {
+        ESP_LOGW(SVK_TAG, "CORS_ORIGIN=\"*\": Allow-Credentials отключён (несовместимо со спецификацией)");
+    }
+
+    // Preflight для прикладных маршрутов /rest/*: они регистрируются напрямую через
+    // _server.on(...) в HandlerRegistrator и собственного OPTIONS-обработчика не
+    // имеют, поэтому раньше preflight уходил в catch-all 404 (WebHandlers.cpp).
+    // Матчер с завершающей "*" — это префиксное совпадение (AsyncURIMatcher
+    // Type::Prefix), а фильтр по методу гарантирует, что GET/POST/PUT/DELETE и
+    // остальные маршруты не затрагиваются. Регистрация идёт до _server->begin(),
+    // то есть preflight попадает сюда раньше любых прикладных обработчиков и 404.
+    // Ответ 204 принципиально без аутентификации: браузерный preflight не несёт
+    // Authorization (иначе он не смог бы пройти в принципе).
+    _server->on("/rest/*", HTTP_OPTIONS, [](AsyncWebServerRequest *request)
+                { request->send(204); });
 #endif
 
     ESP_LOGV(SVK_TAG, "Starting MDNS");

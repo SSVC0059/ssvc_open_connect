@@ -1,0 +1,23 @@
+{
+  "name": "@ssvc/rectification",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Единая модель расчёта ректификации OpenConnect: интерфейс, MCP и документация",
+  "license": "CC-BY-SA-4.0",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src/index.js",
+    "src/index.d.ts",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/model.test.js"
+  }
+}

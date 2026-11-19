@@ -1,0 +1,31 @@
+# Контекст сборки Docker минимальный: в образ попадают только src/, tsconfig.json,
+# package.json и package-lock.json. Всё остальное — локальное состояние разработчика.
+
+# Зависимости и кэш npm ставятся внутри образа (`npm ci`).
+node_modules
+.npm-cache
+
+# Результаты сборки: образ собирает dist сам, иначе можно принести чужой артефакт.
+dist
+.test-dist
+
+# Тесты, мок-устройство и CI-файлы в runtime не нужны.
+test
+mock
+.github
+
+# Секреты и рабочие данные: только через env_file/compose, никогда — в образ.
+.env
+.env.*
+!.env.example
+logs
+*.log
+
+# Мусор VCS/ОС и файлы, которые нужны только на хосте разработчика.
+.git
+.gitignore
+Dockerfile
+.dockerignore
+docker-compose.yml
+README.md
+*.md

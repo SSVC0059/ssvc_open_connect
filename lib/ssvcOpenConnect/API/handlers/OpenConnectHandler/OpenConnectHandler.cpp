@@ -19,6 +19,9 @@
 
 #include "core/SsvcOpenConnect.h"
 #include "core/SsvcSettings/SsvcSettings.h"
+#include "core/StatefulServices/TelemetryService/TelemetryService.h"
+#include "core/StatefulServices/SensorDataService/SensorDataService.h"
+#include "commons/JsonSpiRamAllocator.h"
 #include "core/StatefulServices/OpenConnectHardwareSettingsService/OpenConnectHardwareConfig.h"
 #include "core/StatefulServices/OpenConnectHardwareSettingsService/OpenConnectHardwareSettingsService.h"
 #include "core/RelayRuleEngine/RelayRuleEngine.h"
@@ -57,51 +60,15 @@ const char* hardwareFaultCodeLabel(const HardwareFaultCode code) {
         default: return "Неизвестный код";
     }
 }
-}
-
-OpenConnectHandler::OpenConnectHandler() = default;
 
 /**
- * Активные аппаратные сбои.
+ * Тело ответа GET /rest/oc/info (и поле info в снимке /rest/oc/snapshot).
  *
- * До этого список читали только сам модуль дисплея (чтобы показать первую ошибку на
- * экране) и RelayRuleEngine — в интерфейсе причина отказа оборудования не отображалась,
- * и приходилось смотреть serial-лог.
+ * Вынесено из обработчика, чтобы одиночный маршрут и агрегат отдавали ровно один
+ * и тот же объект: скопированная реализация разъехалась бы при первом изменении.
+ * Порядок ключей сохранён — байтовый формат прежнего ответа не меняется.
  */
-void OpenConnectHandler::getHardwareFaults(AsyncWebServerRequest* request)
-{
-    AsyncJsonResponse* response = new AsyncJsonResponse();
-    JsonObject root = response->getRoot();
-
-    JsonArray faults = root["faults"].to<JsonArray>();
-    for (const auto& fault : AlarmMonitor::getInstance().getActiveHardwareFaults()) {
-        JsonObject item = faults.add<JsonObject>();
-        item["code"] = hardwareFaultCodeKey(fault.code);
-        item["codeLabel"] = hardwareFaultCodeLabel(fault.code);
-        item["address"] = fault.i2c_addr;
-        item["role"] = fault.role.c_str();
-    }
-    root["count"] = faults.size();
-    // Шина отдельным полем: при выключенной подсистеме i2c_bus отказы устройств
-    // не поднимаются, и пустой список сбоев читается иначе.
-    I2CBusSubsystem& bus = I2CBusSubsystem::getInstance();
-    root["i2cBusActive"] = bus.isActive();
-
-    // Список ответивших адресов: по нему видно, выпало одно устройство или вся шина.
-    JsonArray scan = root["i2cScan"].to<JsonArray>();
-    for (const uint8_t address : bus.scanAddresses(false)) {
-        scan.add(address);
-    }
-
-    response->setLength();
-    request->send(response);
-}
-
-void OpenConnectHandler::getInfo(AsyncWebServerRequest* request)
-{
-    AsyncJsonResponse* response = new AsyncJsonResponse();
-    JsonObject root = response->getRoot();
-
+void buildInfoJson(JsonObject root) {
     const SsvcSettings& settings = SsvcSettings::init();
 
     JsonObject ssvc = root["ssvc"].to<JsonObject>();
@@ -129,6 +96,164 @@ void OpenConnectHandler::getInfo(AsyncWebServerRequest* request)
                               .c_str();
         item["available"] = SsvcApiCapabilities::featureAvailable(
             settings.getSsvcApiVersionCode(), feature);
+    }
+}
+
+/**
+ * Тело ответа GET /rest/oc/hardware-faults (и поле faults в снимке).
+ *
+ * Вынесено по той же причине, что и buildInfoJson: агрегат обязан совпадать с
+ * одиночным маршрутом, а не повторять его поля вручную.
+ */
+void buildHardwareFaultsJson(JsonObject root) {
+    JsonArray faults = root["faults"].to<JsonArray>();
+    for (const auto& fault : AlarmMonitor::getInstance().getActiveHardwareFaults()) {
+        JsonObject item = faults.add<JsonObject>();
+        item["code"] = hardwareFaultCodeKey(fault.code);
+        item["codeLabel"] = hardwareFaultCodeLabel(fault.code);
+        item["address"] = fault.i2c_addr;
+        item["role"] = fault.role.c_str();
+    }
+    root["count"] = faults.size();
+    // Шина отдельным полем: при выключенной подсистеме i2c_bus отказы устройств
+    // не поднимаются, и пустой список сбоев читается иначе.
+    I2CBusSubsystem& bus = I2CBusSubsystem::getInstance();
+    root["i2cBusActive"] = bus.isActive();
+
+    // Список ответивших адресов: по нему видно, выпало одно устройство или вся шина.
+    JsonArray scan = root["i2cScan"].to<JsonArray>();
+    for (const uint8_t address : bus.scanAddresses(false)) {
+        scan.add(address);
+    }
+}
+}
+
+OpenConnectHandler::OpenConnectHandler() = default;
+
+/**
+ * Активные аппаратные сбои.
+ *
+ * До этого список читали только сам модуль дисплея (чтобы показать первую ошибку на
+ * экране) и RelayRuleEngine — в интерфейсе причина отказа оборудования не отображалась,
+ * и приходилось смотреть serial-лог.
+ */
+void OpenConnectHandler::getHardwareFaults(AsyncWebServerRequest* request)
+{
+    AsyncJsonResponse* response = new AsyncJsonResponse();
+    buildHardwareFaultsJson(response->getRoot());
+
+    response->setLength();
+    request->send(response);
+}
+
+void OpenConnectHandler::getInfo(AsyncWebServerRequest* request)
+{
+    AsyncJsonResponse* response = new AsyncJsonResponse();
+    buildInfoJson(response->getRoot());
+
+    response->setLength();
+    request->send(response);
+}
+
+/**
+ * Агрегированный снимок состояния: info + telemetry + status + sensor + faults.
+ *
+ * Зачем: MCP-серверу и любому клиенту нужен согласованный срез вместо четырёх
+ * запросов, между которыми телеметрия успевает обновиться (таймер 2 с).
+ *
+ * Доступ только администратор, а не IS_AUTHENTICATED как у /rest/oc/info и
+ * /rest/oc/hardware-faults: /rest/telemetry и /rest/sensor в прошивке
+ * зарегистрированы HttpEndpoint'ом с admin-only. Открыть снимок гостю значило бы
+ * обойти эти права и отдать те же данные другим маршрутом.
+ *
+ * Части собираются независимо: недоступная часть превращается в пустой объект и
+ * попадает в "partial", но ответ остаётся 200 — иначе одна неготовая телеметрия
+ * ломала бы весь снимок и MCP-сервер не видел бы даже info/faults.
+ *
+ * observed_at и lastUpdate — millis() устройства (не epoch): NTP может быть не
+ * подключён, а сравнение этих двух чисел всё равно даёт возраст телеметрии.
+ */
+void OpenConnectHandler::getSnapshot(AsyncWebServerRequest* request)
+{
+    AsyncJsonResponse* response = new AsyncJsonResponse();
+    JsonObject root = response->getRoot();
+
+    // Время сборки ответа: клиент сравнивает его с lastUpdate, чтобы понять,
+    // насколько данные телеметрии старше самого снимка.
+    root["observed_at"] = millis();
+
+    // info и faults — ровно те же объекты, что отдают одиночные маршруты.
+    buildInfoJson(root["info"].to<JsonObject>());
+
+    std::vector<const char*> partial;
+
+    // Телеметрия и статус: читаем состояние через StatefulService::read() — так же,
+    // как это делает HttpEndpoint у /rest/telemetry, но под его мьютексом берём
+    // только копию уже сериализованной строки. Сеть не дёргаем, состояние заново
+    // не сериализуем: разбираем ту же строку, что отдал бы /rest/telemetry.
+    TelemetryService* const telemetry = TelemetryService::getInstance();
+    String telemetryJson;
+    unsigned long lastUpdate = 0;
+    if (telemetry != nullptr) {
+        telemetry->read([&](TelemetryState& state) {
+            telemetryJson = state.telemetryJson;
+            lastUpdate = state.lastUpdateTime;
+        });
+    }
+
+    root["telemetry"].to<JsonObject>();
+    root["status"].to<JsonObject>();
+    root["lastUpdate"] = lastUpdate;
+
+    bool telemetryOk = false;
+    bool statusOk = false;
+    if (!telemetryJson.isEmpty()) {
+        // Разбор — во временный документ в PSRAM (как в TelemetryService): снимок
+        // не должен отнимать внутреннюю RAM у HTTP-стека и датчиков.
+        JsonSpiRamAllocator telemetryAllocator;
+        telemetryAllocator.setTag("SnapshotRead");
+        JsonDocument telemetryDoc(&telemetryAllocator);
+        const DeserializationError error = deserializeJson(telemetryDoc, telemetryJson);
+        if (!error && telemetryDoc.is<JsonObject>()) {
+            const JsonObjectConst parsed = telemetryDoc.as<JsonObjectConst>();
+            telemetryOk = root["telemetry"].to<JsonObject>().set(
+                parsed["telemetry"].as<JsonObjectConst>());
+            statusOk = root["status"].to<JsonObject>().set(
+                parsed["status"].as<JsonObjectConst>());
+        } else {
+            ESP_LOGE("OpenConnectHandler", "Snapshot: telemetry state parse failed: %s",
+                     error.c_str());
+        }
+    }
+    if (!telemetryOk) {
+        partial.push_back("telemetry");
+    }
+    if (!statusOk) {
+        partial.push_back("status");
+    }
+
+    // Показания датчиков — ровно то, что отдаёт GET /rest/sensor. Пустое состояние
+    // до первого опроса — норма старта, а не сбой, поэтому partial только при
+    // отсутствии самого сервиса.
+    root["sensor"].to<JsonObject>();
+    SensorDataService* const sensorService = SensorDataService::getInstance();
+    if (sensorService != nullptr) {
+        sensorService->read([&](SensorDataState& state) {
+            SensorDataState::read(state, root["sensor"].as<JsonObject>());
+        });
+    } else {
+        partial.push_back("sensor");
+    }
+
+    // Сбои — ровно GET /rest/oc/hardware-faults. AlarmMonitor и I2CBusSubsystem —
+    // синглтоны, существующие всегда, поэтому отдельной ветки отказа у части нет.
+    buildHardwareFaultsJson(root["faults"].to<JsonObject>());
+
+    // "partial" добавляется последним: так порядок ключей совпадает с контрактом,
+    // а имена копятся в локальном векторе, пока остальные части собираются.
+    JsonArray partialJson = root["partial"].to<JsonArray>();
+    for (const char* part : partial) {
+        partialJson.add(part);
     }
 
     response->setLength();

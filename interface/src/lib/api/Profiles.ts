@@ -73,8 +73,3 @@ export async function deleteProfileContent(id: string, keys: string[]): Promise<
 	const response = await apiFetch(`/rest/profiles/content`, 'POST', { id, content });
 	return response.success;
 }
-
-export async function importProfile(profile: Profile): Promise<Profile | null> {
-	const response = await apiFetch<Profile>('/rest/profiles/import', 'POST', profile);
-	return response.success ? response.data : null;
-}

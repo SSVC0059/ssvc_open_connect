@@ -5,8 +5,37 @@
 #include "AlarmMonitor.h"
 
 #include <cstdio>
+#include <cstring>
+
+// Только ради события `alarm`; в заголовке сокет объявлен forward.
+#include <EventSocket.h>
 
 namespace {
+
+// Строки — часть контракта REST /rest/oc/hardware-faults и события `alarm`.
+// Должны совпадать с hardwareFaultCodeKey() в OpenConnectHandler.cpp; копия
+// здесь потому, что та функция — приватная деталь обработчика, а тянуть его
+// заголовок в AlarmMonitor ради пяти строк не стоит.
+const char* hardwareFaultCodeKey(const HardwareFaultCode code) {
+  switch (code) {
+    case HardwareFaultCode::NONE: return "none";
+    case HardwareFaultCode::I2C_NACK: return "i2c_nack";
+    case HardwareFaultCode::I2C_BUS_DOWN: return "i2c_bus_down";
+    case HardwareFaultCode::DEVICE_NOT_PRESENT: return "device_not_present";
+    case HardwareFaultCode::UART_LINK_LOST: return "uart_link_lost";
+    default: return "unknown";
+  }
+}
+
+const char* alarmLevelKey(const AlarmLevel level) {
+  switch (level) {
+    case AlarmLevel::MIN: return "min";
+    case AlarmLevel::DANGEROUS: return "dangerous";
+    case AlarmLevel::CRITICAL: return "critical";
+    case AlarmLevel::NORMAL:
+    default: return "normal";
+  }
+}
 
 class MonitorLock {
 public:
@@ -37,6 +66,12 @@ std::string AlarmMonitor::makeHardwareStateKey(const char* device_role, const ui
 
 AlarmMonitor::AlarmMonitor() : _lock(xSemaphoreCreateRecursiveMutex()) {}
 
+void AlarmMonitor::setEventSocket(EventSocket* socket) {
+  // Сеттер только запоминает указатель: регистрация имени события — в
+  // initialize(), которое владелец вызывает после установки сокета.
+  _eventSocket = socket;
+}
+
 void AlarmMonitor::raiseHardwareFault(const HardwareFaultCode code, const uint8_t i2c_addr,
                                       const char* device_role) {
   const std::string key = makeHardwareStateKey(device_role, i2c_addr);
@@ -52,6 +87,19 @@ void AlarmMonitor::raiseHardwareFault(const HardwareFaultCode code, const uint8_
       shouldNotify = true;
     }
   }
+
+  // Код сбоя мог измениться без смены уровня (NACK → BUS_DOWN): тогда
+  // notifySubscribers() не вызывается, а поток событий обязан увидеть новый
+  // код. Отправка идёт до раннего выхода; повтор того же кода на каждом
+  // периодическом опросе шины отсекает таблица последних отправленных.
+  AlarmEvent state_event{};
+  state_event.source_kind = AlarmSourceKind::HARDWARE_FAULT;
+  state_event.level = new_level;
+  state_event.hw_code = code;
+  state_event.hw_i2c_address = i2c_addr;
+  state_event.hw_device_role = device_role;
+  publishAlarmEvent(state_event);
+
   if (!shouldNotify) {
       return;
   }
@@ -80,6 +128,17 @@ void AlarmMonitor::clearHardwareFault(const char* device_role, const uint8_t i2c
       shouldNotify = true;
     }
   }
+  // Снятие — тоже переход: клиент должен увидеть active=false, даже если
+  // уровень уже был NORMAL (тогда notifySubscribers не вызывается). Таблица
+  // последних отправленных не даст повторно отправить то же снятие.
+  AlarmEvent state_event{};
+  state_event.source_kind = AlarmSourceKind::HARDWARE_FAULT;
+  state_event.level = AlarmLevel::NORMAL;
+  state_event.hw_code = HardwareFaultCode::NONE;
+  state_event.hw_i2c_address = i2c_addr;
+  state_event.hw_device_role = device_role;
+  publishAlarmEvent(state_event);
+
   if (!shouldNotify) {
       return;
   }
@@ -161,6 +220,19 @@ void AlarmMonitor::initialize(AlarmThresholdService* service) {
         _last_alarm_states.clear();
         _last_hw_alarm_states.clear();
         _hw_fault_active_codes.clear();
+        // Новая инициализация — новый поток событий: старые «последние
+        // отправленные» не должны подавлять первые реальные тревоги.
+        _lastEmittedAlarmCount = 0;
+        _nextLastEmittedAlarmSlot = 0;
+        for (auto& entry : _lastEmittedAlarmStates) {
+            entry.key[0] = '\0';
+            entry.state = 0;
+        }
+    }
+    if (_eventSocket != nullptr) {
+        // Имя регистрируется до того, как монитор начнёт слать события из
+        // задач опроса/UART; иначе emitEvent ругался бы «unregistered event».
+        _eventSocket->registerEvent("alarm");
     }
     if (_thresholdService) {
         // Лямбда-функция для передачи в addUpdateHandler
@@ -262,7 +334,7 @@ void AlarmMonitor::unsubscribe(IAlarmSubscriber* subscriber) {
 }
 
 
-void AlarmMonitor::notifySubscribers(const AlarmEvent& event) const
+void AlarmMonitor::notifySubscribers(const AlarmEvent& event)
 {
     std::vector<IAlarmSubscriber*> subscribers;
     {
@@ -288,6 +360,12 @@ void AlarmMonitor::notifySubscribers(const AlarmEvent& event) const
                  subscribers.size());
     }
 
+    // В /ws/events отправляем до обхода подписчиков: часть из них делает
+    // сетевые вызовы (Telegram/VK), и поток событий не должен их ждать.
+    // Для hardware этот вызов обычно уже сделан из raise/clear и будет
+    // подавлен таблицей последних отправленных состояний.
+    publishAlarmEvent(event);
+
     for (IAlarmSubscriber* subscriber : subscribers) {
         if (subscriber) {
             if (event.source_kind == AlarmSourceKind::SENSOR && event.sensor != nullptr) {
@@ -298,6 +376,132 @@ void AlarmMonitor::notifySubscribers(const AlarmEvent& event) const
             subscriber->onAlarm(event);
         }
     }
+}
+
+bool AlarmMonitor::rememberAlarmEventState(const char* key, const uint8_t state)
+{
+    if (key == nullptr || key[0] == '\0') {
+        return false;
+    }
+
+    MonitorLock lock(_lock);
+    for (size_t i = 0; i < _lastEmittedAlarmCount; ++i) {
+        if (strncmp(_lastEmittedAlarmStates[i].key, key,
+                    sizeof(_lastEmittedAlarmStates[i].key)) == 0) {
+            if (_lastEmittedAlarmStates[i].state == state) {
+                return false;  // то же состояние уже отправлено — повод молчать
+            }
+            _lastEmittedAlarmStates[i].state = state;
+            return true;
+        }
+    }
+
+    // Снятие без предшествующего подъёма не отправляем: иначе после старта
+    // устройства клиенты получили бы пачку «пустых» снятий.
+    if (state == 0) {
+        return false;
+    }
+
+    size_t slot;
+    if (_lastEmittedAlarmCount < kMaxLastEmittedAlarmStates) {
+        slot = _lastEmittedAlarmCount++;
+    } else {
+        // Таблица заполнена — переиспользуем слот по кругу: память не растёт,
+        // а повторно встреченный ключ снова получит запись при следующем
+        // переходе.
+        slot = _nextLastEmittedAlarmSlot;
+        _nextLastEmittedAlarmSlot =
+            (_nextLastEmittedAlarmSlot + 1) % kMaxLastEmittedAlarmStates;
+    }
+    strncpy(_lastEmittedAlarmStates[slot].key, key,
+            sizeof(_lastEmittedAlarmStates[slot].key) - 1);
+    _lastEmittedAlarmStates[slot].key[sizeof(_lastEmittedAlarmStates[slot].key) - 1] = '\0';
+    _lastEmittedAlarmStates[slot].state = state;
+    return true;
+}
+
+void AlarmMonitor::publishAlarmEvent(const AlarmEvent& event)
+{
+    if (_eventSocket == nullptr) {
+        // Штатный режим «без сокета»: уведомления и REST работают как раньше.
+        return;
+    }
+
+    char key[48];
+    const bool hardware = event.source_kind == AlarmSourceKind::HARDWARE_FAULT;
+    std::string address;
+    std::string zone;
+    const char* role = nullptr;
+    const char* code = nullptr;
+    uint8_t state = 0;
+
+    if (hardware) {
+        role = event.hw_device_role;
+        code = event.hw_code == HardwareFaultCode::NONE
+                   ? nullptr
+                   : hardwareFaultCodeKey(event.hw_code);
+        state = static_cast<uint8_t>(event.hw_code);
+        snprintf(key, sizeof(key), "h:%s:0x%02X", role != nullptr ? role : "?",
+                 static_cast<unsigned>(event.hw_i2c_address));
+    } else {
+        if (event.sensor == nullptr) {
+            return;  // notifySubscribers уже сообщил об этом в лог
+        }
+        address = SensorManager::addressToString(event.sensor->getAddress());
+        zone = SensorZoneHelper::toString(event.sensor->getZone());
+        state = static_cast<uint8_t>(event.level);
+        snprintf(key, sizeof(key), "s:%s", address.c_str());
+    }
+
+    // Только переход. Повторный опрос шины и повторная проверка после смены
+    // порогов дают то же состояние — событие не дублируется.
+    if (!rememberAlarmEventState(key, state)) {
+        return;
+    }
+
+    // Подписчика без подключённого клиента быть не может, а emitEvent
+    // сериализует кадр даже при пустом списке подписок. Состояние выше уже
+    // записано, поэтому настоящий переход (clear → raise) не будет подавлен
+    // позже из-за «устаревшей» записи.
+    if (_eventSocket->getConnectedClients() == 0) {
+        return;
+    }
+
+    const bool active = hardware ? event.hw_code != HardwareFaultCode::NONE
+                                 : event.level != AlarmLevel::NORMAL;
+
+    // Кадр ~150–200 Б — внутренняя куча, PSRAM ради него не нужна.
+    JsonDocument document;
+    JsonObject data = document.to<JsonObject>();
+    data["kind"] = hardware ? "hardware" : "threshold";
+    data["level"] = alarmLevelKey(event.level);
+    if (address.empty()) {
+        data["address"] = nullptr;  // у hardware адрес есть только числом в REST
+    } else {
+        data["address"] = address;
+    }
+    if (zone.empty()) {
+        data["zone"] = nullptr;
+    } else {
+        data["zone"] = zone;
+    }
+    if (role == nullptr) {
+        data["role"] = nullptr;
+    } else {
+        data["role"] = role;
+    }
+    if (code == nullptr) {
+        data["code"] = nullptr;  // снятие: активного кода нет
+    } else {
+        data["code"] = code;
+    }
+    data["active"] = active;
+    data["observed_at"] = millis();
+
+    // Известное ограничение: вызов идёт из задач опроса/UART/веб-запроса, а не
+    // из loop-задачи. Подписки в EventSocket защищены мьютексом, но
+    // AsyncWebSocket::binary() из чужой задачи надо проверить на устройстве.
+    _eventSocket->emitEvent("alarm", data);
 }
 
 void AlarmMonitor::checkAllSensors() {

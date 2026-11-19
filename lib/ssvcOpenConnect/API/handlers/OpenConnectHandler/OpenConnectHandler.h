@@ -36,6 +36,11 @@ class OpenConnectHandler
         static void putHardwareConfig(AsyncWebServerRequest* request, JsonVariant& json);
         /** Активные аппаратные сбои (I²C, отсутствующее устройство) — для интерфейса. */
         static void getHardwareFaults(AsyncWebServerRequest* request);
+        /**
+         * Агрегированный снимок состояния: info + telemetry + status + sensor + faults
+         * одним ответом. Только администратор — см. пояснение в .cpp.
+         */
+        static void getSnapshot(AsyncWebServerRequest* request);
         static void getXkc25Status(AsyncWebServerRequest* request);
         static void postXkc25Calibrate(AsyncWebServerRequest* request, JsonVariant& json);
         /** Результат асинхронной проверки возврата (шаг verify_return). */

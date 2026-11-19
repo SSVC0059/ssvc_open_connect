@@ -17,6 +17,10 @@
 #include "core/StatefulServices/AlarmThresholdService/AlarmThresholdService.h"
 #include "components/sensors/SensorManager/SensorManager.h"
 
+// Сокет объявлен, а не включён: EventSocket.h тянет ESPAsyncWebServer и нужен
+// только в .cpp, а заголовок подключают и там, где сокета нет.
+class EventSocket;
+
 
 class AlarmMonitor {
 public:
@@ -24,6 +28,15 @@ public:
 
     // Метод для инициализации монитора
     void initialize(AlarmThresholdService* service);
+
+    /**
+     * @brief Куда отправлять событие `alarm` (канал /ws/events).
+     *
+     * nullptr — штатное состояние (тесты, сборка без веб-сокета): событие не
+     * отправляется, уведомления подписчикам и REST работают как раньше.
+     * Регистрация имени события — в initialize().
+     */
+    void setEventSocket(EventSocket* socket);
 
     // Подписка/отписка
     void subscribe(IAlarmSubscriber* subscriber);
@@ -58,9 +71,34 @@ private:
     /** Maps the same hw key to the fault code so we can answer "what code is active here". */
     std::map<std::string, HardwareFaultCode> _hw_fault_active_codes;
 
-    void notifySubscribers(const AlarmEvent& event) const;
+    // Не const: помимо рассылки подписчикам метод отправляет событие `alarm`
+    // и запоминает последнее отправленное состояние (дедупликация повторов).
+    void notifySubscribers(const AlarmEvent& event);
 
     static std::string makeHardwareStateKey(const char* device_role, uint8_t i2c_addr);
+
+    // --- Событие `alarm` для /ws/events -------------------------------------
+    // Кадр собирается из AlarmEvent и отправляется только на переход:
+    // raise/clear для hardware, смена уровня для датчиков. Таблица ниже
+    // отсекает повторную отправку того же состояния (например, повторный
+    // raise на каждом опросе шины или повтор после forceResetAlarm).
+    void publishAlarmEvent(const AlarmEvent& event);
+    bool rememberAlarmEventState(const char* key, uint8_t state);
+
+    struct LastEmittedAlarmState {
+        char key[48] = {};
+        // AlarmLevel для датчика, HardwareFaultCode для hardware; 0 = «нет
+        // активного состояния» (NORMAL/NONE).
+        uint8_t state = 0;
+    };
+    // Фиксированный размер: таблица не растёт с числом опросов, ключи —
+    // обычные char-массивы, без std::string и фрагментации кучи на кадр.
+    static constexpr size_t kMaxLastEmittedAlarmStates = 32;
+    LastEmittedAlarmState _lastEmittedAlarmStates[kMaxLastEmittedAlarmStates];
+    size_t _lastEmittedAlarmCount = 0;
+    size_t _nextLastEmittedAlarmSlot = 0;
+
+    EventSocket* _eventSocket = nullptr;
 
     AlarmThresholdService* _thresholdService = nullptr; // Указатель на сервис с настройками
     std::vector<IAlarmSubscriber*> _subscribers;
